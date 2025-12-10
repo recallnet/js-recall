@@ -72,15 +72,20 @@ export function appendHandleSuffix(baseHandle: string, suffix: number): string {
  */
 export function generateRandomString(length: number): string {
   const chars = "abcdefghijklmnopqrstuvwxyz0123456789";
-  const bytes = randomBytes(length);
-  if (bytes === undefined || bytes.length === 0) {
-    throw new Error("Failed to generate random bytes");
-  }
+  // Calculate the largest multiple of chars.length that fits in a byte (0-255)
+  // to avoid modulo bias. For 36 chars: floor(256/36) * 36 = 252
+  const maxUnbiasedValue = Math.floor(256 / chars.length) * chars.length;
+
   let result = "";
-  for (let i = 0; i < length; i++) {
-    const byte = bytes[i];
+  while (result.length < length) {
+    const bytes = randomBytes(1);
+    const byte = bytes[0];
     if (byte === undefined) {
-      throw new Error("Failed to access random byte");
+      throw new Error("Failed to generate random byte");
+    }
+    // Discard biased bytes (252-255 for 36 chars)
+    if (byte >= maxUnbiasedValue) {
+      continue;
     }
     result += chars.charAt(byte % chars.length);
   }
