@@ -65,7 +65,6 @@
         "TEST_MODE",
         "TEST_HOST",
         "TEST_PORT",
-        "TEST_API_BASE_URL",
         "METRICS_PORT",
         "CI",
         "CRON_SECRET",

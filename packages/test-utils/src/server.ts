@@ -15,9 +15,6 @@ const HOST = process.env.TEST_HOST || "localhost";
  * Constructs URL at runtime to pick up API_PREFIX after env vars are loaded.
  */
 function getBaseUrlInternal(): string {
-  if (process.env.TEST_API_BASE_URL) {
-    return process.env.TEST_API_BASE_URL;
-  }
   const apiPrefix = process.env.API_PREFIX;
   return `http://${HOST}:${PORT}${apiPrefix ? `/${apiPrefix}/api` : "/api"}`;
 }
