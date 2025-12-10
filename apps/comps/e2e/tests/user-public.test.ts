@@ -54,7 +54,8 @@ describe("Public User API", () => {
 
       if (result.user.metadata) {
         const metadataKeys = Object.keys(result.user.metadata);
-        expect(metadataKeys.every((key) => key === "website")).toBeTruthy();
+        // Verify only allowed keys are present (forEach handles empty arrays correctly)
+        metadataKeys.forEach((key) => expect(key).toBe("website"));
       }
     });
 

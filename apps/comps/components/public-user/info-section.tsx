@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { ReactNode } from "react";
 
-import { PublicUserProfile } from "@/rpc/router/public-user/get-public-profile";
+import type { RouterOutputs } from "@/rpc/router";
 import { displayAddress } from "@/utils/address";
 
 import { ProfilePicture } from "../user-info/ProfilePicture";
@@ -25,7 +25,7 @@ const FieldValue = ({ children }: { children: ReactNode }) => (
 );
 
 interface PublicUserInfoSectionProps {
-  user: PublicUserProfile;
+  user: RouterOutputs["publicUser"]["getPublicProfile"]["user"];
 }
 
 /**
