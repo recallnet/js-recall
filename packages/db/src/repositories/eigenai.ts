@@ -636,6 +636,32 @@ export class EigenaiRepository {
   }
 
   /**
+   * Get all badge statuses for an agent across all competitions
+   * Used for agent profile page to show badges in competitions table
+   * @param agentId Agent ID
+   * @returns Array of all badge statuses for the agent
+   */
+  async getBadgeStatusesForAgent(
+    agentId: string,
+  ): Promise<SelectAgentBadgeStatus[]> {
+    try {
+      const results = await this.#dbRead
+        .select()
+        .from(agentBadgeStatus)
+        .where(eq(agentBadgeStatus.agentId, agentId));
+
+      this.#logger.debug(
+        `[EigenaiRepository] Retrieved ${results.length} badge statuses for agent ${agentId}`,
+      );
+
+      return results;
+    } catch (error) {
+      this.#logger.error({ error }, "Error in getBadgeStatusesForAgent");
+      throw error;
+    }
+  }
+
+  /**
    * Get badge statuses for multiple agents in a competition
    * Used for bulk enrichment of agent data
    * @param agentIds Array of agent IDs

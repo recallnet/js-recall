@@ -95,6 +95,8 @@ const createMockRepository = () => ({
   upsertBadgeStatus: vi.fn(),
   batchUpsertBadgeStatuses: vi.fn(),
   getActiveBadgesForCompetition: vi.fn(),
+  getAllBadgeStatusesForCompetition: vi.fn(),
+  getBadgeStatusesForAgent: vi.fn(),
   getBulkAgentBadgeStatuses: vi.fn(),
   getCompetitionBadgeStats: vi.fn(),
   isAgentBadgeActive: vi.fn(),
@@ -628,6 +630,132 @@ describe("EigenaiService", () => {
         "comp-789",
         { limit: 10, offset: 0 },
       );
+    });
+  });
+
+  describe("getAllBadgeStatusesForCompetition", () => {
+    let service: EigenaiService;
+    let mockRepository: MockRepository;
+
+    beforeEach(() => {
+      mockRepository = createMockRepository();
+      service = new EigenaiService(
+        mockRepository as unknown as EigenaiRepository,
+        {
+          eigenai: {
+            chainId: EIGENAI_TEST_FIXTURE.chainId,
+            expectedSigner: EIGENAI_TEST_FIXTURE.expectedSigner,
+            badgeActiveThreshold: 10,
+          },
+        },
+        mockLogger,
+      );
+    });
+
+    test("should return all badge statuses for a competition", async () => {
+      const mockStatuses = [
+        {
+          agentId: "agent-1",
+          competitionId: "comp-789",
+          isBadgeActive: true,
+          signaturesLast24h: 15,
+          lastVerifiedAt: new Date("2025-12-09T20:00:00Z"),
+          createdAt: new Date(),
+          updatedAt: new Date(),
+        },
+        {
+          agentId: "agent-2",
+          competitionId: "comp-789",
+          isBadgeActive: false,
+          signaturesLast24h: 3,
+          lastVerifiedAt: new Date("2025-12-09T18:00:00Z"),
+          createdAt: new Date(),
+          updatedAt: new Date(),
+        },
+      ];
+
+      mockRepository.getAllBadgeStatusesForCompetition.mockResolvedValue(
+        mockStatuses,
+      );
+
+      const result =
+        await service.getAllBadgeStatusesForCompetition("comp-789");
+
+      expect(result).toHaveLength(2);
+      expect(result[0]?.agentId).toBe("agent-1");
+      expect(result[0]?.isBadgeActive).toBe(true);
+      expect(result[1]?.agentId).toBe("agent-2");
+      expect(result[1]?.isBadgeActive).toBe(false);
+    });
+
+    test("should return empty array when no statuses exist", async () => {
+      mockRepository.getAllBadgeStatusesForCompetition.mockResolvedValue([]);
+
+      const result =
+        await service.getAllBadgeStatusesForCompetition("comp-789");
+
+      expect(result).toHaveLength(0);
+    });
+  });
+
+  describe("getBadgeStatusesForAgent", () => {
+    let service: EigenaiService;
+    let mockRepository: MockRepository;
+
+    beforeEach(() => {
+      mockRepository = createMockRepository();
+      service = new EigenaiService(
+        mockRepository as unknown as EigenaiRepository,
+        {
+          eigenai: {
+            chainId: EIGENAI_TEST_FIXTURE.chainId,
+            expectedSigner: EIGENAI_TEST_FIXTURE.expectedSigner,
+            badgeActiveThreshold: 10,
+          },
+        },
+        mockLogger,
+      );
+    });
+
+    test("should return all badge statuses for an agent across competitions", async () => {
+      const mockStatuses = [
+        {
+          agentId: "agent-456",
+          competitionId: "comp-1",
+          isBadgeActive: true,
+          signaturesLast24h: 15,
+          lastVerifiedAt: new Date("2025-12-09T20:00:00Z"),
+          createdAt: new Date(),
+          updatedAt: new Date(),
+        },
+        {
+          agentId: "agent-456",
+          competitionId: "comp-2",
+          isBadgeActive: false,
+          signaturesLast24h: 5,
+          lastVerifiedAt: new Date("2025-12-08T10:00:00Z"),
+          createdAt: new Date(),
+          updatedAt: new Date(),
+        },
+      ];
+
+      mockRepository.getBadgeStatusesForAgent.mockResolvedValue(mockStatuses);
+
+      const result = await service.getBadgeStatusesForAgent("agent-456");
+
+      expect(result).toHaveLength(2);
+      expect(result[0]?.competitionId).toBe("comp-1");
+      expect(result[0]?.isBadgeActive).toBe(true);
+      expect(result[1]?.competitionId).toBe("comp-2");
+      expect(result[1]?.isBadgeActive).toBe(false);
+    });
+
+    test("should return empty array when agent has no badge statuses", async () => {
+      mockRepository.getBadgeStatusesForAgent.mockResolvedValue([]);
+
+      const result = await service.getBadgeStatusesForAgent("agent-456");
+
+      expect(result).toHaveLength(0);
     });
   });
 });

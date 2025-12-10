@@ -530,4 +530,28 @@ export class EigenaiService {
       lastVerifiedAt: status.lastVerifiedAt,
     }));
   }
+
+  /**
+   * Get all badge statuses for an agent across all competitions
+   *
+   * Returns all badge statuses for a single agent across all their competitions.
+   * Used by agent profile page to show badges in the competitions table.
+   *
+   * @param agentId Agent ID
+   * @returns Array of badge statuses keyed by competition ID
+   */
+  async getBadgeStatusesForAgent(
+    agentId: string,
+  ): Promise<AgentBadgeStatusResponse[]> {
+    const statuses =
+      await this.eigenaiRepository.getBadgeStatusesForAgent(agentId);
+
+    return statuses.map((status) => ({
+      agentId: status.agentId,
+      competitionId: status.competitionId,
+      isBadgeActive: status.isBadgeActive,
+      signaturesLast24h: status.signaturesLast24h,
+      lastVerifiedAt: status.lastVerifiedAt,
+    }));
+  }
 }
