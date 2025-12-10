@@ -13,10 +13,18 @@ import {
 } from "@recallnet/ui2/components/table";
 import { cn } from "@recallnet/ui2/lib/utils";
 
+import { EigenVerifiedBadge } from "@/components/eigenai-verified-badge";
 import { Trophy, TrophyBadge } from "@/components/trophy-badge";
 import type { RouterOutputs } from "@/rpc/router";
 
 import RainbowText from "../animations/rainbow-text";
+
+/** Badge status from the eigenai.getBadgeStatusesForAgent endpoint */
+type EigenBadgeStatus = {
+  competitionId: string;
+  isActive: boolean;
+  signaturesLast24h: number;
+};
 
 type AgentCompetition =
   RouterOutputs["agent"]["getCompetitions"]["competitions"][number];
@@ -28,20 +36,38 @@ export function CompetitionTable({
   canClaim,
   onLoadMore,
   total = 0,
+  eigenBadgesByCompetition = {},
 }: {
   competitions: (AgentCompetition & { trophies: Trophy[] })[];
   handleSortChange: (field: string) => void;
   sortState: Record<string, SortState>;
   canClaim: boolean;
   onLoadMore: () => void;
-
   total?: number;
+  eigenBadgesByCompetition?: Record<string, EigenBadgeStatus>;
 }) {
   const router = useRouter();
   const hasMore = total > (competitions?.length || 0);
-  const gridColumns = canClaim
-    ? "grid-cols-[2fr_1fr_1fr_1fr_1fr_1fr_1fr_1fr_1fr]"
-    : "grid-cols-[2fr_1fr_1fr_1fr_1fr_1fr_1fr_1fr]";
+
+  // Check if any competition has an EigenAI badge to determine if we show the column
+  const hasAnyEigenBadge = Object.keys(eigenBadgesByCompetition).length > 0;
+
+  // Calculate grid columns based on whether we show eigenai column and claim column
+  // All columns except Competition (2fr) use 1fr for equal distribution
+  const getGridColumns = (): string => {
+    if (canClaim && hasAnyEigenBadge) {
+      return "grid-cols-[2fr_1fr_1fr_1fr_1fr_1fr_1fr_1fr_1fr_1fr]";
+    }
+    if (canClaim) {
+      return "grid-cols-[2fr_1fr_1fr_1fr_1fr_1fr_1fr_1fr_1fr]";
+    }
+    if (hasAnyEigenBadge) {
+      return "grid-cols-[2fr_1fr_1fr_1fr_1fr_1fr_1fr_1fr_1fr]";
+    }
+    return "grid-cols-[2fr_1fr_1fr_1fr_1fr_1fr_1fr_1fr]";
+  };
+
+  const gridColumns = getGridColumns();
 
   return (
     <>
@@ -55,6 +81,11 @@ export function CompetitionTable({
               >
                 Competition
               </SortableTableHeader>
+              {hasAnyEigenBadge && (
+                <TableHead className="flex items-center justify-center">
+                  EigenAI
+                </TableHead>
+              )}
               {
                 // some fields have sorted removed until they are supported by the api, specifically Trophies and Skills
               }
@@ -133,6 +164,25 @@ export function CompetitionTable({
                         {compStatus.text}
                       </span>
                     </TableCell>
+                    {hasAnyEigenBadge && (
+                      <TableCell className="flex items-center justify-center">
+                        {eigenBadgesByCompetition[comp.id] ? (
+                          <EigenVerifiedBadge
+                            isActive={
+                              eigenBadgesByCompetition[comp.id]?.isActive ??
+                              false
+                            }
+                            signaturesLast24h={
+                              eigenBadgesByCompetition[comp.id]
+                                ?.signaturesLast24h ?? 0
+                            }
+                            size="sm"
+                          />
+                        ) : (
+                          <span className="text-secondary-foreground">-</span>
+                        )}
+                      </TableCell>
+                    )}
                     <TableCell className="flex flex-wrap items-center gap-2">
                       {/* Future skills mapping */}
                     </TableCell>

@@ -1,5 +1,6 @@
 "use client";
 
+import { useQuery } from "@tanstack/react-query";
 import { ExternalLink } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
@@ -20,6 +21,7 @@ import {
   useSandboxAgentApiKey,
   useUpdateSandboxAgent,
 } from "@/hooks/useSandbox";
+import { tanstackClient } from "@/rpc/clients/tanstack-query";
 import type { RouterOutputs } from "@/rpc/router";
 import { displayAddress } from "@/utils/address";
 import { formatCompetitionType } from "@/utils/competition-utils";
@@ -91,6 +93,34 @@ export default function AgentProfile({
       return acc;
     }, "");
   }, [sortState]);
+
+  // Fetch EigenAI badge statuses for this agent across all competitions
+  // Returns a map of competitionId -> { isBadgeActive, signaturesLast24h }
+  const { data: eigenBadgeStatusMap } = useQuery(
+    tanstackClient.eigenai.getBadgeStatusesForAgent.queryOptions({
+      input: { agentId: id },
+    }),
+  );
+
+  // Transform the map to the format expected by CompetitionTable
+  type EigenBadgeStatus = {
+    competitionId: string;
+    isActive: boolean;
+    signaturesLast24h: number;
+  };
+
+  const eigenBadgesByCompetition = React.useMemo(() => {
+    if (!eigenBadgeStatusMap) return {} as Record<string, EigenBadgeStatus>;
+    const result: Record<string, EigenBadgeStatus> = {};
+    for (const [competitionId, status] of Object.entries(eigenBadgeStatusMap)) {
+      result[competitionId] = {
+        competitionId,
+        isActive: status.isBadgeActive,
+        signaturesLast24h: status.signaturesLast24h,
+      };
+    }
+    return result;
+  }, [eigenBadgeStatusMap]);
 
   const handleSaveChange =
     (field: "imageUrl" | "description" | "name" | "handle" | "skills") =>
@@ -555,6 +585,7 @@ export default function AgentProfile({
             sortState={sortState}
             canClaim={isUserAgent}
             competitions={competitions || []}
+            eigenBadgesByCompetition={eigenBadgesByCompetition}
           />
         </Tabs>
       </div>

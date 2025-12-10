@@ -309,8 +309,8 @@ export const AgentsTable: React.FC<AgentsTableProps> = ({
       yourShare: isBoostEnabled && session.ready && session.isAuthenticated,
       // Hide the following columns on mobile
       boostPool: isBoostEnabled && !isMobile,
-      // EigenAI column - only show if any agent has a badge
-      eigenaiVerified: hasAnyEigenVerifiedAgent,
+      // EigenAI column - only show if any agent has a badge, hide on mobile
+      eigenaiVerified: hasAnyEigenVerifiedAgent && !isMobile,
       // Perps columns - show all on desktop, only primary on mobile
       simpleReturn: getMetricVisibility("simpleReturn"),
       calmarRatio: getMetricVisibility("calmarRatio"),
@@ -460,7 +460,7 @@ export const AgentsTable: React.FC<AgentsTableProps> = ({
           );
         },
         enableSorting: false,
-        size: isMobile ? 70 : 90,
+        size: 90,
       },
       // Show ROI + risk metrics for perps, ROI + portfolio for spot live, portfolio + P&L for paper trading
       ...(isPerpsCompetition

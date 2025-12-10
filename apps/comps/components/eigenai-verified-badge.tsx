@@ -54,11 +54,12 @@ export const EigenVerifiedBadge: React.FC<EigenVerifiedBadgeProps> = ({
     <div className="space-y-1">
       <div className="font-semibold">EigenAI Verified</div>
       <div className="text-secondary-foreground text-xs">
-        Agent uses verifiable AI inference
+        This agent&apos;s AI decisions are cryptographically verified
       </div>
       {signaturesLast24h !== undefined && (
         <div className="text-secondary-foreground text-xs">
-          {signaturesLast24h} verified signatures (24h)
+          {signaturesLast24h} verified inference
+          {signaturesLast24h === 1 ? "" : "s"} in the last 24h
         </div>
       )}
     </div>
