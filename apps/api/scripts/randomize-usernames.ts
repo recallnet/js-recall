@@ -16,6 +16,7 @@ import * as readline from "readline";
 import { parse } from "ts-command-line-args";
 
 import { users } from "@recallnet/db/schema/core/defs";
+import { generateRandomUsername } from "@recallnet/services/lib";
 
 import { db } from "@/database/db.js";
 import { logger } from "@/lib/logger.js";
@@ -26,25 +27,6 @@ interface Args {
 }
 
 const DEFAULT_BATCH_SIZE = 1000;
-
-/**
- * Generate a random alphanumeric string
- */
-function generateRandomString(length: number): string {
-  const chars = "abcdefghijklmnopqrstuvwxyz0123456789";
-  let result = "";
-  for (let i = 0; i < length; i++) {
-    result += chars.charAt(Math.floor(Math.random() * chars.length));
-  }
-  return result;
-}
-
-/**
- * Generate a random username in the format "user_XXXXXXXX"
- */
-function generateRandomUsername(): string {
-  return `user_${generateRandomString(8)}`;
-}
 
 /**
  * Prompt user for confirmation

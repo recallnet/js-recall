@@ -1,3 +1,5 @@
+import { randomBytes } from "crypto";
+
 import { MAX_HANDLE_LENGTH } from "@recallnet/db/schema/core/defs";
 
 import { AgentHandleSchema, MIN_HANDLE_LENGTH } from "../types/index.js";
@@ -62,18 +64,25 @@ export function appendHandleSuffix(baseHandle: string, suffix: number): string {
 }
 
 /**
- * Generates a random string of specified length using only alphanumeric characters
+ * Generates a cryptographically random string of specified length
  * @param length The length of the string to generate
- * @returns A random string of specified length using only alphanumeric characters
+ * @returns A random alphanumeric string
  * @example
- * generateRandomString(8) // returns "abcdefgh"
- * generateRandomString(16) // returns "abcdefghijklmnop"
+ * generateRandomString(8) // returns "a7x2m9kp"
  */
 export function generateRandomString(length: number): string {
   const chars = "abcdefghijklmnopqrstuvwxyz0123456789";
+  const bytes = randomBytes(length);
+  if (bytes === undefined || bytes.length === 0) {
+    throw new Error("Failed to generate random bytes");
+  }
   let result = "";
   for (let i = 0; i < length; i++) {
-    result += chars.charAt(Math.floor(Math.random() * chars.length));
+    const byte = bytes[i];
+    if (byte === undefined) {
+      throw new Error("Failed to access random byte");
+    }
+    result += chars.charAt(byte % chars.length);
   }
   return result;
 }
