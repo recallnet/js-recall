@@ -235,10 +235,16 @@ describe("Spot Live Competition", () => {
     expect(comp.stats?.totalTrades).toBeDefined();
 
     // Verify spotLiveConfig includes allowedProtocols and allowedTokens
+    // Note: "aerodrome" protocol now creates 2 entries (V2 + Slipstream routers)
     expect(comp.spotLiveConfig).toBeDefined();
     expect(comp.spotLiveConfig?.allowedProtocols).toBeDefined();
-    expect(comp.spotLiveConfig?.allowedProtocols?.length).toBe(1);
+    expect(comp.spotLiveConfig?.allowedProtocols?.length).toBe(2);
+    // Both entries should be for aerodrome on base chain
     expect(comp.spotLiveConfig?.allowedProtocols?.[0]).toMatchObject({
+      protocol: "aerodrome",
+      specificChain: "base",
+    });
+    expect(comp.spotLiveConfig?.allowedProtocols?.[1]).toMatchObject({
       protocol: "aerodrome",
       specificChain: "base",
     });
