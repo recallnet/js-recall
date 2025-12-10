@@ -1,11 +1,15 @@
 import { beforeEach, describe, expect, test } from "vitest";
 
-import { StartCompetitionResponse } from "@recallnet/test-utils";
+import {
+  StartCompetitionResponse,
+  UserRegistrationResponse,
+} from "@recallnet/test-utils";
 import {
   createTestClient,
   getAdminApiKey,
   registerUserAndAgentAndGetClient,
 } from "@recallnet/test-utils";
+import { generateRandomEthAddress } from "@recallnet/test-utils";
 
 import { createTestRpcClient } from "../utils/rpc-client-helpers.js";
 
@@ -109,16 +113,21 @@ describe("Public User API", () => {
     });
 
     test("should return empty array for user with no agents", async () => {
-      const { user } = await registerUserAndAgentAndGetClient({
-        adminApiKey,
-        agentName: "Single Agent",
-      });
+      const adminClient = createTestClient();
+      await adminClient.loginAsAdmin(adminApiKey);
+
+      const userResult = (await adminClient.registerUser({
+        name: "Test User",
+        email: "test@test.com",
+        walletAddress: generateRandomEthAddress(),
+      })) as UserRegistrationResponse;
+      expect(userResult.success).toBe(true);
+      const user = userResult.user;
 
       const result = await rpcClient.publicUser.getPublicAgents({
         userId: user.id,
       });
-
-      expect(result.agents.length).toBeGreaterThanOrEqual(1);
+      expect(result.agents).toHaveLength(0);
     });
 
     test("should include agent metrics/stats", async () => {
