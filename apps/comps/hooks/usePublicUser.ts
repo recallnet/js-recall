@@ -1,5 +1,7 @@
 import { UseQueryResult, skipToken, useQuery } from "@tanstack/react-query";
 
+import { PagingParams } from "@recallnet/services/types";
+
 import { tanstackClient } from "@/rpc/clients/tanstack-query";
 import type { RouterOutputs } from "@/rpc/router";
 
@@ -33,30 +35,20 @@ export const usePublicUserAgents = (
   );
 
 /**
- * Pagination parameters for public user competitions
- */
-interface PublicUserCompetitionsParams {
-  limit: number;
-  offset: number;
-  sort: string;
-}
-
-/**
  * Hook to fetch competitions for a user's agents (public, unauthenticated)
  * @param userId User ID
  * @param params Pagination parameters (limit, offset, sort)
  * @returns Query result with public user competitions data
  */
 export const usePublicUserCompetitions = (
-  userId: string | undefined,
-  params: PublicUserCompetitionsParams,
+  userId: string,
+  params: PagingParams,
 ): UseQueryResult<
   RouterOutputs["publicUser"]["getPublicCompetitions"],
   Error
 > =>
-  useQuery({
-    ...tanstackClient.publicUser.getPublicCompetitions.queryOptions({
-      input: userId ? { userId, params } : skipToken,
+  useQuery(
+    tanstackClient.publicUser.getPublicCompetitions.queryOptions({
+      input: { userId, params },
     }),
-    placeholderData: (prev) => prev,
-  });
+  );

@@ -27,25 +27,19 @@ export const getPublicAgents = base
   .handler(async ({ input, context, errors }) => {
     try {
       const { userId, paging } = input;
-
-      // Verify user exists
       const user = await context.userService.getUser(userId);
       if (!user) {
         throw errors.NOT_FOUND({ message: "User not found" });
       }
 
-      // Get agents owned by this user
+      // Get agents, sanitize, & attach metrics
       const agents = await context.agentService.getAgentsByOwner(
         userId,
-        paging ?? { limit: 100, offset: 0, sort: "-createdAt" },
+        paging ?? PagingParamsSchema.parse({}),
       );
-
-      // Sanitize agents (removes API key and other sensitive fields)
       const sanitizedAgents = agents.map((agent) =>
         context.agentService.sanitizeAgent(agent),
       );
-
-      // Attach metrics to agents
       const agentsWithMetrics =
         await context.agentService.attachBulkAgentMetrics(sanitizedAgents);
 

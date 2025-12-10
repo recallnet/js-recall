@@ -31,21 +31,11 @@ export const getPublicCompetitions = base
   .handler(async ({ input, context, errors }) => {
     try {
       const { userId, params } = input;
-
-      // Verify user exists
       const user = await context.userService.getUser(userId);
       if (!user) {
         throw errors.NOT_FOUND({ message: "User not found" });
       }
-
-      // Default params
-      const queryParams = params ?? {
-        limit: 10,
-        offset: 0,
-        sort: "-startDate",
-      };
-
-      // Get competitions for all user's agents
+      const queryParams = params ?? AgentCompetitionsParamsSchema.parse({});
       const results = await context.agentService.getCompetitionsForUserAgents(
         userId,
         queryParams,
@@ -56,8 +46,8 @@ export const getPublicCompetitions = base
         total: results.total,
         pagination: buildPaginationResponse(
           results.total,
-          queryParams.limit ?? 10,
-          queryParams.offset ?? 0,
+          queryParams.limit,
+          queryParams.offset,
         ),
       };
     } catch (error) {

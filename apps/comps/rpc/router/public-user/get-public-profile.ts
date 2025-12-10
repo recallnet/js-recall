@@ -40,16 +40,13 @@ export const getPublicProfile = base
   .handler(async ({ input, context, errors }) => {
     try {
       const { userId } = input;
-
-      // Get the user using the service
       const user = await context.userService.getUser(userId);
-
       if (!user) {
         throw errors.NOT_FOUND({ message: "User not found" });
       }
 
       // Return sanitized public profile (no name, email, or sensitive data)
-      // Explicitly filter metadata to only include allowed fields
+      // and explicitly filter metadata to only include allowed fields (i.e., website)
       const publicProfile: PublicUserProfile = {
         id: user.id,
         walletAddress: user.walletAddress,
