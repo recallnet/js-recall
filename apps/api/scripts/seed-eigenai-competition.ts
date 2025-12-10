@@ -79,7 +79,7 @@ dotenv.config({ path: path.resolve(process.cwd(), ".env") });
 // ================================================================================
 // ⚠️ IMPORTANT: This key should be from your LOCAL development environment only!
 // Never commit a real API key to source control
-const ADMIN_API_KEY = "62dcfc28400b64a3_0c5bd356f453b90a"; // <-- FILL IN YOUR LOCAL ADMIN API KEY HERE
+const ADMIN_API_KEY = ""; // <-- FILL IN YOUR LOCAL ADMIN API KEY HERE
 const API_BASE_URL = "http://localhost:3000"; // Local API only - DO NOT change to production URL
 
 // EigenAI badge threshold (matches production config)
