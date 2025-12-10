@@ -7,27 +7,13 @@ import { CacheTags } from "@/lib/cache-tags";
 import { base } from "@/rpc/context/base";
 import { cacheMiddleware } from "@/rpc/middleware/cache";
 
-/**
- * Public user profile response type
- * Excludes sensitive fields like name and email
- */
-export interface PublicUserProfile {
-  id: string;
-  walletAddress: string;
-  imageUrl: string | null;
-  metadata: {
-    website?: string;
-  } | null;
-  createdAt: Date;
-}
-
 const GetPublicProfileInputSchema = z.object({
   userId: z.uuid(),
 });
 
 /**
  * Get a public user profile by ID
- * Returns sanitized user data without PII (name, email)
+ * Returns sanitized user data without PII (email)
  */
 export const getPublicProfile = base
   .input(GetPublicProfileInputSchema)
@@ -45,17 +31,18 @@ export const getPublicProfile = base
         throw errors.NOT_FOUND({ message: "User not found" });
       }
 
-      // Return sanitized public profile (no name, email, or sensitive data)
-      // and explicitly filter metadata to only include allowed fields (i.e., website)
-      const publicProfile: PublicUserProfile = {
-        id: user.id,
-        walletAddress: user.walletAddress,
-        imageUrl: user.imageUrl,
-        metadata: user.metadata ? { website: user.metadata.website } : null,
-        createdAt: user.createdAt,
+      // Return sanitized public profile (no email or sensitive data)
+      // Only include allowed metadata fields (website)
+      return {
+        user: {
+          id: user.id,
+          name: user.name,
+          walletAddress: user.walletAddress,
+          imageUrl: user.imageUrl,
+          metadata: user.metadata ? { website: user.metadata.website } : null,
+          createdAt: user.createdAt,
+        },
       };
-
-      return { user: publicProfile };
     } catch (error) {
       // Re-throw if already an oRPC error
       if (error instanceof ORPCError) {

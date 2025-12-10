@@ -30,7 +30,7 @@ interface PublicUserInfoSectionProps {
 
 /**
  * Public user info section component
- * Displays user profile information without sensitive data (name, email)
+ * Displays user profile information without sensitive data (email)
  * Used on public profile pages
  */
 export function PublicUserInfoSection({ user }: PublicUserInfoSectionProps) {
@@ -41,13 +41,16 @@ export function PublicUserInfoSection({ user }: PublicUserInfoSectionProps) {
         className="w-90 my-auto hidden sm:block sm:rounded-l-xl"
         fallbackData={{
           walletAddress: user.walletAddress,
-          name: undefined,
+          name: user.name ?? undefined,
         }}
         readOnly
       />
       <div className="flex w-full flex-col items-start justify-center gap-2 p-4 sm:border-l">
         <div className="flex items-center gap-3">
-          <h2 className="text-2xl font-bold">Anonymous User</h2>
+          <h2 className="text-2xl font-bold">
+            {/* Note: name is technically nullable in the db schema, but it should always be present */}
+            {user.name ?? "Anonymous User"}
+          </h2>
         </div>
 
         <div className="grid w-full auto-rows-[minmax(theme(spacing.8),auto)] grid-cols-[auto_minmax(0,1fr)] gap-x-4 gap-y-2">

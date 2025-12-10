@@ -23,7 +23,7 @@ describe("Public User API", () => {
   });
 
   describe("getPublicProfile", () => {
-    test("should return public user profile without PII", async () => {
+    test("should return public user profile with name but without email", async () => {
       const { user } = await registerUserAndAgentAndGetClient({
         adminApiKey,
         userName: "Test User Name",
@@ -36,11 +36,12 @@ describe("Public User API", () => {
       });
 
       expect(result.user.id).toBe(user.id);
+      expect(result.user.name).toBe("Test User Name");
       expect(result.user.walletAddress).toBe(user.walletAddress);
       expect(result.user.createdAt).toBeDefined();
 
+      // Verify email and other PII is NOT included
       const responseKeys = Object.keys(result.user);
-      expect(responseKeys).not.toContain("name");
       expect(responseKeys).not.toContain("email");
       expect(responseKeys).not.toContain("privyId");
       expect(responseKeys).not.toContain("embeddedWalletAddress");
