@@ -41,14 +41,14 @@ export const usePublicUserAgents = (
  * @returns Query result with public user competitions data
  */
 export const usePublicUserCompetitions = (
-  userId: string,
-  params: PagingParams,
+  userId?: string,
+  params?: PagingParams,
 ): UseQueryResult<
   RouterOutputs["publicUser"]["getPublicCompetitions"],
   Error
 > =>
   useQuery(
     tanstackClient.publicUser.getPublicCompetitions.queryOptions({
-      input: { userId, params },
+      input: userId ? { userId, params } : skipToken,
     }),
   );
