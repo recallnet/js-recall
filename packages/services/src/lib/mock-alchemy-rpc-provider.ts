@@ -20,17 +20,24 @@ const ERC20_TRANSFER_TOPIC =
   "0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef";
 
 /**
- * Aerodrome Swap event signature
+ * Aerodrome V2 Swap event signature (Classic AMM pools)
  * Swap(address indexed sender, address indexed to, uint256 amount0In, uint256 amount1In, uint256 amount0Out, uint256 amount1Out)
  */
-const AERODROME_SWAP_TOPIC =
+const AERODROME_V2_SWAP_TOPIC =
   "0xb3e2773606abfd36b5bd91394b3a54d1398336c65005baf7bf7a05efeffaf75b";
 
 /**
- * Helper to create an Aerodrome Swap event log for mock receipts
- * Required for protocol filtering validation
+ * Aerodrome Slipstream (CL) Swap event signature (Concentrated Liquidity pools)
+ * Swap(address indexed sender, address indexed recipient, int256 amount0, int256 amount1, uint160 sqrtPriceX96, uint128 liquidity, int24 tick)
  */
-function createAerodromeSwapLog(params: {
+const AERODROME_CL_SWAP_TOPIC =
+  "0xc42079f94a6350d7e6235f29174924f928cc2ac818eb64fed8004e115fbcca67";
+
+/**
+ * Helper to create an Aerodrome V2 Swap event log for mock receipts
+ * Required for protocol filtering validation (Classic AMM pools)
+ */
+function createAerodromeV2SwapLog(params: {
   poolAddress: string;
   sender: string;
   to: string;
@@ -69,7 +76,59 @@ function createAerodromeSwapLog(params: {
     removed: false,
     logIndex: params.logIndex,
     transactionHash: params.txHash,
-    topics: [AERODROME_SWAP_TOPIC, senderPadded, toPadded],
+    topics: [AERODROME_V2_SWAP_TOPIC, senderPadded, toPadded],
+    data: mockData,
+  };
+}
+
+/**
+ * Helper to create an Aerodrome Slipstream (CL) Swap event log for mock receipts
+ * Required for protocol filtering validation (Concentrated Liquidity pools)
+ * Event: Swap(address indexed sender, address indexed recipient, int256 amount0, int256 amount1, uint160 sqrtPriceX96, uint128 liquidity, int24 tick)
+ */
+function createSlipstreamSwapLog(params: {
+  poolAddress: string;
+  sender: string;
+  recipient: string;
+  logIndex: number;
+  blockNumber: number;
+  txHash: string;
+}): {
+  address: string;
+  blockNumber: number;
+  blockHash: string;
+  transactionIndex: number;
+  removed: boolean;
+  logIndex: number;
+  transactionHash: string;
+  topics: string[];
+  data: string;
+} {
+  // Pad addresses to 32 bytes (64 hex chars) for topics
+  const senderPadded =
+    "0x" + params.sender.slice(2).toLowerCase().padStart(64, "0");
+  const recipientPadded =
+    "0x" + params.recipient.slice(2).toLowerCase().padStart(64, "0");
+
+  // Data contains: int256 amount0, int256 amount1, uint160 sqrtPriceX96, uint128 liquidity, int24 tick
+  // Mock values representing a typical CL swap
+  const mockData =
+    "0x" +
+    "ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff" + // amount0 (negative = token out)
+    "0000000000000000000000000000000000000000000000000000000000000001" + // amount1 (positive = token in)
+    "0000000000000000000000000000000001000000000000000000000000000000" + // sqrtPriceX96
+    "0000000000000000000000000000000000000000000000000000000000001000" + // liquidity
+    "0000000000000000000000000000000000000000000000000000000000000064"; // tick
+
+  return {
+    address: params.poolAddress.toLowerCase(),
+    blockNumber: params.blockNumber,
+    blockHash: `0xmockhash${params.blockNumber}`,
+    transactionIndex: 0,
+    removed: false,
+    logIndex: params.logIndex,
+    transactionHash: params.txHash,
+    topics: [AERODROME_CL_SWAP_TOPIC, senderPadded, recipientPadded],
     data: mockData,
   };
 }
@@ -361,7 +420,7 @@ export class MockAlchemyRpcProvider implements IRpcProvider {
                 txHash: "0xmock_swap_1",
               }),
               // Aerodrome Swap event (required for protocol filtering)
-              createAerodromeSwapLog({
+              createAerodromeV2SwapLog({
                 poolAddress: "0xd35fcf71834c4a4ae98ff22f68c05e13e5fdee01",
                 sender: "0xcf77a3ba9a5ca399b7c97c74d54e5b1beb874e43", // router
                 to: "0x1111111111111111111111111111111111111111",
@@ -406,7 +465,7 @@ export class MockAlchemyRpcProvider implements IRpcProvider {
                 txHash: "0xmock_swap_2",
               }),
               // Aerodrome Swap event
-              createAerodromeSwapLog({
+              createAerodromeV2SwapLog({
                 poolAddress: "0xaeropool22222222222222222222222222222222",
                 sender: "0xcf77a3ba9a5ca399b7c97c74d54e5b1beb874e43",
                 to: "0x1111111111111111111111111111111111111111",
@@ -451,7 +510,7 @@ export class MockAlchemyRpcProvider implements IRpcProvider {
                 txHash: "0xmock_swap_3",
               }),
               // Aerodrome Swap event
-              createAerodromeSwapLog({
+              createAerodromeV2SwapLog({
                 poolAddress: "0xaeropool33333333333333333333333333333333",
                 sender: "0xcf77a3ba9a5ca399b7c97c74d54e5b1beb874e43",
                 to: "0x1111111111111111111111111111111111111111",
@@ -629,7 +688,7 @@ export class MockAlchemyRpcProvider implements IRpcProvider {
                 txHash: "0xmock_aerodrome_swap",
               }),
               // Aerodrome Swap event (required for protocol filtering)
-              createAerodromeSwapLog({
+              createAerodromeV2SwapLog({
                 poolAddress: aeroPool4,
                 sender: "0xcf77a3ba9a5ca399b7c97c74d54e5b1beb874e43",
                 to: "0x4444444444444444444444444444444444444444",
@@ -767,7 +826,7 @@ export class MockAlchemyRpcProvider implements IRpcProvider {
                 txHash: "0xsimple_swap_1",
               }),
               // Aerodrome Swap event
-              createAerodromeSwapLog({
+              createAerodromeV2SwapLog({
                 poolAddress: simplePool1,
                 sender: "0xcf77a3ba9a5ca399b7c97c74d54e5b1beb874e43",
                 to: "0xaaaa000000000000000000000000000000000001",
@@ -859,7 +918,7 @@ export class MockAlchemyRpcProvider implements IRpcProvider {
                 txHash: "0xsimple_swap_2",
               }),
               // Aerodrome Swap event
-              createAerodromeSwapLog({
+              createAerodromeV2SwapLog({
                 poolAddress: simplePool2,
                 sender: "0xcf77a3ba9a5ca399b7c97c74d54e5b1beb874e43",
                 to: "0xbbbb000000000000000000000000000000000002",
@@ -953,7 +1012,7 @@ export class MockAlchemyRpcProvider implements IRpcProvider {
                 txHash: "0xmock_nonwhitelisted_swap",
               }),
               // Aerodrome Swap event
-              createAerodromeSwapLog({
+              createAerodromeV2SwapLog({
                 poolAddress: rejectPool6,
                 sender: "0xcf77a3ba9a5ca399b7c97c74d54e5b1beb874e43",
                 to: "0x6666666666666666666666666666666666666666",
@@ -1076,7 +1135,7 @@ export class MockAlchemyRpcProvider implements IRpcProvider {
                 txHash: "0xroi_swap_1",
               }),
               // Aerodrome Swap event
-              createAerodromeSwapLog({
+              createAerodromeV2SwapLog({
                 poolAddress: roiPool1,
                 sender: "0xcf77a3ba9a5ca399b7c97c74d54e5b1beb874e43",
                 to: "0x0001000000000000000000000000000000000001",
@@ -1170,7 +1229,7 @@ export class MockAlchemyRpcProvider implements IRpcProvider {
                 txHash: "0xroi_swap_2",
               }),
               // Aerodrome Swap event
-              createAerodromeSwapLog({
+              createAerodromeV2SwapLog({
                 poolAddress: roiPool2,
                 sender: "0xcf77a3ba9a5ca399b7c97c74d54e5b1beb874e43",
                 to: "0x0002000000000000000000000000000000000002",
@@ -1264,7 +1323,7 @@ export class MockAlchemyRpcProvider implements IRpcProvider {
                 txHash: "0xroi_swap_3",
               }),
               // Aerodrome Swap event
-              createAerodromeSwapLog({
+              createAerodromeV2SwapLog({
                 poolAddress: roiPool3,
                 sender: "0xcf77a3ba9a5ca399b7c97c74d54e5b1beb874e43",
                 to: "0x0003000000000000000000000000000000000003",
@@ -1359,7 +1418,7 @@ export class MockAlchemyRpcProvider implements IRpcProvider {
                 blockNumber: 2003712,
                 txHash: "0xunique_roi_swap_1",
               }),
-              createAerodromeSwapLog({
+              createAerodromeV2SwapLog({
                 poolAddress: uniqueRoiPool1,
                 sender: "0xcf77a3ba9a5ca399b7c97c74d54e5b1beb874e43",
                 to: "0xa011000000000000000000000000000000000001",
@@ -1447,7 +1506,7 @@ export class MockAlchemyRpcProvider implements IRpcProvider {
                 blockNumber: 2003713,
                 txHash: "0xunique_roi_swap_2",
               }),
-              createAerodromeSwapLog({
+              createAerodromeV2SwapLog({
                 poolAddress: uniqueRoiPool2,
                 sender: "0xcf77a3ba9a5ca399b7c97c74d54e5b1beb874e43",
                 to: "0xa022000000000000000000000000000000000002",
@@ -1535,7 +1594,7 @@ export class MockAlchemyRpcProvider implements IRpcProvider {
                 blockNumber: 2003714,
                 txHash: "0xunique_roi_swap_3",
               }),
-              createAerodromeSwapLog({
+              createAerodromeV2SwapLog({
                 poolAddress: uniqueRoiPool3,
                 sender: "0xcf77a3ba9a5ca399b7c97c74d54e5b1beb874e43",
                 to: "0xa033000000000000000000000000000000000003",
@@ -1626,7 +1685,7 @@ export class MockAlchemyRpcProvider implements IRpcProvider {
                 txHash: "0xnative_eth_swap_1",
               }),
               // Aerodrome Swap event (required for protocol filtering)
-              createAerodromeSwapLog({
+              createAerodromeV2SwapLog({
                 poolAddress: nativePool9,
                 sender: "0xcf77a3ba9a5ca399b7c97c74d54e5b1beb874e43",
                 to: "0x9999000000000000000000000000000000000009",
@@ -1642,6 +1701,286 @@ export class MockAlchemyRpcProvider implements IRpcProvider {
         ["0x833589fcd6edb6e08f4c7c32d4f71b54bda02913", 100], // Initial: 100 USDC
       ]),
       nativeBalance: "500000000000000000", // Initial: 0.5 ETH in wei
+    });
+
+    // =============================================================================
+    // SLIPSTREAM (CONCENTRATED LIQUIDITY) TEST WALLET
+    // Tests Aerodrome Slipstream router detection alongside V2 router
+    // Uses real token addresses from integration tests for accuracy
+    // =============================================================================
+
+    // Slipstream Test Wallet: 1000 USDC initial
+    // Swap: 50 USDC → ~8 RIVER via Slipstream router (matches integration test fixture)
+    // This tests that CL Swap events are correctly recognized for protocol filtering
+    const slipstreamSwapTime = new Date(
+      Date.now() - 5 * 60 * 1000,
+    ).toISOString();
+    // Real Slipstream CL pool address (USDC/RIVER)
+    const slipstreamPool = "0x0fab3dd0d4faea49fc8dcda6f5c0e847434ad99c";
+    // Real Slipstream router address
+    const slipstreamRouter = "0xbe6d8f0d05cc4be24d5167a3ef062215be6d18a5";
+    // Real token addresses
+    const usdcAddress = "0x833589fcd6edb6e08f4c7c32d4f71b54bda02913";
+    const riverAddress = "0xda7ad9dea9397cffddae2f8a052b82f1484252b3";
+
+    this.setWalletData("0x5110000000000000000000000000000000000001", {
+      transfers: [
+        // Swap: USDC → RIVER via Slipstream
+        createMockTransfer({
+          from: "0x5110000000000000000000000000000000000001",
+          to: slipstreamPool,
+          value: 50,
+          asset: "USDC",
+          hash: "0xslipstream_swap_1",
+          blockNum: "0x1e8800", // Block 2004992
+          blockTimestamp: slipstreamSwapTime,
+          tokenAddress: usdcAddress,
+          decimal: "6",
+        }),
+        createMockTransfer({
+          from: slipstreamPool,
+          to: "0x5110000000000000000000000000000000000001",
+          value: 8.028, // ~8 RIVER (matches integration test)
+          asset: "RIVER",
+          hash: "0xslipstream_swap_1",
+          blockNum: "0x1e8800",
+          blockTimestamp: slipstreamSwapTime,
+          tokenAddress: riverAddress,
+          decimal: "18",
+        }),
+      ],
+      transactions: new Map([
+        [
+          "0xslipstream_swap_1",
+          {
+            hash: "0xslipstream_swap_1",
+            from: "0x5110000000000000000000000000000000000001",
+            to: slipstreamRouter, // Slipstream router (NOT V2 router!)
+            blockNumber: 2004992,
+          },
+        ],
+      ]),
+      receipts: new Map([
+        [
+          "0xslipstream_swap_1",
+          {
+            transactionHash: "0xslipstream_swap_1",
+            blockNumber: 2004992,
+            gasUsed: "200000",
+            effectiveGasPrice: "50000000000",
+            status: true,
+            from: "0x5110000000000000000000000000000000000001",
+            to: slipstreamRouter,
+            logs: [
+              // ERC20 Transfer: USDC from wallet to pool (outbound)
+              createTransferLog({
+                tokenAddress: usdcAddress,
+                from: "0x5110000000000000000000000000000000000001",
+                to: slipstreamPool,
+                value: 50,
+                decimals: 6,
+                logIndex: 0,
+                blockNumber: 2004992,
+                txHash: "0xslipstream_swap_1",
+              }),
+              // ERC20 Transfer: RIVER from pool to wallet (inbound)
+              createTransferLog({
+                tokenAddress: riverAddress,
+                from: slipstreamPool,
+                to: "0x5110000000000000000000000000000000000001",
+                value: 8.028,
+                decimals: 18,
+                logIndex: 1,
+                blockNumber: 2004992,
+                txHash: "0xslipstream_swap_1",
+              }),
+              // Slipstream CL Swap event (required for protocol filtering)
+              createSlipstreamSwapLog({
+                poolAddress: slipstreamPool,
+                sender: slipstreamRouter,
+                recipient: "0x5110000000000000000000000000000000000001",
+                logIndex: 2,
+                blockNumber: 2004992,
+                txHash: "0xslipstream_swap_1",
+              }),
+            ],
+          },
+        ],
+      ]),
+      balances: new Map([
+        [usdcAddress, 1000], // Initial: 1000 USDC
+      ]),
+    });
+
+    // =============================================================================
+    // COMBINED V2 + SLIPSTREAM TEST WALLET
+    // Tests that a single agent using both routers has all swaps detected
+    // =============================================================================
+
+    const combinedV2Time = new Date(Date.now() - 10 * 60 * 1000).toISOString();
+    const combinedSlipTime = new Date(Date.now() - 5 * 60 * 1000).toISOString();
+    const v2Pool = "0xaeropool0comb00000000000000000000000001";
+    const v2Router = "0xcf77a3ba9a5ca399b7c97c74d54e5b1beb874e43";
+    const aeroAddress = "0x940181a94a35a4569e4529a3cdfb74e38fd98631";
+
+    this.setWalletData("0xc0b0000000000000000000000000000000000001", {
+      transfers: [
+        // V2 Swap: USDC → AERO (block 2005000)
+        createMockTransfer({
+          from: "0xc0b0000000000000000000000000000000000001",
+          to: v2Pool,
+          value: 100,
+          asset: "USDC",
+          hash: "0xcombined_v2_swap",
+          blockNum: "0x1e8808", // Block 2005000
+          blockTimestamp: combinedV2Time,
+          tokenAddress: usdcAddress,
+          decimal: "6",
+        }),
+        createMockTransfer({
+          from: v2Pool,
+          to: "0xc0b0000000000000000000000000000000000001",
+          value: 50,
+          asset: "AERO",
+          hash: "0xcombined_v2_swap",
+          blockNum: "0x1e8808",
+          blockTimestamp: combinedV2Time,
+          tokenAddress: aeroAddress,
+          decimal: "18",
+        }),
+        // Slipstream Swap: USDC → RIVER (block 2005010)
+        createMockTransfer({
+          from: "0xc0b0000000000000000000000000000000000001",
+          to: slipstreamPool,
+          value: 50,
+          asset: "USDC",
+          hash: "0xcombined_slip_swap",
+          blockNum: "0x1e8812", // Block 2005010
+          blockTimestamp: combinedSlipTime,
+          tokenAddress: usdcAddress,
+          decimal: "6",
+        }),
+        createMockTransfer({
+          from: slipstreamPool,
+          to: "0xc0b0000000000000000000000000000000000001",
+          value: 8,
+          asset: "RIVER",
+          hash: "0xcombined_slip_swap",
+          blockNum: "0x1e8812",
+          blockTimestamp: combinedSlipTime,
+          tokenAddress: riverAddress,
+          decimal: "18",
+        }),
+      ],
+      transactions: new Map([
+        [
+          "0xcombined_v2_swap",
+          {
+            hash: "0xcombined_v2_swap",
+            from: "0xc0b0000000000000000000000000000000000001",
+            to: v2Router, // V2 router
+            blockNumber: 2005000,
+          },
+        ],
+        [
+          "0xcombined_slip_swap",
+          {
+            hash: "0xcombined_slip_swap",
+            from: "0xc0b0000000000000000000000000000000000001",
+            to: slipstreamRouter, // Slipstream router
+            blockNumber: 2005010,
+          },
+        ],
+      ]),
+      receipts: new Map([
+        [
+          "0xcombined_v2_swap",
+          {
+            transactionHash: "0xcombined_v2_swap",
+            blockNumber: 2005000,
+            gasUsed: "150000",
+            effectiveGasPrice: "50000000000",
+            status: true,
+            from: "0xc0b0000000000000000000000000000000000001",
+            to: v2Router,
+            logs: [
+              createTransferLog({
+                tokenAddress: usdcAddress,
+                from: "0xc0b0000000000000000000000000000000000001",
+                to: v2Pool,
+                value: 100,
+                decimals: 6,
+                logIndex: 0,
+                blockNumber: 2005000,
+                txHash: "0xcombined_v2_swap",
+              }),
+              createTransferLog({
+                tokenAddress: aeroAddress,
+                from: v2Pool,
+                to: "0xc0b0000000000000000000000000000000000001",
+                value: 50,
+                decimals: 18,
+                logIndex: 1,
+                blockNumber: 2005000,
+                txHash: "0xcombined_v2_swap",
+              }),
+              createAerodromeV2SwapLog({
+                poolAddress: v2Pool,
+                sender: v2Router,
+                to: "0xc0b0000000000000000000000000000000000001",
+                logIndex: 2,
+                blockNumber: 2005000,
+                txHash: "0xcombined_v2_swap",
+              }),
+            ],
+          },
+        ],
+        [
+          "0xcombined_slip_swap",
+          {
+            transactionHash: "0xcombined_slip_swap",
+            blockNumber: 2005010,
+            gasUsed: "200000",
+            effectiveGasPrice: "50000000000",
+            status: true,
+            from: "0xc0b0000000000000000000000000000000000001",
+            to: slipstreamRouter,
+            logs: [
+              createTransferLog({
+                tokenAddress: usdcAddress,
+                from: "0xc0b0000000000000000000000000000000000001",
+                to: slipstreamPool,
+                value: 50,
+                decimals: 6,
+                logIndex: 0,
+                blockNumber: 2005010,
+                txHash: "0xcombined_slip_swap",
+              }),
+              createTransferLog({
+                tokenAddress: riverAddress,
+                from: slipstreamPool,
+                to: "0xc0b0000000000000000000000000000000000001",
+                value: 8,
+                decimals: 18,
+                logIndex: 1,
+                blockNumber: 2005010,
+                txHash: "0xcombined_slip_swap",
+              }),
+              createSlipstreamSwapLog({
+                poolAddress: slipstreamPool,
+                sender: slipstreamRouter,
+                recipient: "0xc0b0000000000000000000000000000000000001",
+                logIndex: 2,
+                blockNumber: 2005010,
+                txHash: "0xcombined_slip_swap",
+              }),
+            ],
+          },
+        ],
+      ]),
+      balances: new Map([
+        [usdcAddress, 2000], // Initial: 2000 USDC
+      ]),
     });
   }
 
@@ -1773,7 +2112,9 @@ export class MockAlchemyRpcProvider implements IRpcProvider {
       lowerAddress === "0xa011000000000000000000000000000000000001" || // Unique ROI test - highest ROI
       lowerAddress === "0xa022000000000000000000000000000000000002" || // Unique ROI test - medium ROI
       lowerAddress === "0xa033000000000000000000000000000000000003" || // Unique ROI test - lowest ROI
-      lowerAddress === "0x9999000000000000000000000000000000000009" // Native ETH swap test
+      lowerAddress === "0x9999000000000000000000000000000000000009" || // Native ETH swap test
+      lowerAddress === "0x5110000000000000000000000000000000000001" || // Slipstream swap test
+      lowerAddress === "0xc0b0000000000000000000000000000000000001" // Combined V2+Slipstream test
     ) {
       // Test wallets with swaps/transfers - reveal on first manual sync (sync 1+)
       // This simulates the swap/transfer happening AFTER competition starts
@@ -2223,6 +2564,51 @@ export class MockAlchemyRpcProvider implements IRpcProvider {
 
       this.logger.info(
         `[MockAlchemyRpcProvider] Native ETH wallet 0x9999 getTokenBalances at sync #${syncNumber}: USDC=${balancesToReturn.get("0x833589fcd6edb6e08f4c7c32d4f71b54bda02913")}`,
+      );
+    } else if (lowerAddress === "0x5110000000000000000000000000000000000001") {
+      // Slipstream Test Wallet: Tests CL swap detection
+      // Initial: 1000 USDC
+      // After swap: 950 USDC + ~8 RIVER
+      balancesToReturn = new Map();
+      const usdcAddr = "0x833589fcd6edb6e08f4c7c32d4f71b54bda02913";
+      const riverAddr = "0xda7ad9dea9397cffddae2f8a052b82f1484252b3";
+
+      if (syncNumber === 0) {
+        balancesToReturn.set(usdcAddr, 1000); // Initial: 1000 USDC
+      } else {
+        // After Slipstream swap: 50 USDC → ~8 RIVER
+        balancesToReturn.set(usdcAddr, 950); // 1000 - 50 = 950 USDC
+        balancesToReturn.set(riverAddr, 8.028); // ~8 RIVER received
+      }
+
+      this.logger.info(
+        `[MockAlchemyRpcProvider] Slipstream wallet 0xslip getTokenBalances at sync #${syncNumber}: USDC=${balancesToReturn.get(usdcAddr)}`,
+      );
+    } else if (lowerAddress === "0xc0b0000000000000000000000000000000000001") {
+      // Combined V2+Slipstream Test Wallet: Tests both router types
+      // Initial: 2000 USDC
+      // After V2 swap (sync 1): 1900 USDC + 50 AERO
+      // After Slipstream swap (sync 2): 1850 USDC + 50 AERO + 8 RIVER
+      balancesToReturn = new Map();
+      const usdcAddr = "0x833589fcd6edb6e08f4c7c32d4f71b54bda02913";
+      const aeroAddr = "0x940181a94a35a4569e4529a3cdfb74e38fd98631";
+      const riverAddr = "0xda7ad9dea9397cffddae2f8a052b82f1484252b3";
+
+      if (syncNumber === 0) {
+        balancesToReturn.set(usdcAddr, 2000); // Initial: 2000 USDC
+      } else if (syncNumber === 1) {
+        // After V2 swap: 100 USDC → 50 AERO
+        balancesToReturn.set(usdcAddr, 1900);
+        balancesToReturn.set(aeroAddr, 50);
+      } else {
+        // After both swaps: V2 (100 USDC → 50 AERO) + Slipstream (50 USDC → 8 RIVER)
+        balancesToReturn.set(usdcAddr, 1850);
+        balancesToReturn.set(aeroAddr, 50);
+        balancesToReturn.set(riverAddr, 8);
+      }
+
+      this.logger.info(
+        `[MockAlchemyRpcProvider] Combined wallet 0xcomb getTokenBalances at sync #${syncNumber}: USDC=${balancesToReturn.get(usdcAddr)}, AERO=${balancesToReturn.get(aeroAddr) ?? 0}`,
       );
     }
 
