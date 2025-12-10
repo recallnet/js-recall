@@ -1,20 +1,25 @@
 import * as Sentry from "@sentry/nextjs";
+import { createLogger } from "lib/logger";
+
+import { config } from "@/config/private";
+
+const logger = createLogger("Bootstrap");
 
 export async function register() {
   if (process.env.NEXT_RUNTIME === "nodejs") {
     // Log database connection info during server bootstrap
-    const dbUrl = process.env.DATABASE_URL;
+    const dbUrl = config.database.mainUrl;
     if (dbUrl) {
       try {
         // Create a safe connection string without password
         const safeUrl = new URL(dbUrl);
         safeUrl.password = "***";
-        console.log(`[Bootstrap] Connected to database: ${safeUrl.toString()}`);
+        logger.info(`Connected to database: ${safeUrl.toString()}`);
       } catch (error) {
-        console.error("[Bootstrap] Failed to parse database URL:", error);
+        logger.error({ error }, "Failed to parse database URL");
       }
     } else {
-      console.warn("[Bootstrap] No DATABASE_URL environment variable found");
+      logger.warn("Database URL is not set");
     }
 
     await import("./sentry.server.config");

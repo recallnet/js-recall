@@ -3,6 +3,8 @@ import { Pool } from "pg";
 
 import schema from "@recallnet/db/schema";
 
+import { config } from "@/config/private";
+
 const ca = process.env.DATABASE_CA_CERT
   ? Buffer.from(process.env.DATABASE_CA_CERT, "base64").toString("utf8")
   : undefined;
@@ -18,14 +20,14 @@ const sslConfig = () => {
 };
 
 const pool = new Pool({
-  connectionString: process.env.DATABASE_URL,
+  connectionString: config.database.mainUrl,
   ssl: sslConfig(),
 });
 
 export const db = drizzle(pool, { schema });
 
 const poolReadReplica = new Pool({
-  connectionString: process.env.DATABASE_READ_REPLICA_URL,
+  connectionString: config.database.readReplicaUrl,
   ssl: sslConfig(),
 });
 
