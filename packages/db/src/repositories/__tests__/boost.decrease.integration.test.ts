@@ -9,7 +9,6 @@ import {
   test,
 } from "vitest";
 
-import { BlockchainAddressAsU8A } from "../../coders/index.js";
 import * as schema from "../../schema/boost/defs.js";
 import * as coreSchema from "../../schema/core/defs.js";
 import { dropAllSchemas } from "../../utils/drop-all-schemas.js";
@@ -104,7 +103,6 @@ describe("BoostRepository.decrease() Integration Tests", () => {
       // Setup: Give user some balance first
       await repository.increase({
         userId: testUserId,
-        wallet: testWallet,
         competitionId: testCompetitionId,
         amount: 1000n,
       });
@@ -112,7 +110,6 @@ describe("BoostRepository.decrease() Integration Tests", () => {
       // Now decrease the balance
       const result = await repository.decrease({
         userId: testUserId,
-        wallet: testWallet,
         competitionId: testCompetitionId,
         amount: 300n,
       });
@@ -154,7 +151,6 @@ describe("BoostRepository.decrease() Integration Tests", () => {
       // Setup: Give user balance
       await repository.increase({
         userId: testUserId,
-        wallet: testWallet,
         competitionId: testCompetitionId,
         amount: 1000n,
       });
@@ -162,7 +158,6 @@ describe("BoostRepository.decrease() Integration Tests", () => {
       // First decrease
       const result1 = await repository.decrease({
         userId: testUserId,
-        wallet: testWallet,
         competitionId: testCompetitionId,
         amount: 200n,
       });
@@ -175,7 +170,6 @@ describe("BoostRepository.decrease() Integration Tests", () => {
       // Second decrease
       const result2 = await repository.decrease({
         userId: testUserId,
-        wallet: testWallet,
         competitionId: testCompetitionId,
         amount: 300n,
       });
@@ -215,7 +209,6 @@ describe("BoostRepository.decrease() Integration Tests", () => {
       // Setup: Give user exact amount we'll decrease
       await repository.increase({
         userId: testUserId,
-        wallet: testWallet,
         competitionId: testCompetitionId,
         amount: 500n,
       });
@@ -223,7 +216,6 @@ describe("BoostRepository.decrease() Integration Tests", () => {
       // Decrease entire balance
       const result = await repository.decrease({
         userId: testUserId,
-        wallet: testWallet,
         competitionId: testCompetitionId,
         amount: 500n,
       });
@@ -261,11 +253,10 @@ describe("BoostRepository.decrease() Integration Tests", () => {
       await expect(
         repository.decrease({
           userId: testUserId,
-          wallet: testWallet,
           competitionId: testCompetitionId,
           amount: 100n,
         }),
-      ).rejects.toThrow("Can not decrease balance of non-existent wallet");
+      ).rejects.toThrow("Can not decrease balance of non-existent user");
 
       // Verify no records were created
       const balanceRecords = await db
@@ -285,7 +276,6 @@ describe("BoostRepository.decrease() Integration Tests", () => {
       // Setup: Give user small balance
       await repository.increase({
         userId: testUserId,
-        wallet: testWallet,
         competitionId: testCompetitionId,
         amount: 100n,
       });
@@ -294,7 +284,6 @@ describe("BoostRepository.decrease() Integration Tests", () => {
       await expect(
         repository.decrease({
           userId: testUserId,
-          wallet: testWallet,
           competitionId: testCompetitionId,
           amount: 200n, // More than 100n available
         }),
@@ -333,18 +322,16 @@ describe("BoostRepository.decrease() Integration Tests", () => {
       await expect(
         repository.decrease({
           userId: fakeUserId, // Non-existent user
-          wallet: testWallet,
           competitionId: testCompetitionId,
           amount: 100n,
         }),
-      ).rejects.toThrow("Can not decrease balance of non-existent wallet");
+      ).rejects.toThrow("Can not decrease balance of non-existent user");
     });
 
     test("should throw error for zero amount", async () => {
       // Setup: Give user some balance so wallet exists
       await repository.increase({
         userId: testUserId,
-        wallet: testWallet,
         competitionId: testCompetitionId,
         amount: 100n,
       });
@@ -352,7 +339,6 @@ describe("BoostRepository.decrease() Integration Tests", () => {
       expect(() =>
         repository.decrease({
           userId: testUserId,
-          wallet: testWallet,
           competitionId: testCompetitionId,
           amount: 0n, // Zero amount not allowed
         }),
@@ -370,7 +356,6 @@ describe("BoostRepository.decrease() Integration Tests", () => {
       // Setup: Give user some balance so wallet exists
       await repository.increase({
         userId: testUserId,
-        wallet: testWallet,
         competitionId: testCompetitionId,
         amount: 100n,
       });
@@ -378,7 +363,6 @@ describe("BoostRepository.decrease() Integration Tests", () => {
       expect(() =>
         repository.decrease({
           userId: testUserId,
-          wallet: testWallet,
           competitionId: testCompetitionId,
           amount: -50n, // Negative amount not allowed
         }),
@@ -398,7 +382,6 @@ describe("BoostRepository.decrease() Integration Tests", () => {
       // Setup: Give user balance
       await repository.increase({
         userId: testUserId,
-        wallet: testWallet,
         competitionId: testCompetitionId,
         amount: 1000n,
       });
@@ -408,7 +391,6 @@ describe("BoostRepository.decrease() Integration Tests", () => {
       // First decrease with idemKey
       const result1 = await repository.decrease({
         userId: testUserId,
-        wallet: testWallet,
         competitionId: testCompetitionId,
         amount: 400n,
         idemKey,
@@ -422,7 +404,6 @@ describe("BoostRepository.decrease() Integration Tests", () => {
       // Second decrease with same idemKey - should be noop
       const result2 = await repository.decrease({
         userId: testUserId,
-        wallet: testWallet,
         competitionId: testCompetitionId,
         amount: 400n, // Same amount
         idemKey, // Same key
@@ -466,7 +447,6 @@ describe("BoostRepository.decrease() Integration Tests", () => {
       // Setup: Give user balance
       await repository.increase({
         userId: testUserId,
-        wallet: testWallet,
         competitionId: testCompetitionId,
         amount: 1000n,
       });
@@ -477,7 +457,6 @@ describe("BoostRepository.decrease() Integration Tests", () => {
       // First decrease
       const result1 = await repository.decrease({
         userId: testUserId,
-        wallet: testWallet,
         competitionId: testCompetitionId,
         amount: 250n,
         idemKey: idemKey1,
@@ -488,7 +467,6 @@ describe("BoostRepository.decrease() Integration Tests", () => {
       // Second decrease with different idemKey - should work
       const result2 = await repository.decrease({
         userId: testUserId,
-        wallet: testWallet,
         competitionId: testCompetitionId,
         amount: 150n,
         idemKey: idemKey2, // Different key
@@ -526,7 +504,6 @@ describe("BoostRepository.decrease() Integration Tests", () => {
       // Setup: Give user balance
       await repository.increase({
         userId: testUserId,
-        wallet: testWallet,
         competitionId: testCompetitionId,
         amount: 800n,
       });
@@ -536,7 +513,6 @@ describe("BoostRepository.decrease() Integration Tests", () => {
       // First operation with original repository
       const result1 = await repository.decrease({
         userId: testUserId,
-        wallet: testWallet,
         competitionId: testCompetitionId,
         amount: 200n,
         idemKey,
@@ -550,7 +526,6 @@ describe("BoostRepository.decrease() Integration Tests", () => {
       // Same operation with same idemKey - should be idempotent across instances
       const result2 = await newRepository.decrease({
         userId: testUserId,
-        wallet: testWallet,
         competitionId: testCompetitionId,
         amount: 200n,
         idemKey,
@@ -590,7 +565,6 @@ describe("BoostRepository.decrease() Integration Tests", () => {
       // Setup: Give user balance
       await repository.increase({
         userId: testUserId,
-        wallet: testWallet,
         competitionId: testCompetitionId,
         amount: 750n,
       });
@@ -598,7 +572,6 @@ describe("BoostRepository.decrease() Integration Tests", () => {
       // Perform decrease operation
       const result = await repository.decrease({
         userId: testUserId,
-        wallet: testWallet,
         competitionId: testCompetitionId,
         amount: 250n,
       });
@@ -647,7 +620,6 @@ describe("BoostRepository.decrease() Integration Tests", () => {
       // Setup: Give user balance
       await repository.increase({
         userId: testUserId,
-        wallet: testWallet,
         competitionId: testCompetitionId,
         amount: 600n,
       });
@@ -656,7 +628,6 @@ describe("BoostRepository.decrease() Integration Tests", () => {
 
       const result = await repository.decrease({
         userId: testUserId,
-        wallet: testWallet,
         competitionId: testCompetitionId,
         amount: 200n,
         meta,
@@ -686,58 +657,6 @@ describe("BoostRepository.decrease() Integration Tests", () => {
       expect(decreaseRecord).toBeDefined();
       expect(decreaseRecord!.meta).toEqual(meta);
     });
-
-    test("should store wallet address correctly in change records", async () => {
-      // Setup: Give user balance
-      await repository.increase({
-        userId: testUserId,
-        wallet: testWallet,
-        competitionId: testCompetitionId,
-        amount: 400n,
-      });
-
-      const result = await repository.decrease({
-        userId: testUserId,
-        wallet: testWallet,
-        competitionId: testCompetitionId,
-        amount: 150n,
-      });
-
-      expect(result.type).toBe("applied");
-
-      // Verify wallet encoding in decrease change record
-      const balanceRecords = await db
-        .select({ id: schema.boostBalances.id })
-        .from(schema.boostBalances)
-        .where(
-          and(
-            eq(schema.boostBalances.userId, testUserId),
-            eq(schema.boostBalances.competitionId, testCompetitionId),
-          ),
-        );
-
-      const changeRecords = await db
-        .select()
-        .from(schema.boostChanges)
-        .where(eq(schema.boostChanges.balanceId, balanceRecords[0]!.id));
-
-      // Both increase and decrease should have same encoded wallet
-      expect(changeRecords).toHaveLength(2);
-
-      const increaseRecord = changeRecords.find((r) => r.deltaAmount > 0);
-      const decreaseRecord = changeRecords.find((r) => r.deltaAmount < 0);
-
-      expect(increaseRecord!.wallet).toEqual(
-        BlockchainAddressAsU8A.encode(testWallet),
-      );
-      expect(decreaseRecord!.wallet).toEqual(
-        BlockchainAddressAsU8A.encode(testWallet),
-      );
-      expect(increaseRecord!.wallet).toEqual(decreaseRecord!.wallet); // Same encoding
-
-      // Verify wallet is exactly 20 bytes (database constraint)
-      expect(decreaseRecord!.wallet.length).toBe(20);
-    });
   });
 
   describe("integration with userBoostBalance", () => {
@@ -745,7 +664,6 @@ describe("BoostRepository.decrease() Integration Tests", () => {
       // Setup: Start with balance
       await repository.increase({
         userId: testUserId,
-        wallet: testWallet,
         competitionId: testCompetitionId,
         amount: 900n,
       });
@@ -760,7 +678,6 @@ describe("BoostRepository.decrease() Integration Tests", () => {
       // Decrease some balance
       await repository.decrease({
         userId: testUserId,
-        wallet: testWallet,
         competitionId: testCompetitionId,
         amount: 350n,
       });
@@ -775,7 +692,6 @@ describe("BoostRepository.decrease() Integration Tests", () => {
       // Decrease more
       await repository.decrease({
         userId: testUserId,
-        wallet: testWallet,
         competitionId: testCompetitionId,
         amount: 100n,
       });
@@ -794,7 +710,6 @@ describe("BoostRepository.decrease() Integration Tests", () => {
       // Start with balance
       await repository.increase({
         userId: testUserId,
-        wallet: testWallet,
         competitionId: testCompetitionId,
         amount: 500n,
       });
@@ -802,7 +717,6 @@ describe("BoostRepository.decrease() Integration Tests", () => {
       // Decrease some
       await repository.decrease({
         userId: testUserId,
-        wallet: testWallet,
         competitionId: testCompetitionId,
         amount: 200n,
       });
@@ -810,7 +724,6 @@ describe("BoostRepository.decrease() Integration Tests", () => {
       // Add more
       await repository.increase({
         userId: testUserId,
-        wallet: testWallet,
         competitionId: testCompetitionId,
         amount: 300n,
       });
@@ -818,7 +731,6 @@ describe("BoostRepository.decrease() Integration Tests", () => {
       // Decrease again
       await repository.decrease({
         userId: testUserId,
-        wallet: testWallet,
         competitionId: testCompetitionId,
         amount: 100n,
       });

@@ -26,7 +26,6 @@ export const claimBoost = base
     }
     const res = await context.boostService.claimBoost(
       context.user.id,
-      context.user.walletAddress,
       input.competitionId,
     );
     if (res.isErr()) {

@@ -142,7 +142,6 @@ describe("BoostRepository.userBoostBalance() Integration Tests", () => {
       // Give user some balance
       await repository.increase({
         userId: testUserId1,
-        wallet: testWallet1,
         competitionId: testCompetitionId1,
         amount: 750n,
       });
@@ -159,14 +158,12 @@ describe("BoostRepository.userBoostBalance() Integration Tests", () => {
       // Setup: Give user balance then decrease it
       await repository.increase({
         userId: testUserId1,
-        wallet: testWallet1,
         competitionId: testCompetitionId1,
         amount: 1000n,
       });
 
       await repository.decrease({
         userId: testUserId1,
-        wallet: testWallet1,
         competitionId: testCompetitionId1,
         amount: 400n,
       });
@@ -183,21 +180,18 @@ describe("BoostRepository.userBoostBalance() Integration Tests", () => {
       // Complex scenario: multiple increases and decreases
       await repository.increase({
         userId: testUserId1,
-        wallet: testWallet1,
         competitionId: testCompetitionId1,
         amount: 500n,
       });
 
       await repository.decrease({
         userId: testUserId1,
-        wallet: testWallet1,
         competitionId: testCompetitionId1,
         amount: 200n,
       });
 
       await repository.increase({
         userId: testUserId1,
-        wallet: testWallet1,
         competitionId: testCompetitionId1,
         amount: 300n,
       });
@@ -216,14 +210,12 @@ describe("BoostRepository.userBoostBalance() Integration Tests", () => {
       // Give both users different balances in same competition
       await repository.increase({
         userId: testUserId1,
-        wallet: testWallet1,
         competitionId: testCompetitionId1,
         amount: 500n,
       });
 
       await repository.increase({
         userId: testUserId2,
-        wallet: testWallet2,
         competitionId: testCompetitionId1,
         amount: 800n,
       });
@@ -244,7 +236,6 @@ describe("BoostRepository.userBoostBalance() Integration Tests", () => {
       // Modify one user's balance
       await repository.decrease({
         userId: testUserId1,
-        wallet: testWallet1,
         competitionId: testCompetitionId1,
         amount: 100n,
       });
@@ -280,14 +271,12 @@ describe("BoostRepository.userBoostBalance() Integration Tests", () => {
       // Give same user different balances in different competitions
       await repository.increase({
         userId: testUserId1,
-        wallet: testWallet1,
         competitionId: testCompetitionId1,
         amount: 600n,
       });
 
       await repository.increase({
         userId: testUserId1,
-        wallet: testWallet1,
         competitionId: testCompetitionId2,
         amount: 300n,
       });
@@ -308,7 +297,6 @@ describe("BoostRepository.userBoostBalance() Integration Tests", () => {
       // Modify balance in one competition
       await repository.decrease({
         userId: testUserId1,
-        wallet: testWallet1,
         competitionId: testCompetitionId1,
         amount: 200n,
       });
@@ -344,7 +332,6 @@ describe("BoostRepository.userBoostBalance() Integration Tests", () => {
       // Setup: Create balance through repository
       await repository.increase({
         userId: testUserId1,
-        wallet: testWallet1,
         competitionId: testCompetitionId1,
         amount: 850n,
       });
@@ -383,7 +370,6 @@ describe("BoostRepository.userBoostBalance() Integration Tests", () => {
       // After increase
       await repository.increase({
         userId: testUserId1,
-        wallet: testWallet1,
         competitionId: testCompetitionId1,
         amount: 400n,
       });
@@ -397,7 +383,6 @@ describe("BoostRepository.userBoostBalance() Integration Tests", () => {
       // After decrease
       await repository.decrease({
         userId: testUserId1,
-        wallet: testWallet1,
         competitionId: testCompetitionId1,
         amount: 150n,
       });
@@ -411,7 +396,6 @@ describe("BoostRepository.userBoostBalance() Integration Tests", () => {
       // After another increase
       await repository.increase({
         userId: testUserId1,
-        wallet: testWallet1,
         competitionId: testCompetitionId1,
         amount: 100n,
       });
@@ -429,7 +413,6 @@ describe("BoostRepository.userBoostBalance() Integration Tests", () => {
       // Setup: Give user balance
       await repository.increase({
         userId: testUserId1,
-        wallet: testWallet1,
         competitionId: testCompetitionId1,
         amount: 600n,
       });
@@ -450,7 +433,6 @@ describe("BoostRepository.userBoostBalance() Integration Tests", () => {
         await repository.increase(
           {
             userId: testUserId1,
-            wallet: testWallet1,
             competitionId: testCompetitionId1,
             amount: 200n,
           },
@@ -488,21 +470,18 @@ describe("BoostRepository.userBoostBalance() Integration Tests", () => {
 
       await repository.increase({
         userId: testUserId1,
-        wallet: testWallet1,
         competitionId: testCompetitionId1,
         amount: 500n,
       });
 
       await repository.increase({
         userId: testUserId1,
-        wallet: testWallet1,
         competitionId: testCompetitionId2,
         amount: 300n,
       });
 
       await repository.increase({
         userId: testUserId2,
-        wallet: testWallet2,
         competitionId: testCompetitionId1,
         amount: 700n,
       });
@@ -581,14 +560,12 @@ describe("BoostRepository.userBoostBalance() Integration Tests", () => {
       // Setup balances for multiple users
       await repository.increase({
         userId: testUserId1,
-        wallet: testWallet1,
         competitionId: testCompetitionId1,
         amount: 1000n,
       });
 
       await repository.increase({
         userId: testUserId2,
-        wallet: testWallet2,
         competitionId: testCompetitionId1,
         amount: 800n,
       });
@@ -596,21 +573,18 @@ describe("BoostRepository.userBoostBalance() Integration Tests", () => {
       // Perform mixed operations
       await repository.decrease({
         userId: testUserId1,
-        wallet: testWallet1,
         competitionId: testCompetitionId1,
         amount: 300n,
       });
 
       await repository.increase({
         userId: testUserId2,
-        wallet: testWallet2,
         competitionId: testCompetitionId1,
         amount: 200n,
       });
 
       await repository.decrease({
         userId: testUserId2,
-        wallet: testWallet2,
         competitionId: testCompetitionId1,
         amount: 100n,
       });
@@ -658,14 +632,12 @@ describe("BoostRepository.userBoostBalance() Integration Tests", () => {
       // Create balance then reduce to zero
       await repository.increase({
         userId: testUserId1,
-        wallet: testWallet1,
         competitionId: testCompetitionId1,
         amount: 200n,
       });
 
       await repository.decrease({
         userId: testUserId1,
-        wallet: testWallet1,
         competitionId: testCompetitionId1,
         amount: 200n,
       });
@@ -696,7 +668,6 @@ describe("BoostRepository.userBoostBalance() Integration Tests", () => {
       // Setup: Create balance
       await repository.increase({
         userId: testUserId1,
-        wallet: testWallet1,
         competitionId: testCompetitionId1,
         amount: 450n,
       });
@@ -731,7 +702,6 @@ describe("BoostRepository.userBoostBalance() Integration Tests", () => {
       // Setup: Create balance
       await repository.increase({
         userId: testUserId1,
-        wallet: testWallet1,
         competitionId: testCompetitionId1,
         amount: 555n,
       });

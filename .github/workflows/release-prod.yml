@@ -80,7 +80,7 @@ jobs:
         run: pnpm install
 
       - name: Build everything
-        run: pnpm build
+        run: PRIVATE_FONTS=true FONTS_REPO_ACCESS_TOKEN=${{ secrets.FONTS_REPO_ACCESS_TOKEN }} pnpm build
 
       - name: Install Vercel CLI
         run: pnpm install --global vercel@latest

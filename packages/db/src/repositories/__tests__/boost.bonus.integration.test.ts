@@ -816,7 +816,6 @@ describe("BoostRepository Bonus Boost Methods Integration Tests", () => {
 
       await repository.increase({
         userId: testUserId,
-        wallet: testWallet,
         competitionId: testCompetitionId,
         amount: 1000n,
         meta: { description: `bonus-${boost.id}` },
@@ -875,14 +874,12 @@ describe("BoostRepository Bonus Boost Methods Integration Tests", () => {
 
       const increase1 = await repository.increase({
         userId: testUserId,
-        wallet: testWallet,
         competitionId: testCompetitionId,
         amount: 500n,
       });
 
       const increase2 = await repository.increase({
         userId: testUserId,
-        wallet: testWallet,
         competitionId: competition2Id,
         amount: 500n,
       });
@@ -937,7 +934,6 @@ describe("BoostRepository Bonus Boost Methods Integration Tests", () => {
 
       await repository.increase({
         userId: testUserId,
-        wallet: testWallet,
         competitionId: testCompetitionId,
         amount: 1000n,
         meta: { description: "stake boost" },
@@ -959,7 +955,6 @@ describe("BoostRepository Bonus Boost Methods Integration Tests", () => {
 
       const increase = await repository.increase({
         userId: testUserId,
-        wallet: testWallet,
         competitionId: testCompetitionId,
         amount: 1000n,
       });
@@ -983,7 +978,6 @@ describe("BoostRepository Bonus Boost Methods Integration Tests", () => {
     test("should return empty array when no bonus boost changes exist", async () => {
       await repository.increase({
         userId: testUserId,
-        wallet: testWallet,
         competitionId: testCompetitionId,
         amount: 1000n,
         meta: { description: "stake boost" },
@@ -1010,14 +1004,12 @@ describe("BoostRepository Bonus Boost Methods Integration Tests", () => {
 
       const increase1 = await repository.increase({
         userId: testUserId,
-        wallet: testWallet,
         competitionId: testCompetitionId,
         amount: 500n,
       });
 
       const increase2 = await repository.increase({
         userId: testUserId,
-        wallet: testWallet,
         competitionId: testCompetitionId,
         amount: 1000n,
       });
@@ -1061,7 +1053,6 @@ describe("BoostRepository Bonus Boost Methods Integration Tests", () => {
 
       const increase = await repository.increase({
         userId: testUserId,
-        wallet: testWallet,
         competitionId: competition2Id,
         amount: 1000n,
       });
