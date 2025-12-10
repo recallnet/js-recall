@@ -60,3 +60,28 @@ export function appendHandleSuffix(baseHandle: string, suffix: number): string {
   const truncatedBase = baseHandle.substring(0, maxBaseLength);
   return `${truncatedBase}${suffixStr}`;
 }
+
+/**
+ * Generates a random string of specified length using only alphanumeric characters
+ * @param length The length of the string to generate
+ * @returns A random string of specified length using only alphanumeric characters
+ * @example
+ * generateRandomString(8) // returns "abcdefgh"
+ * generateRandomString(16) // returns "abcdefghijklmnop"
+ */
+export function generateRandomString(length: number): string {
+  const chars = "abcdefghijklmnopqrstuvwxyz0123456789";
+  let result = "";
+  for (let i = 0; i < length; i++) {
+    result += chars.charAt(Math.floor(Math.random() * chars.length));
+  }
+  return result;
+}
+
+/**
+ * Generates a random username in the format "user_XXXXXXXX"
+ * @returns A random username
+ */
+export function generateRandomUsername(): string {
+  return `user_${generateRandomString(8)}`;
+}
