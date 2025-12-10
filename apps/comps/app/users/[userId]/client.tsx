@@ -49,8 +49,8 @@ export default function PublicUserProfileClient() {
         items={[{ label: "HOME", href: "/competitions" }, { label: "USERS" }]}
       />
       <PublicUserInfoSection user={data.user} />
-      <PublicUserCompetitionsSection userId={userId} />
       <PublicUserAgentsSection userId={userId} />
+      <PublicUserCompetitionsSection userId={userId} />
       <FooterSection />
     </>
   );

@@ -59,8 +59,8 @@ export default function ProfilePage() {
         onSave={handleUpdateProfile}
         onLinkWallet={handleLinkWallet}
       />
-      <UserCompetitionsSection />
       <UserAgentsSection agents={agents?.agents || []} />
+      <UserCompetitionsSection />
       <FooterSection />
     </AuthGuard>
   );
