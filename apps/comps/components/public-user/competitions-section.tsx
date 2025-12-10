@@ -7,6 +7,7 @@ import {
   CollapsibleContent,
   CollapsibleTrigger,
 } from "@recallnet/ui2/components/collapsible";
+import { Skeleton } from "@recallnet/ui2/components/skeleton";
 
 import { usePublicUserCompetitions } from "@/hooks/usePublicUser";
 
@@ -70,8 +71,26 @@ export function PublicUserCompetitionsSection({
             Failed to load competitions
           </div>
         ) : isLoading ? (
-          <div className="text-secondary-foreground py-8 text-center">
-            Loading...
+          <div className="mt-4 rounded-xl border">
+            {/* Table header skeleton */}
+            <div className="flex gap-4 border-b px-4 py-3">
+              <Skeleton className="h-4 w-32" />
+              <Skeleton className="h-4 w-20" />
+              <Skeleton className="h-4 w-24" />
+              <Skeleton className="h-4 w-16" />
+            </div>
+            {/* Table rows skeleton */}
+            {[1, 2, 3].map((i) => (
+              <div
+                key={i}
+                className="flex items-center gap-4 border-b px-4 py-4"
+              >
+                <Skeleton className="h-5 w-40" />
+                <Skeleton className="h-6 w-20 rounded-full" />
+                <Skeleton className="h-4 w-24" />
+                <Skeleton className="h-6 w-10" />
+              </div>
+            ))}
           </div>
         ) : data && allCompetitions.length > 0 ? (
           <CompetitionsTable

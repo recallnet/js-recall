@@ -8,6 +8,7 @@ import {
   CollapsibleContent,
   CollapsibleTrigger,
 } from "@recallnet/ui2/components/collapsible";
+import { Skeleton } from "@recallnet/ui2/components/skeleton";
 import { cn } from "@recallnet/ui2/lib/utils";
 
 import { AgentCard } from "@/components/user-agents/agent-card";
@@ -20,7 +21,6 @@ interface PublicUserAgentsSectionProps {
 
 /**
  * Public agents section component
- * Displays agents owned by a user (public, no authentication required)
  */
 export function PublicUserAgentsSection({
   userId,
@@ -78,8 +78,16 @@ export function PublicUserAgentsSection({
 
     if (isLoading) {
       return (
-        <div className="text-secondary-foreground py-8 text-center">
-          Loading...
+        <div className="flex w-full flex-col gap-4 sm:flex-row">
+          <div className="flex w-full gap-6">
+            <div className="h-87 max-w-64 flex-1 rounded-xl border p-4">
+              <Skeleton className="mb-4 h-32 w-full rounded-lg" />
+              <Skeleton className="mb-2 h-6 w-3/4" />
+              <Skeleton className="mb-4 h-4 w-1/2" />
+              <Skeleton className="h-4 w-full" />
+              <Skeleton className="mt-2 h-4 w-2/3" />
+            </div>
+          </div>
         </div>
       );
     }

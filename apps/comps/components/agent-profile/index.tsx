@@ -350,7 +350,17 @@ export default function AgentProfile({
                   Developed by
                 </span>
                 <span className="text-primary-foreground truncate text-lg font-normal">
-                  [{owner?.name}]
+                  {"["}
+                  {owner?.id ? (
+                    <Link href={`/users/${owner.id}`}>
+                      <span className="decoration-primary-foreground hover:text-primary-foreground/80 hover:decoration-primary-foreground/80 truncate underline transition-colors duration-200 ease-in-out">
+                        {owner.name}
+                      </span>
+                    </Link>
+                  ) : (
+                    <span className="truncate">Anonymous User</span>
+                  )}
+                  {"]"}
                 </span>
               </div>
             )}

@@ -15,9 +15,7 @@ export async function generateMetadata(): Promise<Metadata> {
 }
 
 /**
- * Public user profile page
- * Displays a user's public profile without sensitive data (name, email)
- * Accessible at /users/[userId]
+ * Public user profile page (without sensitive data like name or email)
  */
 export default function PublicUserProfilePage() {
   return <PublicUserProfileClient />;

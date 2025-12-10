@@ -2,8 +2,8 @@ import Link from "next/link";
 import { ReactNode } from "react";
 
 import type { RouterOutputs } from "@/rpc/router";
-import { displayAddress } from "@/utils/address";
 
+import { Clipboard } from "../clipboard";
 import { ProfilePicture } from "../user-info/ProfilePicture";
 
 /**
@@ -47,9 +47,7 @@ export function PublicUserInfoSection({ user }: PublicUserInfoSectionProps) {
       />
       <div className="flex w-full flex-col items-start justify-center gap-2 p-4 sm:border-l">
         <div className="flex items-center gap-3">
-          <h2 className="text-secondary-foreground text-2xl font-bold">
-            Anonymous User
-          </h2>
+          <h2 className="text-2xl font-bold">Anonymous User</h2>
         </div>
 
         <div className="grid w-full auto-rows-[minmax(theme(spacing.8),auto)] grid-cols-[auto_minmax(0,1fr)] gap-x-4 gap-y-2">
@@ -71,9 +69,14 @@ export function PublicUserInfoSection({ user }: PublicUserInfoSectionProps) {
 
           <FieldLabel>Wallet address</FieldLabel>
           <FieldValue>
-            <span className="text-secondary-foreground font-mono">
-              {displayAddress(user.walletAddress)}
-            </span>
+            <div className="flex min-w-0 flex-1 items-center gap-4">
+              <Clipboard
+                text={user.walletAddress}
+                textOnCopy={user.walletAddress}
+                className="text-secondary-foreground font-mono text-sm"
+                showBorder={false}
+              />
+            </div>
           </FieldValue>
         </div>
       </div>
