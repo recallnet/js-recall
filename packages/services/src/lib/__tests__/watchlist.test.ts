@@ -17,7 +17,7 @@ const TEST_RETRY_CONFIG: RetryConfig = {
 };
 
 // Mock the config module (override the Chainalysis API key)
-vi.mock("@/config/index.js", () => ({
+vi.mock("../config/index.js", () => ({
   config: {
     watchlist: {
       chainalysisApiKey: "",

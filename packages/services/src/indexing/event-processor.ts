@@ -10,9 +10,8 @@ import { RewardsRepository } from "@recallnet/db/repositories/rewards";
 import type { StakesRepository } from "@recallnet/db/repositories/stakes";
 import type { Database } from "@recallnet/db/types";
 
-import type { BoostAwardService } from "@/boost-award.service.js";
-import type { CompetitionService } from "@/competition.service.js";
-
+import type { BoostAwardService } from "../boost-award.service.js";
+import type { CompetitionService } from "../competition.service.js";
 import { EVENTS, EVENT_HASH_NAMES } from "./hypersync-query.js";
 
 export { EventProcessor };
