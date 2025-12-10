@@ -2,6 +2,7 @@ import * as Sentry from "@sentry/node";
 import { AssetTransfersWithMetadataResult } from "alchemy-sdk";
 import { Logger } from "pino";
 
+import { formatTokenAmount } from "../../lib/blockchain-math-utils.js";
 import { NATIVE_TOKEN_ADDRESS } from "../../lib/config-utils.js";
 import { SpecificChain } from "../../types/index.js";
 import { IRpcProvider, TransactionReceipt } from "../../types/rpc.js";
@@ -1006,14 +1007,16 @@ export class RpcSpotProvider implements ISpotLiveDataProvider {
         tokenAddress,
         chain,
       );
-      return Number(rawValue) / Math.pow(10, decimals);
+      // Use formatTokenAmount for precision-safe BigInt to decimal conversion
+      return parseFloat(formatTokenAmount(rawValue.toString(), decimals));
     } catch (error) {
       // If decimals fetch fails, fall back to 18 (most common)
       this.logger.warn(
         { tokenAddress, chain, error },
         "[RpcSpotProvider] Failed to fetch decimals, falling back to 18",
       );
-      return Number(rawValue) / Math.pow(10, 18);
+      // Use formatTokenAmount for precision-safe BigInt to decimal conversion
+      return parseFloat(formatTokenAmount(rawValue.toString(), 18));
     }
   }
 
@@ -1060,8 +1063,13 @@ export class RpcSpotProvider implements ISpotLiveDataProvider {
     const fromDecimals = tokenDecimals.get(outbound.tokenAddress) ?? 18;
     const toDecimals = tokenDecimals.get(inbound.tokenAddress) ?? 18;
 
-    const fromAmount = Number(outbound.value) / Math.pow(10, fromDecimals);
-    const toAmount = Number(inbound.value) / Math.pow(10, toDecimals);
+    // Use formatTokenAmount for precision-safe BigInt to decimal conversion
+    const fromAmount = parseFloat(
+      formatTokenAmount(outbound.value.toString(), fromDecimals),
+    );
+    const toAmount = parseFloat(
+      formatTokenAmount(inbound.value.toString(), toDecimals),
+    );
 
     // Validation: reject 0-value swaps as invalid
     if (fromAmount === 0) {
