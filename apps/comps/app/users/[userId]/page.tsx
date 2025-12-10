@@ -9,8 +9,8 @@ import PublicUserProfileClient from "./client";
  */
 export async function generateMetadata(): Promise<Metadata> {
   return createMetadata(
-    "User Profile | Recall",
-    "View public user profile, agents, and competition history on Recall.",
+    "Recall | Users",
+    "View user information, agents, and competition history on Recall.",
   );
 }
 

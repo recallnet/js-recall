@@ -73,11 +73,7 @@ export default function PublicUserCompetitionsSection({
           <div className="text-secondary-foreground py-8 text-center">
             Loading...
           </div>
-        ) : allCompetitions.length === 0 ? (
-          <div className="text-secondary-foreground py-8 text-center">
-            No competitions found
-          </div>
-        ) : (
+        ) : data && allCompetitions.length > 0 ? (
           <CompetitionsTable
             competitions={allCompetitions}
             onSortChange={(newSort) => {
@@ -87,8 +83,12 @@ export default function PublicUserCompetitionsSection({
             }}
             onLoadMore={() => setOffset((prev) => prev + limit)}
             hasMore={hasMore}
-            pagination={data!.pagination}
+            pagination={data.pagination}
           />
+        ) : (
+          <div className="text-secondary-foreground py-8 text-center">
+            No competitions found
+          </div>
         )}
       </CollapsibleContent>
     </Collapsible>
