@@ -20,7 +20,7 @@ interface PublicUserCompetitionsSectionProps {
  * Public competitions section component
  * Displays competitions for a user's agents (public, no authentication required)
  */
-export default function PublicUserCompetitionsSection({
+export function PublicUserCompetitionsSection({
   userId,
 }: PublicUserCompetitionsSectionProps) {
   const [sort, setSort] = useState("-startDate");

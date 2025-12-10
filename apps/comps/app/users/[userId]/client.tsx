@@ -5,9 +5,11 @@ import { useParams } from "next/navigation";
 import { BreadcrumbNav } from "@/components/breadcrumb-nav";
 import { FooterSection } from "@/components/footer-section";
 import ProfileSkeleton from "@/components/profile-skeleton";
-import PublicUserAgentsSection from "@/components/public-user-agents";
-import PublicUserCompetitionsSection from "@/components/public-user-competitions";
-import PublicUserInfoSection from "@/components/public-user-info";
+import {
+  PublicUserAgentsSection,
+  PublicUserCompetitionsSection,
+  PublicUserInfoSection,
+} from "@/components/public-user";
 import { usePublicUserProfile } from "@/hooks/usePublicUser";
 
 /**

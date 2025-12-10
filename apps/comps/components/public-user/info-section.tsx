@@ -33,9 +33,7 @@ interface PublicUserInfoSectionProps {
  * Displays user profile information without sensitive data (name, email)
  * Used on public profile pages
  */
-export default function PublicUserInfoSection({
-  user,
-}: PublicUserInfoSectionProps) {
+export function PublicUserInfoSection({ user }: PublicUserInfoSectionProps) {
   return (
     <div className="flex w-full rounded-xl border">
       <ProfilePicture

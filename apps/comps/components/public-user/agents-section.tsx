@@ -22,7 +22,7 @@ interface PublicUserAgentsSectionProps {
  * Public agents section component
  * Displays agents owned by a user (public, no authentication required)
  */
-export default function PublicUserAgentsSection({
+export function PublicUserAgentsSection({
   userId,
 }: PublicUserAgentsSectionProps) {
   const { data, isLoading, error } = usePublicUserAgents(userId);
