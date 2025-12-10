@@ -1168,9 +1168,10 @@ class BoostRepository {
         and(
           eq(schema.boostBonus.userId, userId),
           eq(schema.boostBonus.isActive, true),
+          gt(schema.boostBonus.expiresAt, sql`now()`),
         ),
       )
-      .orderBy(desc(schema.boostBonus.createdAt));
+      .orderBy(schema.boostBonus.expiresAt);
   }
 
   /**
