@@ -23,10 +23,15 @@ interface PublicUserCompetitionsSectionProps {
 export default function PublicUserCompetitionsSection({
   userId,
 }: PublicUserCompetitionsSectionProps) {
+  const [sort, setSort] = useState("-startDate");
   const [offset, setOffset] = useState(0);
   const limit = 10;
 
-  const { data, isLoading, isFetching } = usePublicUserCompetitions(userId);
+  const { data, isLoading, isFetching } = usePublicUserCompetitions(userId, {
+    limit,
+    offset,
+    sort,
+  });
 
   // Infer competition type from RPC response
   type Competition = NonNullable<typeof data>["competitions"][number];
@@ -68,7 +73,8 @@ export default function PublicUserCompetitionsSection({
         ) : (
           <CompetitionsTable
             competitions={allCompetitions}
-            onSortChange={() => {
+            onSortChange={(newSort) => {
+              setSort(newSort);
               setOffset(0);
             }}
             onLoadMore={() => setOffset((prev) => prev + limit)}

@@ -33,18 +33,30 @@ export const usePublicUserAgents = (
   );
 
 /**
+ * Pagination parameters for public user competitions
+ */
+interface PublicUserCompetitionsParams {
+  limit: number;
+  offset: number;
+  sort: string;
+}
+
+/**
  * Hook to fetch competitions for a user's agents (public, unauthenticated)
  * @param userId User ID
+ * @param params Pagination parameters (limit, offset, sort)
  * @returns Query result with public user competitions data
  */
 export const usePublicUserCompetitions = (
-  userId?: string,
+  userId: string | undefined,
+  params: PublicUserCompetitionsParams,
 ): UseQueryResult<
   RouterOutputs["publicUser"]["getPublicCompetitions"],
   Error
 > =>
-  useQuery(
-    tanstackClient.publicUser.getPublicCompetitions.queryOptions({
-      input: userId ? { userId } : skipToken,
+  useQuery({
+    ...tanstackClient.publicUser.getPublicCompetitions.queryOptions({
+      input: userId ? { userId, params } : skipToken,
     }),
-  );
+    placeholderData: (prev) => prev,
+  });

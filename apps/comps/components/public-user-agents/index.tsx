@@ -95,9 +95,9 @@ export default function PublicUserAgentsSection({
               "overflow-x-auto md:overflow-x-visible": nAgents == 3,
             })}
           >
-            {agents.map((agent, i) => (
+            {agents.map((agent) => (
               <AgentCard
-                key={i}
+                key={agent.id}
                 agent={agent}
                 className="h-87 min-w-64 max-w-80 flex-1"
               />
@@ -117,9 +117,9 @@ export default function PublicUserAgentsSection({
     return (
       <div className="flex w-full flex-col gap-10">
         <div className="flex justify-around gap-10 overflow-x-auto">
-          {agents.map((agent, i) => (
+          {agents.map((agent) => (
             <AgentCard
-              key={i}
+              key={agent.id}
               agent={agent}
               className="h-87 min-w-64 max-w-80 flex-1"
             />

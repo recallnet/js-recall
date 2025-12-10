@@ -1,5 +1,5 @@
 import Link from "next/link";
-import React from "react";
+import { ReactNode } from "react";
 
 import { PublicUserProfile } from "@/rpc/router/public-user/get-public-profile";
 import { displayAddress } from "@/utils/address";
@@ -9,7 +9,7 @@ import { ProfilePicture } from "../user-info/ProfilePicture";
 /**
  * Field label component for consistent styling
  */
-const FieldLabel = ({ children }: { children: React.ReactNode }) => (
+const FieldLabel = ({ children }: { children: ReactNode }) => (
   <span className="text-foreground content-center text-sm font-semibold">
     {children}
   </span>
@@ -18,7 +18,7 @@ const FieldLabel = ({ children }: { children: React.ReactNode }) => (
 /**
  * Field value component for consistent styling
  */
-const FieldValue = ({ children }: { children: React.ReactNode }) => (
+const FieldValue = ({ children }: { children: ReactNode }) => (
   <div className="text-secondary-foreground flex content-center items-center gap-2">
     {children}
   </div>
