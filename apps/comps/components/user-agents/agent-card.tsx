@@ -8,6 +8,7 @@ import Card, { CardProps } from "@recallnet/ui2/components/card";
 import { cn } from "@recallnet/ui2/lib/utils";
 
 import MirrorImage from "@/components/mirror-image";
+import type { RouterOutputs } from "@/rpc/router";
 import { displayAddress } from "@/utils/address";
 import { formatCompactNumber, toOrdinal } from "@/utils/format";
 
@@ -17,22 +18,9 @@ import { VerificationBadge } from "../verification-badge";
  * Agent data expected by AgentCard
  * Supports both authenticated user agents and public agents
  */
-interface AgentCardAgent {
-  id: string;
-  name: string;
-  walletAddress?: string | null;
-  imageUrl?: string | null;
-  isVerified?: boolean;
-  stats?: {
-    bestPlacement?: {
-      rank: number;
-    } | null;
-    totalRoi?: number | null;
-    totalTrades?: number;
-    bestPnl?: number | null;
-    completedCompetitions?: number;
-  } | null;
-}
+type AgentCardAgent =
+  | RouterOutputs["user"]["getUserAgents"]["agents"][number]
+  | RouterOutputs["publicUser"]["getPublicAgents"]["agents"][number];
 
 type AgentCardProps = {
   agent: AgentCardAgent;
