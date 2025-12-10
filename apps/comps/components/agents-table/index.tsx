@@ -58,6 +58,7 @@ import { getSortState } from "@/utils/table";
 import { BoostIcon } from "../BoostIcon";
 import { AgentAvatar } from "../agent-avatar";
 import { CompetitionStandingsDetails } from "../competition-standings-details";
+import { EigenVerifiedBadge } from "../eigenai-verified-badge";
 import BoostAgentModal from "../modals/boost-agent";
 import { boostedCompetitionsStartDate } from "../timeline-chart/constants";
 import { RankBadge } from "./rank-badge";
@@ -96,6 +97,7 @@ export const AgentsTable: React.FC<AgentsTableProps> = ({
   const [columnVisibility, setColumnVisibility] = useState<VisibilityState>({
     yourShare: isBoostEnabled && session.ready && session.isAuthenticated,
     boostPool: isBoostEnabled,
+    eigenaiVerified: false, // Will be set to true if any agent has a badge
   });
 
   // Track screen size for responsive column visibility
@@ -193,6 +195,21 @@ export const AgentsTable: React.FC<AgentsTableProps> = ({
         ),
     }),
   );
+
+  // EigenAI badge status data
+  const { data: eigenBadgeStatuses, isSuccess: isEigenDataLoaded } = useQuery(
+    tanstackClient.eigenai.getBulkBadgeStatuses.queryOptions({
+      input: { competitionId: competition.id },
+    }),
+  );
+
+  // Check if any agent has an active EigenAI badge
+  const hasAnyEigenVerifiedAgent = useMemo(() => {
+    if (!isEigenDataLoaded || !eigenBadgeStatuses) return false;
+    return Object.values(eigenBadgeStatuses).some(
+      (status) => status.isBadgeActive,
+    );
+  }, [eigenBadgeStatuses, isEigenDataLoaded]);
 
   const { mutate: claimBoost } = useMutation(
     tanstackClient.boost.claimBoost.mutationOptions({
@@ -292,6 +309,8 @@ export const AgentsTable: React.FC<AgentsTableProps> = ({
       yourShare: isBoostEnabled && session.ready && session.isAuthenticated,
       // Hide the following columns on mobile
       boostPool: isBoostEnabled && !isMobile,
+      // EigenAI column - only show if any agent has a badge
+      eigenaiVerified: hasAnyEigenVerifiedAgent,
       // Perps columns - show all on desktop, only primary on mobile
       simpleReturn: getMetricVisibility("simpleReturn"),
       calmarRatio: getMetricVisibility("calmarRatio"),
@@ -307,6 +326,7 @@ export const AgentsTable: React.FC<AgentsTableProps> = ({
     isBoostEnabled,
     isMobile,
     isPrimaryMetric,
+    hasAnyEigenVerifiedAgent,
   ]);
 
   // Calculate user's total spent boost for progress bar
@@ -414,6 +434,33 @@ export const AgentsTable: React.FC<AgentsTableProps> = ({
           className: isMobile ? "flex-1 min-w-[140px]" : "flex-1 min-w-[180px]",
           flex: true,
         },
+      },
+      {
+        id: "eigenaiVerified",
+        accessorKey: "eigenaiVerified",
+        header: () => (
+          <Tooltip content="Agents using EigenAI for verifiable inference">
+            <span>EigenAI</span>
+          </Tooltip>
+        ),
+        cell: ({ row }) => {
+          const badgeStatus = eigenBadgeStatuses?.[row.original.id];
+          return (
+            <div className="flex w-full items-center justify-center">
+              {badgeStatus?.isBadgeActive ? (
+                <EigenVerifiedBadge
+                  isActive={true}
+                  signaturesLast24h={badgeStatus.signaturesLast24h}
+                  size="sm"
+                />
+              ) : (
+                <span className="text-secondary-foreground">-</span>
+              )}
+            </div>
+          );
+        },
+        enableSorting: false,
+        size: isMobile ? 70 : 90,
       },
       // Show ROI + risk metrics for perps, ROI + portfolio for spot live, portfolio + P&L for paper trading
       ...(isPerpsCompetition
@@ -947,6 +994,7 @@ export const AgentsTable: React.FC<AgentsTableProps> = ({
       isMobile,
       competition.status,
       agentIsInactive,
+      eigenBadgeStatuses,
     ],
   );
 
