@@ -42,7 +42,7 @@ export default defineConfig({
           root: "./",
           environment: "jsdom",
           include: ["**/*.test.ts", "**/*.test.tsx"],
-          exclude: ["e2e/**", "e2e-vercel/**", "node_modules/**"],
+          exclude: ["e2e/**", "node_modules/**"],
           typecheck: { enabled: true, include: ["**/*.test.ts"] },
         },
       },
