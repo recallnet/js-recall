@@ -27,11 +27,14 @@ export default function PublicUserCompetitionsSection({
   const [offset, setOffset] = useState(0);
   const limit = 10;
 
-  const { data, isLoading, isFetching } = usePublicUserCompetitions(userId, {
-    limit,
-    offset,
-    sort,
-  });
+  const { data, isLoading, isFetching, error } = usePublicUserCompetitions(
+    userId,
+    {
+      limit,
+      offset,
+      sort,
+    },
+  );
 
   // Infer competition type from RPC response
   type Competition = NonNullable<typeof data>["competitions"][number];
@@ -47,10 +50,10 @@ export default function PublicUserCompetitionsSection({
     } else {
       setAllCompetitions((prev) => [...prev, ...data.competitions]);
     }
-  }, [data?.competitions, isFetching, offset]);
+  }, [data?.competitions, isFetching, offset, sort]);
 
   return (
-    <Collapsible defaultOpen={!allCompetitions.length} className="mt-7">
+    <Collapsible defaultOpen className="mt-7">
       <CollapsibleTrigger>
         <div className="flex w-full items-center justify-between">
           <div className="ml-2 flex items-center gap-2">
@@ -62,7 +65,11 @@ export default function PublicUserCompetitionsSection({
         </div>
       </CollapsibleTrigger>
       <CollapsibleContent>
-        {isLoading ? (
+        {error ? (
+          <div className="py-8 text-center text-red-500">
+            Failed to load competitions
+          </div>
+        ) : isLoading ? (
           <div className="text-secondary-foreground py-8 text-center">
             Loading...
           </div>
@@ -76,6 +83,7 @@ export default function PublicUserCompetitionsSection({
             onSortChange={(newSort) => {
               setSort(newSort);
               setOffset(0);
+              setAllCompetitions([]);
             }}
             onLoadMore={() => setOffset((prev) => prev + limit)}
             hasMore={hasMore}

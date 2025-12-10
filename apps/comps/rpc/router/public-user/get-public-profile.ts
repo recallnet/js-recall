@@ -49,11 +49,12 @@ export const getPublicProfile = base
       }
 
       // Return sanitized public profile (no name, email, or sensitive data)
+      // Explicitly filter metadata to only include allowed fields
       const publicProfile: PublicUserProfile = {
         id: user.id,
         walletAddress: user.walletAddress,
         imageUrl: user.imageUrl,
-        metadata: user.metadata,
+        metadata: user.metadata ? { website: user.metadata.website } : null,
         createdAt: user.createdAt,
       };
 

@@ -29,6 +29,8 @@ interface AgentCardAgent {
     } | null;
     totalRoi?: number | null;
     totalTrades?: number;
+    bestPnl?: number | null;
+    completedCompetitions?: number;
   } | null;
 }
 

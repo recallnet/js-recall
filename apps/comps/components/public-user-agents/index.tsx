@@ -25,7 +25,7 @@ interface PublicUserAgentsSectionProps {
 export default function PublicUserAgentsSection({
   userId,
 }: PublicUserAgentsSectionProps) {
-  const { data, isLoading } = usePublicUserAgents(userId);
+  const { data, isLoading, error } = usePublicUserAgents(userId);
   const agents = useMemo(() => data?.agents || [], [data?.agents]);
   const nAgents = agents.length;
 
@@ -68,6 +68,14 @@ export default function PublicUserAgentsSection({
   }, [agents]);
 
   const renderAgentList = () => {
+    if (error) {
+      return (
+        <div className="py-8 text-center text-red-500">
+          Failed to load agents
+        </div>
+      );
+    }
+
     if (isLoading) {
       return (
         <div className="text-secondary-foreground py-8 text-center">
