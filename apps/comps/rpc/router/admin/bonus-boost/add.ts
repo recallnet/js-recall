@@ -6,7 +6,7 @@ import {
   AdminBonusBoostItemSchema,
 } from "@recallnet/services/types";
 
-import { base } from "@/rpc/context/base";
+import { base } from "@/rpc/context/admin";
 import { adminMiddleware } from "@/rpc/middleware/admin";
 import { errorHandlerMiddleware } from "@/rpc/middleware/error-handler";
 

@@ -4,24 +4,17 @@ import { ZodToJsonSchemaConverter } from "@orpc/zod/zod4";
 import { cookies, headers } from "next/headers";
 
 import { createLogger } from "@/lib/logger";
-import { privyClient } from "@/lib/privy-client";
 import { competitionRepository } from "@/lib/repositories";
 import {
   adminService,
   agentService,
-  airdropService,
   arenaService,
   balanceService,
-  boostAwardService,
   boostBonusService,
-  boostService,
   competitionService,
-  emailService,
-  leaderboardService,
   partnerService,
   portfolioSnapshotterService,
   rewardsService,
-  sportsService,
   userService,
 } from "@/lib/services";
 import { router } from "@/rpc/router/admin/index";
@@ -129,11 +122,7 @@ async function handleRequest(
       cookies: await cookies(),
       headers: await headers(),
       params: await params,
-      privyClient,
       adminService,
-      airdropService,
-      boostService,
-      boostAwardService,
       boostBonusService,
       userService,
       competitionService,
@@ -143,10 +132,7 @@ async function handleRequest(
       partnerService,
       balanceService,
       portfolioSnapshotterService,
-      emailService,
-      leaderboardService,
       rewardsService,
-      sportsService,
       logger: createLogger("OpenApiHandler"),
     },
   });

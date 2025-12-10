@@ -2,7 +2,7 @@ import { ORPCError } from "@orpc/server";
 
 import { ApiError } from "@recallnet/services/types";
 
-import { base } from "@/rpc/context/base";
+import { base } from "@/rpc/context/admin";
 
 /**
  * Error handling middleware that converts ApiError to ORPC errors
