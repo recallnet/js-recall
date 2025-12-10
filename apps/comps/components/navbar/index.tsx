@@ -21,6 +21,7 @@ import { PrivyAuthButton } from "@/components/privy-auth-button";
 import { config } from "@/config/public";
 import { useSession } from "@/hooks";
 
+import { BonusBoosts } from "./BonusBoosts";
 import { RecallToken } from "./RecallToken";
 
 export const Navbar: React.FunctionComponent = () => {
@@ -114,13 +115,18 @@ export const Navbar: React.FunctionComponent = () => {
         <div className="flex h-full items-center gap-4">
           {isAuthenticated && isWalletConnected && (
             <div className="hidden h-full items-center gap-4 sm:flex">
-              <div
-                className={cn(
-                  "flex h-full items-center",
-                  pathname === "/stake" ? "shadow-[0_2px_0_0_#eab308]" : "",
+              <div className="flex h-full items-center gap-3">
+                {config.publicFlags.tge && (
+                  <div
+                    className={cn(
+                      "flex h-full items-center",
+                      pathname === "/stake" ? "shadow-[0_2px_0_0_#eab308]" : "",
+                    )}
+                  >
+                    <RecallToken />
+                  </div>
                 )}
-              >
-                {config.publicFlags.tge && <RecallToken />}
+                <BonusBoosts />
               </div>
             </div>
           )}

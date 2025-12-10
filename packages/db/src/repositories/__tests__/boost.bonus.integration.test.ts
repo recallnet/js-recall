@@ -408,16 +408,14 @@ describe("BoostRepository Bonus Boost Methods Integration Tests", () => {
       expect(results).toHaveLength(0);
     });
 
-    test("should order results by createdAt DESC", async () => {
-      const first = await repository.createBoostBonus({
+    test("should order results by expiresAt ASC (soonest first)", async () => {
+      const expiresLater = await repository.createBoostBonus({
         userId: testUserId,
         amount: 500n,
-        expiresAt: new Date("2025-12-31T23:59:59Z"),
+        expiresAt: new Date("2026-06-30T23:59:59Z"),
       });
 
-      await new Promise((resolve) => setTimeout(resolve, 10));
-
-      const second = await repository.createBoostBonus({
+      const expiresSooner = await repository.createBoostBonus({
         userId: testUserId,
         amount: 1000n,
         expiresAt: new Date("2025-12-31T23:59:59Z"),
@@ -426,8 +424,29 @@ describe("BoostRepository Bonus Boost Methods Integration Tests", () => {
       const results =
         await repository.findActiveBoostBonusesByUserId(testUserId);
 
-      expect(results[0]!.id).toBe(second.id);
-      expect(results[1]!.id).toBe(first.id);
+      expect(results[0]!.id).toBe(expiresSooner.id);
+      expect(results[1]!.id).toBe(expiresLater.id);
+    });
+
+    test("should filter out expired boosts", async () => {
+      const active = await repository.createBoostBonus({
+        userId: testUserId,
+        amount: 500n,
+        expiresAt: new Date(Date.now() + 86400000), // 1 day from now
+      });
+
+      const expired = await repository.createBoostBonus({
+        userId: testUserId,
+        amount: 1000n,
+        expiresAt: new Date(Date.now() - 1000), // 1 second ago
+      });
+
+      const results =
+        await repository.findActiveBoostBonusesByUserId(testUserId);
+
+      expect(results).toHaveLength(1);
+      expect(results[0]!.id).toBe(active.id);
+      expect(results.find((r) => r.id === expired.id)).toBeUndefined();
     });
 
     test("should not return boosts from other users", async () => {
@@ -816,7 +835,6 @@ describe("BoostRepository Bonus Boost Methods Integration Tests", () => {
 
       await repository.increase({
         userId: testUserId,
-        wallet: testWallet,
         competitionId: testCompetitionId,
         amount: 1000n,
         meta: { description: `bonus-${boost.id}` },
@@ -875,14 +893,12 @@ describe("BoostRepository Bonus Boost Methods Integration Tests", () => {
 
       const increase1 = await repository.increase({
         userId: testUserId,
-        wallet: testWallet,
         competitionId: testCompetitionId,
         amount: 500n,
       });
 
       const increase2 = await repository.increase({
         userId: testUserId,
-        wallet: testWallet,
         competitionId: competition2Id,
         amount: 500n,
       });
@@ -937,7 +953,6 @@ describe("BoostRepository Bonus Boost Methods Integration Tests", () => {
 
       await repository.increase({
         userId: testUserId,
-        wallet: testWallet,
         competitionId: testCompetitionId,
         amount: 1000n,
         meta: { description: "stake boost" },
@@ -959,7 +974,6 @@ describe("BoostRepository Bonus Boost Methods Integration Tests", () => {
 
       const increase = await repository.increase({
         userId: testUserId,
-        wallet: testWallet,
         competitionId: testCompetitionId,
         amount: 1000n,
       });
@@ -983,7 +997,6 @@ describe("BoostRepository Bonus Boost Methods Integration Tests", () => {
     test("should return empty array when no bonus boost changes exist", async () => {
       await repository.increase({
         userId: testUserId,
-        wallet: testWallet,
         competitionId: testCompetitionId,
         amount: 1000n,
         meta: { description: "stake boost" },
@@ -1010,14 +1023,12 @@ describe("BoostRepository Bonus Boost Methods Integration Tests", () => {
 
       const increase1 = await repository.increase({
         userId: testUserId,
-        wallet: testWallet,
         competitionId: testCompetitionId,
         amount: 500n,
       });
 
       const increase2 = await repository.increase({
         userId: testUserId,
-        wallet: testWallet,
         competitionId: testCompetitionId,
         amount: 1000n,
       });
@@ -1061,7 +1072,6 @@ describe("BoostRepository Bonus Boost Methods Integration Tests", () => {
 
       const increase = await repository.increase({
         userId: testUserId,
-        wallet: testWallet,
         competitionId: competition2Id,
         amount: 1000n,
       });

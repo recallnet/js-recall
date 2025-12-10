@@ -1,7 +1,6 @@
 import { ResultAsync, errAsync, ok } from "neverthrow";
 import { Logger } from "pino";
 
-import { BlockchainAddressAsU8A } from "@recallnet/db/coders";
 import { BoostRepository } from "@recallnet/db/repositories/boost";
 import { CompetitionRepository } from "@recallnet/db/repositories/competition";
 import { UserRepository } from "@recallnet/db/repositories/user";
@@ -87,11 +86,10 @@ export class BoostService {
     this.logger = logger;
   }
 
-  claimBoost(userId: string, wallet: string, competitionId: string) {
+  claimBoost(userId: string, competitionId: string) {
     return ResultAsync.fromPromise(
       this.boostRepository.increase({
         userId,
-        wallet,
         competitionId,
         amount: this.noStakeBoostAmount,
         idemKey: Buffer.from(`claim-${userId}-${competitionId}`),
@@ -284,7 +282,7 @@ export class BoostService {
             }) as const,
         ).map((competition) => ({ user, competition }));
       })
-      .andThen(({ user, competition }) => {
+      .andThen(({ competition }) => {
         if (!competition) {
           return errAsync({ type: "CompetitionNotFound" } as const);
         }
@@ -309,7 +307,6 @@ export class BoostService {
         return ResultAsync.fromPromise(
           this.boostRepository.boostAgent({
             userId,
-            wallet: user.walletAddress,
             agentId,
             competitionId,
             amount,
@@ -359,7 +356,7 @@ export class BoostService {
     ).map(([items, total]) => {
       const mappedItems: CompetitionBoost[] = items.map((item) => ({
         userId: item.userId,
-        wallet: BlockchainAddressAsU8A.decode(item.wallet),
+        wallet: item.wallet,
         agentId: item.agentId,
         agentName: item.agentName,
         agentHandle: item.agentHandle,
@@ -377,5 +374,38 @@ export class BoostService {
         },
       };
     });
+  }
+
+  /**
+   * Get active bonus boosts for a user
+   * @param userId - User ID
+   * @returns User's active bonus boosts sorted by expiration date (ascending)
+   */
+  getUserBonusBoosts(userId: string): ResultAsync<
+    Array<{
+      id: string;
+      amount: string;
+      expiresAt: string;
+      meta?: Record<string, string | number | boolean>;
+    }>,
+    { type: "RepositoryError"; message: string }
+  > {
+    return ResultAsync.fromPromise(
+      this.boostRepository.findActiveBoostBonusesByUserId(userId),
+      (err) =>
+        ({
+          type: "RepositoryError",
+          message: errorToMessage(err),
+        }) as const,
+    ).map((boosts) =>
+      boosts.map((boost) => ({
+        id: boost.id,
+        amount: boost.amount.toString(),
+        expiresAt: boost.expiresAt.toISOString(),
+        meta: boost.meta as
+          | Record<string, string | number | boolean>
+          | undefined,
+      })),
+    );
   }
 }

@@ -1,9 +1,8 @@
 import { HypersyncClient } from "@envio-dev/hypersync-client";
 import type { Logger } from "pino";
 
-import { type Defer, defer } from "@/lib/defer.js";
-import { delay } from "@/lib/delay.js";
-
+import { type Defer, defer } from "../lib/defer.js";
+import { delay } from "../lib/delay.js";
 import { EventProcessor } from "./event-processor.js";
 import {
   HypersyncQuery,

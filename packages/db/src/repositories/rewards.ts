@@ -55,7 +55,16 @@ export class RewardsRepository {
   ): Promise<SelectReward[]> {
     try {
       const executor = tx || this.#db;
-      return await executor.insert(rewards).values(rewardsToInsert).returning();
+      // Ensure walletAddress is set from address if not provided
+      const rewardsWithWalletAddress = rewardsToInsert.map((reward) => ({
+        ...reward,
+        walletAddress:
+          reward.walletAddress ?? String(reward.address).toLowerCase(),
+      }));
+      return await executor
+        .insert(rewards)
+        .values(rewardsWithWalletAddress)
+        .returning();
     } catch (error) {
       this.#logger.error({ error }, "Error in insertRewards");
       throw error;
@@ -194,6 +203,7 @@ export class RewardsRepository {
     amount: bigint,
   ): Promise<SelectReward | undefined> {
     try {
+      const normalizedAddress = address.toLowerCase();
       const [updated] = await this.#db
         .update(rewards)
         .set({
@@ -203,7 +213,7 @@ export class RewardsRepository {
         .where(
           and(
             eq(rewards.competitionId, competitionId),
-            eq(rewards.address, address.toLowerCase()),
+            eq(rewards.walletAddress, normalizedAddress),
             eq(rewards.amount, amount),
           ),
         )
@@ -223,12 +233,13 @@ export class RewardsRepository {
    */
   async getTotalClaimableRewardsByAddress(address: string): Promise<bigint> {
     try {
+      const normalizedAddress = address.toLowerCase();
       const result = await this.#db
         .select({ total: sum(rewards.amount) })
         .from(rewards)
         .where(
           and(
-            eq(rewards.address, address.toLowerCase()),
+            eq(rewards.walletAddress, normalizedAddress),
             eq(rewards.claimed, false),
           ),
         );
@@ -265,6 +276,7 @@ export class RewardsRepository {
     }>
   > {
     try {
+      const normalizedAddress = address.toLowerCase();
       const result = await this.#db
         .select({
           reward: rewards,
@@ -288,7 +300,7 @@ export class RewardsRepository {
         .leftJoin(agents, eq(rewards.agentId, agents.id))
         .where(
           and(
-            eq(rewards.address, address.toLowerCase()),
+            eq(rewards.walletAddress, normalizedAddress),
             eq(rewards.claimed, false),
             isNotNull(rewardsRoots.tx),
           ),

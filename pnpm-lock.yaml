@@ -161,9 +161,6 @@ importers:
       swagger-ui-express:
         specifier: ^5.0.1
         version: 5.0.1(express@4.21.2)
-      uuid:
-        specifier: ^9.0.0
-        version: 9.0.1
       viem:
         specifier: ^2.38.5
         version: 2.38.5(bufferutil@4.0.9)(typescript@5.8.3)(utf-8-validate@5.0.10)(zod@3.25.76)
@@ -207,9 +204,6 @@ importers:
       '@types/swagger-ui-express':
         specifier: ^4.1.8
         version: 4.1.8
-      '@types/uuid':
-        specifier: ^9.0.1
-        version: 9.0.8
       '@vitejs/plugin-react':
         specifier: ^5.0.2
         version: 5.0.2(vite@6.3.5(@types/node@18.19.101)(jiti@2.4.2)(lightningcss@1.30.1)(terser@5.44.1)(tsx@4.19.4)(yaml@2.8.1))
@@ -435,9 +429,6 @@ importers:
       recharts:
         specifier: ^3.1.0
         version: 3.1.0(@types/react@19.1.17)(react-dom@19.1.2(react@19.1.2))(react-is@18.3.1)(react@19.1.2)(redux@5.0.1)
-      uuid:
-        specifier: ^9.0.0
-        version: 9.0.1
       vanilla-cookieconsent:
         specifier: ^3.1.0
         version: 3.1.0
@@ -475,9 +466,6 @@ importers:
       '@types/react-dom':
         specifier: ^19.1.11
         version: 19.1.11(@types/react@19.1.17)
-      '@types/uuid':
-        specifier: ^9.0.1
-        version: 9.0.8
       '@vitejs/plugin-react':
         specifier: ^5.0.2
         version: 5.0.2(vite@6.3.5(@types/node@20.17.48)(jiti@2.4.2)(lightningcss@1.30.1)(terser@5.44.1)(tsx@4.21.0)(yaml@2.8.1))
@@ -992,9 +980,6 @@ importers:
       tree-kill:
         specifier: ^1.2.2
         version: 1.2.2
-      uuid:
-        specifier: ^9.0.0
-        version: 9.0.1
       viem:
         specifier: ^2.38.5
         version: 2.38.5(bufferutil@4.0.9)(typescript@5.8.3)(utf-8-validate@5.0.10)(zod@4.1.12)
@@ -1017,9 +1002,6 @@ importers:
       '@types/pg':
         specifier: ^8.15.4
         version: 8.15.5
-      '@types/uuid':
-        specifier: ^9.0.1
-        version: 9.0.8
       tsup:
         specifier: ^8.0.0
         version: 8.5.0(jiti@2.4.2)(postcss@8.5.6)(tsx@4.21.0)(typescript@5.8.3)(yaml@2.8.1)
@@ -6754,9 +6736,6 @@ packages:
 
   '@types/uuid@8.3.4':
     resolution: {integrity: sha512-c/I8ZRb51j+pYGAu5CrFMRxqZ2ke4y2grEBO5AUjgSkSk+qT2Ea+OdWElz/OiMf5MNpn2b17kuVBwZLQJXzihw==}
-
-  '@types/uuid@9.0.8':
-    resolution: {integrity: sha512-jg+97EGIcY9AGHJJRaaPVgetKDsrTgbRjQ5Msgjh/DQKEFl0DtyRr/VCOyD1T2R1MNeWPK/u7JoGhlDZnKBAfA==}
 
   '@types/ws@7.4.7':
     resolution: {integrity: sha512-JQbbmxZTZehdc2iszGKs5oC3NFnjeay7mtAWrdt7qNtAVK0g19muApzAy4bm9byz79xa2ZnO/BOBC2R8RC5Lww==}
@@ -21755,8 +21734,6 @@ snapshots:
 
   '@types/uuid@8.3.4': {}
 
-  '@types/uuid@9.0.8': {}
-
   '@types/ws@7.4.7':
     dependencies:
       '@types/node': 24.3.0
@@ -25287,7 +25264,7 @@ snapshots:
 
   extension-port-stream@3.0.0:
     dependencies:
-      readable-stream: 3.6.2
+      readable-stream: 4.7.0
       webextension-polyfill: 0.10.0
 
   external-editor@3.1.0:

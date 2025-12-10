@@ -5,6 +5,7 @@ import { boostAgent } from "./boost-agent";
 import { claimBoost } from "./claim-boost";
 import { claimStakedBoost } from "./claim-staked-boost";
 import { competitionBoosts } from "./competition-boosts";
+import { userBonusBoosts } from "./user-bonus-boosts";
 import { userBoosts } from "./user-boosts";
 
 export const router = {
@@ -14,6 +15,7 @@ export const router = {
   balance,
   boostAgent,
   userBoosts,
+  userBonusBoosts,
   availableAwards,
   competitionBoosts,
 };

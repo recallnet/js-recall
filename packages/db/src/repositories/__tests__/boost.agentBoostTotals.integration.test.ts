@@ -167,14 +167,12 @@ describe("BoostRepository.agentBoostTotals() Integration Tests", () => {
       // Setup: Give user balance and boost one agent
       await repository.increase({
         userId: testUserId1,
-        wallet: testWallet1,
         competitionId: testCompetitionId1,
         amount: 500n,
       });
 
       await repository.boostAgent({
         userId: testUserId1,
-        wallet: testWallet1,
         agentId: testAgentId1,
         competitionId: testCompetitionId1,
         amount: 300n,
@@ -193,7 +191,6 @@ describe("BoostRepository.agentBoostTotals() Integration Tests", () => {
       // Setup: Give user balance
       await repository.increase({
         userId: testUserId1,
-        wallet: testWallet1,
         competitionId: testCompetitionId1,
         amount: 1000n,
       });
@@ -201,7 +198,6 @@ describe("BoostRepository.agentBoostTotals() Integration Tests", () => {
       // Boost multiple agents
       await repository.boostAgent({
         userId: testUserId1,
-        wallet: testWallet1,
         agentId: testAgentId1,
         competitionId: testCompetitionId1,
         amount: 400n,
@@ -209,7 +205,6 @@ describe("BoostRepository.agentBoostTotals() Integration Tests", () => {
 
       await repository.boostAgent({
         userId: testUserId1,
-        wallet: testWallet1,
         agentId: testAgentId2,
         competitionId: testCompetitionId1,
         amount: 250n,
@@ -217,7 +212,6 @@ describe("BoostRepository.agentBoostTotals() Integration Tests", () => {
 
       await repository.boostAgent({
         userId: testUserId1,
-        wallet: testWallet1,
         agentId: testAgentId3,
         competitionId: testCompetitionId1,
         amount: 150n,
@@ -238,7 +232,6 @@ describe("BoostRepository.agentBoostTotals() Integration Tests", () => {
       // Setup: Give user balance
       await repository.increase({
         userId: testUserId1,
-        wallet: testWallet1,
         competitionId: testCompetitionId1,
         amount: 1000n,
       });
@@ -246,7 +239,6 @@ describe("BoostRepository.agentBoostTotals() Integration Tests", () => {
       // Boost same agent multiple times
       await repository.boostAgent({
         userId: testUserId1,
-        wallet: testWallet1,
         agentId: testAgentId1,
         competitionId: testCompetitionId1,
         amount: 200n,
@@ -254,7 +246,6 @@ describe("BoostRepository.agentBoostTotals() Integration Tests", () => {
 
       await repository.boostAgent({
         userId: testUserId1,
-        wallet: testWallet1,
         agentId: testAgentId1,
         competitionId: testCompetitionId1,
         amount: 150n,
@@ -262,7 +253,6 @@ describe("BoostRepository.agentBoostTotals() Integration Tests", () => {
 
       await repository.boostAgent({
         userId: testUserId1,
-        wallet: testWallet1,
         agentId: testAgentId1,
         competitionId: testCompetitionId1,
         amount: 300n,
@@ -283,14 +273,12 @@ describe("BoostRepository.agentBoostTotals() Integration Tests", () => {
       // Setup: Give both users balance
       await repository.increase({
         userId: testUserId1,
-        wallet: testWallet1,
         competitionId: testCompetitionId1,
         amount: 600n,
       });
 
       await repository.increase({
         userId: testUserId2,
-        wallet: testWallet2,
         competitionId: testCompetitionId1,
         amount: 400n,
       });
@@ -298,7 +286,6 @@ describe("BoostRepository.agentBoostTotals() Integration Tests", () => {
       // Both users boost same agent
       await repository.boostAgent({
         userId: testUserId1,
-        wallet: testWallet1,
         agentId: testAgentId1,
         competitionId: testCompetitionId1,
         amount: 250n,
@@ -306,7 +293,6 @@ describe("BoostRepository.agentBoostTotals() Integration Tests", () => {
 
       await repository.boostAgent({
         userId: testUserId2,
-        wallet: testWallet2,
         agentId: testAgentId1,
         competitionId: testCompetitionId1,
         amount: 150n,
@@ -326,14 +312,12 @@ describe("BoostRepository.agentBoostTotals() Integration Tests", () => {
       // Setup: Give both users balance
       await repository.increase({
         userId: testUserId1,
-        wallet: testWallet1,
         competitionId: testCompetitionId1,
         amount: 1000n,
       });
 
       await repository.increase({
         userId: testUserId2,
-        wallet: testWallet2,
         competitionId: testCompetitionId1,
         amount: 800n,
       });
@@ -341,7 +325,6 @@ describe("BoostRepository.agentBoostTotals() Integration Tests", () => {
       // User 1 boosts multiple agents
       await repository.boostAgent({
         userId: testUserId1,
-        wallet: testWallet1,
         agentId: testAgentId1,
         competitionId: testCompetitionId1,
         amount: 300n,
@@ -349,7 +332,6 @@ describe("BoostRepository.agentBoostTotals() Integration Tests", () => {
 
       await repository.boostAgent({
         userId: testUserId1,
-        wallet: testWallet1,
         agentId: testAgentId2,
         competitionId: testCompetitionId1,
         amount: 200n,
@@ -358,7 +340,6 @@ describe("BoostRepository.agentBoostTotals() Integration Tests", () => {
       // User 2 boosts agents (some overlap)
       await repository.boostAgent({
         userId: testUserId2,
-        wallet: testWallet2,
         agentId: testAgentId1,
         competitionId: testCompetitionId1,
         amount: 250n,
@@ -366,7 +347,6 @@ describe("BoostRepository.agentBoostTotals() Integration Tests", () => {
 
       await repository.boostAgent({
         userId: testUserId2,
-        wallet: testWallet2,
         agentId: testAgentId3,
         competitionId: testCompetitionId1,
         amount: 150n,
@@ -375,7 +355,6 @@ describe("BoostRepository.agentBoostTotals() Integration Tests", () => {
       // User 1 boosts agent1 again
       await repository.boostAgent({
         userId: testUserId1,
-        wallet: testWallet1,
         agentId: testAgentId1,
         competitionId: testCompetitionId1,
         amount: 100n,
@@ -420,14 +399,12 @@ describe("BoostRepository.agentBoostTotals() Integration Tests", () => {
       // Setup: Give user balance in both competitions
       await repository.increase({
         userId: testUserId1,
-        wallet: testWallet1,
         competitionId: testCompetitionId1,
         amount: 800n,
       });
 
       await repository.increase({
         userId: testUserId1,
-        wallet: testWallet1,
         competitionId: testCompetitionId2,
         amount: 600n,
       });
@@ -435,7 +412,6 @@ describe("BoostRepository.agentBoostTotals() Integration Tests", () => {
       // Boost agents in competition 1
       await repository.boostAgent({
         userId: testUserId1,
-        wallet: testWallet1,
         agentId: testAgentId1,
         competitionId: testCompetitionId1,
         amount: 400n,
@@ -443,7 +419,6 @@ describe("BoostRepository.agentBoostTotals() Integration Tests", () => {
 
       await repository.boostAgent({
         userId: testUserId1,
-        wallet: testWallet1,
         agentId: testAgentId2,
         competitionId: testCompetitionId1,
         amount: 300n,
@@ -452,7 +427,6 @@ describe("BoostRepository.agentBoostTotals() Integration Tests", () => {
       // Boost agents in competition 2 (different amounts, some same agents)
       await repository.boostAgent({
         userId: testUserId1,
-        wallet: testWallet1,
         agentId: testAgentId1,
         competitionId: testCompetitionId2,
         amount: 200n,
@@ -460,7 +434,6 @@ describe("BoostRepository.agentBoostTotals() Integration Tests", () => {
 
       await repository.boostAgent({
         userId: testUserId1,
-        wallet: testWallet1,
         agentId: testAgentId3,
         competitionId: testCompetitionId2,
         amount: 150n,
@@ -507,14 +480,12 @@ describe("BoostRepository.agentBoostTotals() Integration Tests", () => {
       // Setup: Create boost scenario
       await repository.increase({
         userId: testUserId1,
-        wallet: testWallet1,
         competitionId: testCompetitionId1,
         amount: 1000n,
       });
 
       await repository.boostAgent({
         userId: testUserId1,
-        wallet: testWallet1,
         agentId: testAgentId1,
         competitionId: testCompetitionId1,
         amount: 350n,
@@ -522,7 +493,6 @@ describe("BoostRepository.agentBoostTotals() Integration Tests", () => {
 
       await repository.boostAgent({
         userId: testUserId1,
-        wallet: testWallet1,
         agentId: testAgentId2,
         competitionId: testCompetitionId1,
         amount: 250n,
@@ -562,7 +532,6 @@ describe("BoostRepository.agentBoostTotals() Integration Tests", () => {
       // Setup: Give user balance
       await repository.increase({
         userId: testUserId1,
-        wallet: testWallet1,
         competitionId: testCompetitionId1,
         amount: 1000n,
       });
@@ -570,7 +539,6 @@ describe("BoostRepository.agentBoostTotals() Integration Tests", () => {
       // Initial boost
       await repository.boostAgent({
         userId: testUserId1,
-        wallet: testWallet1,
         agentId: testAgentId1,
         competitionId: testCompetitionId1,
         amount: 200n,
@@ -585,7 +553,6 @@ describe("BoostRepository.agentBoostTotals() Integration Tests", () => {
       // Add more boost to same agent
       await repository.boostAgent({
         userId: testUserId1,
-        wallet: testWallet1,
         agentId: testAgentId1,
         competitionId: testCompetitionId1,
         amount: 150n,
@@ -600,7 +567,6 @@ describe("BoostRepository.agentBoostTotals() Integration Tests", () => {
       // Add boost to different agent
       await repository.boostAgent({
         userId: testUserId1,
-        wallet: testWallet1,
         agentId: testAgentId2,
         competitionId: testCompetitionId1,
         amount: 100n,
@@ -622,7 +588,6 @@ describe("BoostRepository.agentBoostTotals() Integration Tests", () => {
       // Setup: Give user balance
       await repository.increase({
         userId: testUserId1,
-        wallet: testWallet1,
         competitionId: testCompetitionId1,
         amount: 800n,
       });
@@ -632,7 +597,6 @@ describe("BoostRepository.agentBoostTotals() Integration Tests", () => {
       // First boost with idempotency key
       await repository.boostAgent({
         userId: testUserId1,
-        wallet: testWallet1,
         agentId: testAgentId1,
         competitionId: testCompetitionId1,
         amount: 300n,
@@ -642,7 +606,6 @@ describe("BoostRepository.agentBoostTotals() Integration Tests", () => {
       // Second boost with same idempotency key (should be noop)
       await repository.boostAgent({
         userId: testUserId1,
-        wallet: testWallet1,
         agentId: testAgentId1,
         competitionId: testCompetitionId1,
         amount: 300n,
@@ -679,14 +642,12 @@ describe("BoostRepository.agentBoostTotals() Integration Tests", () => {
       // Setup: Give both users balance
       await repository.increase({
         userId: testUserId1,
-        wallet: testWallet1,
         competitionId: testCompetitionId1,
         amount: 700n,
       });
 
       await repository.increase({
         userId: testUserId2,
-        wallet: testWallet2,
         competitionId: testCompetitionId1,
         amount: 500n,
       });
@@ -694,7 +655,6 @@ describe("BoostRepository.agentBoostTotals() Integration Tests", () => {
       // Complex boost scenario
       await repository.boostAgent({
         userId: testUserId1,
-        wallet: testWallet1,
         agentId: testAgentId1,
         competitionId: testCompetitionId1,
         amount: 300n,
@@ -702,7 +662,6 @@ describe("BoostRepository.agentBoostTotals() Integration Tests", () => {
 
       await repository.boostAgent({
         userId: testUserId1,
-        wallet: testWallet1,
         agentId: testAgentId2,
         competitionId: testCompetitionId1,
         amount: 200n,
@@ -710,7 +669,6 @@ describe("BoostRepository.agentBoostTotals() Integration Tests", () => {
 
       await repository.boostAgent({
         userId: testUserId2,
-        wallet: testWallet2,
         agentId: testAgentId1,
         competitionId: testCompetitionId1,
         amount: 250n,
@@ -718,7 +676,6 @@ describe("BoostRepository.agentBoostTotals() Integration Tests", () => {
 
       await repository.boostAgent({
         userId: testUserId2,
-        wallet: testWallet2,
         agentId: testAgentId3,
         competitionId: testCompetitionId1,
         amount: 150n,
@@ -765,14 +722,12 @@ describe("BoostRepository.agentBoostTotals() Integration Tests", () => {
       // Setup: Give user balance
       await repository.increase({
         userId: testUserId1,
-        wallet: testWallet1,
         competitionId: testCompetitionId1,
         amount: 600n,
       });
 
       await repository.boostAgent({
         userId: testUserId1,
-        wallet: testWallet1,
         agentId: testAgentId1,
         competitionId: testCompetitionId1,
         amount: 300n,
@@ -795,7 +750,6 @@ describe("BoostRepository.agentBoostTotals() Integration Tests", () => {
         await repository.boostAgent(
           {
             userId: testUserId1,
-            wallet: testWallet1,
             agentId: testAgentId2,
             competitionId: testCompetitionId1,
             amount: 150n,
@@ -853,7 +807,6 @@ describe("BoostRepository.agentBoostTotals() Integration Tests", () => {
       const largeAmount = 999999999999999999n;
       await repository.increase({
         userId: testUserId1,
-        wallet: testWallet1,
         competitionId: testCompetitionId1,
         amount: largeAmount,
       });
@@ -862,7 +815,6 @@ describe("BoostRepository.agentBoostTotals() Integration Tests", () => {
       const boostAmount = 123456789012345678n;
       await repository.boostAgent({
         userId: testUserId1,
-        wallet: testWallet1,
         agentId: testAgentId1,
         competitionId: testCompetitionId1,
         amount: boostAmount,
@@ -879,14 +831,12 @@ describe("BoostRepository.agentBoostTotals() Integration Tests", () => {
       // Setup: Create boost scenario
       await repository.increase({
         userId: testUserId1,
-        wallet: testWallet1,
         competitionId: testCompetitionId1,
         amount: 500n,
       });
 
       await repository.boostAgent({
         userId: testUserId1,
-        wallet: testWallet1,
         agentId: testAgentId1,
         competitionId: testCompetitionId1,
         amount: 200n,
@@ -894,7 +844,6 @@ describe("BoostRepository.agentBoostTotals() Integration Tests", () => {
 
       await repository.boostAgent({
         userId: testUserId1,
-        wallet: testWallet1,
         agentId: testAgentId2,
         competitionId: testCompetitionId1,
         amount: 150n,
@@ -928,14 +877,12 @@ describe("BoostRepository.agentBoostTotals() Integration Tests", () => {
       // Setup: Create boost scenario
       await repository.increase({
         userId: testUserId1,
-        wallet: testWallet1,
         competitionId: testCompetitionId1,
         amount: 800n,
       });
 
       await repository.boostAgent({
         userId: testUserId1,
-        wallet: testWallet1,
         agentId: testAgentId1,
         competitionId: testCompetitionId1,
         amount: 400n,
@@ -943,7 +890,6 @@ describe("BoostRepository.agentBoostTotals() Integration Tests", () => {
 
       await repository.boostAgent({
         userId: testUserId1,
-        wallet: testWallet1,
         agentId: testAgentId2,
         competitionId: testCompetitionId1,
         amount: 300n,
@@ -983,14 +929,12 @@ describe("BoostRepository.agentBoostTotals() Integration Tests", () => {
       // Setup: Multiple users, complex boost scenario
       await repository.increase({
         userId: testUserId1,
-        wallet: testWallet1,
         competitionId: testCompetitionId1,
         amount: 600n,
       });
 
       await repository.increase({
         userId: testUserId2,
-        wallet: testWallet2,
         competitionId: testCompetitionId1,
         amount: 400n,
       });
@@ -998,7 +942,6 @@ describe("BoostRepository.agentBoostTotals() Integration Tests", () => {
       // Perform various boosts
       await repository.boostAgent({
         userId: testUserId1,
-        wallet: testWallet1,
         agentId: testAgentId1,
         competitionId: testCompetitionId1,
         amount: 200n,
@@ -1006,7 +949,6 @@ describe("BoostRepository.agentBoostTotals() Integration Tests", () => {
 
       await repository.boostAgent({
         userId: testUserId2,
-        wallet: testWallet2,
         agentId: testAgentId1,
         competitionId: testCompetitionId1,
         amount: 150n,
@@ -1014,7 +956,6 @@ describe("BoostRepository.agentBoostTotals() Integration Tests", () => {
 
       await repository.boostAgent({
         userId: testUserId1,
-        wallet: testWallet1,
         agentId: testAgentId2,
         competitionId: testCompetitionId1,
         amount: 100n,
@@ -1060,7 +1001,6 @@ describe("BoostRepository.agentBoostTotals() Integration Tests", () => {
       // Setup: Give user balance
       await repository.increase({
         userId: testUserId1,
-        wallet: testWallet1,
         competitionId: testCompetitionId1,
         amount: 1000n,
       });
@@ -1068,7 +1008,6 @@ describe("BoostRepository.agentBoostTotals() Integration Tests", () => {
       // Initial boost
       await repository.boostAgent({
         userId: testUserId1,
-        wallet: testWallet1,
         agentId: testAgentId1,
         competitionId: testCompetitionId1,
         amount: 300n,
@@ -1083,7 +1022,6 @@ describe("BoostRepository.agentBoostTotals() Integration Tests", () => {
       // Add more balance to user
       await repository.increase({
         userId: testUserId1,
-        wallet: testWallet1,
         competitionId: testCompetitionId1,
         amount: 500n,
       });
@@ -1091,7 +1029,6 @@ describe("BoostRepository.agentBoostTotals() Integration Tests", () => {
       // Boost more
       await repository.boostAgent({
         userId: testUserId1,
-        wallet: testWallet1,
         agentId: testAgentId1,
         competitionId: testCompetitionId1,
         amount: 200n,
