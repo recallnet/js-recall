@@ -38,21 +38,48 @@ export const getPerformanceReport = adminBase
       input.competitionId,
     );
 
+    // Get all users for agent owner names
+    const users = await context.userService.getAllUsers();
+
+    // Map agent IDs to owner names
+    const userMap = new Map(
+      users.map((user) => [user.id, user.name || "Unknown User"]),
+    );
+
+    // Get only agents in this competition to map agent IDs to agent names and owners
+    const agentIds = leaderboard.map((entry) => entry.agentId);
+    const agents = await context.agentService.getAgentsByIds(agentIds);
+    const agentMap = new Map(
+      agents.map((agent) => [
+        agent.id,
+        {
+          name: agent.name,
+          handle: agent.handle,
+          ownerName: userMap.get(agent.ownerId) || "Unknown Owner",
+        },
+      ]),
+    );
+
+    // Format leaderboard with agent and owner names
+    const formattedLeaderboard = leaderboard.map((entry, index) => ({
+      rank: index + 1,
+      agentId: entry.agentId,
+      agentName: agentMap.get(entry.agentId)?.name || "Unknown Agent",
+      agentHandle: agentMap.get(entry.agentId)?.handle || "unknown_agent",
+      ownerName: agentMap.get(entry.agentId)?.ownerName || "Unknown Owner",
+      portfolioValue: entry.value,
+      pnl: entry.pnl,
+      // Spot live metrics (only present for spot_live_trading competitions)
+      simpleReturn: entry.simpleReturn ?? null,
+      startingValue: entry.startingValue ?? null,
+      currentValue: entry.currentValue ?? null,
+      totalTrades: entry.totalTrades ?? null,
+    }));
+
     return {
       success: true,
-      competition: {
-        id: competition.id,
-        name: competition.name,
-        description: competition.description,
-        startDate: competition.startDate,
-        endDate: competition.endDate,
-        externalUrl: competition.externalUrl,
-        imageUrl: competition.imageUrl,
-        status: competition.status,
-        crossChainTradingType: competition.crossChainTradingType,
-        type: competition.type,
-      },
-      leaderboard,
+      competition,
+      leaderboard: formattedLeaderboard,
     };
   });
 
