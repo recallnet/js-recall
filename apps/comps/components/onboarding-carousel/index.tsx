@@ -1,6 +1,5 @@
 "use client";
 
-import { X } from "lucide-react";
 import { AnimatePresence, motion } from "motion/react";
 import { useRouter } from "next/navigation";
 import React, { useCallback, useEffect, useState } from "react";
@@ -152,20 +151,11 @@ export const OnboardingCarousel: React.FC<OnboardingCarouselProps> = ({
       onOpenChange={(open) => !open && handleSkipFlow()}
     >
       <DialogContent
-        className="w-[420px] max-w-[90vw] overflow-hidden rounded-3xl border-gray-800 bg-[#0d1117] p-0"
+        className="bg-background w-[420px] max-w-[90vw] overflow-hidden rounded-3xl border-gray-800 p-0"
         showCloseButton={false}
         onKeyDown={handleKeyDown}
       >
-        <button
-          type="button"
-          onClick={handleSkipFlow}
-          className="absolute right-4 top-4 z-10 rounded-full p-1 text-gray-400 transition-colors hover:bg-gray-800 hover:text-white"
-          aria-label="Close onboarding"
-        >
-          <X className="h-5 w-5" />
-        </button>
-
-        <div className="relative min-h-[400px] overflow-hidden">
+        <div className="relative min-h-[350px]">
           <AnimatePresence mode="wait" initial={false} custom={direction}>
             <motion.div
               key={currentStep}
@@ -189,13 +179,13 @@ export const OnboardingCarousel: React.FC<OnboardingCarouselProps> = ({
           totalSteps={totalSteps}
           currentStep={currentStep}
           onStepClick={handleStepClick}
-          className="pb-6"
+          className="pb-4 pt-10"
         />
 
         <div className="flex flex-col gap-3 px-6 pb-6">
           <Button
             onClick={handleNext}
-            className="h-12 w-full rounded bg-[#f1f1f1] font-mono text-lg font-semibold uppercase tracking-wide text-[#2c2c2c] hover:bg-white"
+            className="rounded-lg bg-white font-mono text-lg font-semibold uppercase tracking-wide text-black hover:bg-gray-300"
           >
             {isLastStep ? "BOOST NOW" : "NEXT"}
           </Button>
@@ -203,7 +193,7 @@ export const OnboardingCarousel: React.FC<OnboardingCarouselProps> = ({
           <Button
             onClick={secondaryButton.action}
             variant="outline"
-            className="h-12 w-full rounded border-[#4d4747] bg-transparent font-mono text-lg font-semibold uppercase tracking-wide text-[#bababa] hover:border-gray-500 hover:text-white"
+            className="rounded-lg border-gray-700 bg-transparent font-mono text-lg font-semibold uppercase tracking-wide text-gray-500 hover:bg-gray-900"
           >
             {secondaryButton.label}
           </Button>
