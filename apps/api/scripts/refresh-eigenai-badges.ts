@@ -92,8 +92,6 @@ if (process.argv.includes("--run-once")) {
     await refreshEigenAiBadges();
   } catch {
     process.exit(1);
-  } finally {
-    process.exit(0);
   }
 }
 

@@ -48,6 +48,25 @@ const KNOWN_NATIVE_ETH_SWAP = {
   description: "Native ETH → Token swap via Aerodrome",
 };
 
+// Regression test case: Multi-transfer swap that was incorrectly parsed before logIndex fix
+// Transaction has a 0-value ETH external call AND an AERO→USDC swap.
+// Before the fix, getAssetTransfers ordering was non-deterministic and the 0-value
+// transfer was sometimes picked as fromToken/fromAmount instead of the real AERO transfer.
+const KNOWN_MULTI_TRANSFER_SWAP = {
+  txHash: "0x193e73f9ab0aae74226d8b19b4d95823a78a0451ec6757126315ea8fd702895b",
+  blockNumber: 39235682,
+  wallet: "0x91de90c092ba6df8fa714541d4335c08e7d76a0b", // deepseek 3.2 aero agent
+  expectedFromToken: "0x940181a94a35a4569e4529a3cdfb74e38fd98631".toLowerCase(), // AERO
+  expectedToToken: "0x833589fcd6edb6e08f4c7c32d4f71b54bda02913".toLowerCase(), // USDC
+  // Exact amounts from blockchain (immutable) - use toBeCloseTo for float comparison
+  expectedFromAmount: 106.8348, // AERO (18 decimals, truncated for JS precision)
+  expectedToAmount: 69.820741, // USDC (6 decimals)
+  expectedProtocol: "aerodrome",
+  expectedChain: "base",
+  description:
+    "AERO → USDC swap with 0-value ETH contract call (regression test)",
+};
+
 // Get Aerodrome protocol config from constants
 const aerodromeConfig = getDexProtocolConfig("aerodrome", "base");
 if (!aerodromeConfig) {
@@ -118,12 +137,13 @@ describe("RpcSpotProvider - Integration Tests (Real Blockchain)", () => {
 
     console.log(`Scanning blocks ${fromBlock} to ${toBlock} on Base...`);
 
-    const trades = await provider.getTradesSince(
+    const result = await provider.getTradesSince(
       TEST_WALLETS.aerodromeSwapper, // Use known active wallet
       fromBlock,
       ["base"],
       toBlock, // Specify toBlock for faster, deterministic tests
     );
+    const trades = result.trades;
 
     console.log(`Found ${trades.length} trades from real blockchain`);
 
@@ -210,12 +230,13 @@ describe("RpcSpotProvider - Integration Tests (Real Blockchain)", () => {
     }
 
     // Now test swap detection WITHOUT protocol filter
-    const trades = await provider.getTradesSince(
+    const result = await provider.getTradesSince(
       KNOWN_AERODROME_SWAP.wallet,
       fromBlock,
       ["base"],
       toBlock, // Specify toBlock for faster, deterministic test
     );
+    const trades = result.trades;
 
     console.log(
       `  RpcSpotProvider detected ${trades.length} swaps (no filter)`,
@@ -235,7 +256,7 @@ describe("RpcSpotProvider - Integration Tests (Real Blockchain)", () => {
       console.log(`    To: ${knownSwap.toToken} (${knownSwap.toAmount})`);
       console.log(`    Protocol: ${knownSwap.protocol}`);
     } else {
-      console.error(`  ❌ CRITICAL: Swap NOT detected even without filter`);
+      console.error(`  ❌ Swap NOT detected even without filter`);
       console.error(`  This means detectSwapPattern() is broken`);
     }
 
@@ -307,12 +328,13 @@ describe("RpcSpotProvider - Integration Tests (Real Blockchain)", () => {
       console.error(`    3. Alchemy API issue`);
     }
 
-    const trades = await provider.getTradesSince(
+    const result = await provider.getTradesSince(
       KNOWN_AERODROME_SWAP.wallet,
       fromBlock,
       ["base"],
       toBlock, // Specify toBlock for faster, deterministic tests
     );
+    const trades = result.trades;
 
     console.log(
       `  RpcSpotProvider detected ${trades.length} swaps WITH filter`,
@@ -359,13 +381,13 @@ describe("RpcSpotProvider - Integration Tests (Real Blockchain)", () => {
     const currentBlock = await realRpcProvider.getBlockNumber("base");
     const fromBlock = currentBlock - 100;
 
-    const trades = await provider.getTradesSince(inactiveWallet, fromBlock, [
+    const result = await provider.getTradesSince(inactiveWallet, fromBlock, [
       "base",
     ]);
 
     // Should return empty array, not throw error
-    expect(Array.isArray(trades)).toBe(true);
-    expect(trades.length).toBe(0);
+    expect(Array.isArray(result.trades)).toBe(true);
+    expect(result.trades.length).toBe(0);
     console.log("✓ Correctly returned empty array for inactive wallet");
   });
 
@@ -384,12 +406,13 @@ describe("RpcSpotProvider - Integration Tests (Real Blockchain)", () => {
 
     console.log(`Scanning trades since ${searchStartDate.toISOString()}...`);
 
-    const trades = await provider.getTradesSince(
+    const result = await provider.getTradesSince(
       TEST_WALLETS.aerodromeSwapper, // Use known active wallet
       searchStartDate,
       ["base"],
       KNOWN_AERODROME_SWAP.blockNumber + 10, // Narrow range for fast test
     );
+    const trades = result.trades;
 
     console.log(`Found ${trades.length} trades`);
 
@@ -432,17 +455,19 @@ describe("RpcSpotProvider - Integration Tests (Real Blockchain)", () => {
     // Provider WITHOUT filter (all DEXs)
     const openProvider = new RpcSpotProvider(realRpcProvider, [], mockLogger);
 
-    const aeroTrades = await aerodromeProvider.getTradesSince(
+    const aeroResult = await aerodromeProvider.getTradesSince(
       TEST_WALLETS.aerodromeSwapper,
       fromBlock,
       ["base"],
     );
+    const aeroTrades = aeroResult.trades;
 
-    const allTrades = await openProvider.getTradesSince(
+    const allResult = await openProvider.getTradesSince(
       TEST_WALLETS.aerodromeSwapper,
       fromBlock,
       ["base"],
     );
+    const allTrades = allResult.trades;
 
     console.log(`Aerodrome filter: ${aeroTrades.length} trades`);
     console.log(`No filter: ${allTrades.length} trades`);
@@ -475,12 +500,13 @@ describe("RpcSpotProvider - Integration Tests (Real Blockchain)", () => {
     // Use narrow range around known swap for fast test
     const fromBlock = KNOWN_AERODROME_SWAP.blockNumber - 10;
 
-    const trades = await provider.getTradesSince(
+    const result = await provider.getTradesSince(
       KNOWN_AERODROME_SWAP.wallet,
       fromBlock,
       ["base"],
       KNOWN_AERODROME_SWAP.blockNumber + 10, // Narrow range for fast test
     );
+    const trades = result.trades;
 
     expect(trades.length).toBeGreaterThan(0);
 
@@ -568,12 +594,13 @@ describe("RpcSpotProvider - Integration Tests (Real Blockchain)", () => {
       `Looking for native ETH swap: ${KNOWN_NATIVE_ETH_SWAP.description}`,
     );
 
-    const trades = await provider.getTradesSince(
+    const result = await provider.getTradesSince(
       KNOWN_NATIVE_ETH_SWAP.wallet,
       fromBlock,
       ["base"],
       toBlock,
     );
+    const trades = result.trades;
 
     console.log(`Found ${trades.length} trades from real blockchain`);
 
@@ -642,5 +669,107 @@ describe("RpcSpotProvider - Integration Tests (Real Blockchain)", () => {
     console.log(
       `✓ Format verified: both native and tokens return DECIMAL strings`,
     );
+  }, 30000);
+
+  test("should correctly detect AERO→USDC swap when transaction has 0-value ETH transfer (regression)", async () => {
+    if (!process.env.ALCHEMY_API_KEY) {
+      console.log("Skipping test - no ALCHEMY_API_KEY");
+      return;
+    }
+
+    // This test verifies the fix for a bug where transactions with multiple outbound
+    // transfers (e.g., a real ERC20 swap + a 0-value external call) would sometimes
+    // incorrectly identify the 0-value transfer as the fromToken/fromAmount.
+    //
+    // The fix uses logIndex ordering from transaction receipts to deterministically
+    // identify the first outbound and last inbound ERC20 transfers.
+
+    provider = new RpcSpotProvider(
+      realRpcProvider,
+      [AERODROME_FILTER], // Use Aerodrome filter since this is an Aerodrome swap
+      mockLogger,
+    );
+
+    const fromBlock = KNOWN_MULTI_TRANSFER_SWAP.blockNumber - 5;
+    const toBlock = KNOWN_MULTI_TRANSFER_SWAP.blockNumber + 5;
+
+    console.log(`\n[REGRESSION TEST] ${KNOWN_MULTI_TRANSFER_SWAP.description}`);
+    console.log(`  TxHash: ${KNOWN_MULTI_TRANSFER_SWAP.txHash}`);
+    console.log(`  Wallet: ${KNOWN_MULTI_TRANSFER_SWAP.wallet}`);
+    console.log(`  Scanning blocks ${fromBlock} to ${toBlock}...`);
+
+    const result = await provider.getTradesSince(
+      KNOWN_MULTI_TRANSFER_SWAP.wallet,
+      fromBlock,
+      ["base"],
+      toBlock,
+    );
+    const trades = result.trades;
+
+    console.log(`  Found ${trades.length} trades`);
+
+    // Find our specific transaction
+    const targetSwap = trades.find(
+      (t) =>
+        t.txHash.toLowerCase() ===
+        KNOWN_MULTI_TRANSFER_SWAP.txHash.toLowerCase(),
+    );
+
+    expect(targetSwap).toBeDefined();
+    console.log(`\n✓ Found target swap transaction:`);
+    console.log(`  From Token: ${targetSwap?.fromToken}`);
+    console.log(`  To Token: ${targetSwap?.toToken}`);
+    console.log(`  From Amount: ${targetSwap?.fromAmount}`);
+    console.log(`  To Amount: ${targetSwap?.toAmount}`);
+    console.log(`  Protocol: ${targetSwap?.protocol}`);
+    console.log(`  Chain: ${targetSwap?.chain}`);
+    console.log(`  Block: ${targetSwap?.blockNumber}`);
+
+    // Before the fix, fromToken could incorrectly be the zero address (native ETH)
+    // and fromAmount could be 0 due to the 0-value external call.
+
+    // Verify fromToken is AERO (not zero address / native ETH)
+    expect(targetSwap?.fromToken.toLowerCase()).toBe(
+      KNOWN_MULTI_TRANSFER_SWAP.expectedFromToken,
+    );
+    console.log(`✓ fromToken is correctly AERO (not zero address)`);
+
+    // Verify toToken is USDC
+    expect(targetSwap?.toToken.toLowerCase()).toBe(
+      KNOWN_MULTI_TRANSFER_SWAP.expectedToToken,
+    );
+    console.log(`✓ toToken is correctly USDC`);
+
+    // Verify fromAmount matches expected value (blockchain data is immutable)
+    expect(targetSwap?.fromAmount).toBeCloseTo(
+      KNOWN_MULTI_TRANSFER_SWAP.expectedFromAmount,
+      4, // 4 decimal places precision
+    );
+    console.log(
+      `✓ fromAmount (${targetSwap?.fromAmount}) ≈ ${KNOWN_MULTI_TRANSFER_SWAP.expectedFromAmount}`,
+    );
+
+    // Verify toAmount matches expected value
+    expect(targetSwap?.toAmount).toBeCloseTo(
+      KNOWN_MULTI_TRANSFER_SWAP.expectedToAmount,
+      4,
+    );
+    console.log(
+      `✓ toAmount (${targetSwap?.toAmount}) ≈ ${KNOWN_MULTI_TRANSFER_SWAP.expectedToAmount}`,
+    );
+
+    // Verify protocol and chain
+    expect(targetSwap?.protocol).toBe(
+      KNOWN_MULTI_TRANSFER_SWAP.expectedProtocol,
+    );
+    expect(targetSwap?.chain).toBe(KNOWN_MULTI_TRANSFER_SWAP.expectedChain);
+    console.log(`✓ protocol is ${targetSwap?.protocol}`);
+    console.log(`✓ chain is ${targetSwap?.chain}`);
+
+    // Verify block number
+    expect(targetSwap?.blockNumber).toBe(KNOWN_MULTI_TRANSFER_SWAP.blockNumber);
+    console.log(`✓ blockNumber is ${targetSwap?.blockNumber}`);
+
+    console.log(`\n✓ REGRESSION TEST PASSED: logIndex-based detection works`);
   }, 30000);
 });

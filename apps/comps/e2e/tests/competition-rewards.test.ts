@@ -2,25 +2,22 @@ import { beforeEach, describe, expect, test } from "vitest";
 
 import { specificChainTokens } from "@recallnet/services/lib";
 import {
-  AgentProfileResponse,
   AgentTrophy,
   CROSS_CHAIN_TRADING_TYPE,
-  CompetitionAgentsResponse,
-  CompetitionDetailResponse,
   CreateCompetitionResponse,
   ErrorResponse,
   StartCompetitionResponse,
-  UserAgentApiKeyResponse,
-} from "@recallnet/test-utils";
-import {
-  createPrivyAuthenticatedClient,
-  createTestAgent,
   createTestClient,
   getAdminApiKey,
   looseTradingConstraints,
-  registerUserAndAgentAndGetClient,
+  wait,
 } from "@recallnet/test-utils";
-import { wait } from "@recallnet/test-utils";
+
+import {
+  createPrivyAuthenticatedRpcClient,
+  createTestAgent,
+  registerUserAndAgentAndGetRpcClient,
+} from "../utils/test-helpers.js";
 
 describe("Competition API", () => {
   let adminApiKey: string;
@@ -38,33 +35,45 @@ describe("Competition API", () => {
       await adminClient.loginAsAdmin(adminApiKey);
 
       // Register 4 users and agents for different ranking scenarios
-      const { client: agent1Client, agent: agent1 } =
-        await registerUserAndAgentAndGetClient({
-          adminApiKey,
-          agentName: "Gold Trophy Agent",
-          agentDescription: "Agent designed to win 1st place",
-        });
+      const {
+        client: agent1Client,
+        agent: agent1,
+        rpcClient: rpcClient1,
+      } = await registerUserAndAgentAndGetRpcClient({
+        adminApiKey,
+        agentName: "Gold Trophy Agent",
+        agentDescription: "Agent designed to win 1st place",
+      });
 
-      const { client: agent2Client, agent: agent2 } =
-        await registerUserAndAgentAndGetClient({
-          adminApiKey,
-          agentName: "Silver Trophy Agent",
-          agentDescription: "Agent designed to get 2nd place",
-        });
+      const {
+        client: agent2Client,
+        agent: agent2,
+        rpcClient: rpcClient2,
+      } = await registerUserAndAgentAndGetRpcClient({
+        adminApiKey,
+        agentName: "Silver Trophy Agent",
+        agentDescription: "Agent designed to get 2nd place",
+      });
 
-      const { client: agent3Client, agent: agent3 } =
-        await registerUserAndAgentAndGetClient({
-          adminApiKey,
-          agentName: "Bronze Trophy Agent",
-          agentDescription: "Agent designed to get 3rd place",
-        });
+      const {
+        client: agent3Client,
+        agent: agent3,
+        rpcClient: rpcClient3,
+      } = await registerUserAndAgentAndGetRpcClient({
+        adminApiKey,
+        agentName: "Bronze Trophy Agent",
+        agentDescription: "Agent designed to get 3rd place",
+      });
 
-      const { client: agent4Client, agent: agent4 } =
-        await registerUserAndAgentAndGetClient({
-          adminApiKey,
-          agentName: "Participation Trophy Agent",
-          agentDescription: "Agent designed to get last place",
-        });
+      const {
+        client: agent4Client,
+        agent: agent4,
+        rpcClient: rpcClient4,
+      } = await registerUserAndAgentAndGetRpcClient({
+        adminApiKey,
+        agentName: "Participation Trophy Agent",
+        agentDescription: "Agent designed to get last place",
+      });
 
       // Create and start competition
       const competitionName = `Trophy Ranking Test ${Date.now()}`;
@@ -138,13 +147,12 @@ describe("Competition API", () => {
       // Wait for leaderboard processing and trophy creation
       await new Promise((resolve) => setTimeout(resolve, 1000));
 
-      // Verify each agent gets the correct trophy using /api/agents/{agentId} endpoint
+      // Verify each agent gets the correct trophy
 
       // Agent 1: Should get 1st place trophy (rank 1)
-      const agent1Response = await adminClient.getPublicAgent(agent1.id);
-      expect(agent1Response.success).toBe(true);
-      if (!agent1Response.success)
-        throw new Error("Failed to get agent1 profile");
+      const agent1Response = await rpcClient1.agent.getAgent({
+        agentId: agent1.id,
+      });
 
       const agent1Trophies = agent1Response.agent.trophies;
       expect(Array.isArray(agent1Trophies)).toBe(true);
@@ -160,10 +168,9 @@ describe("Competition API", () => {
       expect(typeof agent1Trophy?.imageUrl === "string").toBe(true);
 
       // Agent 2: Should get 2nd place trophy (rank 2)
-      const agent2Response = await adminClient.getPublicAgent(agent2.id);
-      expect(agent2Response.success).toBe(true);
-      if (!agent2Response.success)
-        throw new Error("Failed to get agent2 profile");
+      const agent2Response = await rpcClient2.agent.getAgent({
+        agentId: agent2.id,
+      });
 
       const agent2Trophies = agent2Response.agent.trophies;
       expect(Array.isArray(agent2Trophies)).toBe(true);
@@ -179,10 +186,9 @@ describe("Competition API", () => {
       expect(typeof agent2Trophy?.imageUrl === "string").toBe(true);
 
       // Agent 3: Should get 3rd place trophy (rank 3)
-      const agent3Response = await adminClient.getPublicAgent(agent3.id);
-      expect(agent3Response.success).toBe(true);
-      if (!agent3Response.success)
-        throw new Error("Failed to get agent3 profile");
+      const agent3Response = await rpcClient3.agent.getAgent({
+        agentId: agent3.id,
+      });
 
       const agent3Trophies = agent3Response.agent.trophies;
       expect(Array.isArray(agent3Trophies)).toBe(true);
@@ -198,10 +204,9 @@ describe("Competition API", () => {
       expect(typeof agent3Trophy?.imageUrl === "string").toBe(true);
 
       // Agent 4: Should get 4th place trophy (rank 4 - participation)
-      const agent4Response = await adminClient.getPublicAgent(agent4.id);
-      expect(agent4Response.success).toBe(true);
-      if (!agent4Response.success)
-        throw new Error("Failed to get agent4 profile");
+      const agent4Response = await rpcClient4.agent.getAgent({
+        agentId: agent4.id,
+      });
 
       const agent4Trophies = agent4Response.agent.trophies;
       expect(Array.isArray(agent4Trophies)).toBe(true);
@@ -223,32 +228,32 @@ describe("Competition API", () => {
       await adminClient.loginAsAdmin(adminApiKey);
 
       // Create Privy authenticated user with agents
-      const { client: user1Client } = await createPrivyAuthenticatedClient({
-        userName: "Trophy User 1",
-        userEmail: "trophy-user-1@example.com",
-      });
+      const { rpcClient: user1RpcClient } =
+        await createPrivyAuthenticatedRpcClient({
+          userName: "Trophy User 1",
+          userEmail: "trophy-user-1@example.com",
+        });
 
-      const { client: user2Client } = await createPrivyAuthenticatedClient({
-        userName: "Trophy User 2",
-        userEmail: "trophy-user-2@example.com",
-      });
+      const { rpcClient: user2RpcClient } =
+        await createPrivyAuthenticatedRpcClient({
+          userName: "Trophy User 2",
+          userEmail: "trophy-user-2@example.com",
+        });
 
       // Create agents for each user
       const agent1Response = await createTestAgent(
-        user1Client,
+        user1RpcClient,
         "User 1 Gold Agent",
         "Agent designed to win 1st place for User 1",
       );
-      expect(agent1Response.success).toBe(true);
-      const agent1 = (agent1Response as AgentProfileResponse).agent;
+      const agent1 = agent1Response.agent;
 
       const agent2Response = await createTestAgent(
-        user2Client,
+        user2RpcClient,
         "User 2 Silver Agent",
         "Agent designed to get 2nd place for User 2",
       );
-      expect(agent2Response.success).toBe(true);
-      const agent2 = (agent2Response as AgentProfileResponse).agent;
+      const agent2 = agent2Response.agent;
 
       // Create and start competition
       const competitionName = `User Trophy Test ${Date.now()}`;
@@ -267,12 +272,11 @@ describe("Competition API", () => {
 
       // Execute predictable trading strategies
       // User 1 Agent: Best performer - buy valuable ETH
-      const agent1ApiKeyResponse = await user1Client.getUserAgentApiKey(
-        agent1.id,
-      );
-      expect(agent1ApiKeyResponse.success).toBe(true);
+      const agent1ApiKeyResponse = await user1RpcClient.user.getAgentApiKey({
+        agentId: agent1.id,
+      });
       const agent1Client = adminClient.createAgentClient(
-        (agent1ApiKeyResponse as UserAgentApiKeyResponse).apiKey,
+        agent1ApiKeyResponse.apiKey,
       );
       await agent1Client.executeTrade({
         fromToken: specificChainTokens.eth.usdc,
@@ -283,12 +287,11 @@ describe("Competition API", () => {
       });
 
       // User 2 Agent: Poor performer - burn tokens
-      const agent2ApiKeyResponse = await user2Client.getUserAgentApiKey(
-        agent2.id,
-      );
-      expect(agent2ApiKeyResponse.success).toBe(true);
+      const agent2ApiKeyResponse = await user2RpcClient.user.getAgentApiKey({
+        agentId: agent2.id,
+      });
       const agent2Client = adminClient.createAgentClient(
-        (agent2ApiKeyResponse as UserAgentApiKeyResponse).apiKey,
+        agent2ApiKeyResponse.apiKey,
       );
       await agent2Client.executeTrade({
         fromToken: specificChainTokens.eth.usdc,
@@ -309,10 +312,7 @@ describe("Competition API", () => {
       await new Promise((resolve) => setTimeout(resolve, 1000));
 
       // Test 1: getUserAgents() should return trophies
-      const user1AgentsResponse = await user1Client.getUserAgents();
-      expect(user1AgentsResponse.success).toBe(true);
-      if (!user1AgentsResponse.success)
-        throw new Error("Failed to get user1 agents");
+      const user1AgentsResponse = await user1RpcClient.user.getUserAgents({});
 
       const user1Agents = user1AgentsResponse.agents;
       expect(user1Agents.length).toBeGreaterThan(0);
@@ -331,10 +331,7 @@ describe("Competition API", () => {
       expect(user1Trophy?.createdAt).toBeDefined();
       expect(typeof user1Trophy?.imageUrl === "string").toBe(true);
 
-      const user2AgentsResponse = await user2Client.getUserAgents();
-      expect(user2AgentsResponse.success).toBe(true);
-      if (!user2AgentsResponse.success)
-        throw new Error("Failed to get user2 agents");
+      const user2AgentsResponse = await user2RpcClient.user.getUserAgents({});
 
       const user2Agents = user2AgentsResponse.agents;
       const user2Agent = user2Agents.find((a) => a.id === agent2.id);
@@ -352,14 +349,10 @@ describe("Competition API", () => {
       expect(typeof user2Trophy?.imageUrl === "string").toBe(true);
 
       // Test 2: getUserAgent(agentId) should return trophies
-      const user1SpecificAgentResponse = await user1Client.getUserAgent(
-        agent1.id,
-      );
-      expect(user1SpecificAgentResponse.success).toBe(true);
-      if (!user1SpecificAgentResponse.success)
-        throw new Error("Failed to get user1 specific agent");
+      const user1SpecificAgent = await user1RpcClient.user.getUserAgent({
+        agentId: agent1.id,
+      });
 
-      const user1SpecificAgent = user1SpecificAgentResponse.agent;
       expect(Array.isArray(user1SpecificAgent.trophies)).toBe(true);
       expect(user1SpecificAgent.trophies?.length).toBeGreaterThan(0);
 
@@ -375,24 +368,21 @@ describe("Competition API", () => {
 
     test("should handle user with no competitions via user endpoints", async () => {
       // Create Privy authenticated user
-      const { client: userClient } = await createPrivyAuthenticatedClient({
+      const { rpcClient } = await createPrivyAuthenticatedRpcClient({
         userName: "No Trophies User",
         userEmail: "no-trophies-user@example.com",
       });
 
       // Create agent but don't put them in any competitions
       const agentResponse = await createTestAgent(
-        userClient,
+        rpcClient,
         "No Competitions Agent",
         "Agent that won't participate in any competitions",
       );
-      expect(agentResponse.success).toBe(true);
-      const agent = (agentResponse as AgentProfileResponse).agent;
+      const agent = agentResponse.agent;
 
       // Test getUserAgents() - should return empty trophies
-      const agentsResponse = await userClient.getUserAgents();
-      expect(agentsResponse.success).toBe(true);
-      if (!agentsResponse.success) throw new Error("Failed to get user agents");
+      const agentsResponse = await rpcClient.user.getUserAgents({});
 
       const agents = agentsResponse.agents;
       const userAgent = agents.find((a) => a.id === agent.id);
@@ -400,12 +390,10 @@ describe("Competition API", () => {
       expect(userAgent?.trophies).toEqual([]);
 
       // Test getUserAgent(agentId) - should return empty trophies
-      const specificAgentResponse = await userClient.getUserAgent(agent.id);
-      expect(specificAgentResponse.success).toBe(true);
-      if (!specificAgentResponse.success)
-        throw new Error("Failed to get specific agent");
+      const specificAgent = await rpcClient.user.getUserAgent({
+        agentId: agent.id,
+      });
 
-      const specificAgent = specificAgentResponse.agent;
       expect(specificAgent.trophies).toEqual([]);
     });
 
@@ -414,14 +402,12 @@ describe("Competition API", () => {
       await adminClient.loginAsAdmin(adminApiKey);
 
       // Create agent but don't put them in any competitions
-      const { agent } = await registerUserAndAgentAndGetClient({
+      const { agent, rpcClient } = await registerUserAndAgentAndGetRpcClient({
         adminApiKey,
         agentName: "No Competitions Agent",
       });
 
-      const response = await adminClient.getPublicAgent(agent.id);
-      expect(response.success).toBe(true);
-      if (!response.success) throw new Error("Failed to get agent profile");
+      const response = await rpcClient.agent.getAgent({ agentId: agent.id });
       expect(response.agent.trophies).toEqual([]);
     });
 
@@ -429,11 +415,14 @@ describe("Competition API", () => {
       const adminClient = createTestClient();
       await adminClient.loginAsAdmin(adminApiKey);
 
-      const { client: agentClient, agent } =
-        await registerUserAndAgentAndGetClient({
-          adminApiKey,
-          agentName: "Active Competition Agent",
-        });
+      const {
+        client: agentClient,
+        agent,
+        rpcClient,
+      } = await registerUserAndAgentAndGetRpcClient({
+        adminApiKey,
+        agentName: "Active Competition Agent",
+      });
 
       // Create and start competition but don't end it
       const competitionName = `Active Competition ${Date.now()}`;
@@ -464,9 +453,7 @@ describe("Competition API", () => {
       await new Promise((resolve) => setTimeout(resolve, 1000));
 
       // Check trophies - should not include the active competition
-      const response = await adminClient.getPublicAgent(agent.id);
-      expect(response.success).toBe(true);
-      if (!response.success) throw new Error("Failed to get agent profile");
+      const response = await rpcClient.agent.getAgent({ agentId: agent.id });
       const activeTrophy = response.agent.trophies?.find(
         (t: AgentTrophy) => t.competitionId === competitionId,
       );
@@ -478,17 +465,17 @@ describe("Competition API", () => {
       await adminClient.loginAsAdmin(adminApiKey);
 
       // Create multiple agents
-      const { agent: agent1 } = await registerUserAndAgentAndGetClient({
+      const { agent: agent1 } = await registerUserAndAgentAndGetRpcClient({
         adminApiKey,
         agentName: "Agent One",
       });
 
-      const { agent: agent2 } = await registerUserAndAgentAndGetClient({
+      const { agent: agent2 } = await registerUserAndAgentAndGetRpcClient({
         adminApiKey,
         agentName: "Agent Two",
       });
 
-      const { agent: agent3 } = await registerUserAndAgentAndGetClient({
+      const { agent: agent3 } = await registerUserAndAgentAndGetRpcClient({
         adminApiKey,
         agentName: "Agent Three",
       });
@@ -549,12 +536,14 @@ describe("Competition API", () => {
 
       // Create 4 agents and register them
       const agents = [];
+      const rpcClients = [];
       for (let i = 0; i < 4; i++) {
-        const { agent: agent1 } = await registerUserAndAgentAndGetClient({
+        const result = await registerUserAndAgentAndGetRpcClient({
           adminApiKey,
           agentName: `Rewards Agent ${i}`,
         });
-        agents.push(agent1);
+        agents.push(result.agent);
+        rpcClients.push(result.rpcClient);
       }
 
       // Create a competition with rewards
@@ -599,19 +588,20 @@ describe("Competition API", () => {
 
       // Get the final competition agent
       const finalCompetitionAgentInfo =
-        await adminClient.getCompetitionAgents(competitionId);
-      expect(finalCompetitionAgentInfo.success).toBe(true);
-      const competitionAgents = (
-        finalCompetitionAgentInfo as CompetitionAgentsResponse
-      ).agents.sort((a, b) => a.rank - b.rank);
+        await rpcClients[0]!.competitions.getAgents({
+          competitionId,
+        });
+      const competitionAgents = finalCompetitionAgentInfo.agents.sort(
+        (a, b) => (a.rank ?? 0) - (b.rank ?? 0),
+      );
 
       // Get the final competition rewards
-      const finalCompetitionRewards =
-        await adminClient.getCompetition(competitionId);
-      expect(finalCompetitionRewards.success).toBe(true);
-      const competitionRewards = (
-        finalCompetitionRewards as CompetitionDetailResponse
-      ).competition.rewards;
+      const finalCompetitionRewards = await rpcClients[0]!.competitions.getById(
+        {
+          id: competitionId,
+        },
+      );
+      const competitionRewards = finalCompetitionRewards.rewards;
 
       // Check that the final competition rewards are the same as the initial rewards, plus awarded to the agents
       expect(competitionRewards?.length).toEqual(4);
@@ -635,18 +625,21 @@ describe("Competition API", () => {
       await adminClient.loginAsAdmin(adminApiKey);
 
       // Create three agents
-      const { agent: agent1, client: client1 } =
-        await registerUserAndAgentAndGetClient({
-          adminApiKey,
-          agentName: "Winner Agent",
-        });
+      const {
+        agent: agent1,
+        client: client1,
+        rpcClient: rpc1,
+      } = await registerUserAndAgentAndGetRpcClient({
+        adminApiKey,
+        agentName: "Winner Agent",
+      });
       const { agent: agent2, client: client2 } =
-        await registerUserAndAgentAndGetClient({
+        await registerUserAndAgentAndGetRpcClient({
           adminApiKey,
           agentName: "Excluded Agent",
         });
       const { agent: agent3, client: client3 } =
-        await registerUserAndAgentAndGetClient({
+        await registerUserAndAgentAndGetRpcClient({
           adminApiKey,
           agentName: "Third Place Agent",
         });
@@ -707,10 +700,9 @@ describe("Competition API", () => {
       await adminClient.endCompetition(competitionId);
 
       // Get competition with rewards
-      const detailResponse = await adminClient.getCompetition(competitionId);
-      expect(detailResponse.success).toBe(true);
-      const competition = (detailResponse as CompetitionDetailResponse)
-        .competition;
+      const competition = await rpc1.competitions.getById({
+        id: competitionId,
+      });
 
       // Verify rewards were assigned
       expect(competition.rewards).toBeDefined();
@@ -750,11 +742,14 @@ describe("Competition API", () => {
       await adminClient.loginAsAdmin(adminApiKey);
 
       // Create agent
-      const { agent, client: agentClient } =
-        await registerUserAndAgentAndGetClient({
-          adminApiKey,
-          agentName: "Regular Agent",
-        });
+      const {
+        agent,
+        client: agentClient,
+        rpcClient,
+      } = await registerUserAndAgentAndGetRpcClient({
+        adminApiKey,
+        agentName: "Regular Agent",
+      });
 
       // Create competition without exclusions
       const createResponse = await adminClient.createCompetition({
@@ -785,9 +780,9 @@ describe("Competition API", () => {
       await adminClient.endCompetition(competitionId);
 
       // Verify agent gets reward
-      const detailResponse = await adminClient.getCompetition(competitionId);
-      const competition = (detailResponse as CompetitionDetailResponse)
-        .competition;
+      const competition = await rpcClient.competitions.getById({
+        id: competitionId,
+      });
       const agentReward = competition.rewards?.find(
         (r) => r.agentId === agent.id,
       );
@@ -799,11 +794,14 @@ describe("Competition API", () => {
       await adminClient.loginAsAdmin(adminApiKey);
 
       // Create agent
-      const { agent, client: agentClient } =
-        await registerUserAndAgentAndGetClient({
-          adminApiKey,
-          agentName: "Agent With Empty Array",
-        });
+      const {
+        agent,
+        client: agentClient,
+        rpcClient,
+      } = await registerUserAndAgentAndGetRpcClient({
+        adminApiKey,
+        agentName: "Agent With Empty Array",
+      });
 
       // Create competition with empty exclusion array
       const createResponse = await adminClient.createCompetition({
@@ -833,9 +831,9 @@ describe("Competition API", () => {
       await adminClient.endCompetition(competitionId);
 
       // Verify agent gets reward (empty array should not exclude)
-      const detailResponse = await adminClient.getCompetition(competitionId);
-      const competition = (detailResponse as CompetitionDetailResponse)
-        .competition;
+      const competition = await rpcClient.competitions.getById({
+        id: competitionId,
+      });
       const agentReward = competition.rewards?.find(
         (r) => r.agentId === agent.id,
       );
@@ -847,13 +845,16 @@ describe("Competition API", () => {
       await adminClient.loginAsAdmin(adminApiKey);
 
       // Create two agents
-      const { agent: agent1, client: client1 } =
-        await registerUserAndAgentAndGetClient({
-          adminApiKey,
-          agentName: "Start Winner",
-        });
+      const {
+        agent: agent1,
+        client: client1,
+        rpcClient: rpc1,
+      } = await registerUserAndAgentAndGetRpcClient({
+        adminApiKey,
+        agentName: "Start Winner",
+      });
       const { agent: agent2, client: client2 } =
-        await registerUserAndAgentAndGetClient({
+        await registerUserAndAgentAndGetRpcClient({
           adminApiKey,
           agentName: "Start Excluded",
         });
@@ -894,9 +895,9 @@ describe("Competition API", () => {
       await adminClient.endCompetition(competitionId);
 
       // Verify exclusion worked via startCompetition endpoint
-      const detailResponse = await adminClient.getCompetition(competitionId);
-      const competition = (detailResponse as CompetitionDetailResponse)
-        .competition;
+      const competition = await rpc1.competitions.getById({
+        id: competitionId,
+      });
 
       // Agent2 should not get reward
       const agent2Reward = competition.rewards?.find(
@@ -918,18 +919,21 @@ describe("Competition API", () => {
       await adminClient.loginAsAdmin(adminApiKey);
 
       // Create three agents
-      const { agent: agent1, client: client1 } =
-        await registerUserAndAgentAndGetClient({
-          adminApiKey,
-          agentName: "Regular Agent",
-        });
+      const {
+        agent: agent1,
+        client: client1,
+        rpcClient: rpc1,
+      } = await registerUserAndAgentAndGetRpcClient({
+        adminApiKey,
+        agentName: "Regular Agent",
+      });
       const { agent: agent2, client: client2 } =
-        await registerUserAndAgentAndGetClient({
+        await registerUserAndAgentAndGetRpcClient({
           adminApiKey,
           agentName: "Globally Ineligible Agent",
         });
       const { agent: agent3, client: client3 } =
-        await registerUserAndAgentAndGetClient({
+        await registerUserAndAgentAndGetRpcClient({
           adminApiKey,
           agentName: "Another Regular Agent",
         });
@@ -991,9 +995,9 @@ describe("Competition API", () => {
       await adminClient.endCompetition(competitionId);
 
       // Verify agent2 (globally ineligible, rank 2) did not get reward
-      const detailResponse = await adminClient.getCompetition(competitionId);
-      const competition = (detailResponse as CompetitionDetailResponse)
-        .competition;
+      const competition = await rpc1.competitions.getById({
+        id: competitionId,
+      });
 
       const agent2Reward = competition.rewards?.find(
         (r) => r.agentId === agent2.id,
@@ -1023,23 +1027,26 @@ describe("Competition API", () => {
       await adminClient.loginAsAdmin(adminApiKey);
 
       // Create four agents
-      const { agent: agent1, client: client1 } =
-        await registerUserAndAgentAndGetClient({
-          adminApiKey,
-          agentName: "Agent Regular 1",
-        });
+      const {
+        agent: agent1,
+        client: client1,
+        rpcClient: rpc1,
+      } = await registerUserAndAgentAndGetRpcClient({
+        adminApiKey,
+        agentName: "Agent Regular 1",
+      });
       const { agent: agent2, client: client2 } =
-        await registerUserAndAgentAndGetClient({
+        await registerUserAndAgentAndGetRpcClient({
           adminApiKey,
           agentName: "Agent Comp Excluded",
         });
       const { agent: agent3, client: client3 } =
-        await registerUserAndAgentAndGetClient({
+        await registerUserAndAgentAndGetRpcClient({
           adminApiKey,
           agentName: "Agent Global Excluded",
         });
       const { agent: agent4, client: client4 } =
-        await registerUserAndAgentAndGetClient({
+        await registerUserAndAgentAndGetRpcClient({
           adminApiKey,
           agentName: "Agent Regular 2",
         });
@@ -1108,9 +1115,9 @@ describe("Competition API", () => {
       await adminClient.endCompetition(competitionId);
 
       // Verify both agent2 (competition) and agent3 (global) are excluded
-      const detailResponse = await adminClient.getCompetition(competitionId);
-      const competition = (detailResponse as CompetitionDetailResponse)
-        .competition;
+      const competition = await rpc1.competitions.getById({
+        id: competitionId,
+      });
 
       const agent2Reward = competition.rewards?.find(
         (r) => r.agentId === agent2.id,
@@ -1145,11 +1152,14 @@ describe("Competition API", () => {
       await adminClient.loginAsAdmin(adminApiKey);
 
       // Create an agent
-      const { agent, client: agentClient } =
-        await registerUserAndAgentAndGetClient({
-          adminApiKey,
-          agentName: "Toggle Test Agent",
-        });
+      const {
+        agent,
+        client: agentClient,
+        rpcClient,
+      } = await registerUserAndAgentAndGetRpcClient({
+        adminApiKey,
+        agentName: "Toggle Test Agent",
+      });
 
       // Mark as ineligible
       let updateResponse = await adminClient.updateAgentAsAdmin(agent.id, {
@@ -1183,8 +1193,7 @@ describe("Competition API", () => {
       await adminClient.endCompetition(comp1Id);
 
       // Verify no reward
-      const comp1Detail = await adminClient.getCompetition(comp1Id);
-      const comp1 = (comp1Detail as CompetitionDetailResponse).competition;
+      const comp1 = await rpcClient.competitions.getById({ id: comp1Id });
       const comp1Reward = comp1.rewards?.find((r) => r.agentId === agent.id);
       expect(comp1Reward).toBeUndefined();
 
@@ -1220,8 +1229,7 @@ describe("Competition API", () => {
       await adminClient.endCompetition(comp2Id);
 
       // Verify agent gets reward this time
-      const comp2Detail = await adminClient.getCompetition(comp2Id);
-      const comp2 = (comp2Detail as CompetitionDetailResponse).competition;
+      const comp2 = await rpcClient.competitions.getById({ id: comp2Id });
       const comp2Reward = comp2.rewards?.find((r) => r.agentId === agent.id);
       expect(comp2Reward).toBeDefined();
       expect(comp2Reward?.reward).toBe(100);

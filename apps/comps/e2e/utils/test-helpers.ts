@@ -2,15 +2,49 @@
  * Comps app specific test helpers
  * Extends base test-utils with RPC client functionality
  */
+import type { RouterClient } from "@orpc/server";
+
 import {
   registerUserAndAgentAndGetClient as baseRegisterUserAndAgentAndGetClient,
   createMockPrivyToken,
   createTestPrivyUser,
   generateRandomEthAddress,
   generateRandomPrivyId,
+  generateTestHandle,
 } from "@recallnet/test-utils";
 
+import { router } from "../../rpc/router/index.js";
 import { createTestRpcClient } from "./rpc-client-helpers.js";
+
+/**
+ * Create a test agent with automatic unique handle generation
+ */
+export async function createTestAgent(
+  rpcClient: RouterClient<typeof router>,
+  name: string,
+  description?: string,
+  imageUrl?: string,
+  metadata?: Record<string, unknown>,
+  handle?: string,
+) {
+  // Generate a unique handle if not provided
+  const agentHandle =
+    handle ||
+    generateTestHandle(
+      name
+        .toLowerCase()
+        .replace(/[^a-z0-9]/g, "")
+        .slice(0, 8),
+    );
+
+  return rpcClient.user.createAgent({
+    name,
+    handle: agentHandle,
+    description,
+    imageUrl,
+    metadata,
+  });
+}
 
 /**
  * Register a user and agent via admin API, return both HTTP and RPC clients

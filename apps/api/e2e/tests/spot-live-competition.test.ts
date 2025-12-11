@@ -1948,25 +1948,25 @@ describe("Spot Live Competition", () => {
     const adminClient = createTestClient(getBaseUrl());
     await adminClient.loginAsAdmin(adminApiKey);
 
-    // Register agents with specific ROI test wallets
+    // Register agents with UNIQUE ROI test wallets
     // These addresses are configured in MockAlchemyRpcProvider to return specific balances
     // that result in inverse correlation between portfolio value and ROI
     const { agent: agentHighROI } = await registerUserAndAgentAndGetClient({
       adminApiKey,
       agentName: "High ROI Low Portfolio Agent",
-      agentWalletAddress: "0x0001000000000000000000000000000000000001", // $100 → $150 = 50% ROI
+      agentWalletAddress: "0xa011000000000000000000000000000000000001", // $100 → $150 = 50% ROI
     });
 
     const { agent: agentMediumROI } = await registerUserAndAgentAndGetClient({
       adminApiKey,
       agentName: "Medium ROI High Portfolio Agent",
-      agentWalletAddress: "0x0002000000000000000000000000000000000002", // $1000 → $1200 = 20% ROI
+      agentWalletAddress: "0xa022000000000000000000000000000000000002", // $1000 → $1200 = 20% ROI
     });
 
     const { agent: agentLowROI } = await registerUserAndAgentAndGetClient({
       adminApiKey,
       agentName: "Low ROI Medium Portfolio Agent",
-      agentWalletAddress: "0x0003000000000000000000000000000000000003", // $500 → $550 = 10% ROI
+      agentWalletAddress: "0xa033000000000000000000000000000000000003", // $500 → $550 = 10% ROI
     });
 
     // Start spot live competition
