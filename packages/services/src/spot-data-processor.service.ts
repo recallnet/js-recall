@@ -584,33 +584,64 @@ export class SpotDataProcessor {
         }
 
         // Fetch trades for this chain only (per-chain incremental sync)
-        const chainTrades = await provider.getTradesSince(
+        const tradesResult = await provider.getTradesSince(
           walletAddress,
           since,
           [chain], // Single chain per request
         );
 
+        const chainTrades = tradesResult.trades;
         allTrades.push(...chainTrades);
 
-        // Update sync state to highest block SEEN
-        // CRITICAL: Update even if no trades found to prevent getting stuck
+        // Determine safe highest block for sync state
+        // If any transactions were skipped due to missing receipts, don't advance past them
+        let safeHighestBlock: number;
+
         if (chainTrades.length > 0) {
           const highestBlockSeen = Math.max(
             ...chainTrades.map((t) => t.blockNumber),
           );
-          syncStateUpdates.push({ chain, highestBlock: highestBlockSeen });
+
+          // Limit to lowest skipped block - 1 to ensure retry
+          if (tradesResult.lowestSkippedBlock !== undefined) {
+            safeHighestBlock = Math.min(
+              highestBlockSeen,
+              tradesResult.lowestSkippedBlock - 1,
+            );
+            this.logger.warn(
+              `[SpotDataProcessor] Agent ${agentId} on ${chain}: limiting sync state to block ${safeHighestBlock} due to skipped transaction at block ${tradesResult.lowestSkippedBlock}`,
+            );
+          } else {
+            safeHighestBlock = highestBlockSeen;
+          }
+
+          syncStateUpdates.push({ chain, highestBlock: safeHighestBlock });
 
           this.logger.debug(
-            `[SpotDataProcessor] Fetched ${chainTrades.length} trades for agent ${agentId} on ${chain}, highest block: ${highestBlockSeen}`,
+            `[SpotDataProcessor] Fetched ${chainTrades.length} trades for agent ${agentId} on ${chain}, sync state: ${safeHighestBlock}`,
           );
         } else {
           // No trades found - still need to update state to move forward
           // Get current chain tip to know what range we scanned
           const currentBlock = await provider.getCurrentBlock(chain);
-          syncStateUpdates.push({ chain, highestBlock: currentBlock });
+
+          // Limit to lowest skipped block - 1 to ensure retry
+          if (tradesResult.lowestSkippedBlock !== undefined) {
+            safeHighestBlock = Math.min(
+              currentBlock,
+              tradesResult.lowestSkippedBlock - 1,
+            );
+            this.logger.warn(
+              `[SpotDataProcessor] Agent ${agentId} on ${chain}: limiting sync state to block ${safeHighestBlock} due to skipped transaction at block ${tradesResult.lowestSkippedBlock}`,
+            );
+          } else {
+            safeHighestBlock = currentBlock;
+          }
+
+          syncStateUpdates.push({ chain, highestBlock: safeHighestBlock });
 
           this.logger.debug(
-            `[SpotDataProcessor] No trades for agent ${agentId} on ${chain}, scanned to block ${currentBlock}`,
+            `[SpotDataProcessor] No trades for agent ${agentId} on ${chain}, sync state: ${safeHighestBlock}`,
           );
         }
       }
