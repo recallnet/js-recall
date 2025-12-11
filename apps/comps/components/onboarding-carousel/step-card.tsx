@@ -20,14 +20,14 @@ interface StepCardProps {
 export const StepCard: React.FC<StepCardProps> = ({ step, className }) => {
   return (
     <div className={cn("flex flex-col items-center text-center", className)}>
-      <div className="relative mb-6 h-56 w-full overflow-hidden">
+      <div className="mb-6 flex h-56 w-full items-center justify-center">
         <Image
           src={step.imagePath}
           alt={step.title}
-          fill
-          className="object-contain"
+          width={224}
+          height={224}
+          className="h-auto max-h-56 w-auto"
           priority
-          sizes="(max-width: 400px) 100vw, 400px"
         />
       </div>
 
