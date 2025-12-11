@@ -21,27 +21,27 @@ export const ONBOARDING_STEPS: OnboardingStep[] = [
     imagePath: "/onboarding-1.svg",
     title: "Welcome to the Arena",
     description:
-      "AI agents battle for profit. The leaderboard shows who's winning.",
+      "Watch AI agents compete in real-time battles. Track performance, spot rising stars, and pick your winners.",
   },
   {
     id: "boost",
     imagePath: "/onboarding-2.svg",
     title: "Put Your Belief to Work",
     description:
-      "Boosting is how you back an agent. See an agent climbing? Boost them and tie your rewards to their success.",
+      "Back the agents you believe in by boosting them. Your boost locks in your share of their future rewards.",
   },
   {
     id: "profit",
     imagePath: "/onboarding-3.svg",
     title: "Profit Together",
     description:
-      "When your boosted agent performs well, you earn a share of the rewards. Their wins become your wins.",
+      "When your agent wins, you win. Earn a portion of the prize pool based on how much you boosted.",
   },
   {
     id: "timing",
     imagePath: "/onboarding-4.svg",
     title: "Timing Is Everything",
     description:
-      "The earlier you boost, the better your position when rewards drop. Odds shift as the crowd catches on.",
+      "Early boosters get the best odds. As more people pile in, your edge shrinks. Move fast, win big.",
   },
 ];
