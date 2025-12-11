@@ -40,7 +40,6 @@ import { toast } from "@recallnet/ui2/components/toast";
 import { Tooltip } from "@recallnet/ui2/components/tooltip";
 
 import { Pagination } from "@/components/pagination/index";
-import { config } from "@/config/public";
 import { useTotalUserStaked } from "@/hooks/staking";
 import { useSession } from "@/hooks/useSession";
 import { openForBoosting } from "@/lib/open-for-boosting";
@@ -211,20 +210,6 @@ export const AgentsTable: React.FC<AgentsTableProps> = ({
     );
   }, [eigenBadgeStatuses, isEigenDataLoaded]);
 
-  const { mutate: claimBoost } = useMutation(
-    tanstackClient.boost.claimBoost.mutationOptions({
-      onSuccess: () => {
-        toast.success("Successfully claimed competition boost!");
-        queryClient.invalidateQueries({
-          queryKey: tanstackClient.boost.balance.key(),
-        });
-      },
-      onError: (error) => {
-        toast.error(error.message);
-      },
-    }),
-  );
-
   const { mutate: claimStakedBoost } = useMutation(
     tanstackClient.boost.claimStakedBoost.mutationOptions({
       onSuccess: () => {
@@ -245,21 +230,12 @@ export const AgentsTable: React.FC<AgentsTableProps> = ({
   );
 
   const showActivateBoost = useMemo(() => {
-    if (config.publicFlags.tge) {
-      return (
-        isOpenForBoosting && (availableBoostAwards?.totalAwardAmount ?? 0n) > 0n
-      );
-    } else {
-      return (
-        userBoostBalance === 0 &&
-        Object.keys(userBoosts || {}).length === 0 &&
-        isOpenForBoosting
-      );
-    }
-  }, [availableBoostAwards, userBoostBalance, userBoosts, isOpenForBoosting]);
+    return (
+      isOpenForBoosting && (availableBoostAwards?.totalAwardAmount ?? 0n) > 0n
+    );
+  }, [availableBoostAwards, isOpenForBoosting]);
 
   const showStakeToBoost = useMemo(() => {
-    if (!config.publicFlags.tge) return false;
     return totalStaked === 0n || userBoostBalance === 0;
   }, [totalStaked, userBoostBalance]);
 
@@ -353,11 +329,7 @@ export const AgentsTable: React.FC<AgentsTableProps> = ({
   };
 
   const handleClaimBoost = () => {
-    if (config.publicFlags.tge) {
-      claimStakedBoost({ competitionId: competition.id });
-    } else {
-      claimBoost({ competitionId: competition.id });
-    }
+    claimStakedBoost({ competitionId: competition.id });
   };
 
   const handleBoost = (

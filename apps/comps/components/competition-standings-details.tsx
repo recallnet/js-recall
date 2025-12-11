@@ -7,7 +7,6 @@ import { cn } from "@recallnet/ui2/lib/utils";
 
 import { BoostIcon } from "@/components/BoostIcon";
 import { RewardsTGE, SingleRewardTGEValue } from "@/components/rewards-tge";
-import { config } from "@/config/public";
 import { RouterOutputs } from "@/rpc/router";
 import {
   COMPETITION_DESCRIPTIONS,
@@ -285,9 +284,7 @@ export function CompetitionStandingsDetails({
                     >
                       <span>
                         {showActivateBoost
-                          ? config.publicFlags.tge
-                            ? "Activate Boost"
-                            : "Start Boosting"
+                          ? "Activate Boost"
                           : "Stake to Boost"}
                       </span>{" "}
                       <BoostIcon
