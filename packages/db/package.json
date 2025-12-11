@@ -202,6 +202,16 @@
         "default": "./dist/repositories/conviction-claims.cjs"
       }
     },
+    "./repositories/eigenai": {
+      "import": {
+        "types": "./dist/repositories/eigenai.d.ts",
+        "default": "./dist/repositories/eigenai.js"
+      },
+      "require": {
+        "types": "./dist/repositories/eigenai.d.cts",
+        "default": "./dist/repositories/eigenai.cjs"
+      }
+    },
     "./repositories/indexing-events": {
       "import": {
         "types": "./dist/repositories/indexing-events.d.ts",
@@ -570,6 +580,26 @@
       "require": {
         "types": "./dist/schema/sports/types.d.cts",
         "default": "./dist/schema/sports/types.cjs"
+      }
+    },
+    "./schema/eigenai/defs": {
+      "import": {
+        "types": "./dist/schema/eigenai/defs.d.ts",
+        "default": "./dist/schema/eigenai/defs.js"
+      },
+      "require": {
+        "types": "./dist/schema/eigenai/defs.d.cts",
+        "default": "./dist/schema/eigenai/defs.cjs"
+      }
+    },
+    "./schema/eigenai/types": {
+      "import": {
+        "types": "./dist/schema/eigenai/types.d.ts",
+        "default": "./dist/schema/eigenai/types.js"
+      },
+      "require": {
+        "types": "./dist/schema/eigenai/types.d.cts",
+        "default": "./dist/schema/eigenai/types.cjs"
       }
     }
   },
