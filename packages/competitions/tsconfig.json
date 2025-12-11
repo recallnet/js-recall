@@ -1,0 +1,8 @@
+{
+  "extends": "@recallnet/typescript-config/base.json",
+  "compilerOptions": {
+    "outDir": "dist"
+  },
+  "include": ["src/shared"],
+  "exclude": ["node_modules"]
+}

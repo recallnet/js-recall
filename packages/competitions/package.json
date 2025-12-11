@@ -1,0 +1,75 @@
+{
+  "name": "@recallnet/competitions",
+  "version": "0.0.0",
+  "license": "MIT AND Apache-2.0",
+  "private": true,
+  "description": "Competition interfaces and types for Recall platform.",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/recallnet/js-recall.git",
+    "directory": "packages/competitions"
+  },
+  "homepage": "https://github.com/recallnet/js-recall#readme",
+  "type": "module",
+  "exports": {
+    "./competition.interface": {
+      "import": {
+        "types": "./dist/shared/competition.interface.d.ts",
+        "default": "./dist/shared/competition.interface.js"
+      }
+    },
+    "./competition.service": {
+      "import": {
+        "types": "./dist/shared/competition.service.d.ts",
+        "default": "./dist/shared/competition.service.js"
+      }
+    },
+    "./competition-coordinator": {
+      "import": {
+        "types": "./dist/shared/competition-coordinator.d.ts",
+        "default": "./dist/shared/competition-coordinator.js"
+      }
+    },
+    "./paper-trading/competition.service": {
+      "import": {
+        "types": "./dist/paper-trading/competition.service.d.ts",
+        "default": "./dist/paper-trading/competition.service.js"
+      }
+    }
+  },
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "test": "vitest run",
+    "test:coverage": "vitest run --coverage",
+    "clean": "rm -rf .turbo node_modules dist",
+    "lint": "eslint . --max-warnings 0",
+    "format": "prettier --write . --ignore-path=../../.prettierignore",
+    "format:check": "prettier --check . --ignore-path=../../.prettierignore",
+    "docs:check": "typedoc --emit none",
+    "docs:build": "typedoc",
+    "docs:watch": "typedoc --watch",
+    "docs:serve": "typedoc --watch --serve",
+    "build": "tsup",
+    "dev": "tsc --watch"
+  },
+  "dependencies": {
+    "@recallnet/conversions": "workspace:*",
+    "@recallnet/db": "workspace:*",
+    "drizzle-orm": "^0.43.1"
+  },
+  "devDependencies": {
+    "@recallnet/eslint-config": "workspace:*",
+    "@recallnet/typescript-config": "workspace:*",
+    "@types/node": "^24.3.0",
+    "@vitest/coverage-v8": "^3.2.4",
+    "tsup": "^8.3.6",
+    "typedoc": "^0.28.1",
+    "typedoc-plugin-coverage": "^3.4.1",
+    "typedoc-plugin-markdown": "^4.6.0",
+    "typescript": "^5.7.3",
+    "vite-tsconfig-paths": "^5.1.4",
+    "vitest": "^3.2.4"
+  }
+}

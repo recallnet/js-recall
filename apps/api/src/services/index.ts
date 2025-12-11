@@ -1,6 +1,9 @@
 import { PrivyClient } from "@privy-io/server-auth";
 import { Hex } from "viem";
 
+import { CompetitionCoordinator } from "@recallnet/competitions/competition-coordinator";
+import { BaseCompetitionService } from "@recallnet/competitions/competition.service";
+import { PaperTradingCompetitionService } from "@recallnet/competitions/paper-trading/competition.service";
 import { AdminRepository } from "@recallnet/db/repositories/admin";
 import { AgentRepository } from "@recallnet/db/repositories/agent";
 import { AgentNonceRepository } from "@recallnet/db/repositories/agent-nonce";
@@ -96,7 +99,9 @@ class ServiceRegistry {
   private _priceTrackerService: PriceTrackerService;
   private _tradeSimulatorService: TradeSimulatorService;
   private _simulatedTradeExecutionService: SimulatedTradeExecutionService;
+  private _baseCompetitionService: BaseCompetitionService;
   private _competitionService: CompetitionService;
+  private _competitionCoordinator: CompetitionCoordinator;
   private _userService: UserService;
   private _agentService: AgentService;
   private _adminService: AdminService;
@@ -304,6 +309,14 @@ class ServiceRegistry {
     this._competitionRewardService = new CompetitionRewardService(
       competitionRewardsRepository,
     );
+
+    // Initialize base competition service from core (shared logic)
+    this._baseCompetitionService = new BaseCompetitionService(
+      this._arenaRepository,
+      this._competitionRepository,
+      competitionRewardsRepository,
+      db,
+    );
     const calmarRatioService = new CalmarRatioService(
       this._competitionRepository,
       serviceLogger,
@@ -438,6 +451,24 @@ class ServiceRegistry {
       serviceLogger,
     );
 
+    // Initialize paper trading competition service
+    const paperTradingCompetitionService = new PaperTradingCompetitionService(
+      this._competitionRepository,
+      this._paperTradingConfigRepository,
+      this._paperTradingInitialBalancesRepository,
+      tradingConstraintsRepository,
+      config.specificChainTokens,
+    );
+
+    // Initialize competition coordinator (coordinates base and full competition service)
+    this._competitionCoordinator = new CompetitionCoordinator(
+      db,
+      this._arenaRepository,
+      this._competitionRepository,
+      competitionRewardsRepository,
+      paperTradingCompetitionService,
+    );
+
     // Initialize simulated trade execution service with its dependencies
     this._simulatedTradeExecutionService = new SimulatedTradeExecutionService(
       this._competitionService,
@@ -482,8 +513,16 @@ class ServiceRegistry {
     return this._simulatedTradeExecutionService;
   }
 
+  get baseCompetitionService(): BaseCompetitionService {
+    return this._baseCompetitionService;
+  }
+
   get competitionService(): CompetitionService {
     return this._competitionService;
+  }
+
+  get competitionCoordinator(): CompetitionCoordinator {
+    return this._competitionCoordinator;
   }
 
   get leaderboardService(): LeaderboardService {

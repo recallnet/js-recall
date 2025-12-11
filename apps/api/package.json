@@ -92,6 +92,7 @@
     "@envio-dev/hypersync-client": "^0.6.5",
     "@privy-io/server-auth": "^1.31.0",
     "@recallnet/conversions": "workspace:*",
+    "@recallnet/competitions": "workspace:*",
     "@recallnet/db": "workspace:*",
     "@recallnet/rewards": "workspace:*",
     "@recallnet/services": "workspace:*",

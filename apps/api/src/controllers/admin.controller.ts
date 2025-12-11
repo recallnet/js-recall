@@ -645,16 +645,43 @@ export function makeAdminController(services: ServiceRegistry) {
           paperTradingInitialBalances,
         } = flatParse(AdminCreateCompetitionSchema, req.body);
 
-        // Create a new competition
-        const competition = await services.competitionService.createCompetition(
-          {
+        // Create a new competition using base competition service
+        // Map tradingType to CrossChainTradingType (handle incompatible database enum values)
+        // Database enum has ["disallowAll", "disallowXParent", "allow"] but core expects
+        // ["disallowAll", "allowAll", "allowEVMOnly", "allowSVMOnly"]
+        const mappedTradingType:
+          | "disallowAll"
+          | "allowAll"
+          | "allowEVMOnly"
+          | "allowSVMOnly"
+          | undefined =
+          tradingType === "disallowAll"
+            ? "disallowAll"
+            : (tradingType as string) === "allowAll"
+              ? "allowAll"
+              : (tradingType as string) === "allowEVMOnly"
+                ? "allowEVMOnly"
+                : (tradingType as string) === "allowSVMOnly"
+                  ? "allowSVMOnly"
+                  : undefined;
+
+        // Map allocation units to AllocationUnit type (database enum doesn't match core type)
+        // Database has ["RECALL", "USDC", "USD"] but core expects ["percentage", "fixed"]
+        // Filter out incompatible values
+        const mappedAgentAllocationUnit: "percentage" | "fixed" | undefined =
+          undefined;
+        const mappedBoosterAllocationUnit: "percentage" | "fixed" | undefined =
+          undefined;
+
+        const createResult =
+          await services.competitionCoordinator.createCompetition({
             name,
             description,
-            tradingType,
+            tradingType: mappedTradingType,
             sandboxMode,
             externalUrl,
             imageUrl,
-            type,
+            type: type ?? "trading",
             startDate: startDate ? new Date(startDate) : undefined,
             endDate: endDate ? new Date(endDate) : undefined,
             boostStartDate: boostStartDate
@@ -665,13 +692,8 @@ export function makeAdminController(services: ServiceRegistry) {
             joinEndDate: joinEndDate ? new Date(joinEndDate) : undefined,
             maxParticipants,
             minimumStake,
-            tradingConstraints,
+            constraints: tradingConstraints,
             rewards,
-            evaluationMetric,
-            perpsProvider,
-            spotLiveConfig,
-            prizePools,
-            rewardsIneligible,
             arenaId,
             engineId,
             engineVersion,
@@ -681,18 +703,27 @@ export function makeAdminController(services: ServiceRegistry) {
             minRecallRank,
             allowlistOnly,
             agentAllocation,
-            agentAllocationUnit,
+            agentAllocationUnit: mappedAgentAllocationUnit,
             boosterAllocation,
-            boosterAllocationUnit,
+            boosterAllocationUnit: mappedBoosterAllocationUnit,
             rewardRules,
             rewardDetails,
             boostTimeDecayRate,
             displayState,
-            gameIds,
-            paperTradingConfig,
-            paperTradingInitialBalances,
-          },
+            prizePools,
+            rewardsIneligible,
+            config: paperTradingConfig,
+            initialBalances: paperTradingInitialBalances,
+          });
+
+        // Fetch the full competition object after creation
+        const competition = await services.competitionService.getCompetition(
+          createResult.id,
         );
+
+        if (!competition) {
+          throw new ApiError(500, "Failed to retrieve created competition");
+        }
 
         // Return the created competition
         res.status(201).json({
