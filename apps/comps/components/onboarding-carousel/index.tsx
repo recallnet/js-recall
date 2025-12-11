@@ -2,7 +2,7 @@
 
 import { AnimatePresence, motion } from "motion/react";
 import { useRouter } from "next/navigation";
-import React, { useCallback, useEffect, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useState } from "react";
 
 import { Button } from "@recallnet/ui2/components/button";
 import { Dialog, DialogContent } from "@recallnet/ui2/components/dialog";
@@ -64,11 +64,13 @@ export const OnboardingCarousel: React.FC<OnboardingCarouselProps> = ({
     }
 
     let loadedCount = 0;
+    let cancelled = false;
     const imagesToLoad = ONBOARDING_STEPS.length;
 
     ONBOARDING_STEPS.forEach((step) => {
       const img = new Image();
       const handleLoadOrError = (): void => {
+        if (cancelled) return;
         loadedCount++;
         if (loadedCount === imagesToLoad) {
           setImageReady(true);
@@ -78,6 +80,10 @@ export const OnboardingCarousel: React.FC<OnboardingCarouselProps> = ({
       img.onerror = handleLoadOrError;
       img.src = step.imagePath;
     });
+
+    return () => {
+      cancelled = true;
+    };
   }, [isOpen]);
   const isFirstStep = currentStep === 0;
   const isLastStep = currentStep === totalSteps - 1;
@@ -129,11 +135,7 @@ export const OnboardingCarousel: React.FC<OnboardingCarouselProps> = ({
     [handleNext, handleBack, handleSkipFlow, currentStep],
   );
 
-  if (!currentStepData) {
-    return null;
-  }
-
-  const getSecondaryButton = (): { label: string; action: () => void } => {
+  const secondaryButton = useMemo((): { label: string; action: () => void } => {
     if (isLastStep) {
       return { label: "CLOSE", action: handleSkipFlow };
     }
@@ -141,9 +143,11 @@ export const OnboardingCarousel: React.FC<OnboardingCarouselProps> = ({
       return { label: "SKIP", action: handleSkipFlow };
     }
     return { label: "BACK", action: handleBack };
-  };
+  }, [isLastStep, isFirstStep, handleSkipFlow, handleBack]);
 
-  const secondaryButton = getSecondaryButton();
+  if (!currentStepData) {
+    return null;
+  }
 
   return (
     <Dialog
