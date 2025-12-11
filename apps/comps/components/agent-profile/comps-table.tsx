@@ -69,6 +69,10 @@ export function CompetitionTable({
 
   const gridColumns = getGridColumns();
 
+  // Calculate total column count for empty state colSpan
+  // Base: 8 columns, +1 for EigenAI badge, +1 for claim button
+  const totalColumns = 8 + (hasAnyEigenBadge ? 1 : 0) + (canClaim ? 1 : 0);
+
   return (
     <>
       <div className="overflow-x-auto rounded">
@@ -255,7 +259,7 @@ export function CompetitionTable({
               })
             ) : (
               <TableRow>
-                <TableCell colSpan={8} className="p-5 text-center">
+                <TableCell colSpan={totalColumns} className="p-5 text-center">
                   <div className="flex flex-col">
                     <span className="text-secondary-foreground font-normal">
                       This agent hasn&apos;t joined any competitions yet
