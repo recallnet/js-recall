@@ -30,31 +30,6 @@ export const TEST_TOKEN_ADDRESS =
   "4k3Dyjzvzp8eMZWUXbBCjEvwSkkk59S5iCNLY3QrkX6R";
 
 /**
- * Create a test agent with automatic unique handle generation
- * This wrapper ensures all test agents have unique handles
- */
-export async function createTestAgent(
-  client: ApiClient,
-  name: string,
-  description?: string,
-  imageUrl?: string,
-  metadata?: Record<string, unknown>,
-  handle?: string,
-) {
-  // Generate a unique handle if not provided
-  const agentHandle =
-    handle ||
-    generateTestHandle(
-      name
-        .toLowerCase()
-        .replace(/[^a-z0-9]/g, "")
-        .slice(0, 8),
-    );
-
-  return client.createAgent(name, agentHandle, description, imageUrl, metadata);
-}
-
-/**
  * Generate a unique handle for testing
  * Ensures uniqueness by using timestamp and random suffix
  */
@@ -474,95 +449,6 @@ export function generateRandomEthAddress(): string {
 
   // Convert to proper EIP-55 checksum format using viem
   return getAddress(result).toLowerCase();
-}
-
-/**
- * Create a Privy-authenticated client for testing user routes
- * This generates a unique test user and returns a client with an active Privy session
- */
-export async function createPrivyAuthenticatedClient({
-  userName,
-  userEmail,
-  walletAddress,
-  embeddedWalletAddress,
-  privyId,
-}: {
-  userName?: string;
-  userEmail?: string;
-  walletAddress?: string;
-  embeddedWalletAddress?: string;
-  privyId?: string;
-}) {
-  // Generate a unique wallet for this test
-  const testEmbeddedWallet =
-    embeddedWalletAddress || generateRandomEthAddress();
-
-  // Use unique names/emails for this test
-  const timestamp = Date.now();
-  const uniqueUserEmail = userEmail || `privy-user-${timestamp}@test.com`;
-
-  // Generate a unique privyId for the user
-  const uniquePrivyId = privyId || generateRandomPrivyId();
-
-  // Create a session client (without API key)
-  const privyUser = createTestPrivyUser({
-    privyId: uniquePrivyId, // Use the actual privyId from the registered user
-    name: userName ?? undefined,
-    email: uniqueUserEmail,
-    walletAddress: walletAddress || testEmbeddedWallet,
-    provider: "email",
-  });
-  const privyToken = await createMockPrivyToken(privyUser);
-  const sessionClient = new ApiClient(undefined, getBaseUrl());
-  sessionClient.setJwtToken(privyToken);
-
-  // Login will create (or backfill/update) a user with Privy-related information
-  const loginResponse = await sessionClient.login();
-  if (!loginResponse.success || !loginResponse.userId) {
-    throw new Error(
-      `Failed to login with Privy: ${(loginResponse as ErrorResponse).error}`,
-    );
-  }
-  const userResponse = await sessionClient.getUserProfile();
-  if (!userResponse.success) {
-    throw new Error(
-      `Failed to get user profile: ${(userResponse as ErrorResponse).error}`,
-    );
-  }
-  let { user } = userResponse;
-  // For convenience, we auto-update the user name. A "first time" login is
-  // unaware of the user's name and infers it based on Google, email, etc.,
-  // but we simulate a manual update to help with testing
-  if (userName) {
-    ({ user } = (await sessionClient.updateUserProfile({
-      name: userName,
-    })) as UserProfileResponse);
-  }
-
-  // Add a small delay to ensure session is properly saved
-  await new Promise((resolve) => setTimeout(resolve, 100));
-
-  return {
-    client: sessionClient,
-    user: {
-      id: user.id,
-      walletAddress: user.walletAddress || testEmbeddedWallet,
-      embeddedWalletAddress: user.embeddedWalletAddress || testEmbeddedWallet,
-      walletLastVerifiedAt: user.walletLastVerifiedAt || null,
-      privyId: user.privyId,
-      name: user.name || userName,
-      email: user.email || uniqueUserEmail,
-      imageUrl: user.imageUrl || null,
-      status: user.status || "active",
-      metadata: user.metadata || null,
-      createdAt: user.createdAt || new Date().toISOString(),
-      updatedAt: user.updatedAt || new Date().toISOString(),
-      lastLoginAt: user.lastLoginAt || new Date().toISOString(),
-    },
-    // Include wallet info for potential future use
-    wallet: user.walletAddress || testEmbeddedWallet,
-    loginData: loginResponse,
-  };
 }
 
 /**
