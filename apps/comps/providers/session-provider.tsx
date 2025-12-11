@@ -178,8 +178,7 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
       setShouldLinkWallet(isNewUser);
 
       // Show onboarding for new users who haven't completed it
-      // Use synchronous check to avoid stale closure value
-      if (!checkOnboardingComplete()) {
+      if (isNewUser && !checkOnboardingComplete()) {
         setShowOnboarding(true);
       }
 
