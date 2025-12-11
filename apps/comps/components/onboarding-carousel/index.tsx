@@ -69,12 +69,14 @@ export const OnboardingCarousel: React.FC<OnboardingCarouselProps> = ({
 
     ONBOARDING_STEPS.forEach((step) => {
       const img = new Image();
-      img.onload = () => {
+      const handleLoadOrError = (): void => {
         loadedCount++;
         if (loadedCount === imagesToLoad) {
           setImageReady(true);
         }
       };
+      img.onload = handleLoadOrError;
+      img.onerror = handleLoadOrError;
       img.src = step.imagePath;
     });
   }, [isOpen]);
