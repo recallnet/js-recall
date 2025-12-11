@@ -1,13 +1,14 @@
 /**
- * Defines the base context for RPC handlers in the comps app.
+ * Defines the admin context for OpenAPI admin handlers in the comps app.
  *
- * This context provides common dependencies and utilities for RPC procedures,
+ * This context provides dependencies and utilities for admin RPC procedures,
  * including:
- *   - HTTP cookies (from Next.js headers)
- *   - PrivyClient for authentication/session management
- *   - BoostService for boost-related business logic
+ *   - HTTP headers, and params (from Next.js)
+ *   - AdminService for admin operations
+ *   - BoostBonusService for boost bonus management
  *   - AgentService for agent management operations
- *   - Database instance for data access
+ *   - Competition services and repositories
+ *   - Partner, balance, and rewards services
  *
  * It also standardizes common error types for use in RPC responses.
  */
@@ -34,30 +35,33 @@ export interface CookieStore {
 }
 
 /**
- * The base context object for RPC procedures. The properties included
- * in the context are available in all RPC handlers.
+ * The admin context object for RPC procedures. The properties included
+ * in the context are available in all admin RPC handlers.
  *
  * @property cookies - HTTP cookies from the request (Next.js)
- * @property privyClient - Privy authentication/session client
+ * @property headers - HTTP headers from the request
+ * @property params - Route parameters
  * @property adminService - Service for admin operations
- * @property boostService - Service for boost-related operations
- * @property boostAwardService - Service for boost awards and staking
+ * @property boostBonusService - Service for boost bonus management
  * @property userService - Service for user-related operations
  * @property competitionService - Service for competition operations
+ * @property competitionRepository - Repository for competition data access
  * @property agentService - Service for agent management operations
  * @property arenaService - Service for arena operations
  * @property partnerService - Service for partner operations
  * @property balanceService - Service for balance operations
  * @property portfolioSnapshotterService - Service for portfolio snapshot operations
- * @property emailService - Service for email operations
- * @property leaderboardService - Service for leaderboard operations
  * @property rewardsService - Service for reward operations
+ * @property logger - Logger instance
  *
  * Standard errors:
  *   - NOT_FOUND: Resource not found
  *   - INTERNAL: Internal server error
  *   - UNAUTHORIZED: Unauthorized access
+ *   - FORBIDDEN: Forbidden access
  *   - BAD_REQUEST: Invalid request parameters
+ *   - CONFLICT: Resource conflict
+ *   - SERVICE_UNAVAILABLE: External service unavailable
  */
 export const adminBase = os
   .$context<{
