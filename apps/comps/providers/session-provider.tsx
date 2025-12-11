@@ -110,14 +110,23 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
   const [linkOrConnectWalletError, setLinkOrConnectWalletError] =
     useState<Error | null>(null);
   const [isWrongWalletModalOpen, setIsWrongWalletModalOpen] = useState(false);
+  const [userDismissedWrongWallet, setUserDismissedWrongWallet] =
+    useState(false);
 
   const handleCloseWrongWalletModal = useCallback(
     (open: boolean) => {
       disconnect(undefined, {
-        onSuccess: () => setIsWrongWalletModalOpen(open),
+        onSuccess: () => {
+          setIsWrongWalletModalOpen(open);
+
+          // When closing, explicitly mark that the user has dismissed the warning
+          if (!open) {
+            setUserDismissedWrongWallet(true);
+          }
+        },
       });
     },
-    [setIsWrongWalletModalOpen, disconnect],
+    [disconnect],
   );
 
   const {
@@ -213,6 +222,21 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
   const connectedExternalWallets = useMemo(() => {
     return wallets.filter((w) => w.walletClientType !== "privy");
   }, [wallets]);
+
+  const connectedWalletAddresses = useMemo(
+    () =>
+      wallets
+        .map((w) => w.address)
+        .sort()
+        .join(","),
+    [wallets],
+  );
+
+  useEffect(() => {
+    // Reset the dismissal flag whenever the list of connected wallets changes.
+    // This allows the modal to reappear for a newly connected (and still wrong) wallet.
+    setUserDismissedWrongWallet(false);
+  }, [connectedWalletAddresses]);
 
   const {
     mutate: linkWalletToBackend,
@@ -316,7 +340,8 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
         setIsWalletConnected(true);
       } else if (
         userExternalWalletAddress &&
-        connectedExternalWallets.length > 0
+        connectedExternalWallets.length > 0 &&
+        !userDismissedWrongWallet
       ) {
         setIsWrongWalletModalOpen(true);
         setIsWalletConnected(false);
@@ -331,8 +356,7 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
     connectedExternalWallets,
     readyWallets,
     setActiveWallet,
-    setIsWrongWalletModalOpen,
-    setIsWalletConnected,
+    userDismissedWrongWallet,
   ]);
 
   // Sync active wallet when backend user data is available
