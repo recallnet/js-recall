@@ -1,0 +1,1 @@
+CREATE UNIQUE INDEX "idx_sig_submissions_comp_signature_uniq" ON "eigenai"."signature_submissions" USING btree ("competition_id","signature");
