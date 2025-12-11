@@ -193,15 +193,14 @@ export class AirdropService {
             ineligibleAmount: allocation.ineligibleReward || 0n,
           };
         } else if (!convictionClaim) {
-          // Determine if the claim has expired based on season end date
+          // Determine if the claim has expired
+          // Use UTC-safe date arithmetic to avoid DST issues
+          const daysToAdd = season.number > 0 ? 30 : 90;
+          const expirationTimestamp = new Date(
+            season.startDate.getTime() + daysToAdd * 24 * 60 * 60 * 1000,
+          );
           const now = new Date();
-
-          // Use season end date, or fallback to startDate + 30 days if not set
-          const expirationDate =
-            season.endDate ??
-            new Date(season.startDate.getTime() + 30 * 24 * 60 * 60 * 1000);
-
-          const expired = now > expirationDate;
+          const expired = now > expirationTimestamp;
 
           if (expired) {
             return {
@@ -209,7 +208,7 @@ export class AirdropService {
               season: allocation.season,
               seasonName: season.name,
               eligibleAmount: allocation.amount,
-              expiredAt: expirationDate,
+              expiredAt: expirationTimestamp,
             };
           }
           return {
@@ -217,7 +216,7 @@ export class AirdropService {
             season: allocation.season,
             seasonName: season.name,
             eligibleAmount: allocation.amount,
-            expiresAt: expirationDate,
+            expiresAt: expirationTimestamp,
             proof: allocation.season > 0 ? allocation.proof : [],
           };
         } else if (convictionClaim.duration > 0n) {
