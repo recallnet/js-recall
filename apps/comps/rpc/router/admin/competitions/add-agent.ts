@@ -33,6 +33,24 @@ export const addAgentToCompetition = adminBase
       throw errors.NOT_FOUND({ message: "Agent not found" });
     }
 
+    // Check if agent owner's email is verified (security layer)
+    const owner = await context.userService.getUser(agent.ownerId);
+    if (!owner) {
+      throw errors.NOT_FOUND({ message: "Agent not found" });
+    }
+
+    // Validate wallet address for competitions requiring on-chain wallets
+    if (
+      (competition.type === "perpetual_futures" ||
+        competition.type === "spot_live_trading") &&
+      !agent.walletAddress
+    ) {
+      throw errors.BAD_REQUEST({
+        message:
+          "Agent must have a wallet address to participate in this competition",
+      });
+    }
+
     // Check if agent is already in the competition
     const isInCompetition =
       await context.competitionService.isAgentInCompetition(
@@ -60,8 +78,17 @@ export const addAgentToCompetition = adminBase
       });
     }
 
-    // In sandbox mode, reset agent balances
+    // In sandbox mode, we need to reset the agent's balances to starting values when the agent
+    // joins the always on competition, since we can't rely on 'startCompetition' to do so.
+    // For non-sandbox mode, we must *not* do this, since agents can join competitions before
+    // they've started, when they might be in another ongoing competition as well, and we don't
+    // want to reset their balances in the middle of the ongoing competition. So in that case
+    // wait for the new competition to start and let 'startCompetition' do the reset.
     if (competition.sandboxMode) {
+      context.logger.info(
+        `Resetting agent balance as part of applying sandbox mode logic for admin adding agent ${input.agentId} to competition ${input.competitionId}`,
+      );
+
       await context.balanceService.resetAgentBalances(
         input.agentId,
         input.competitionId,
@@ -69,17 +96,42 @@ export const addAgentToCompetition = adminBase
       );
     }
 
-    // Add agent to competition
-    await context.competitionRepository.addAgentToCompetition(
-      input.competitionId,
-      input.agentId,
-    );
+    // Add agent to competition using repository method
+    try {
+      await context.competitionRepository.addAgentToCompetition(
+        input.competitionId,
+        input.agentId,
+      );
+    } catch (error) {
+      // Handle specific error for participant limit
+      if (
+        error instanceof Error &&
+        error.message.includes("maximum participant limit")
+      ) {
+        throw errors.CONFLICT({ message: error.message });
+      }
+      // Handle one-agent-per-user error
+      if (
+        error instanceof Error &&
+        error.message.includes("already has an agent registered")
+      ) {
+        throw errors.CONFLICT({
+          message:
+            "This user already has another agent registered in this competition. Each user can only register one agent per competition.",
+        });
+      }
+      // Re-throw other errors
+      throw error;
+    }
 
     // Take initial snapshot for sandbox mode
     if (competition.sandboxMode) {
       await context.portfolioSnapshotterService.takePortfolioSnapshotForAgent(
         input.competitionId,
         input.agentId,
+      );
+      context.logger.info(
+        `Sandbox mode logic completed for agent ${input.agentId}`,
       );
     }
 
@@ -90,10 +142,12 @@ export const addAgentToCompetition = adminBase
         id: agent.id,
         name: agent.name,
         handle: agent.handle,
+        ownerId: agent.ownerId,
       },
       competition: {
         id: competition.id,
         name: competition.name,
+        status: competition.status,
       },
     };
   });
