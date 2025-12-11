@@ -381,6 +381,48 @@ describe("EigenaiService", () => {
         }),
       );
     });
+
+    test("should throw 409 error for duplicate signature submission", async () => {
+      // Simulate PostgreSQL unique constraint violation (code 23505)
+      const uniqueConstraintError = new Error("duplicate key value");
+      (uniqueConstraintError as unknown as { code: string }).code = "23505";
+      (uniqueConstraintError as unknown as { constraint: string }).constraint =
+        "idx_sig_submissions_comp_signature_uniq";
+
+      mockRepository.createSignatureSubmission.mockRejectedValue(
+        uniqueConstraintError,
+      );
+
+      await expect(
+        service.submitSignature({
+          agentId: "agent-456",
+          competitionId: "comp-789",
+          signature: EIGENAI_TEST_FIXTURE.signature,
+          responseModel: EIGENAI_TEST_FIXTURE.responseModel,
+          requestPrompt: EIGENAI_TEST_FIXTURE.fullPrompt,
+          responseOutput: EIGENAI_TEST_FIXTURE.fullOutput,
+        }),
+      ).rejects.toThrow(
+        "This signature has already been submitted for this competition",
+      );
+    });
+
+    test("should rethrow non-unique-constraint errors", async () => {
+      const otherError = new Error("Database connection failed");
+
+      mockRepository.createSignatureSubmission.mockRejectedValue(otherError);
+
+      await expect(
+        service.submitSignature({
+          agentId: "agent-456",
+          competitionId: "comp-789",
+          signature: EIGENAI_TEST_FIXTURE.signature,
+          responseModel: EIGENAI_TEST_FIXTURE.responseModel,
+          requestPrompt: EIGENAI_TEST_FIXTURE.fullPrompt,
+          responseOutput: EIGENAI_TEST_FIXTURE.fullOutput,
+        }),
+      ).rejects.toThrow("Database connection failed");
+    });
   });
 
   describe("getAgentBadgeStatus", () => {

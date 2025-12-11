@@ -3,6 +3,7 @@
  *
  * Tests for the EigenAI verification badge RPC endpoints.
  */
+import { randomUUID } from "crypto";
 import { beforeEach, describe, expect, test } from "vitest";
 
 import {
@@ -41,6 +42,20 @@ async function insertBadgeStatus(
 }
 
 /**
+ * Generate a unique mock 65-byte hex signature for testing.
+ * Uses randomUUID to ensure uniqueness across test runs.
+ */
+function generateMockSignature(): string {
+  // 65 bytes = 130 hex chars
+  // Use two UUIDs (32 hex chars each) + padding to get 130 chars
+  const uuid1 = randomUUID().replace(/-/g, "");
+  const uuid2 = randomUUID().replace(/-/g, "");
+  const uuid3 = randomUUID().replace(/-/g, "");
+  const uuid4 = randomUUID().replace(/-/g, "");
+  return "0x" + (uuid1 + uuid2 + uuid3 + uuid4).slice(0, 130);
+}
+
+/**
  * Helper to insert a signature submission for testing
  */
 async function insertSignatureSubmission(
@@ -54,7 +69,7 @@ async function insertSignatureSubmission(
   await db.insert(signatureSubmissions).values({
     agentId: data.agentId,
     competitionId: data.competitionId,
-    signature: "0x" + "a".repeat(130), // Mock 65-byte signature
+    signature: generateMockSignature(), // Unique signature per insertion
     chainId: "1",
     requestPrompt: "Test prompt",
     responseModel: "gpt-test",

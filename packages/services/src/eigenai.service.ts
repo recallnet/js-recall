@@ -8,6 +8,9 @@ import type {
   VerificationStatus,
 } from "@recallnet/db/schema/eigenai/types";
 
+import { checkUniqueConstraintViolation } from "./lib/error-utils.js";
+import { ApiError } from "./types/index.js";
+
 // =============================================================================
 // CONSTANTS
 // =============================================================================
@@ -247,9 +250,22 @@ export class EigenaiService {
       submittedAt: new Date(),
     };
 
-    // Store the submission
-    const submission =
-      await this.eigenaiRepository.createSignatureSubmission(submissionData);
+    // Store the submission (handles duplicate signature detection)
+    let submission: SelectSignatureSubmission;
+    try {
+      submission =
+        await this.eigenaiRepository.createSignatureSubmission(submissionData);
+    } catch (error) {
+      // Check for unique constraint violation (duplicate signature)
+      const constraint = checkUniqueConstraintViolation(error);
+      if (constraint?.includes("signature")) {
+        throw new ApiError(
+          409,
+          "This signature has already been submitted for this competition",
+        );
+      }
+      throw error;
+    }
 
     this.logger.debug(
       `[EigenaiService] Stored submission id=${submission.id}, verified=${verification.isValid}`,
