@@ -18,7 +18,7 @@ export interface StakeEntryAction {
   label: string;
   onClick: () => void;
   disabled?: boolean;
-  variant?: "default" | "outline";
+  variant?: "primary" | "secondary";
   isLoading?: boolean;
   loadingLabel?: string;
 }
@@ -62,14 +62,14 @@ export const StakeEntryBase: React.FunctionComponent<StakeEntryBaseProps> = ({
   progress,
 }) => {
   return (
-    <div className="xs:p-4 border-gray-4 bg-gray-2 rounded-lg border p-3">
+    <div className="xs:p-4 border-gray-4 bg-gray-2 rounded-2xl border p-3">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between sm:gap-4">
         <div className="flex w-full min-w-0 flex-row items-center justify-between gap-2 sm:w-auto sm:gap-4">
           <StatusPill status={status} />
           <div className="flex min-w-0 flex-row items-center gap-2 sm:gap-4">
             <div className="flex shrink-0 items-center gap-2 sm:gap-4">
               <Recall size="md" />
-              <span className="whitespace-nowrap text-lg font-semibold text-white">
+              <span className="whitespace-nowrap text-lg font-semibold text-gray-100">
                 {formattedAmount}
               </span>
             </div>
@@ -91,6 +91,7 @@ export const StakeEntryBase: React.FunctionComponent<StakeEntryBaseProps> = ({
               key={index}
               disabled={Boolean(action.disabled || action.isLoading)}
               onClick={action.onClick}
+              variant={action.variant}
             >
               {action.isLoading ? (
                 <span className="flex items-center gap-2">
@@ -106,27 +107,27 @@ export const StakeEntryBase: React.FunctionComponent<StakeEntryBaseProps> = ({
       </div>
 
       {progress && (
-        <div className="text-gray-6 mt-4 flex flex-row items-center justify-between gap-2 text-sm">
+        <div className="text-gray-6 mt-4 flex flex-col justify-between gap-3 text-sm sm:flex-row sm:items-center sm:gap-8">
           <Tooltip content={progress.leftLabelTooltip}>
             <span className="shrink-0 cursor-help text-xs sm:text-sm">
               {progress.leftLabel}
             </span>
           </Tooltip>
-          <div className="mx-1 hidden min-w-0 flex-1 items-center gap-2 sm:mx-2 sm:flex">
+          <div className="min-w-0 flex-1 items-center gap-2 sm:mx-2 sm:flex">
             <div className="bg-gray-3 h-2 min-w-0 flex-1 overflow-hidden rounded-full">
               <div
                 className="bg-gray-5 h-full transition-all duration-300"
                 style={{ width: `${progress.progressPercent}%` }}
               />
             </div>
-            <span className="text-gray-6 shrink-0 whitespace-nowrap text-xs sm:text-sm">
+            <span className="shrink-0 whitespace-nowrap text-xs font-bold text-gray-100 sm:text-sm">
               {progress.progressText}
+            </span>{" "}
+            <span className="text-gray-5 shrink-0 whitespace-nowrap text-xs font-bold sm:text-sm">
+              ({Math.round(progress.progressPercent)}%)
             </span>
           </div>
-          <Tooltip
-            content={progress.rightLabelTooltip}
-            className="shrink-0 text-right"
-          >
+          <Tooltip content={progress.rightLabelTooltip} className="shrink-0">
             <span className="cursor-help text-xs sm:text-sm">
               {progress.rightLabel}
             </span>

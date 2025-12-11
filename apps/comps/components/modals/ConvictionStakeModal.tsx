@@ -8,7 +8,6 @@ import {
 } from "lucide-react";
 import React, { useEffect, useMemo, useState } from "react";
 
-import { Button as BaseButton } from "@recallnet/ui2/components/button";
 import {
   Dialog,
   DialogContent,
@@ -37,28 +36,28 @@ interface ConvictionStakeModalProps {
 type StakeStep = "select" | "signing" | "confirming" | "success" | "error";
 
 const DURATION_OPTIONS = [
-  { label: "No stake", subLabel: "10% Unlock", duration: 0n, percentage: 10n },
+  { label: "No stake", subLabel: "Receive 10%", duration: 0n, percentage: 10n },
   {
     label: "3 months",
-    subLabel: "40% Unlock",
+    subLabel: "Receive 40%",
     duration: BigInt(90 * 24 * 60 * 60),
     percentage: 40n,
   },
   {
     label: "6 months",
-    subLabel: "60% Unlock",
+    subLabel: "Receive 60%",
     duration: BigInt(180 * 24 * 60 * 60),
     percentage: 60n,
   },
   {
     label: "9 months",
-    subLabel: "80% Unlock",
+    subLabel: "Receive 80%",
     duration: BigInt(270 * 24 * 60 * 60),
     percentage: 80n,
   },
   {
     label: "12 months",
-    subLabel: "100% Unlock",
+    subLabel: "Receive 100%",
     duration: BigInt(365 * 24 * 60 * 60),
     percentage: 100n,
   },
@@ -185,7 +184,7 @@ export const ConvictionStakeModal: React.FC<ConvictionStakeModalProps> = ({
         {/* Header */}
         <div className="border-gray-4 flex items-center justify-between border-b px-6 py-4">
           <DialogTitle className="flex items-center gap-2 text-xl font-semibold">
-            Stake Duration{" "}
+            Conviction Staking{" "}
             <span className="text-secondary-foreground flex items-center gap-1 text-xs font-normal">
               <LinkIcon size={12} />
               <a
@@ -194,7 +193,7 @@ export const ConvictionStakeModal: React.FC<ConvictionStakeModalProps> = ({
                 rel="noopener noreferrer"
                 className="hover:text-primary-foreground cursor-pointer underline"
               >
-                Conviction Staking
+                Learn More
               </a>
             </span>
           </DialogTitle>
@@ -209,7 +208,7 @@ export const ConvictionStakeModal: React.FC<ConvictionStakeModalProps> = ({
                 onValueChange={(v: string) =>
                   setSelectedDurationIndex(parseInt(v))
                 }
-                className="flex flex-col gap-3"
+                className="flex flex-col gap-5"
               >
                 {DURATION_OPTIONS.map((option, index) => (
                   <div key={index} className="flex items-start space-x-2">
@@ -246,14 +245,14 @@ export const ConvictionStakeModal: React.FC<ConvictionStakeModalProps> = ({
                     {formattedUnlockDate}
                   </Tooltip>
                 </div>
-                <div className="text-gray-5 text-xs">Unlock Date</div>
+                <div className="text-gray-5 text-xs">Receive Date</div>
               </div>
               <div className="border-gray-4 border-l pl-3">
                 <div className="text-gray-6 mb-1 flex items-center gap-1 text-sm font-semibold">
                   <Recall size="sm" backgroundClass="bg-white" />{" "}
                   {formattedUnlockAmount}
                 </div>
-                <div className="text-gray-5 text-xs">Unlock Amount</div>
+                <div className="text-gray-5 text-xs">Receive Amount</div>
               </div>
               <div className="border-gray-4 border-l pl-3">
                 <div className="text-gray-6 mb-1 flex items-center gap-1 text-sm font-semibold">
@@ -345,16 +344,16 @@ export const ConvictionStakeModal: React.FC<ConvictionStakeModalProps> = ({
               </div>
             </div>
             <div className="flex w-full gap-4">
-              <BaseButton
-                variant="outline"
+              <Button
+                variant="secondary"
                 onClick={() => setStep("select")}
                 className="flex-1"
               >
                 TRY AGAIN
-              </BaseButton>
-              <BaseButton onClick={handleClose} className="flex-1">
+              </Button>
+              <Button onClick={handleClose} className="flex-1">
                 CLOSE
-              </BaseButton>
+              </Button>
             </div>
           </div>
         )}

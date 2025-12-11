@@ -66,6 +66,7 @@
   --trophy-third-bg: oklch(0.1778 0.0275 59.55);
 
   /* Gray scale colors */
+  --gray-100: #e9edf1;
   --gray-6: #e5e5e5;
   --gray-5: #a7a7a7;
   --gray-4: #383838;

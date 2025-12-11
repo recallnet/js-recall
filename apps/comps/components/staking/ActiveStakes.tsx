@@ -98,7 +98,7 @@ const ActiveStakeEntry: React.FunctionComponent<ActiveStakeEntryProps> = ({
       disabled: isLocked || isUnstakeProcessing,
       isLoading: isUnstakeProcessing,
       loadingLabel: "Unstaking...",
-      variant: "outline",
+      variant: "secondary",
     },
     {
       label: "RE-STAKE",
@@ -106,7 +106,7 @@ const ActiveStakeEntry: React.FunctionComponent<ActiveStakeEntryProps> = ({
       disabled: isLocked,
       isLoading: false,
       loadingLabel: "Re-Staking...",
-      variant: "default",
+      variant: "primary",
     },
   ];
 
@@ -183,7 +183,7 @@ export const ActiveStakes: React.FunctionComponent = () => {
     return (
       <div className="mb-8">
         <Heading text1="Active" text2="Stakes" className="mb-2" />
-        <div className="border-gray-4 bg-gray-2 px-auto flex flex-col gap-2 rounded-lg border px-6 py-8">
+        <div className="border-gray-4 bg-gray-2 px-auto flex flex-col gap-2 rounded-2xl border px-6 py-8">
           <p className="text-sm text-gray-400">
             No active stakes yet. Stake to earn Boost.
           </p>

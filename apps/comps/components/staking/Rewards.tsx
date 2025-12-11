@@ -89,7 +89,7 @@ export const Rewards: React.FunctionComponent = () => {
     return (
       <div className="mb-8">
         <Heading text1="Arena" text2="Rewards" className="mb-4" />
-        <div className="border-gray-4 bg-gray-2 flex flex-col gap-2 rounded-lg border px-6 py-8">
+        <div className="border-gray-4 bg-gray-2 flex flex-col gap-2 rounded-2xl border px-6 py-8">
           <p className="text-sm text-gray-400">
             {hasScheduledRewards
               ? "Rewards will be claimable once the release window opens."
@@ -101,22 +101,22 @@ export const Rewards: React.FunctionComponent = () => {
   }
 
   return (
-    <div className="mb-8 flex flex-col gap-4">
+    <div className="flex h-full flex-col gap-4">
       <Heading text1="Arena" text2="Rewards" />
-      <div className="border-gray-4 bg-gray-2 flex flex-col gap-2 rounded-lg border p-2">
+      <div className="border-gray-4 bg-gray-2 flex h-full flex-col justify-between gap-2 rounded-2xl border p-2">
         {/* Table */}
         <div className="overflow-hidden">
           <div className="max-h-96 overflow-y-auto">
             <table className="w-full border-collapse">
               <thead className="bg-gray-2 sticky top-0 z-10">
                 <tr>
-                  <th className="text-gray-6 px-4 py-3 text-left text-sm">
+                  <th className="text-gray-6 px-4 py-2 text-left text-sm">
                     Agent
                   </th>
-                  <th className="text-gray-6 px-4 py-3 text-left text-sm">
+                  <th className="text-gray-6 px-4 py-2 text-left text-sm">
                     Comp.
                   </th>
-                  <th className="text-gray-6 px-4 py-3 text-right text-sm">
+                  <th className="text-gray-6 px-4 py-2 text-right text-sm">
                     Amount
                   </th>
                 </tr>
@@ -124,7 +124,7 @@ export const Rewards: React.FunctionComponent = () => {
               <tbody>
                 {formattedClaims.map((claim, index) => (
                   <tr key={`${claim.merkleRoot}-${index}`}>
-                    <td className="text-gray-5 px-4 py-3">
+                    <td className="text-gray-5 px-4 py-2">
                       {claim.agent ? (
                         <div className="flex min-w-0 items-center gap-3">
                           <AgentAvatar
@@ -143,12 +143,12 @@ export const Rewards: React.FunctionComponent = () => {
                         <span className="text-sm">—</span>
                       )}
                     </td>
-                    <td className="text-gray-5 px-4 py-3">
+                    <td className="text-gray-5 px-4 py-2">
                       <span className="truncate text-sm">
                         {claim.competition.name}
                       </span>
                     </td>
-                    <td className="text-gray-6 px-4 py-3 text-right">
+                    <td className="text-gray-6 px-4 py-2 text-right">
                       <div className="flex items-center justify-end gap-2">
                         <Recall size="sm" backgroundClass="bg-white" />
                         <span className="font-mono text-sm font-semibold">
@@ -164,8 +164,10 @@ export const Rewards: React.FunctionComponent = () => {
         </div>
 
         {/* Total Row */}
-        <div className="bg-gray-4 mt-4 flex items-center justify-between rounded-xl p-6">
-          <span className="text-gray-5 text-xl">Total Rewards</span>
+        <div className="bg-gray-3 border-gray-4 mt-4 flex items-center justify-between rounded-xl border p-3">
+          <span className="text-gray-5 text-xl font-semibold leading-none tracking-tight">
+            Total Rewards
+          </span>
           <div className="flex items-center gap-3">
             <div className="flex items-center gap-2 px-3">
               <Recall size="md" backgroundClass="bg-white" />

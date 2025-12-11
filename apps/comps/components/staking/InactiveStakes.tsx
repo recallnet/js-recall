@@ -90,7 +90,7 @@ const InactiveStakeEntry: React.FunctionComponent<InactiveStakeEntryProps> = ({
       disabled: !isWithdrawable || isWithdrawing,
       isLoading: isWithdrawing,
       loadingLabel: "Withdrawing...",
-      variant: "outline",
+      variant: "secondary",
     },
   ];
 

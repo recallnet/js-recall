@@ -49,7 +49,12 @@ export default function Stakes() {
   if (!config.publicFlags.tge) {
     return null;
   } else if (pending) {
-    return <StakeSkeleton />;
+    return (
+      <StakeSkeleton
+        showConviction={isConvictionEligible}
+        showStakeToBoostCallout={hasBalanceNoStakes}
+      />
+    );
   } else if (!isWalletConnected) {
     return <Landing />;
   } else {

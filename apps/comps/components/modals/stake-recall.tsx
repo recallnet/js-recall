@@ -14,12 +14,9 @@ import {
 import React, { useEffect, useState } from "react";
 import { useAccount, useChainId } from "wagmi";
 
-import { Button } from "@recallnet/ui2/components/button";
 import {
   Dialog,
   DialogContent,
-  DialogFooter,
-  DialogHeader,
   DialogTitle,
 } from "@recallnet/ui2/components/dialog";
 import { Slider } from "@recallnet/ui2/components/slider";
@@ -29,6 +26,7 @@ import {
 } from "@recallnet/ui2/components/toggle-group";
 
 import { Recall } from "@/components/Recall";
+import { Button } from "@/components/staking/Button";
 import { useStake } from "@/hooks/staking";
 import { useRecall } from "@/hooks/useRecall";
 import { useStakingContractAddress } from "@/hooks/useStakingContract";
@@ -322,26 +320,24 @@ export const StakeRecallModal: React.FC<StakeRecallModalProps> = ({
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="min-w-xs max-w-lg">
+      <DialogContent className="bg-gray-2 border-gray-4 min-w-[500px] max-w-lg gap-0 overflow-hidden rounded-xl p-0 text-white">
         {/* Header */}
-        <DialogHeader>
-          <div className="flex items-center justify-between">
-            <DialogTitle className="text-primary-foreground flex items-center justify-start gap-2 text-xl font-bold">
-              <Lock className="text-secondary-foreground size-6" />
-              {step === "stake" && "Stake RECALL"}
-              {step === "review" && "Review Stake"}
-              {step === "signing" && "Sign Transaction"}
-              {step === "confirming" && "Confirming Transaction"}
-              {step === "success" && "Successful Stake"}
-              {step === "error" && "Stake Failed"}
-            </DialogTitle>
-          </div>
-        </DialogHeader>
+        <div className="border-gray-4 flex items-center justify-between border-b px-6 py-4">
+          <DialogTitle className="flex items-center gap-2 text-xl font-semibold">
+            <Lock className="text-secondary-foreground size-5" />
+            {step === "stake" && "Stake RECALL"}
+            {step === "review" && "Review Stake"}
+            {step === "signing" && "Sign Transaction"}
+            {step === "confirming" && "Confirming Transaction"}
+            {step === "success" && "Successful Stake"}
+            {step === "error" && "Stake Failed"}
+          </DialogTitle>
+        </div>
 
         {/* Step 1: Stake Amount Selection */}
         {step === "stake" && (
           <>
-            <div className="space-y-6">
+            <div className="space-y-6 px-6 py-4">
               {/* Amount Input */}
               <div className="space-y-4">
                 <div className="flex justify-between">
@@ -405,7 +401,7 @@ export const StakeRecallModal: React.FC<StakeRecallModalProps> = ({
                 </div>
 
                 {/* Boost Display */}
-                <div className="xs:m-0 m-auto flex w-fit items-center justify-center gap-2 rounded-lg bg-gray-800 p-3">
+                <div className="bg-gray-3 xs:m-0 m-auto flex w-fit items-center justify-center gap-2 rounded-lg p-3">
                   <span className="text-primary-foreground text-xl font-bold">
                     +{formattedBoostAmount}
                   </span>
@@ -417,7 +413,7 @@ export const StakeRecallModal: React.FC<StakeRecallModalProps> = ({
               </div>
             </div>
 
-            <DialogFooter>
+            <div className="border-gray-4 border-t px-6 py-4">
               <Button
                 onClick={handleReview}
                 disabled={stakeAmountRaw === 0n}
@@ -425,14 +421,14 @@ export const StakeRecallModal: React.FC<StakeRecallModalProps> = ({
               >
                 CONTINUE
               </Button>
-            </DialogFooter>
+            </div>
           </>
         )}
 
         {/* Step 2: Review Stake */}
         {step === "review" && (
           <>
-            <div className="space-y-6">
+            <div className="space-y-6 px-6 py-4">
               {/* Stake Summary */}
               <div className="space-y-4">
                 <div className="flex items-baseline justify-evenly gap-4 text-center">
@@ -476,7 +472,7 @@ export const StakeRecallModal: React.FC<StakeRecallModalProps> = ({
 
                 {/* Terms and Conditions */}
                 <div className="space-y-3">
-                  <div className="rounded-2xl border p-0">
+                  <div className="border-gray-4 rounded-2xl border p-0">
                     <div className="text-secondary-foreground flex items-center gap-2 px-4 py-3 text-sm">
                       <Lock className="size-4 flex-shrink-0" />
                       <div className="text-primary-foreground">
@@ -488,7 +484,7 @@ export const StakeRecallModal: React.FC<StakeRecallModalProps> = ({
                       </div>
                     </div>
 
-                    <div className="border-t"></div>
+                    <div className="border-gray-4 border-t"></div>
 
                     <div className="text-secondary-foreground flex items-center gap-2 px-4 py-3 text-sm">
                       <Ban className="size-4 flex-shrink-0" />
@@ -499,7 +495,7 @@ export const StakeRecallModal: React.FC<StakeRecallModalProps> = ({
                       </div>
                     </div>
 
-                    <div className="border-t"></div>
+                    <div className="border-gray-4 border-t"></div>
 
                     <div className="text-secondary-foreground flex items-center gap-2 px-4 py-3 text-sm">
                       <TrendingUp className="text-secondary-foreground size-4 flex-shrink-0" />
@@ -512,7 +508,7 @@ export const StakeRecallModal: React.FC<StakeRecallModalProps> = ({
                       </div>
                     </div>
 
-                    <div className="border-t"></div>
+                    <div className="border-gray-4 border-t"></div>
 
                     <div className="text-secondary-foreground flex items-center gap-2 px-4 py-3 text-sm">
                       <OctagonMinus className="size-4 shrink-0" />
@@ -554,14 +550,14 @@ export const StakeRecallModal: React.FC<StakeRecallModalProps> = ({
               </div>
             </div>
 
-            <DialogFooter className="gap-2 sm:flex-col">
+            <div className="border-gray-4 flex flex-col gap-2 border-t px-6 py-4">
               {needsApproval || isApprovalPending ? (
                 <Button
                   onClick={handleApprove}
                   disabled={!termsAccepted || isApprovalPending}
                   className="w-full"
                 >
-                  {isApprovalPending ? "APPROVING..." : "Approve"}
+                  {isApprovalPending ? "APPROVING..." : "APPROVE"}
                 </Button>
               ) : (
                 <Button
@@ -573,50 +569,50 @@ export const StakeRecallModal: React.FC<StakeRecallModalProps> = ({
                 </Button>
               )}
               <Button
-                variant="outline"
+                variant="secondary"
                 onClick={handleBack}
                 className="flex w-full items-center justify-center gap-2"
               >
                 <ArrowLeft className="h-4 w-4" />
                 CHOOSE STAKE AMOUNT
               </Button>
-            </DialogFooter>
+            </div>
           </>
         )}
 
         {/* Step 5: Signing Transaction */}
         {step === "signing" && (
           <>
-            <div className="flex flex-col items-center justify-center space-y-6 py-8">
-              <div className="h-12 w-12 animate-spin rounded-full border-4 border-gray-300 border-t-blue-500"></div>
+            <div className="flex flex-col items-center justify-center space-y-6 p-8">
+              <div className="border-gray-4 h-12 w-12 animate-spin rounded-full border-4 border-t-blue-500"></div>
               <div className="text-center">
                 <div className="text-lg font-semibold">
-                  Please sign the transaction in your wallet...
+                  Waiting for signature...
                 </div>
-                <div className="text-sm text-gray-400">
-                  Confirm the transaction to stake your tokens
+                <div className="mt-2 text-sm text-gray-400">
+                  Please sign the transaction in your wallet
                 </div>
               </div>
             </div>
 
-            <DialogFooter>
+            <div className="border-gray-4 border-t px-6 py-4">
               <Button disabled className="w-full">
                 {isSigning ? "SIGNING..." : "WAITING FOR SIGNATURE"}
               </Button>
-            </DialogFooter>
+            </div>
           </>
         )}
 
         {/* Step 6: Confirming Transaction */}
         {step === "confirming" && (
           <>
-            <div className="flex flex-col items-center justify-center space-y-6 py-8">
-              <div className="h-12 w-12 animate-spin rounded-full border-4 border-gray-300 border-t-green-500"></div>
+            <div className="flex flex-col items-center justify-center space-y-6 p-8">
+              <div className="border-gray-4 h-12 w-12 animate-spin rounded-full border-4 border-t-green-500"></div>
               <div className="text-center">
                 <div className="text-lg font-semibold">
                   Transaction submitted!
                 </div>
-                <div className="text-sm text-gray-400">
+                <div className="mt-2 text-sm text-gray-400">
                   Waiting for network confirmation...
                 </div>
                 {transactionHash && (
@@ -628,108 +624,100 @@ export const StakeRecallModal: React.FC<StakeRecallModalProps> = ({
               </div>
             </div>
 
-            <DialogFooter>
+            <div className="border-gray-4 border-t px-6 py-4">
               <Button disabled={isConfirming} className="w-full">
                 {isConfirming ? "CONFIRMING..." : "CONFIRMED"}
               </Button>
-            </DialogFooter>
+            </div>
           </>
         )}
 
         {/* Step 7: Success */}
         {step === "success" && (
           <>
-            <div className="flex flex-col items-center justify-center space-y-6 py-8">
-              <div className="flex h-16 w-16 items-center justify-center rounded-full bg-green-500">
-                <Check className="h-8 w-8 text-white" />
+            <div className="flex flex-col items-center justify-center space-y-6 p-8">
+              <div className="flex h-16 w-16 items-center justify-center rounded-full bg-green-500/20">
+                <Check className="h-8 w-8 text-green-500" />
               </div>
-              <div className="text-center">
-                <div className="text-lg font-semibold">
+              <div className="space-y-2 text-center">
+                <div className="text-xl font-bold">Success!</div>
+                <div className="text-gray-400">
                   You have successfully staked your RECALL tokens.
                 </div>
 
-                <div className="mt-10">
-                  <div className="flex items-baseline justify-evenly gap-4 text-center">
-                    <div className="flex flex-col items-center justify-center gap-2">
-                      <span className="text-secondary-foreground text-center text-sm font-bold uppercase">
-                        You staked
-                      </span>
-                      <div className="flex items-center gap-2">
-                        <span className="text-4xl font-bold">
-                          {formattedStakeAmount}
-                        </span>
-                        <Recall size="md" />
-                      </div>
+                <div className="mx-auto grid max-w-[280px] grid-cols-2 gap-8 pt-4 text-left">
+                  <div>
+                    <div className="text-xs font-bold uppercase text-gray-500">
+                      You Staked
                     </div>
-                    <ArrowRight className="text-secondary-foreground size-5 self-center" />
-                    <div className="flex flex-col items-center justify-center gap-2">
-                      <span className="text-secondary-foreground text-center text-sm font-bold uppercase">
-                        You got
-                      </span>
-                      <div className="flex items-center gap-2">
-                        <span className="text-4xl font-bold">
-                          {formattedBoostAmount}
-                        </span>
-                        <BoostIcon className="size-5" />
-                      </div>
-                      <div className="text-secondary-foreground text-center text-sm font-bold">
-                        PER COMPETITION
-                      </div>
+                    <div className="mt-1 flex items-center gap-1 text-xl font-bold">
+                      {formattedStakeAmount} <Recall size="sm" />
                     </div>
                   </div>
+                  <div>
+                    <div className="text-xs font-bold uppercase text-gray-500">
+                      Boost
+                    </div>
+                    <div className="mt-1 flex items-center gap-1 text-xl font-bold">
+                      {formattedBoostAmount}{" "}
+                      <BoostIcon className="h-5 w-5 text-yellow-500" />
+                    </div>
+                  </div>
+                </div>
 
-                  {/* Unlock Date */}
-                  <div className="mt-6 space-y-2 text-center">
-                    <div className="text-secondary-foreground text-sm font-bold">
-                      UNLOCK DATE
-                    </div>
-                    <div className="font-bold">
-                      {formatUnlockDate(unlockDate)} UTC
-                    </div>
+                {/* Unlock Date */}
+                <div className="pt-4">
+                  <div className="text-xs font-bold uppercase text-gray-500">
+                    UNLOCK DATE
+                  </div>
+                  <div className="mt-1 font-bold">
+                    {formatUnlockDate(unlockDate)} UTC
                   </div>
                 </div>
               </div>
             </div>
 
-            <DialogFooter className="gap-2 sm:flex-col">
+            <div className="border-gray-4 flex flex-col gap-2 border-t px-6 py-4">
               <Button onClick={handleClose} className="w-full">
                 BACK TO STAKING
               </Button>
               <Button
-                variant="outline"
+                variant="secondary"
                 onClick={handleShareOnX}
-                className="flex w-full items-center gap-2"
+                className="flex w-full items-center justify-center gap-2"
               >
                 <Share2Icon className="h-4 w-4" />
                 SHARE ON X.COM
               </Button>
-            </DialogFooter>
+            </div>
           </>
         )}
 
         {/* Step 8: Error */}
         {step === "error" && (
           <>
-            <div className="flex flex-col items-center justify-center space-y-6 py-8">
-              <div className="flex h-16 w-16 items-center justify-center rounded-full bg-red-500">
-                <X className="h-8 w-8 text-white" />
+            <div className="flex flex-col items-center justify-center space-y-6 p-8">
+              <div className="flex h-16 w-16 items-center justify-center rounded-full bg-red-500/20">
+                <X className="h-8 w-8 text-red-500" />
               </div>
               <div className="text-center">
-                <div className="text-lg font-bold text-red-400">
-                  Stake Failed
-                </div>
-                <div className="mt-2 text-sm text-gray-400">{error}</div>
+                <div className="text-xl font-bold text-red-500">Failed</div>
+                <div className="mt-2 text-gray-400">{error}</div>
               </div>
             </div>
 
-            <DialogFooter className="flex w-full gap-2">
-              <Button variant="outline" onClick={handleBack} className="flex-1">
+            <div className="border-gray-4 flex gap-4 border-t px-6 py-4">
+              <Button
+                variant="secondary"
+                onClick={handleBack}
+                className="flex-1"
+              >
                 TRY AGAIN
               </Button>
               <Button onClick={handleClose} className="flex-1">
                 CLOSE
               </Button>
-            </DialogFooter>
+            </div>
           </>
         )}
       </DialogContent>
