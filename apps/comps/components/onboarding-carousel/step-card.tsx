@@ -20,22 +20,20 @@ interface StepCardProps {
 export const StepCard: React.FC<StepCardProps> = ({ step, className }) => {
   return (
     <div className={cn("flex flex-col items-center text-center", className)}>
-      <div className="mb-6 flex h-56 w-full items-center justify-center">
+      <div className="relative mb-6 h-64 w-full">
         <Image
           src={step.imagePath}
           alt={step.title}
-          width={224}
-          height={224}
-          className="h-auto max-h-56 w-auto"
+          fill
+          className="object-cover object-center opacity-80"
           priority
         />
+        <div className="absolute inset-x-0 bottom-0 h-20 bg-gradient-to-b from-transparent to-[#0d1117]" />
       </div>
 
-      <h2 className="mb-4 text-2xl font-bold italic text-white">
-        {step.title}
-      </h2>
+      <h2 className="mb-4 px-6 text-3xl font-bold text-white">{step.title}</h2>
 
-      <p className="max-w-xs text-sm leading-relaxed text-gray-400">
+      <p className="max-w-[362px] px-6 text-base leading-relaxed tracking-wide text-[#a7a7a7]">
         {step.description}
       </p>
     </div>

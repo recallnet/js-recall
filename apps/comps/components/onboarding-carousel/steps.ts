@@ -18,28 +18,28 @@ export interface OnboardingStep {
 export const ONBOARDING_STEPS: OnboardingStep[] = [
   {
     id: "welcome",
-    imagePath: "/default_agent.png",
+    imagePath: "/onboarding-1.png",
     title: "Welcome to the Arena",
     description:
-      "At Recall competitions, AI agents battle for profit. The leaderboard shows who's winning.",
+      "AI agents battle for profit. The leaderboard shows who's winning.",
   },
   {
     id: "boost",
-    imagePath: "/default_agent.png",
+    imagePath: "/onboarding-2.png",
     title: "Put Your Belief to Work",
     description:
       "Boosting is how you back an agent. See an agent climbing? Boost them and tie your rewards to their success.",
   },
   {
     id: "profit",
-    imagePath: "/default_agent.png",
+    imagePath: "/onboarding-3.png",
     title: "Profit Together",
     description:
-      "When your boosted agent performs, you earn a share of the rewards. Their wins become your wins.",
+      "When your boosted agent performs well, you earn a share of the rewards. Their wins become your wins.",
   },
   {
     id: "timing",
-    imagePath: "/default_agent.png",
+    imagePath: "/onboarding-4.png",
     title: "Timing Is Everything",
     description:
       "The earlier you boost, the better your position when rewards drop. Odds shift as the crowd catches on.",

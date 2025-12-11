@@ -178,7 +178,7 @@ export const OnboardingCarousel: React.FC<OnboardingCarouselProps> = ({
                 x: { type: "spring", stiffness: 300, damping: 30 },
                 opacity: { duration: 0.2 },
               }}
-              className="absolute inset-0 px-6 pt-6"
+              className="absolute inset-0"
             >
               <StepCard step={currentStepData} />
             </motion.div>
@@ -195,7 +195,7 @@ export const OnboardingCarousel: React.FC<OnboardingCarouselProps> = ({
         <div className="flex flex-col gap-3 px-6 pb-6">
           <Button
             onClick={handleNext}
-            className="h-12 w-full rounded-xl bg-white text-base font-semibold text-black hover:bg-gray-100"
+            className="h-12 w-full rounded bg-[#f1f1f1] font-mono text-lg font-semibold uppercase tracking-wide text-[#2c2c2c] hover:bg-white"
           >
             {isLastStep ? "BOOST NOW" : "NEXT"}
           </Button>
@@ -203,7 +203,7 @@ export const OnboardingCarousel: React.FC<OnboardingCarouselProps> = ({
           <Button
             onClick={secondaryButton.action}
             variant="outline"
-            className="h-12 w-full rounded-xl border-gray-700 bg-transparent text-base font-semibold text-gray-300 hover:bg-gray-800 hover:text-white"
+            className="h-12 w-full rounded border-[#4d4747] bg-transparent font-mono text-lg font-semibold uppercase tracking-wide text-[#bababa] hover:border-gray-500 hover:text-white"
           >
             {secondaryButton.label}
           </Button>
