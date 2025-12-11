@@ -172,12 +172,9 @@ export function CompetitionTable({
                     </TableCell>
                     {hasAnyEigenBadge && (
                       <TableCell className="flex items-center justify-center">
-                        {eigenBadgesByCompetition[comp.id] ? (
+                        {eigenBadgesByCompetition[comp.id]?.isActive ? (
                           <EigenVerifiedBadge
-                            isActive={
-                              eigenBadgesByCompetition[comp.id]?.isActive ??
-                              false
-                            }
+                            isActive={true}
                             signaturesLast24h={
                               eigenBadgesByCompetition[comp.id]
                                 ?.signaturesLast24h ?? 0
