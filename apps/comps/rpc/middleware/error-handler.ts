@@ -2,13 +2,13 @@ import { ORPCError } from "@orpc/server";
 
 import { ApiError } from "@recallnet/services/types";
 
-import { base } from "@/rpc/context/admin";
+import { adminBase } from "@/rpc/context/admin";
 
 /**
  * Error handling middleware that converts ApiError to ORPC errors
  * This prevents having to repeat error handling in every handler
  */
-export const errorHandlerMiddleware = base.middleware(
+export const errorHandlerMiddleware = adminBase.middleware(
   async ({ context, next, errors }) => {
     try {
       return await next({ context });

@@ -3,14 +3,14 @@ import {
   AdminRemoveAgentFromCompetitionParamsSchema,
 } from "@recallnet/services/types";
 
-import { base } from "@/rpc/context/admin";
+import { adminBase } from "@/rpc/context/admin";
 import { adminMiddleware } from "@/rpc/middleware/admin";
 import { errorHandlerMiddleware } from "@/rpc/middleware/error-handler";
 
 /**
  * Remove an agent from a competition
  */
-export const removeAgentFromCompetition = base
+export const removeAgentFromCompetition = adminBase
   .use(errorHandlerMiddleware)
   .use(adminMiddleware)
   .input(

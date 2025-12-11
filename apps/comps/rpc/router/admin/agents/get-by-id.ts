@@ -1,13 +1,13 @@
 import { AdminGetAgentParamsSchema } from "@recallnet/services/types";
 
-import { base } from "@/rpc/context/admin";
+import { adminBase } from "@/rpc/context/admin";
 import { adminMiddleware } from "@/rpc/middleware/admin";
 import { errorHandlerMiddleware } from "@/rpc/middleware/error-handler";
 
 /**
  * Get agent by ID
  */
-export const getAgentById = base
+export const getAgentById = adminBase
   .use(errorHandlerMiddleware)
   .use(adminMiddleware)
   .input(AdminGetAgentParamsSchema)

@@ -1,13 +1,13 @@
 import { AdminAddAgentToCompetitionParamsSchema } from "@recallnet/services/types";
 
-import { base } from "@/rpc/context/admin";
+import { adminBase } from "@/rpc/context/admin";
 import { adminMiddleware } from "@/rpc/middleware/admin";
 import { errorHandlerMiddleware } from "@/rpc/middleware/error-handler";
 
 /**
  * Add an agent to a competition
  */
-export const addAgentToCompetition = base
+export const addAgentToCompetition = adminBase
   .use(errorHandlerMiddleware)
   .use(adminMiddleware)
   .input(AdminAddAgentToCompetitionParamsSchema)

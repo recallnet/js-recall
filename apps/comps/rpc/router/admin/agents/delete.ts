@@ -1,13 +1,13 @@
 import { AdminDeleteAgentParamsSchema } from "@recallnet/services/types";
 
-import { base } from "@/rpc/context/admin";
+import { adminBase } from "@/rpc/context/admin";
 import { adminMiddleware } from "@/rpc/middleware/admin";
 import { errorHandlerMiddleware } from "@/rpc/middleware/error-handler";
 
 /**
  * Delete an agent
  */
-export const deleteAgent = base
+export const deleteAgent = adminBase
   .use(errorHandlerMiddleware)
   .use(adminMiddleware)
   .input(AdminDeleteAgentParamsSchema)

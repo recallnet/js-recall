@@ -59,7 +59,7 @@ export interface CookieStore {
  *   - UNAUTHORIZED: Unauthorized access
  *   - BAD_REQUEST: Invalid request parameters
  */
-export const base = os
+export const adminBase = os
   .$context<{
     cookies: CookieStore;
     headers: Headers;

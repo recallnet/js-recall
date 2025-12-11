@@ -1,13 +1,13 @@
 import { AdminListPartnersQuerySchema } from "@recallnet/services/types";
 
-import { base } from "@/rpc/context/admin";
+import { adminBase } from "@/rpc/context/admin";
 import { adminMiddleware } from "@/rpc/middleware/admin";
 import { errorHandlerMiddleware } from "@/rpc/middleware/error-handler";
 
 /**
  * List all partners with pagination
  */
-export const listPartners = base
+export const listPartners = adminBase
   .use(errorHandlerMiddleware)
   .use(adminMiddleware)
   .input(AdminListPartnersQuerySchema)

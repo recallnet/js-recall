@@ -1,13 +1,13 @@
 import { AdminCreatePartnerSchema } from "@recallnet/services/types";
 
-import { base } from "@/rpc/context/admin";
+import { adminBase } from "@/rpc/context/admin";
 import { adminMiddleware } from "@/rpc/middleware/admin";
 import { errorHandlerMiddleware } from "@/rpc/middleware/error-handler";
 
 /**
  * Create a new partner
  */
-export const createPartner = base
+export const createPartner = adminBase
   .use(errorHandlerMiddleware)
   .use(adminMiddleware)
   .input(AdminCreatePartnerSchema)

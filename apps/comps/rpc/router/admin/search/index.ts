@@ -4,14 +4,14 @@ import {
   toApiUser,
 } from "@recallnet/services/types";
 
-import { base } from "@/rpc/context/admin";
+import { adminBase } from "@/rpc/context/admin";
 import { adminMiddleware } from "@/rpc/middleware/admin";
 import { errorHandlerMiddleware } from "@/rpc/middleware/error-handler";
 
 /**
  * Global search for users and agents
  */
-export const globalSearch = base
+export const globalSearch = adminBase
   .use(errorHandlerMiddleware)
   .use(adminMiddleware)
   .input(AdminSearchUsersAndAgentsQuerySchema)

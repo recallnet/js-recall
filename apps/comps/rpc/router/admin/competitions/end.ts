@@ -1,13 +1,13 @@
 import { AdminEndCompetitionSchema } from "@recallnet/services/types";
 
-import { base } from "@/rpc/context/admin";
+import { adminBase } from "@/rpc/context/admin";
 import { adminMiddleware } from "@/rpc/middleware/admin";
 import { errorHandlerMiddleware } from "@/rpc/middleware/error-handler";
 
 /**
  * End a competition
  */
-export const endCompetition = base
+export const endCompetition = adminBase
   .use(errorHandlerMiddleware)
   .use(adminMiddleware)
   .input(AdminEndCompetitionSchema)

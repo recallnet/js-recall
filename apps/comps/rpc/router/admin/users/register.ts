@@ -1,13 +1,13 @@
 import { AdminRegisterUserSchema } from "@recallnet/services/types";
 
-import { base } from "@/rpc/context/admin";
+import { adminBase } from "@/rpc/context/admin";
 import { adminMiddleware } from "@/rpc/middleware/admin";
 import { errorHandlerMiddleware } from "@/rpc/middleware/error-handler";
 
 /**
  * Register a new user and optionally create their first agent
  */
-export const registerUser = base
+export const registerUser = adminBase
   .use(errorHandlerMiddleware)
   .use(adminMiddleware)
   .input(AdminRegisterUserSchema)

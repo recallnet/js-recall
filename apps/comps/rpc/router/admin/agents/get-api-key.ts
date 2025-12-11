@@ -1,13 +1,13 @@
 import { AdminGetAgentApiKeyParamsSchema } from "@recallnet/services/types";
 
-import { base } from "@/rpc/context/admin";
+import { adminBase } from "@/rpc/context/admin";
 import { adminMiddleware } from "@/rpc/middleware/admin";
 import { errorHandlerMiddleware } from "@/rpc/middleware/error-handler";
 
 /**
  * Get agent API key
  */
-export const getAgentApiKey = base
+export const getAgentApiKey = adminBase
   .use(errorHandlerMiddleware)
   .use(adminMiddleware)
   .input(AdminGetAgentApiKeyParamsSchema)

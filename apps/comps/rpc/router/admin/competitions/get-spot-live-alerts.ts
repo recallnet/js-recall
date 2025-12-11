@@ -5,7 +5,7 @@ import {
   UuidSchema,
 } from "@recallnet/services/types";
 
-import { base } from "@/rpc/context/admin";
+import { adminBase } from "@/rpc/context/admin";
 import { adminMiddleware } from "@/rpc/middleware/admin";
 import { errorHandlerMiddleware } from "@/rpc/middleware/error-handler";
 
@@ -16,7 +16,7 @@ const GetSpotLiveAlertsParamsSchema = z.object({
 /**
  * Get spot live self-funding alerts for a competition
  */
-export const getSpotLiveSelfFundingAlerts = base
+export const getSpotLiveSelfFundingAlerts = adminBase
   .use(errorHandlerMiddleware)
   .use(adminMiddleware)
   .input(GetSpotLiveAlertsParamsSchema.merge(AdminGetSpotLiveAlertsQuerySchema))

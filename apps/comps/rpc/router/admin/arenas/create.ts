@@ -1,13 +1,13 @@
 import { AdminCreateArenaSchema } from "@recallnet/services/types";
 
-import { base } from "@/rpc/context/admin";
+import { adminBase } from "@/rpc/context/admin";
 import { adminMiddleware } from "@/rpc/middleware/admin";
 import { errorHandlerMiddleware } from "@/rpc/middleware/error-handler";
 
 /**
  * Create a new arena
  */
-export const createArena = base
+export const createArena = adminBase
   .use(errorHandlerMiddleware)
   .use(adminMiddleware)
   .input(AdminCreateArenaSchema)

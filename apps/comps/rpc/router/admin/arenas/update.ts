@@ -3,14 +3,14 @@ import {
   AdminUpdateArenaSchema,
 } from "@recallnet/services/types";
 
-import { base } from "@/rpc/context/admin";
+import { adminBase } from "@/rpc/context/admin";
 import { adminMiddleware } from "@/rpc/middleware/admin";
 import { errorHandlerMiddleware } from "@/rpc/middleware/error-handler";
 
 /**
  * Update an arena
  */
-export const updateArena = base
+export const updateArena = adminBase
   .use(errorHandlerMiddleware)
   .use(adminMiddleware)
   .input(AdminArenaParamsSchema.merge(AdminUpdateArenaSchema))

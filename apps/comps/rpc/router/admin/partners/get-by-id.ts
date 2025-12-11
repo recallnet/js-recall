@@ -1,13 +1,13 @@
 import { AdminPartnerParamsSchema } from "@recallnet/services/types";
 
-import { base } from "@/rpc/context/admin";
+import { adminBase } from "@/rpc/context/admin";
 import { adminMiddleware } from "@/rpc/middleware/admin";
 import { errorHandlerMiddleware } from "@/rpc/middleware/error-handler";
 
 /**
  * Get partner by ID
  */
-export const getPartnerById = base
+export const getPartnerById = adminBase
   .use(errorHandlerMiddleware)
   .use(adminMiddleware)
   .input(AdminPartnerParamsSchema)

@@ -2,7 +2,7 @@ import { z } from "zod/v4";
 
 import { UuidSchema } from "@recallnet/services/types";
 
-import { base } from "@/rpc/context/admin";
+import { adminBase } from "@/rpc/context/admin";
 import { adminMiddleware } from "@/rpc/middleware/admin";
 import { errorHandlerMiddleware } from "@/rpc/middleware/error-handler";
 
@@ -18,7 +18,7 @@ const AllocateRewardsBodySchema = z.object({
 /**
  * Allocate rewards for a competition
  */
-export const allocateRewards = base
+export const allocateRewards = adminBase
   .use(errorHandlerMiddleware)
   .use(adminMiddleware)
   .input(AllocateRewardsBodySchema)

@@ -3,14 +3,14 @@ import {
   AdminReplaceCompetitionPartnersSchema,
 } from "@recallnet/services/types";
 
-import { base } from "@/rpc/context/admin";
+import { adminBase } from "@/rpc/context/admin";
 import { adminMiddleware } from "@/rpc/middleware/admin";
 import { errorHandlerMiddleware } from "@/rpc/middleware/error-handler";
 
 /**
  * Replace all partners for a competition
  */
-export const replaceCompetitionPartners = base
+export const replaceCompetitionPartners = adminBase
   .use(errorHandlerMiddleware)
   .use(adminMiddleware)
   .input(

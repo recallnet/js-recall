@@ -1,13 +1,13 @@
 import { AdminRevokeBonusBoostSchema } from "@recallnet/services/types";
 
-import { base } from "@/rpc/context/admin";
+import { adminBase } from "@/rpc/context/admin";
 import { adminMiddleware } from "@/rpc/middleware/admin";
 import { errorHandlerMiddleware } from "@/rpc/middleware/error-handler";
 
 /**
  * Revoke bonus boost(s)
  */
-export const revokeBonusBoost = base
+export const revokeBonusBoost = adminBase
   .use(errorHandlerMiddleware)
   .use(adminMiddleware)
   .input(AdminRevokeBonusBoostSchema)

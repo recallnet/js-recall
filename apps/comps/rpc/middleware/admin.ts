@@ -3,7 +3,7 @@ import { Logger } from "pino";
 
 import { ApiError } from "@recallnet/services/types";
 
-import { base } from "@/rpc/context/admin";
+import { adminBase } from "@/rpc/context/admin";
 
 /**
  * Admin Authentication Middleware
@@ -15,7 +15,7 @@ import { base } from "@/rpc/context/admin";
  * This implementation uses cookies, but you may also accept the API key
  * as an input parameter if needed.
  */
-export const adminMiddleware = base.middleware(
+export const adminMiddleware = adminBase.middleware(
   async ({ context, next, errors }) => {
     try {
       const apiKey = extractApiKey(context, errors);

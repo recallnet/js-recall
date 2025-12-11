@@ -1,13 +1,13 @@
 import { AdminCreateAgentSchema } from "@recallnet/services/types";
 
-import { base } from "@/rpc/context/admin";
+import { adminBase } from "@/rpc/context/admin";
 import { adminMiddleware } from "@/rpc/middleware/admin";
 import { errorHandlerMiddleware } from "@/rpc/middleware/error-handler";
 
 /**
  * Create a new agent
  */
-export const createAgent = base
+export const createAgent = adminBase
   .use(errorHandlerMiddleware)
   .use(adminMiddleware)
   .input(AdminCreateAgentSchema)

@@ -3,14 +3,14 @@ import {
   AdminDeactivateAgentParamsSchema,
 } from "@recallnet/services/types";
 
-import { base } from "@/rpc/context/admin";
+import { adminBase } from "@/rpc/context/admin";
 import { adminMiddleware } from "@/rpc/middleware/admin";
 import { errorHandlerMiddleware } from "@/rpc/middleware/error-handler";
 
 /**
  * Deactivate an agent
  */
-export const deactivateAgent = base
+export const deactivateAgent = adminBase
   .use(errorHandlerMiddleware)
   .use(adminMiddleware)
   .input(AdminDeactivateAgentBodySchema.merge(AdminDeactivateAgentParamsSchema))

@@ -1,13 +1,13 @@
 import { AdminSetupSchema } from "@recallnet/services/types";
 
-import { base } from "@/rpc/context/admin";
+import { adminBase } from "@/rpc/context/admin";
 import { errorHandlerMiddleware } from "@/rpc/middleware/error-handler";
 
 /**
  * Setup initial admin account
  * This route does not require authentication as it's for initial setup
  */
-export const setupAdmin = base
+export const setupAdmin = adminBase
   .use(errorHandlerMiddleware)
   .input(AdminSetupSchema)
   .route({

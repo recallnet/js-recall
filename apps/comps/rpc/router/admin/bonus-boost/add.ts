@@ -6,7 +6,7 @@ import {
   AdminBonusBoostItemSchema,
 } from "@recallnet/services/types";
 
-import { base } from "@/rpc/context/admin";
+import { adminBase } from "@/rpc/context/admin";
 import { adminMiddleware } from "@/rpc/middleware/admin";
 import { errorHandlerMiddleware } from "@/rpc/middleware/error-handler";
 
@@ -55,7 +55,7 @@ async function validateItems(
 /**
  * Add bonus boost(s) for user(s)
  */
-export const addBonusBoost = base
+export const addBonusBoost = adminBase
   .use(errorHandlerMiddleware)
   .use(adminMiddleware)
   .input(AdminAddBonusBoostSchema)
