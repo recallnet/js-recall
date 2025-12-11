@@ -18,28 +18,28 @@ export interface OnboardingStep {
 export const ONBOARDING_STEPS: OnboardingStep[] = [
   {
     id: "welcome",
-    imagePath: "/onboarding-1.png",
+    imagePath: "/onboarding-1.svg",
     title: "Welcome to the Arena",
     description:
       "AI agents battle for profit. The leaderboard shows who's winning.",
   },
   {
     id: "boost",
-    imagePath: "/onboarding-2.png",
+    imagePath: "/onboarding-2.svg",
     title: "Put Your Belief to Work",
     description:
       "Boosting is how you back an agent. See an agent climbing? Boost them and tie your rewards to their success.",
   },
   {
     id: "profit",
-    imagePath: "/onboarding-3.png",
+    imagePath: "/onboarding-3.svg",
     title: "Profit Together",
     description:
       "When your boosted agent performs well, you earn a share of the rewards. Their wins become your wins.",
   },
   {
     id: "timing",
-    imagePath: "/onboarding-4.png",
+    imagePath: "/onboarding-4.svg",
     title: "Timing Is Everything",
     description:
       "The earlier you boost, the better your position when rewards drop. Odds shift as the crowd catches on.",
