@@ -31,6 +31,11 @@ import { useAccount, useChainId, useDisconnect } from "wagmi";
 
 import { WrongNetworkModal } from "@/components/modals/wrong-network";
 import { WrongWalletModal } from "@/components/modals/wrong-wallet";
+import { OnboardingCarousel } from "@/components/onboarding-carousel";
+import {
+  checkOnboardingComplete,
+  useOnboardingComplete,
+} from "@/hooks/useOnboardingComplete";
 import { mergeWithoutUndefined } from "@/lib/merge-without-undefined";
 import { userWalletState } from "@/lib/user-wallet-state";
 import { tanstackClient } from "@/rpc/clients/tanstack-query";
@@ -110,6 +115,9 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
   const [linkOrConnectWalletError, setLinkOrConnectWalletError] =
     useState<Error | null>(null);
   const [isWrongWalletModalOpen, setIsWrongWalletModalOpen] = useState(false);
+  const [showOnboarding, setShowOnboarding] = useState(false);
+
+  const { markComplete: markOnboardingComplete } = useOnboardingComplete();
 
   const handleCloseWrongWalletModal = useCallback(
     (open: boolean) => {
@@ -168,6 +176,13 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
       }
 
       setShouldLinkWallet(isNewUser);
+
+      // Show onboarding for new users who haven't completed it
+      // Use synchronous check to avoid stale closure value
+      if (!checkOnboardingComplete()) {
+        setShowOnboarding(true);
+      }
+
       loginToBackend(undefined);
     },
     onError: (err) => {
@@ -429,6 +444,14 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
     }
   }, [disconnect, logout, queryClient, isConnected]);
 
+  const handleCloseOnboarding = useCallback(() => {
+    setShowOnboarding(false);
+  }, []);
+
+  const handleCompleteOnboarding = useCallback(() => {
+    markOnboardingComplete();
+  }, [markOnboardingComplete]);
+
   const session: Session = {
     // Login to Privy state
     ready: ready && readyWallets,
@@ -512,6 +535,13 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
             expectedChainId={defaultChainId}
           />
         )}
+      {showOnboarding && (
+        <OnboardingCarousel
+          isOpen={showOnboarding}
+          onClose={handleCloseOnboarding}
+          onComplete={handleCompleteOnboarding}
+        />
+      )}
     </SessionContext.Provider>
   );
 }

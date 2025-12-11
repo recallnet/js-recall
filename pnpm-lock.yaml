@@ -206,7 +206,7 @@ importers:
         version: 4.1.8
       '@vitejs/plugin-react':
         specifier: ^5.0.2
-        version: 5.0.2(vite@6.3.5(@types/node@18.19.101)(jiti@2.4.2)(lightningcss@1.30.1)(terser@5.44.1)(tsx@4.19.4)(yaml@2.8.1))
+        version: 5.0.2(vite@7.1.6(@types/node@18.19.101)(jiti@2.4.2)(lightningcss@1.30.1)(terser@5.44.1)(tsx@4.19.4)(yaml@2.8.1))
       '@vitest/coverage-v8':
         specifier: ^3.2.4
         version: 3.2.4(vitest@3.2.4(@types/debug@4.1.12)(@types/node@18.19.101)(jiti@2.4.2)(jsdom@26.1.0(bufferutil@4.0.9)(utf-8-validate@5.0.10))(lightningcss@1.30.1)(terser@5.44.1)(tsx@4.19.4)(yaml@2.8.1))
@@ -260,7 +260,7 @@ importers:
         version: 5.8.3
       vite-tsconfig-paths:
         specifier: ^5.1.4
-        version: 5.1.4(typescript@5.8.3)(vite@6.3.5(@types/node@18.19.101)(jiti@2.4.2)(lightningcss@1.30.1)(terser@5.44.1)(tsx@4.19.4)(yaml@2.8.1))
+        version: 5.1.4(typescript@5.8.3)(vite@7.1.6(@types/node@18.19.101)(jiti@2.4.2)(lightningcss@1.30.1)(terser@5.44.1)(tsx@4.19.4)(yaml@2.8.1))
       vitest:
         specifier: ^3.2.4
         version: 3.2.4(@types/debug@4.1.12)(@types/node@18.19.101)(jiti@2.4.2)(jsdom@26.1.0(bufferutil@4.0.9)(utf-8-validate@5.0.10))(lightningcss@1.30.1)(terser@5.44.1)(tsx@4.19.4)(yaml@2.8.1)
@@ -393,6 +393,9 @@ importers:
       lucide-react:
         specifier: ^0.511.0
         version: 0.511.0(react@19.1.2)
+      motion:
+        specifier: ^12.23.26
+        version: 12.23.26(@emotion/is-prop-valid@1.3.1)(react-dom@19.1.2(react@19.1.2))(react@19.1.2)
       next:
         specifier: 15.3.8
         version: 15.3.8(@babel/core@7.28.0)(@opentelemetry/api@1.9.0)(@playwright/test@1.55.0)(react-dom@19.1.2(react@19.1.2))(react@19.1.2)
@@ -9165,6 +9168,20 @@ packages:
     resolution: {integrity: sha512-buRG0fpBtRHSTCOASe6hD258tEubFoRLb4ZNA6NxMVHNw2gOcwHo9wyablzMzOA5z9xA9L1KNjk/Nt6MT9aYow==}
     engines: {node: '>= 0.6'}
 
+  framer-motion@12.23.26:
+    resolution: {integrity: sha512-cPcIhgR42xBn1Uj+PzOyheMtZ73H927+uWPDVhUMqxy8UHt6Okavb6xIz9J/phFUHUj0OncR6UvMfJTXoc/LKA==}
+    peerDependencies:
+      '@emotion/is-prop-valid': '*'
+      react: ^18.0.0 || ^19.0.0
+      react-dom: ^18.0.0 || ^19.0.0
+    peerDependenciesMeta:
+      '@emotion/is-prop-valid':
+        optional: true
+      react:
+        optional: true
+      react-dom:
+        optional: true
+
   framer-motion@6.5.1:
     resolution: {integrity: sha512-o1BGqqposwi7cgDrtg0dNONhkmPsUFDaLcKXigzuTFC5x58mE8iyTazxSudFzmT6MEyJKfjjU8ItoMe3W+3fiw==}
     peerDependencies:
@@ -10634,6 +10651,26 @@ packages:
 
   moment@2.30.1:
     resolution: {integrity: sha512-uEmtNhbDOrWPFS+hdjFCBfy9f2YoyzRpwcl+DqpC6taX21FzsTLQVbMV/W7PzNSX6x/bhC1zA3c2UQ5NzH6how==}
+
+  motion-dom@12.23.23:
+    resolution: {integrity: sha512-n5yolOs0TQQBRUFImrRfs/+6X4p3Q4n1dUEqt/H58Vx7OW6RF+foWEgmTVDhIWJIMXOuNNL0apKH2S16en9eiA==}
+
+  motion-utils@12.23.6:
+    resolution: {integrity: sha512-eAWoPgr4eFEOFfg2WjIsMoqJTW6Z8MTUCgn/GZ3VRpClWBdnbjryiA3ZSNLyxCTmCQx4RmYX6jX1iWHbenUPNQ==}
+
+  motion@12.23.26:
+    resolution: {integrity: sha512-Ll8XhVxY8LXMVYTCfme27WH2GjBrCIzY4+ndr5QKxsK+YwCtOi2B/oBi5jcIbik5doXuWT/4KKDOVAZJkeY5VQ==}
+    peerDependencies:
+      '@emotion/is-prop-valid': '*'
+      react: ^18.0.0 || ^19.0.0
+      react-dom: ^18.0.0 || ^19.0.0
+    peerDependenciesMeta:
+      '@emotion/is-prop-valid':
+        optional: true
+      react:
+        optional: true
+      react-dom:
+        optional: true
 
   mri@1.2.0:
     resolution: {integrity: sha512-tzzskb3bG8LvYGFF/mDTpq3jpI6Q9wc3LEmBaghu+DdCssd1FakN7Bc0hVNmEyGq1bq3RgfkCb3cmQLpNPOroA==}
@@ -21798,18 +21835,6 @@ snapshots:
       - utf-8-validate
     optional: true
 
-  '@vitejs/plugin-react@5.0.2(vite@6.3.5(@types/node@18.19.101)(jiti@2.4.2)(lightningcss@1.30.1)(terser@5.44.1)(tsx@4.19.4)(yaml@2.8.1))':
-    dependencies:
-      '@babel/core': 7.28.4
-      '@babel/plugin-transform-react-jsx-self': 7.27.1(@babel/core@7.28.4)
-      '@babel/plugin-transform-react-jsx-source': 7.27.1(@babel/core@7.28.4)
-      '@rolldown/pluginutils': 1.0.0-beta.34
-      '@types/babel__core': 7.20.5
-      react-refresh: 0.17.0
-      vite: 6.3.5(@types/node@18.19.101)(jiti@2.4.2)(lightningcss@1.30.1)(terser@5.44.1)(tsx@4.19.4)(yaml@2.8.1)
-    transitivePeerDependencies:
-      - supports-color
-
   '@vitejs/plugin-react@5.0.2(vite@6.3.5(@types/node@20.17.48)(jiti@2.4.2)(lightningcss@1.30.1)(terser@5.44.1)(tsx@4.21.0)(yaml@2.8.1))':
     dependencies:
       '@babel/core': 7.28.4
@@ -21819,6 +21844,18 @@ snapshots:
       '@types/babel__core': 7.20.5
       react-refresh: 0.17.0
       vite: 6.3.5(@types/node@20.17.48)(jiti@2.4.2)(lightningcss@1.30.1)(terser@5.44.1)(tsx@4.21.0)(yaml@2.8.1)
+    transitivePeerDependencies:
+      - supports-color
+
+  '@vitejs/plugin-react@5.0.2(vite@7.1.6(@types/node@18.19.101)(jiti@2.4.2)(lightningcss@1.30.1)(terser@5.44.1)(tsx@4.19.4)(yaml@2.8.1))':
+    dependencies:
+      '@babel/core': 7.28.4
+      '@babel/plugin-transform-react-jsx-self': 7.27.1(@babel/core@7.28.4)
+      '@babel/plugin-transform-react-jsx-source': 7.27.1(@babel/core@7.28.4)
+      '@rolldown/pluginutils': 1.0.0-beta.34
+      '@types/babel__core': 7.20.5
+      react-refresh: 0.17.0
+      vite: 7.1.6(@types/node@18.19.101)(jiti@2.4.2)(lightningcss@1.30.1)(terser@5.44.1)(tsx@4.19.4)(yaml@2.8.1)
     transitivePeerDependencies:
       - supports-color
 
@@ -24820,7 +24857,6 @@ snapshots:
       '@esbuild/win32-arm64': 0.25.12
       '@esbuild/win32-ia32': 0.25.12
       '@esbuild/win32-x64': 0.25.12
-    optional: true
 
   esbuild@0.25.4:
     optionalDependencies:
@@ -25408,6 +25444,16 @@ snapshots:
   forwarded-parse@2.1.2: {}
 
   forwarded@0.2.0: {}
+
+  framer-motion@12.23.26(@emotion/is-prop-valid@1.3.1)(react-dom@19.1.2(react@19.1.2))(react@19.1.2):
+    dependencies:
+      motion-dom: 12.23.23
+      motion-utils: 12.23.6
+      tslib: 2.8.1
+    optionalDependencies:
+      '@emotion/is-prop-valid': 1.3.1
+      react: 19.1.2
+      react-dom: 19.1.2(react@19.1.2)
 
   framer-motion@6.5.1(react-dom@19.1.2(react@19.1.2))(react@19.1.2):
     dependencies:
@@ -27080,6 +27126,21 @@ snapshots:
 
   moment@2.30.1: {}
 
+  motion-dom@12.23.23:
+    dependencies:
+      motion-utils: 12.23.6
+
+  motion-utils@12.23.6: {}
+
+  motion@12.23.26(@emotion/is-prop-valid@1.3.1)(react-dom@19.1.2(react@19.1.2))(react@19.1.2):
+    dependencies:
+      framer-motion: 12.23.26(@emotion/is-prop-valid@1.3.1)(react-dom@19.1.2(react@19.1.2))(react@19.1.2)
+      tslib: 2.8.1
+    optionalDependencies:
+      '@emotion/is-prop-valid': 1.3.1
+      react: 19.1.2
+      react-dom: 19.1.2(react@19.1.2)
+
   mri@1.2.0: {}
 
   ms@2.0.0: {}
@@ -28590,7 +28651,6 @@ snapshots:
       '@rollup/rollup-win32-x64-gnu': 4.53.3
       '@rollup/rollup-win32-x64-msvc': 4.53.3
       fsevents: 2.3.3
-    optional: true
 
   rpc-websockets@9.1.3:
     dependencies:
@@ -30205,13 +30265,13 @@ snapshots:
       - tsx
       - yaml
 
-  vite-tsconfig-paths@5.1.4(typescript@5.8.3)(vite@6.3.5(@types/node@18.19.101)(jiti@2.4.2)(lightningcss@1.30.1)(terser@5.44.1)(tsx@4.19.4)(yaml@2.8.1)):
+  vite-tsconfig-paths@5.1.4(typescript@5.8.3)(vite@7.1.6(@types/node@18.19.101)(jiti@2.4.2)(lightningcss@1.30.1)(terser@5.44.1)(tsx@4.19.4)(yaml@2.8.1)):
     dependencies:
       debug: 4.4.1
       globrex: 0.1.2
       tsconfck: 3.1.5(typescript@5.8.3)
     optionalDependencies:
-      vite: 6.3.5(@types/node@18.19.101)(jiti@2.4.2)(lightningcss@1.30.1)(terser@5.44.1)(tsx@4.19.4)(yaml@2.8.1)
+      vite: 7.1.6(@types/node@18.19.101)(jiti@2.4.2)(lightningcss@1.30.1)(terser@5.44.1)(tsx@4.19.4)(yaml@2.8.1)
     transitivePeerDependencies:
       - supports-color
       - typescript
@@ -30360,6 +30420,23 @@ snapshots:
       lightningcss: 1.30.1
       terser: 5.44.1
       tsx: 4.21.0
+      yaml: 2.8.1
+
+  vite@7.1.6(@types/node@18.19.101)(jiti@2.4.2)(lightningcss@1.30.1)(terser@5.44.1)(tsx@4.19.4)(yaml@2.8.1):
+    dependencies:
+      esbuild: 0.25.12
+      fdir: 6.5.0(picomatch@4.0.3)
+      picomatch: 4.0.3
+      postcss: 8.5.6
+      rollup: 4.53.3
+      tinyglobby: 0.2.15
+    optionalDependencies:
+      '@types/node': 18.19.101
+      fsevents: 2.3.3
+      jiti: 2.4.2
+      lightningcss: 1.30.1
+      terser: 5.44.1
+      tsx: 4.19.4
       yaml: 2.8.1
 
   vite@7.1.6(@types/node@22.15.19)(jiti@2.4.2)(lightningcss@1.30.1)(terser@5.44.1)(tsx@4.21.0)(yaml@2.8.1):
