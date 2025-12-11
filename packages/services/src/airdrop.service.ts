@@ -1,6 +1,8 @@
 import { Logger } from "pino";
 
 import { AirdropRepository } from "@recallnet/db/repositories/airdrop";
+import { BoostRepository } from "@recallnet/db/repositories/boost";
+import { CompetitionRepository } from "@recallnet/db/repositories/competition";
 import { ConvictionClaimsRepository } from "@recallnet/db/repositories/conviction-claims";
 import { Season } from "@recallnet/db/schema/airdrop/types";
 
@@ -51,18 +53,74 @@ export type ClaimData =
   | ExpiredClaim
   | IneligibleClaim;
 
+/**
+ * Eligibility reasons explaining why a user qualifies for conviction rewards
+ */
+export interface EligibilityReasons {
+  hasBoostedAgents: boolean;
+  hasCompetedInCompetitions: boolean;
+}
+
+/**
+ * Pool statistics for the conviction rewards
+ */
+export interface ConvictionPoolStats {
+  totalActiveStakes: bigint;
+  availableRewardsPool: bigint;
+  totalForfeited: bigint;
+  totalAlreadyClaimed: bigint;
+}
+
+/**
+ * Season metadata used to describe a time window.
+ */
+export interface EligibilitySeasonMetadata {
+  /** Season number (as stored in the airdrop seasons table). */
+  number: number;
+  /** Human-readable season name. */
+  name: string;
+  /** Inclusive season start time. */
+  startDate: Date;
+  /** Inclusive season end time. */
+  endDate: Date;
+}
+
+/**
+ * Full eligibility data for next season conviction rewards
+ */
+export interface NextSeasonEligibility {
+  isEligible: boolean;
+  season: number;
+  seasonName: string;
+  activeStake: bigint;
+  potentialReward: bigint;
+  eligibilityReasons: EligibilityReasons;
+  poolStats: ConvictionPoolStats;
+  /**
+   * Season used as the activity window for eligibility checks (boosting and competitions),
+   * and as the cutoff for determining whether a stake remains locked.
+   */
+  activitySeason: EligibilitySeasonMetadata;
+}
+
 export class AirdropService {
   private readonly airdropRepository: AirdropRepository;
   private readonly convictionClaimsRepository: ConvictionClaimsRepository;
+  private readonly boostRepository: BoostRepository;
+  private readonly competitionRepository: CompetitionRepository;
   private readonly logger: Logger;
 
   constructor(
     airdropRepository: AirdropRepository,
     logger: Logger,
     convictionClaimsRepository: ConvictionClaimsRepository,
+    boostRepository?: BoostRepository,
+    competitionRepository?: CompetitionRepository,
   ) {
     this.airdropRepository = airdropRepository;
     this.convictionClaimsRepository = convictionClaimsRepository;
+    this.boostRepository = boostRepository!;
+    this.competitionRepository = competitionRepository!;
     this.logger = logger;
   }
 
@@ -135,15 +193,15 @@ export class AirdropService {
             ineligibleAmount: allocation.ineligibleReward || 0n,
           };
         } else if (!convictionClaim) {
-          // Determine if the claim has expired
-          // Use UTC-safe date arithmetic to avoid DST issues
-          const daysToAdd = season.number > 0 ? 30 : 90;
-          const expirationTimestamp = new Date(
-            season.startDate.getTime() + daysToAdd * 24 * 60 * 60 * 1000,
-          );
-
+          // Determine if the claim has expired based on season end date
           const now = new Date();
-          const expired = now > expirationTimestamp;
+
+          // Use season end date, or fallback to startDate + 30 days if not set
+          const expirationDate =
+            season.endDate ??
+            new Date(season.startDate.getTime() + 30 * 24 * 60 * 60 * 1000);
+
+          const expired = now > expirationDate;
 
           if (expired) {
             return {
@@ -151,7 +209,7 @@ export class AirdropService {
               season: allocation.season,
               seasonName: season.name,
               eligibleAmount: allocation.amount,
-              expiredAt: expirationTimestamp,
+              expiredAt: expirationDate,
             };
           }
           return {
@@ -159,7 +217,7 @@ export class AirdropService {
             season: allocation.season,
             seasonName: season.name,
             eligibleAmount: allocation.amount,
-            expiresAt: expirationTimestamp,
+            expiresAt: expirationDate,
             proof: allocation.season > 0 ? allocation.proof : [],
           };
         } else if (convictionClaim.duration > 0n) {
@@ -210,5 +268,213 @@ export class AirdropService {
       );
       throw error;
     }
+  }
+
+  /**
+   * Get eligibility data for next season conviction rewards.
+   *
+   * Calculates whether an address is eligible for conviction rewards based on:
+   * - Having active stakes (conviction claims with duration > 0 extending past season end)
+   * - Either boosting agents OR having agents compete in competitions during the season
+   *
+   * @param address - The wallet address to check
+   * @param seasonNumber - Optional specific season to check, defaults to next season
+   * @returns Full eligibility data including potential reward and pool statistics
+   */
+  async getNextSeasonEligibility(
+    address: string,
+    seasonNumber?: number,
+  ): Promise<NextSeasonEligibility> {
+    try {
+      const normalizedAddress = address.toLowerCase();
+      this.logger.info(
+        `Calculating next season eligibility for address: ${normalizedAddress}`,
+      );
+
+      // Get all seasons to determine the target season
+      const seasons = await this.airdropRepository.getSeasons();
+      const sortedSeasons = seasons.sort((a, b) => b.number - a.number);
+
+      // Determine target season
+      let targetSeason: Season;
+      if (seasonNumber !== undefined) {
+        const found = seasons.find((s) => s.number === seasonNumber);
+        if (!found) {
+          throw new Error(`Season ${seasonNumber} not found`);
+        }
+        targetSeason = found;
+      } else {
+        // Default to next season (latest season number + 1)
+        const latestSeason = sortedSeasons[0];
+        if (!latestSeason) {
+          throw new Error("No seasons found in database");
+        }
+        // For next season, we use the current/latest season's data
+        // The "next season" rewards are calculated based on activity in the current season
+        targetSeason = latestSeason;
+      }
+
+      // For eligibility calculation, we need the current season (one before the target)
+      const currentSeasonNumber =
+        seasonNumber !== undefined ? seasonNumber - 1 : targetSeason.number;
+      const currentSeason = seasons.find(
+        (s) => s.number === currentSeasonNumber,
+      );
+      if (!currentSeason) {
+        throw new Error(`Current season ${currentSeasonNumber} not found`);
+      }
+
+      const targetSeasonNumber = currentSeasonNumber + 1;
+      const targetSeasonData = seasons.find(
+        (s) => s.number === targetSeasonNumber,
+      );
+
+      // Calculate pool statistics
+      const poolStats = await this.calculatePoolStats(currentSeason);
+
+      // Get user's active stake for the season
+      const activeStake =
+        await this.convictionClaimsRepository.getActiveStakeForAccount(
+          normalizedAddress,
+          currentSeason.endDate,
+        );
+
+      // Check eligibility reasons
+      const eligibilityReasons = await this.checkEligibilityReasons(
+        normalizedAddress,
+        currentSeason,
+      );
+
+      // User is eligible if they have active stakes AND at least one eligibility reason
+      const hasActivityEligibility =
+        eligibilityReasons.hasBoostedAgents ||
+        eligibilityReasons.hasCompetedInCompetitions;
+      const isEligible = activeStake > 0n && hasActivityEligibility;
+
+      // Calculate potential reward
+      let potentialReward = 0n;
+      if (
+        isEligible &&
+        poolStats.totalActiveStakes > 0n &&
+        poolStats.availableRewardsPool > 0n
+      ) {
+        potentialReward =
+          (activeStake * poolStats.availableRewardsPool) /
+          poolStats.totalActiveStakes;
+      }
+
+      const result: NextSeasonEligibility = {
+        isEligible,
+        season: targetSeasonNumber,
+        seasonName: targetSeasonData?.name || `Season ${targetSeasonNumber}`,
+        activeStake,
+        potentialReward,
+        eligibilityReasons,
+        poolStats,
+        activitySeason: {
+          number: currentSeason.number,
+          name: currentSeason.name,
+          startDate: currentSeason.startDate,
+          endDate: currentSeason.endDate,
+        },
+      };
+
+      this.logger.info(
+        {
+          address: normalizedAddress,
+          isEligible,
+          season: targetSeasonNumber,
+          activeStake: activeStake.toString(),
+          potentialReward: potentialReward.toString(),
+        },
+        `Successfully calculated eligibility for address ${normalizedAddress}`,
+      );
+
+      return result;
+    } catch (error) {
+      this.logger.error(
+        { error },
+        `Error calculating eligibility for address ${address}`,
+      );
+      throw error;
+    }
+  }
+
+  /**
+   * Calculate conviction pool statistics for a season.
+   *
+   * @param season - The season to calculate stats for
+   * @returns Pool statistics including total stakes, forfeitures, and available pool
+   */
+  private async calculatePoolStats(
+    season: Season,
+  ): Promise<ConvictionPoolStats> {
+    // Get total active stakes for the season
+    const totalActiveStakes =
+      await this.convictionClaimsRepository.getTotalActiveStakesForSeason(
+        season.endDate,
+      );
+
+    // Get total forfeited amounts up to season end
+    const totalForfeited =
+      await this.convictionClaimsRepository.getTotalForfeitedUpToDate(
+        season.endDate,
+      );
+
+    // Get total conviction rewards already claimed (season 1 onwards)
+    const totalAlreadyClaimed =
+      await this.convictionClaimsRepository.getTotalConvictionRewardsClaimedBySeason(
+        1,
+        season.number,
+      );
+
+    // Available pool = total forfeited - already claimed
+    const availableRewardsPool = totalForfeited - totalAlreadyClaimed;
+
+    return {
+      totalActiveStakes,
+      availableRewardsPool:
+        availableRewardsPool > 0n ? availableRewardsPool : 0n,
+      totalForfeited,
+      totalAlreadyClaimed,
+    };
+  }
+
+  /**
+   * Check eligibility reasons for a wallet address.
+   *
+   * @param address - The wallet address to check
+   * @param season - The season to check activity for
+   * @returns Object indicating which eligibility criteria are met
+   */
+  private async checkEligibilityReasons(
+    address: string,
+    season: Season,
+  ): Promise<EligibilityReasons> {
+    // Check if user has boosted agents during the season
+    let hasBoostedAgents = false;
+    if (this.boostRepository) {
+      hasBoostedAgents = await this.boostRepository.hasUserBoostedDuringSeason(
+        address,
+        season.startDate,
+        season.endDate,
+      );
+    }
+
+    // Check if user's agents competed in competitions during the season
+    let hasCompetedInCompetitions = false;
+    if (this.competitionRepository) {
+      hasCompetedInCompetitions =
+        await this.competitionRepository.hasWalletCompetedDuringSeason(
+          address,
+          season.startDate,
+          season.endDate,
+        );
+    }
+
+    return {
+      hasBoostedAgents,
+      hasCompetedInCompetitions,
+    };
   }
 }

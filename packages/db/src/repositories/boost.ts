@@ -3,8 +3,10 @@ import {
   desc,
   eq,
   gt,
+  gte,
   inArray,
   isNull,
+  lte,
   notExists,
   sql,
   sum,
@@ -1358,5 +1360,99 @@ class BoostRepository {
         ),
       );
     return result?.sum ?? 0n;
+  }
+
+  /**
+   * Check if a wallet has boosted any agents during a time period.
+   *
+   * @param walletAddress - The wallet address to check
+   * @param startDate - Start of the time period
+   * @param endDate - End of the time period
+   * @param tx - Optional transaction
+   * @returns True if the wallet has boosted agents during the period
+   */
+  async hasUserBoostedDuringSeason(
+    walletAddress: string,
+    startDate: Date,
+    endDate: Date,
+    tx?: Transaction,
+  ): Promise<boolean> {
+    const executor = tx || this.#db;
+    const normalizedAddress = walletAddress.toLowerCase();
+
+    const [result] = await executor
+      .select({
+        count: sql<number>`count(*)::int`.as("count"),
+      })
+      .from(schema.agentBoosts)
+      .innerJoin(
+        schema.boostChanges,
+        eq(schema.agentBoosts.changeId, schema.boostChanges.id),
+      )
+      .innerJoin(
+        schema.boostBalances,
+        eq(schema.boostChanges.balanceId, schema.boostBalances.id),
+      )
+      .innerJoin(
+        coreSchema.users,
+        eq(schema.boostBalances.userId, coreSchema.users.id),
+      )
+      .where(
+        and(
+          eq(coreSchema.users.walletAddress, normalizedAddress),
+          gte(schema.agentBoosts.createdAt, startDate),
+          lte(schema.agentBoosts.createdAt, endDate),
+        ),
+      )
+      .limit(1);
+
+    return (result?.count ?? 0) > 0;
+  }
+
+  /**
+   * Get total boost amount a wallet has contributed during a time period.
+   *
+   * @param walletAddress - The wallet address to check
+   * @param startDate - Start of the time period
+   * @param endDate - End of the time period
+   * @param tx - Optional transaction
+   * @returns Total boost amount (as positive bigint)
+   */
+  async getTotalBoostAmountDuringSeason(
+    walletAddress: string,
+    startDate: Date,
+    endDate: Date,
+    tx?: Transaction,
+  ): Promise<bigint> {
+    const executor = tx || this.#db;
+    const normalizedAddress = walletAddress.toLowerCase();
+
+    const [result] = await executor
+      .select({
+        totalBoost: sum(schema.boostChanges.deltaAmount),
+      })
+      .from(schema.agentBoosts)
+      .innerJoin(
+        schema.boostChanges,
+        eq(schema.agentBoosts.changeId, schema.boostChanges.id),
+      )
+      .innerJoin(
+        schema.boostBalances,
+        eq(schema.boostChanges.balanceId, schema.boostBalances.id),
+      )
+      .innerJoin(
+        coreSchema.users,
+        eq(schema.boostBalances.userId, coreSchema.users.id),
+      )
+      .where(
+        and(
+          eq(coreSchema.users.walletAddress, normalizedAddress),
+          gte(schema.agentBoosts.createdAt, startDate),
+          lte(schema.agentBoosts.createdAt, endDate),
+        ),
+      );
+
+    // deltaAmount is negative for spending, so negate to get positive total
+    return BigInt(result?.totalBoost || "0") * -1n;
   }
 }

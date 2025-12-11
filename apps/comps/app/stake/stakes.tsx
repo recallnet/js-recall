@@ -6,6 +6,7 @@ import { Button } from "@recallnet/ui2/components/button";
 
 import StakeRecallModal from "@/components/modals/stake-recall";
 import { ActiveStakes } from "@/components/staking/ActiveStakes";
+import { ConvictionEligibility } from "@/components/staking/ConvictionEligibility";
 import { ConvictionRewards } from "@/components/staking/ConvictionRewards";
 import { InactiveStakes } from "@/components/staking/InactiveStakes";
 import { Rewards } from "@/components/staking/Rewards";
@@ -54,8 +55,10 @@ export default function Stakes() {
   } else {
     return (
       <>
-        <div className="mx-auto my-20 max-w-screen-xl px-4 sm:px-6 lg:px-8">
+        <div className="mx-auto my-20 flex max-w-screen-xl flex-col gap-20 px-4 sm:px-6 lg:px-8">
           <StakeSummary onStakeClick={() => setIsStakeModalOpen(true)} />
+
+          <ConvictionEligibility />
 
           {hasBalanceNoStakes && (
             <div className="mb-20">
@@ -78,7 +81,7 @@ export default function Stakes() {
             </div>
           )}
 
-          <div className="mb-8 flex flex-col gap-6 sm:flex-row">
+          <div className="flex max-h-[400px] flex-col gap-6 sm:flex-row">
             <div className="flex-1">
               <Rewards />
             </div>
@@ -90,8 +93,6 @@ export default function Stakes() {
           </div>
 
           <ActiveStakes />
-
-          <hr className="my-8" />
 
           <InactiveStakes />
         </div>
