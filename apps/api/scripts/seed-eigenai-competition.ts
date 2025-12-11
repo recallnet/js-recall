@@ -347,8 +347,13 @@ function generateSignatureSubmissions(
       id: randomUUID(),
       agentId,
       competitionId,
-      // Fake but realistic-looking signature (65 bytes hex)
-      signature: `0x${Array.from({ length: 130 }, () => Math.floor(Math.random() * 16).toString(16)).join("")}`,
+      // Unique signature using UUIDs (65 bytes = 130 hex chars)
+      // Uses randomUUID() for guaranteed uniqueness with the unique constraint
+      signature:
+        `0x${randomUUID().replace(/-/g, "")}${randomUUID().replace(/-/g, "")}${randomUUID().replace(/-/g, "")}${randomUUID().replace(/-/g, "")}`.slice(
+          0,
+          132,
+        ),
       chainId: "1", // Mainnet
       requestPrompt: `Test prompt ${i + 1}: What is the current market sentiment for ETH?`,
       responseModel: "gpt-oss-120b-f16",

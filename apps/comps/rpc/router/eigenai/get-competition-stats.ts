@@ -38,6 +38,8 @@ export const getCompetitionStats = base
             throw errors.BAD_REQUEST({ message: error.message });
           case 404:
             throw errors.NOT_FOUND({ message: error.message });
+          case 409:
+            throw errors.CONFLICT({ message: error.message });
           default:
             throw errors.INTERNAL({ message: error.message });
         }
