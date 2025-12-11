@@ -111,6 +111,12 @@ export function useAirdropClaim(): AirdropClaimOperationResult {
       const proof = target.proof as Hex[];
       const amount = target.eligibleAmount;
       const season = target.season as number;
+
+      if (season < 0 || season > 255) {
+        throw new Error(
+          `Invalid season value: ${season}. Must be between 0 and 255.`,
+        );
+      }
       const signature = (target.signature ?? "0x") as Hex;
 
       // Check if fee is required
