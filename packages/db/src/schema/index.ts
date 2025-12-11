@@ -3,6 +3,7 @@ import * as boostDefs from "./boost/defs.js";
 import * as convictionClaimsDefs from "./conviction-claims/defs.js";
 import * as coreDefs from "./core/defs.js";
 import * as coreRelations from "./core/relations.js";
+import * as eigenaiDefs from "./eigenai/defs.js";
 import * as indexingDefs from "./indexing/defs.js";
 import * as rankingDefs from "./ranking/defs.js";
 import * as rankingRelations from "./ranking/relations.js";
@@ -26,6 +27,7 @@ const schema = {
   ...rewardsRelations,
   ...airdropDefs,
   ...sportsDefs,
+  ...eigenaiDefs,
 };
 
 export default schema;

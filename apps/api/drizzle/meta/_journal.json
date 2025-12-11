@@ -505,6 +505,13 @@
       "when": 1765227126016,
       "tag": "0071_glorious_mentallo",
       "breakpoints": true
+    },
+    {
+      "idx": 72,
+      "version": "7",
+      "when": 1765314350350,
+      "tag": "0072_tiny_bloodstrike",
+      "breakpoints": true
     }
   ]
 }

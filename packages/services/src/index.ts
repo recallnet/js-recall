@@ -12,6 +12,7 @@ export * from "./calmar-ratio.service.js";
 export * from "./competition-reward.service.js";
 export * from "./sortino-ratio.service.js";
 export * from "./competition.service.js";
+export * from "./eigenai.service.js";
 export * from "./email.service.js";
 export * from "./game-prediction.service.js";
 export * from "./game-scoring.service.js";
