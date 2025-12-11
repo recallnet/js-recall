@@ -1,15 +1,8 @@
-import { z } from "zod/v4";
-
-import { UuidSchema } from "@recallnet/services/types";
+import { AdminReactivateAgentInCompetitionParamsSchema } from "@recallnet/services/types";
 
 import { adminBase } from "@/rpc/context/admin";
 import { adminMiddleware } from "@/rpc/middleware/admin";
 import { errorHandlerMiddleware } from "@/rpc/middleware/error-handler";
-
-const ReactivateAgentInCompetitionParamsSchema = z.object({
-  competitionId: UuidSchema,
-  agentId: UuidSchema,
-});
 
 /**
  * Reactivate an agent in a competition
@@ -17,7 +10,7 @@ const ReactivateAgentInCompetitionParamsSchema = z.object({
 export const reactivateAgentInCompetition = adminBase
   .use(errorHandlerMiddleware)
   .use(adminMiddleware)
-  .input(ReactivateAgentInCompetitionParamsSchema)
+  .input(AdminReactivateAgentInCompetitionParamsSchema)
   .route({
     method: "POST",
     path: "/admin/competitions/{competitionId}/agents/{agentId}/reactivate",

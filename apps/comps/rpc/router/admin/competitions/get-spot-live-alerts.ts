@@ -1,17 +1,11 @@
-import { z } from "zod/v4";
-
 import {
+  AdminGetCompetitionTransferViolationsParamsSchema,
   AdminGetSpotLiveAlertsQuerySchema,
-  UuidSchema,
 } from "@recallnet/services/types";
 
 import { adminBase } from "@/rpc/context/admin";
 import { adminMiddleware } from "@/rpc/middleware/admin";
 import { errorHandlerMiddleware } from "@/rpc/middleware/error-handler";
-
-const GetSpotLiveAlertsParamsSchema = z.object({
-  competitionId: UuidSchema,
-});
 
 /**
  * Get spot live self-funding alerts for a competition
@@ -19,10 +13,14 @@ const GetSpotLiveAlertsParamsSchema = z.object({
 export const getSpotLiveSelfFundingAlerts = adminBase
   .use(errorHandlerMiddleware)
   .use(adminMiddleware)
-  .input(GetSpotLiveAlertsParamsSchema.merge(AdminGetSpotLiveAlertsQuerySchema))
+  .input(
+    AdminGetCompetitionTransferViolationsParamsSchema.merge(
+      AdminGetSpotLiveAlertsQuerySchema,
+    ),
+  )
   .route({
     method: "GET",
-    path: "/admin/competitions/:competitionId/spot-live/alerts",
+    path: "/admin/competitions/{competitionId}/spot-live/alerts",
     summary: "Get spot live self-funding alerts",
     description:
       "Get unreviewed self-funding alerts for a spot live competition",

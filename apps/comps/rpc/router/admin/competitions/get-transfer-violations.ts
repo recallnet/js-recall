@@ -1,14 +1,8 @@
-import { z } from "zod/v4";
-
-import { UuidSchema } from "@recallnet/services/types";
+import { AdminGetCompetitionTransferViolationsParamsSchema } from "@recallnet/services/types";
 
 import { adminBase } from "@/rpc/context/admin";
 import { adminMiddleware } from "@/rpc/middleware/admin";
 import { errorHandlerMiddleware } from "@/rpc/middleware/error-handler";
-
-const GetTransferViolationsParamsSchema = z.object({
-  competitionId: UuidSchema,
-});
 
 /**
  * Get transfer violations for a competition
@@ -16,7 +10,7 @@ const GetTransferViolationsParamsSchema = z.object({
 export const getTransferViolations = adminBase
   .use(errorHandlerMiddleware)
   .use(adminMiddleware)
-  .input(GetTransferViolationsParamsSchema)
+  .input(AdminGetCompetitionTransferViolationsParamsSchema)
   .route({
     method: "GET",
     path: "/admin/competition/{competitionId}/transfer-violations",

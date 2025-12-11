@@ -1,19 +1,8 @@
-import { z } from "zod/v4";
-
-import { UuidSchema } from "@recallnet/services/types";
+import { AdminRewardsAllocationSchema } from "@recallnet/services/types";
 
 import { adminBase } from "@/rpc/context/admin";
 import { adminMiddleware } from "@/rpc/middleware/admin";
 import { errorHandlerMiddleware } from "@/rpc/middleware/error-handler";
-
-const AllocateRewardsBodySchema = z.object({
-  competitionId: UuidSchema,
-  startTimestamp: z
-    .number()
-    .int()
-    .min(0)
-    .describe("Unix timestamp for reward period start"),
-});
 
 /**
  * Allocate rewards for a competition
@@ -21,7 +10,7 @@ const AllocateRewardsBodySchema = z.object({
 export const allocateRewards = adminBase
   .use(errorHandlerMiddleware)
   .use(adminMiddleware)
-  .input(AllocateRewardsBodySchema)
+  .input(AdminRewardsAllocationSchema)
   .route({
     method: "POST",
     path: "/admin/rewards/allocate",

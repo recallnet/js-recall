@@ -1,18 +1,11 @@
-import { z } from "zod/v4";
-
-import { UuidSchema } from "@recallnet/services/types";
+import {
+  AdminGetCompetitionSnapshotsParamsSchema,
+  AdminGetCompetitionSnapshotsQuerySchema,
+} from "@recallnet/services/types";
 
 import { adminBase } from "@/rpc/context/admin";
 import { adminMiddleware } from "@/rpc/middleware/admin";
 import { errorHandlerMiddleware } from "@/rpc/middleware/error-handler";
-
-const GetCompetitionSnapshotsParamsSchema = z.object({
-  competitionId: UuidSchema,
-});
-
-const GetCompetitionSnapshotsQuerySchema = z.object({
-  agentId: UuidSchema.optional(),
-});
 
 /**
  * Get portfolio snapshots for an agent in a competition
@@ -21,8 +14,8 @@ export const getCompetitionSnapshots = adminBase
   .use(errorHandlerMiddleware)
   .use(adminMiddleware)
   .input(
-    GetCompetitionSnapshotsParamsSchema.merge(
-      GetCompetitionSnapshotsQuerySchema,
+    AdminGetCompetitionSnapshotsParamsSchema.merge(
+      AdminGetCompetitionSnapshotsQuerySchema,
     ),
   )
   .route({

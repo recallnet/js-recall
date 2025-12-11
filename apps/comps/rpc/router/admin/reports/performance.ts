@@ -1,14 +1,9 @@
-import { z } from "zod/v4";
-
-import { UuidSchema } from "@recallnet/services/types";
+import { AdminGetPerformanceReportsQuerySchema } from "@recallnet/services/types";
 
 import { adminBase } from "@/rpc/context/admin";
 import { adminMiddleware } from "@/rpc/middleware/admin";
 import { errorHandlerMiddleware } from "@/rpc/middleware/error-handler";
 
-const GetPerformanceReportParamsSchema = z.object({
-  competitionId: UuidSchema,
-});
 
 /**
  * Get performance report for a competition
@@ -16,7 +11,7 @@ const GetPerformanceReportParamsSchema = z.object({
 export const getPerformanceReport = adminBase
   .use(errorHandlerMiddleware)
   .use(adminMiddleware)
-  .input(GetPerformanceReportParamsSchema)
+  .input(AdminGetPerformanceReportsQuerySchema)
   .route({
     method: "GET",
     path: "/admin/reports/performance",

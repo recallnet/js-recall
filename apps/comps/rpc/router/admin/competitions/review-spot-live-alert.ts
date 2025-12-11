@@ -20,7 +20,7 @@ export const reviewSpotLiveSelfFundingAlert = adminBase
   )
   .route({
     method: "PUT",
-    path: "/admin/competitions/:competitionId/spot-live/alerts/:alertId/review",
+    path: "/admin/competitions/{competitionId}/spot-live/alerts/{alertId}/review",
     summary: "Review spot live self-funding alert",
     description: "Review and take action on a spot live self-funding alert",
     tags: ["admin"],
