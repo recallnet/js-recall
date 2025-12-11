@@ -9,13 +9,11 @@ import {
   CROSS_CHAIN_TRADING_TYPE,
   CreateCompetitionResponse,
   StartCompetitionResponse,
-  UserCompetitionsResponse,
 } from "@recallnet/test-utils";
 import {
   createTestClient,
   createTestCompetition,
   generateRandomEthAddress,
-  generateTestCompetitions,
   getAdminApiKey,
   noTradingConstraints,
   startExistingTestCompetition,
@@ -1170,53 +1168,70 @@ describe("User API", () => {
   });
 
   test("user can get competitions for their agents", async () => {
-    const { client1, user1 } = await generateTestCompetitions(adminApiKey);
-    // Test: User can get competitions for their agents
-    const competitionsResponse =
-      (await client1.getUserCompetitions()) as UserCompetitionsResponse;
+    // Create a user and agent
+    const { rpcClient, user, agent } =
+      await registerUserAndAgentAndGetRpcClient({
+        adminApiKey,
+        userName: "User for Competitions",
+        agentName: "Agent for Competitions",
+      });
 
-    expect(competitionsResponse.success).toBe(true);
+    // Create 20 competitions and join the agent to 15 of them
+    const competitions = [];
+    for (let i = 0; i < 20; i++) {
+      const result = await createTestCompetition({
+        adminClient,
+        name: `Competition ${i} ${Date.now()}`,
+      });
+
+      competitions.push(result);
+
+      // Join agent to first 15 competitions
+      if (i < 15) {
+        await rpcClient.competitions.join({
+          competitionId: result.competition.id,
+          agentId: agent.id,
+        });
+      }
+    }
+
+    // Test: User can get competitions for their agents
+    const competitionsResponse = await rpcClient.user.getCompetitions({});
+
     expect(competitionsResponse.competitions).toBeDefined();
     expect(Array.isArray(competitionsResponse.competitions)).toBe(true);
     expect(competitionsResponse.competitions.length).toBe(10);
     expect(competitionsResponse.pagination).toBeDefined();
-    expect(
-      (competitionsResponse as UserCompetitionsResponse).pagination.limit,
-    ).toBe(10);
-    expect(
-      (competitionsResponse as UserCompetitionsResponse).pagination.offset,
-    ).toBe(0);
-    expect(
-      (competitionsResponse as UserCompetitionsResponse).pagination.total,
-    ).toBe(15);
-    expect(
-      (competitionsResponse as UserCompetitionsResponse).pagination.hasMore,
-    ).toBe(true);
+    expect(competitionsResponse.pagination.limit).toBe(10);
+    expect(competitionsResponse.pagination.offset).toBe(0);
+    expect(competitionsResponse.pagination.total).toBe(15);
+    expect(competitionsResponse.pagination.hasMore).toBe(true);
 
     for (const comp of competitionsResponse.competitions) {
       expect(comp.agents).toBeDefined();
       expect(Array.isArray(comp.agents)).toBe(true);
-      expect(comp.agents.every((agent) => agent.ownerId === user1.id)).toBe(
-        true,
-      );
       expect(
         comp.agents.every(
-          (agent) => agent.rank === undefined || agent.rank >= 1,
+          (agent: { ownerId: string }) => agent.ownerId === user.id,
+        ),
+      ).toBe(true);
+      expect(
+        comp.agents.every(
+          (agent: { rank?: number }) =>
+            agent.rank === undefined || agent.rank >= 1,
         ),
       );
     }
 
     // Test with query parameters
-    const competitionsWithParamsResponse = (await client1.getUserCompetitions({
-      limit: 5,
-      offset: 0,
-    })) as UserCompetitionsResponse;
+    const competitionsWithParamsResponse = await rpcClient.user.getCompetitions(
+      {
+        limit: 5,
+        offset: 0,
+      },
+    );
 
-    expect(competitionsWithParamsResponse.success).toBe(true);
-    expect(
-      (competitionsWithParamsResponse as UserCompetitionsResponse).pagination
-        .limit,
-    ).toBe(5);
+    expect(competitionsWithParamsResponse.pagination.limit).toBe(5);
   });
 
   test("user can get competitions for their agents with correct rank", async () => {
