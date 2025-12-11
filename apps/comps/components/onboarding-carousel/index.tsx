@@ -3,7 +3,7 @@
 import { X } from "lucide-react";
 import { AnimatePresence, motion } from "motion/react";
 import { useRouter } from "next/navigation";
-import React, { useCallback, useState } from "react";
+import React, { useCallback, useEffect, useState } from "react";
 
 import { Button } from "@recallnet/ui2/components/button";
 import { Dialog, DialogContent } from "@recallnet/ui2/components/dialog";
@@ -48,8 +48,36 @@ export const OnboardingCarousel: React.FC<OnboardingCarouselProps> = ({
   const router = useRouter();
   const [currentStep, setCurrentStep] = useState(0);
   const [direction, setDirection] = useState(0);
+  const [imageReady, setImageReady] = useState(false);
 
   const totalSteps = ONBOARDING_STEPS.length;
+
+  // Preload all step images before showing the modal to ensure modal is not blank
+  useEffect(() => {
+    if (!isOpen) {
+      setImageReady(false);
+      return;
+    }
+
+    if (ONBOARDING_STEPS.length === 0) {
+      setImageReady(true);
+      return;
+    }
+
+    let loadedCount = 0;
+    const imagesToLoad = ONBOARDING_STEPS.length;
+
+    ONBOARDING_STEPS.forEach((step) => {
+      const img = new Image();
+      img.onload = () => {
+        loadedCount++;
+        if (loadedCount === imagesToLoad) {
+          setImageReady(true);
+        }
+      };
+      img.src = step.imagePath;
+    });
+  }, [isOpen]);
   const isFirstStep = currentStep === 0;
   const isLastStep = currentStep === totalSteps - 1;
   const currentStepData = ONBOARDING_STEPS[currentStep];
@@ -120,7 +148,10 @@ export const OnboardingCarousel: React.FC<OnboardingCarouselProps> = ({
   const secondaryButton = getSecondaryButton();
 
   return (
-    <Dialog open={isOpen} onOpenChange={(open) => !open && handleSkipFlow()}>
+    <Dialog
+      open={isOpen && imageReady}
+      onOpenChange={(open) => !open && handleSkipFlow()}
+    >
       <DialogContent
         className="w-[420px] max-w-[90vw] overflow-hidden rounded-3xl border-gray-800 bg-[#0d1117] p-0"
         showCloseButton={false}
