@@ -410,6 +410,113 @@ describe("User API", () => {
     expect(persistedAgent.imageUrl).toBe("https://example.com/final-image.jpg");
   });
 
+  describe("Agent handles", () => {
+    test("should reject duplicate handles or invalid format", async () => {
+      // Create a Privy-authenticated client
+      const { rpcClient } = await createPrivyAuthenticatedRpcClient({
+        userName: "Handle Test User",
+        userEmail: "handle-test@example.com",
+      });
+
+      // Test 1: Custom handle
+      const { agent: agent1 } = await rpcClient.user.createAgent({
+        name: "Another Agent",
+        handle: "custom_handle",
+        description: "Test agent with custom handle",
+      });
+
+      expect(agent1.name).toBe("Another Agent");
+      expect(agent1.handle).toBe("custom_handle");
+
+      // Test 2: Duplicate handle rejection
+      await expect(
+        rpcClient.user.createAgent({
+          name: "Third Agent",
+          handle: "custom_handle", // Same as agent 1
+          description: "Should fail with duplicate handle",
+        }),
+      ).rejects.toThrow(/An agent with handle 'custom_handle' already exists/);
+
+      // Test 3: Handle with special characters
+      await expect(
+        rpcClient.user.createAgent({
+          name: "Agent@123!",
+          handle: "agent@123!",
+          description: "Test handle generation from special chars",
+        }),
+      ).rejects.toThrow(/Input validation failed/);
+
+      // Test 4: Invalid handle format (uppercase)
+      await expect(
+        rpcClient.user.createAgent({
+          name: "Test Agent",
+          handle: "UPPERCASE_HANDLE", // Should fail - must be lowercase
+          description: "Should fail with invalid handle format",
+        }),
+      ).rejects.toThrow(/Input validation failed/);
+
+      // Test 5: Invalid handle format (too long)
+      await expect(
+        rpcClient.user.createAgent({
+          name: "Test Agent",
+          handle: "a".repeat(16), // Should fail - too long
+          description: "Should fail with invalid handle format",
+        }),
+      ).rejects.toThrow(/Input validation failed/);
+
+      // Test 6: Invalid handle format (too short)
+      await expect(
+        rpcClient.user.createAgent({
+          name: "Test Agent",
+          handle: "a", // Should fail - too short
+          description: "Should fail with invalid handle format",
+        }),
+      ).rejects.toThrow(/Input validation failed/);
+    });
+
+    test("should update agent handle", async () => {
+      // Create a Privy-authenticated client
+      const { rpcClient } = await createPrivyAuthenticatedRpcClient({
+        userName: "Handle Update Test User",
+        userEmail: "handle-update@example.com",
+      });
+
+      // Create an agent
+      const { agent } = await rpcClient.user.createAgent({
+        name: "Update Test Agent",
+        handle: "original_handle",
+        description: "Test agent for handle updates",
+      });
+
+      expect(agent.id).toBeDefined();
+
+      // Update the handle
+      const { agent: updatedAgent } = await rpcClient.user.updateAgentProfile({
+        agentId: agent.id,
+        handle: "updated_handle",
+      });
+
+      expect(updatedAgent.handle).toBe("updated_handle");
+
+      // Create another agent
+      const { agent: agent2 } = await rpcClient.user.createAgent({
+        name: "Second Update Test Agent",
+        handle: "second_handle",
+        description: "Second test agent",
+      });
+
+      expect(agent2.id).toBeDefined();
+
+      // Try to update agent2's handle to agent1's handle (should fail)
+      await expect(
+        rpcClient.user.updateAgentProfile({
+          agentId: agent2.id,
+          handle: "updated_handle", // Same as agent 1
+        }),
+      ).rejects.toThrow(/An agent with handle 'updated_handle' already exists/);
+    });
+  });
+
   test("user cannot update an agent they don't own", async () => {
     const { rpcClient } = await createPrivyAuthenticatedRpcClient({
       userName: "Agent Profile Test User",
