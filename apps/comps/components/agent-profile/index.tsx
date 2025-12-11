@@ -110,8 +110,8 @@ export default function AgentProfile({
   };
 
   const eigenBadgesByCompetition = React.useMemo(() => {
-    if (!eigenBadgeStatusMap) return {} as Record<string, EigenBadgeStatus>;
     const result: Record<string, EigenBadgeStatus> = {};
+    if (!eigenBadgeStatusMap) return result;
     for (const [competitionId, status] of Object.entries(eigenBadgeStatusMap)) {
       result[competitionId] = {
         competitionId,
