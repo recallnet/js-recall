@@ -94,33 +94,30 @@ export default function AgentProfile({
     }, "");
   }, [sortState]);
 
-  // Fetch EigenAI badge statuses for this agent across all competitions
-  // Returns a map of competitionId -> { isBadgeActive, signaturesLast24h }
-  const { data: eigenBadgeStatusMap } = useQuery(
-    tanstackClient.eigenai.getBadgeStatusesForAgent.queryOptions({
-      input: { agentId: id },
-    }),
-  );
-
-  // Transform the map to the format expected by CompetitionTable
+  // Fetch EigenAI badge statuses for this agent, transformed for CompetitionTable
   type EigenBadgeStatus = {
     competitionId: string;
     isActive: boolean;
     signaturesLast24h: number;
   };
 
-  const eigenBadgesByCompetition = React.useMemo(() => {
-    const result: Record<string, EigenBadgeStatus> = {};
-    if (!eigenBadgeStatusMap) return result;
-    for (const [competitionId, status] of Object.entries(eigenBadgeStatusMap)) {
-      result[competitionId] = {
-        competitionId,
-        isActive: status.isBadgeActive,
-        signaturesLast24h: status.signaturesLast24h,
-      };
-    }
-    return result;
-  }, [eigenBadgeStatusMap]);
+  const { data: eigenBadgesByCompetition = {} } = useQuery({
+    ...tanstackClient.eigenai.getBadgeStatusesForAgent.queryOptions({
+      input: { agentId: id },
+    }),
+    select: (data): Record<string, EigenBadgeStatus> => {
+      const result: Record<string, EigenBadgeStatus> = {};
+      if (!data) return result;
+      for (const [competitionId, status] of Object.entries(data)) {
+        result[competitionId] = {
+          competitionId,
+          isActive: status.isBadgeActive,
+          signaturesLast24h: status.signaturesLast24h,
+        };
+      }
+      return result;
+    },
+  });
 
   const handleSaveChange =
     (field: "imageUrl" | "description" | "name" | "handle" | "skills") =>
