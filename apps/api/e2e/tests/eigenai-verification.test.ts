@@ -114,6 +114,58 @@ describe("EigenAI Verification", () => {
     expect(typedResponse.badgeStatus.signaturesLast24h).toBeGreaterThan(0);
   });
 
+  test("should reject duplicate signature submission with 409 error", async () => {
+    // Setup admin client
+    const adminClient = createTestClient();
+    await adminClient.loginAsAdmin(adminApiKey);
+
+    // Register an agent
+    const { agent, client: agentClient } =
+      await registerUserAndAgentAndGetClient({
+        adminApiKey,
+        agentName: `EigenAI Duplicate Sig Agent ${Date.now()}`,
+      });
+
+    // Start a paper trading competition
+    const competitionResponse = await startTestCompetition({
+      adminClient,
+      name: `EigenAI Duplicate Sig Test ${Date.now()}`,
+      agentIds: [agent.id],
+    });
+
+    expect(competitionResponse.success).toBe(true);
+    const competition = competitionResponse.competition;
+
+    await wait(500);
+
+    // First submission should succeed
+    const firstSubmit = await agentClient.submitEigenaiSignature({
+      competitionId: competition.id,
+      requestPrompt: EIGENAI_TEST_FIXTURE.fullPrompt,
+      responseModel: EIGENAI_TEST_FIXTURE.responseModel,
+      responseOutput: EIGENAI_TEST_FIXTURE.fullOutput,
+      signature: EIGENAI_TEST_FIXTURE.signature,
+    });
+
+    expect(firstSubmit.success).toBe(true);
+    expect((firstSubmit as EigenaiSubmitSignatureResponse).verified).toBe(true);
+
+    // Second submission with same signature should fail with 409
+    const duplicateSubmit = await agentClient.submitEigenaiSignature({
+      competitionId: competition.id,
+      requestPrompt: EIGENAI_TEST_FIXTURE.fullPrompt,
+      responseModel: EIGENAI_TEST_FIXTURE.responseModel,
+      responseOutput: EIGENAI_TEST_FIXTURE.fullOutput,
+      signature: EIGENAI_TEST_FIXTURE.signature,
+    });
+
+    expect(duplicateSubmit.success).toBe(false);
+    expect((duplicateSubmit as { status?: number }).status).toBe(409);
+    expect((duplicateSubmit as { error?: string }).error).toContain(
+      "already been submitted",
+    );
+  });
+
   test("should submit invalid signature and receive verification failure", async () => {
     // Setup admin client
     const adminClient = createTestClient();

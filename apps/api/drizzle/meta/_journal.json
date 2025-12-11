@@ -512,6 +512,13 @@
       "when": 1765314350350,
       "tag": "0072_tiny_bloodstrike",
       "breakpoints": true
+    },
+    {
+      "idx": 73,
+      "version": "7",
+      "when": 1765468327242,
+      "tag": "0073_handy_zombie",
+      "breakpoints": true
     }
   ]
 }

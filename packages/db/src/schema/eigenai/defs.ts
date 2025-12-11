@@ -86,6 +86,13 @@ export const signatureSubmissions = eigenaiSchema.table(
       .defaultNow(),
   },
   (table) => [
+    // Prevent duplicate signature submissions within a competition
+    // Same signature can only be submitted once per competition
+    uniqueIndex("idx_sig_submissions_comp_signature_uniq").on(
+      table.competitionId,
+      table.signature,
+    ),
+
     // Primary query: count verified submissions per agent/competition in time window
     index("idx_sig_submissions_agent_comp_status_submitted").on(
       table.agentId,
