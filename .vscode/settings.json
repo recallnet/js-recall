@@ -22,5 +22,9 @@
       "apps/comps/**"
     ]
   },
-  "tailwindCSS.classFunctions": ["cn", "cva", "cx"]
+  "tailwindCSS.classFunctions": ["cn", "cva", "cx"],
+  "workbench.editor.customLabels.patterns": {
+    "**/app/**/{page,layout,index}.{ts,tsx}": "(${dirname})/${filename}.${extname}",
+    "**/index.{ts,tsx}": "${dirname}/index.${extname}"
+  }
 }
