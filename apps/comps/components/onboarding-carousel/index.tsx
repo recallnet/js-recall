@@ -126,7 +126,6 @@ export const OnboardingCarousel: React.FC<OnboardingCarouselProps> = ({
         showCloseButton={false}
         onKeyDown={handleKeyDown}
       >
-        {/* Close button (X) in top right */}
         <button
           type="button"
           onClick={handleSkipFlow}
@@ -136,7 +135,6 @@ export const OnboardingCarousel: React.FC<OnboardingCarouselProps> = ({
           <X className="h-5 w-5" />
         </button>
 
-        {/* Animated step content */}
         <div className="relative min-h-[400px] overflow-hidden">
           <AnimatePresence mode="wait" initial={false} custom={direction}>
             <motion.div
@@ -157,7 +155,6 @@ export const OnboardingCarousel: React.FC<OnboardingCarouselProps> = ({
           </AnimatePresence>
         </div>
 
-        {/* Step indicators - clickable for navigation */}
         <StepIndicators
           totalSteps={totalSteps}
           currentStep={currentStep}
@@ -165,9 +162,7 @@ export const OnboardingCarousel: React.FC<OnboardingCarouselProps> = ({
           className="pb-6"
         />
 
-        {/* Navigation buttons - stacked vertically */}
         <div className="flex flex-col gap-3 px-6 pb-6">
-          {/* Primary action button */}
           <Button
             onClick={handleNext}
             className="h-12 w-full rounded-xl bg-white text-base font-semibold text-black hover:bg-gray-100"
@@ -175,7 +170,6 @@ export const OnboardingCarousel: React.FC<OnboardingCarouselProps> = ({
             {isLastStep ? "BOOST NOW" : "NEXT"}
           </Button>
 
-          {/* Secondary action button */}
           <Button
             onClick={secondaryButton.action}
             variant="outline"

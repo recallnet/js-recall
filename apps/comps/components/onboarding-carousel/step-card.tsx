@@ -20,7 +20,6 @@ interface StepCardProps {
 export const StepCard: React.FC<StepCardProps> = ({ step, className }) => {
   return (
     <div className={cn("flex flex-col items-center text-center", className)}>
-      {/* Background image with fixed height to prevent layout shift */}
       <div className="relative mb-6 h-56 w-full overflow-hidden">
         <Image
           src={step.imagePath}
@@ -32,12 +31,10 @@ export const StepCard: React.FC<StepCardProps> = ({ step, className }) => {
         />
       </div>
 
-      {/* Title */}
       <h2 className="mb-4 text-2xl font-bold italic text-white">
         {step.title}
       </h2>
 
-      {/* Description */}
       <p className="max-w-xs text-sm leading-relaxed text-gray-400">
         {step.description}
       </p>
