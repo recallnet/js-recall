@@ -49,8 +49,10 @@ export function CompetitionTable({
   const router = useRouter();
   const hasMore = total > (competitions?.length || 0);
 
-  // Check if any competition has an EigenAI badge to determine if we show the column
-  const hasAnyEigenBadge = Object.keys(eigenBadgesByCompetition).length > 0;
+  // Check if any competition has an active EigenAI badge to determine if we show the column
+  const hasAnyEigenBadge = Object.values(eigenBadgesByCompetition).some(
+    (status) => status.isActive,
+  );
 
   // Calculate grid columns based on whether we show eigenai column and claim column
   // All columns except Competition (2fr) use 1fr for equal distribution
