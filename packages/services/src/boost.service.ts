@@ -375,4 +375,37 @@ export class BoostService {
       };
     });
   }
+
+  /**
+   * Get active bonus boosts for a user
+   * @param userId - User ID
+   * @returns User's active bonus boosts sorted by expiration date (ascending)
+   */
+  getUserBonusBoosts(userId: string): ResultAsync<
+    Array<{
+      id: string;
+      amount: string;
+      expiresAt: string;
+      meta?: Record<string, string | number | boolean>;
+    }>,
+    { type: "RepositoryError"; message: string }
+  > {
+    return ResultAsync.fromPromise(
+      this.boostRepository.findActiveBoostBonusesByUserId(userId),
+      (err) =>
+        ({
+          type: "RepositoryError",
+          message: errorToMessage(err),
+        }) as const,
+    ).map((boosts) =>
+      boosts.map((boost) => ({
+        id: boost.id,
+        amount: boost.amount.toString(),
+        expiresAt: boost.expiresAt.toISOString(),
+        meta: boost.meta as
+          | Record<string, string | number | boolean>
+          | undefined,
+      })),
+    );
+  }
 }
