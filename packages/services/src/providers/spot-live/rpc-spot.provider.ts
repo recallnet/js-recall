@@ -2,6 +2,7 @@ import * as Sentry from "@sentry/node";
 import { AssetTransfersWithMetadataResult } from "alchemy-sdk";
 import { Logger } from "pino";
 
+import { formatTokenAmount } from "../../lib/blockchain-math-utils.js";
 import { NATIVE_TOKEN_ADDRESS } from "../../lib/config-utils.js";
 import { SpecificChain } from "../../types/index.js";
 import { IRpcProvider, TransactionReceipt } from "../../types/rpc.js";
@@ -19,7 +20,8 @@ import {
 interface Transfer {
   from: string;
   to: string;
-  value: number;
+  /** Value may be null when Alchemy cannot determine decimals for unknown tokens */
+  value: number | null;
   asset: string;
   hash: string;
   blockNum: string;
@@ -491,7 +493,7 @@ export class RpcSpotProvider implements ISpotLiveDataProvider {
           // Override amounts with getAssetTransfers values (already decimal-adjusted)
           // Receipt logs provide deterministic token identification via logIndex ordering,
           // but getAssetTransfers has more reliable pre-adjusted amounts.
-          // Note: Override is conditional - if no matching transfer found, receipt log amounts are kept as fallback
+          // Note: Override is conditional - if value is null (unknown token), fetch decimals and calculate from raw logs
           const wallet = walletAddress.toLowerCase();
           const outboundTransfer = txTransfers.find(
             (t) =>
@@ -504,11 +506,52 @@ export class RpcSpotProvider implements ISpotLiveDataProvider {
               this.getTokenAddress(t).toLowerCase() === swap.toToken,
           );
 
+          // Handle outbound amount - use Alchemy value if available, otherwise fetch decimals
           if (outboundTransfer) {
-            swap.fromAmount = outboundTransfer.value;
+            if (outboundTransfer.value != null) {
+              swap.fromAmount = outboundTransfer.value;
+            } else {
+              // Alchemy returned null for unknown token - fetch decimals and calculate
+              // Uses same logIndex ordering as detectSwapFromReceiptLogs (first outbound)
+              const amount = await this.calculateAmountFromReceiptLog(
+                receipt,
+                swap.fromToken,
+                walletAddress,
+                "outbound",
+                chain,
+              );
+              if (amount !== null) {
+                swap.fromAmount = amount;
+                this.logger.debug(
+                  { txHash, token: swap.fromToken, amount },
+                  "[RpcSpotProvider] Calculated fromAmount from receipt log (Alchemy returned null)",
+                );
+              }
+            }
           }
+
+          // Handle inbound amount - use Alchemy value if available, otherwise fetch decimals
           if (inboundTransfer) {
-            swap.toAmount = inboundTransfer.value;
+            if (inboundTransfer.value != null) {
+              swap.toAmount = inboundTransfer.value;
+            } else {
+              // Alchemy returned null for unknown token - fetch decimals and calculate
+              // Uses same logIndex ordering as detectSwapFromReceiptLogs (last inbound)
+              const amount = await this.calculateAmountFromReceiptLog(
+                receipt,
+                swap.toToken,
+                walletAddress,
+                "inbound",
+                chain,
+              );
+              if (amount !== null) {
+                swap.toAmount = amount;
+                this.logger.debug(
+                  { txHash, token: swap.toToken, amount },
+                  "[RpcSpotProvider] Calculated toAmount from receipt log (Alchemy returned null)",
+                );
+              }
+            }
           }
 
           // Set timestamp from transfer metadata
@@ -703,8 +746,8 @@ export class RpcSpotProvider implements ISpotLiveDataProvider {
           if (!isSwap) {
             // Not a swap - these are deposits/withdrawals
             for (const transfer of txTransfers) {
-              // Skip 0-value transfers (approvals, contract interactions, etc.)
-              if (transfer.value === 0) {
+              // Skip 0-value or null-value transfers (approvals, contract interactions, or unknown tokens)
+              if (transfer.value === 0 || transfer.value === null) {
                 continue;
               }
 
@@ -799,7 +842,9 @@ export class RpcSpotProvider implements ISpotLiveDataProvider {
       const normalizedTransfer: Transfer = {
         from: transfer.from.toLowerCase(),
         to: transfer.to ? transfer.to.toLowerCase() : "",
-        value: Number(transfer.value) || 0,
+        // Preserve null for unknown tokens (Alchemy returns null when it can't determine decimals)
+        // Don't convert to 0, as we need to detect this and fetch decimals manually
+        value: transfer.value != null ? Number(transfer.value) : null,
         asset: transfer.asset || "ETH",
         hash: normalizedHash,
         blockNum: transfer.blockNum,
@@ -858,8 +903,9 @@ export class RpcSpotProvider implements ISpotLiveDataProvider {
       timestamp: new Date(out.metadata.blockTimestamp),
       fromToken,
       toToken,
-      fromAmount: out.value,
-      toAmount: inc.value,
+      // Use 0 for null values (rare case - unknown tokens in fallback detection)
+      fromAmount: out.value ?? 0,
+      toAmount: inc.value ?? 0,
       protocol: "Unknown", // Will be set by protocol filter or left as Unknown
     };
   }
@@ -891,6 +937,87 @@ export class RpcSpotProvider implements ISpotLiveDataProvider {
       value,
       logIndex: log.logIndex,
     };
+  }
+
+  /**
+   * Calculate decimal-adjusted amount from receipt log by fetching token decimals on-chain.
+   * Used when Alchemy's getAssetTransfers returns null for unknown tokens.
+   *
+   * Uses the same logIndex-based ordering as detectSwapFromReceiptLogs to ensure consistency:
+   * - For outbound (fromAmount): finds FIRST transfer FROM wallet for this token
+   * - For inbound (toAmount): finds LAST transfer TO wallet for this token
+   *
+   * @param receipt Transaction receipt with logs
+   * @param tokenAddress Token address to find and calculate amount for
+   * @param walletAddress Wallet address to match direction
+   * @param direction Whether this is an outbound (from wallet) or inbound (to wallet) transfer
+   * @param chain Chain to fetch decimals from
+   * @returns Decimal-adjusted amount or null if token not found in logs
+   */
+  private async calculateAmountFromReceiptLog(
+    receipt: TransactionReceipt,
+    tokenAddress: string,
+    walletAddress: string,
+    direction: "outbound" | "inbound",
+    chain: SpecificChain,
+  ): Promise<number | null> {
+    const normalizedToken = tokenAddress.toLowerCase();
+    const wallet = walletAddress.toLowerCase();
+
+    // Parse all Transfer logs sorted by logIndex (same as detectSwapFromReceiptLogs)
+    const transfers = receipt.logs
+      .filter((log) => log.topics[0] === ERC20_TRANSFER_TOPIC)
+      .sort((a, b) => a.logIndex - b.logIndex)
+      .map((log) => this.parseTransferLog(log));
+
+    // Find the correct transfer using same logic as detectSwapFromReceiptLogs:
+    // - outbound: FIRST transfer FROM wallet matching token
+    // - inbound: LAST transfer TO wallet matching token
+    let targetTransfer: ParsedTransfer | undefined;
+
+    if (direction === "outbound") {
+      // First transfer FROM wallet for this token
+      targetTransfer = transfers.find(
+        (t) => t.from === wallet && t.tokenAddress === normalizedToken,
+      );
+    } else {
+      // Last transfer TO wallet for this token (iterate in reverse)
+      for (let i = transfers.length - 1; i >= 0; i--) {
+        const t = transfers[i];
+        if (t && t.to === wallet && t.tokenAddress === normalizedToken) {
+          targetTransfer = t;
+          break;
+        }
+      }
+    }
+
+    if (!targetTransfer) {
+      return null;
+    }
+
+    const rawValue = targetTransfer.value;
+
+    if (rawValue === BigInt(0)) {
+      return 0;
+    }
+
+    // Fetch actual decimals from chain
+    try {
+      const decimals = await this.rpcProvider.getTokenDecimals(
+        tokenAddress,
+        chain,
+      );
+      // Use formatTokenAmount for precision-safe BigInt to decimal conversion
+      return parseFloat(formatTokenAmount(rawValue.toString(), decimals));
+    } catch (error) {
+      // If decimals fetch fails, fall back to 18 (most common)
+      this.logger.warn(
+        { tokenAddress, chain, error },
+        "[RpcSpotProvider] Failed to fetch decimals, falling back to 18",
+      );
+      // Use formatTokenAmount for precision-safe BigInt to decimal conversion
+      return parseFloat(formatTokenAmount(rawValue.toString(), 18));
+    }
   }
 
   /**
@@ -936,8 +1063,13 @@ export class RpcSpotProvider implements ISpotLiveDataProvider {
     const fromDecimals = tokenDecimals.get(outbound.tokenAddress) ?? 18;
     const toDecimals = tokenDecimals.get(inbound.tokenAddress) ?? 18;
 
-    const fromAmount = Number(outbound.value) / Math.pow(10, fromDecimals);
-    const toAmount = Number(inbound.value) / Math.pow(10, toDecimals);
+    // Use formatTokenAmount for precision-safe BigInt to decimal conversion
+    const fromAmount = parseFloat(
+      formatTokenAmount(outbound.value.toString(), fromDecimals),
+    );
+    const toAmount = parseFloat(
+      formatTokenAmount(inbound.value.toString(), toDecimals),
+    );
 
     // Validation: reject 0-value swaps as invalid
     if (fromAmount === 0) {

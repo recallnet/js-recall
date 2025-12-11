@@ -1480,23 +1480,27 @@ export class CompetitionService {
     });
 
     // Resolve protocols if being updated
+    // Protocols like "aerodrome" may have multiple routers (V2 + Slipstream)
     if (spotLiveConfig.allowedProtocols !== undefined) {
       for (const p of spotLiveConfig.allowedProtocols) {
-        const config = getDexProtocolConfig(p.protocol, p.chain);
-        if (!config) {
+        const configs = getDexProtocolConfig(p.protocol, p.chain);
+        if (!configs || configs.length === 0) {
           throw new ApiError(
             400,
             `Unknown protocol '${p.protocol}' on chain '${p.chain}'. Please use a known protocol from KNOWN_DEX_PROTOCOLS.`,
           );
         }
 
-        resolvedProtocols.push({
-          protocol: p.protocol,
-          specificChain: p.chain,
-          routerAddress: config.routerAddress,
-          swapEventSignature: config.swapEventSignature,
-          factoryAddress: config.factoryAddress,
-        });
+        // Add each router config as a separate entry
+        for (const config of configs) {
+          resolvedProtocols.push({
+            protocol: p.protocol,
+            specificChain: p.chain,
+            routerAddress: config.routerAddress,
+            swapEventSignature: config.swapEventSignature,
+            factoryAddress: config.factoryAddress,
+          });
+        }
       }
     }
 
@@ -1567,24 +1571,28 @@ export class CompetitionService {
       factoryAddress: string | null;
     }> = [];
 
+    // Protocols like "aerodrome" may have multiple routers (V2 + Slipstream)
     if (spotLiveConfig.allowedProtocols) {
       for (const p of spotLiveConfig.allowedProtocols) {
-        const config = getDexProtocolConfig(p.protocol, p.chain);
+        const configs = getDexProtocolConfig(p.protocol, p.chain);
 
-        if (!config) {
+        if (!configs || configs.length === 0) {
           throw new ApiError(
             400,
             `Unknown protocol '${p.protocol}' on chain '${p.chain}'. Please use a known protocol from KNOWN_DEX_PROTOCOLS.`,
           );
         }
 
-        resolvedProtocols.push({
-          protocol: p.protocol,
-          specificChain: p.chain,
-          routerAddress: config.routerAddress,
-          swapEventSignature: config.swapEventSignature,
-          factoryAddress: config.factoryAddress,
-        });
+        // Add each router config as a separate entry
+        for (const config of configs) {
+          resolvedProtocols.push({
+            protocol: p.protocol,
+            specificChain: p.chain,
+            routerAddress: config.routerAddress,
+            swapEventSignature: config.swapEventSignature,
+            factoryAddress: config.factoryAddress,
+          });
+        }
       }
     }
 
