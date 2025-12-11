@@ -52,7 +52,7 @@ export const OnboardingCarousel: React.FC<OnboardingCarouselProps> = ({
 
   const totalSteps = ONBOARDING_STEPS.length;
 
-  // Preload all step images before showing the modal to ensure modal is not blank
+  // Note: preload all step images before showing the modal to ensure content is not blank
   useEffect(() => {
     if (!isOpen) {
       setImageReady(false);
@@ -86,7 +86,6 @@ export const OnboardingCarousel: React.FC<OnboardingCarouselProps> = ({
 
   const handleNext = useCallback(() => {
     if (isLastStep) {
-      // "BOOST NOW" on last step - navigate to competitions
       onComplete();
       onClose();
       router.push("/competitions");
@@ -118,7 +117,6 @@ export const OnboardingCarousel: React.FC<OnboardingCarouselProps> = ({
     [currentStep],
   );
 
-  // Handle keyboard navigation
   const handleKeyDown = useCallback(
     (event: React.KeyboardEvent) => {
       if (event.key === "ArrowRight") {
@@ -136,7 +134,6 @@ export const OnboardingCarousel: React.FC<OnboardingCarouselProps> = ({
     return null;
   }
 
-  // Determine secondary button behavior
   const getSecondaryButton = (): { label: string; action: () => void } => {
     if (isLastStep) {
       return { label: "CLOSE", action: handleSkipFlow };

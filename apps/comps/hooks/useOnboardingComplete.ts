@@ -13,7 +13,6 @@ export function checkOnboardingComplete(): boolean {
   try {
     return localStorage.getItem(STORAGE_KEY) === "true";
   } catch {
-    // localStorage may not be available (SSR, private browsing, etc.)
     return false;
   }
 }
@@ -30,13 +29,11 @@ export function useOnboardingComplete(): {
   const [isComplete, setIsComplete] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
 
-  // Read from localStorage on mount
   useEffect(() => {
     try {
       const stored = localStorage.getItem(STORAGE_KEY);
       setIsComplete(stored === "true");
     } catch {
-      // localStorage may not be available (SSR, private browsing, etc.)
       setIsComplete(false);
     } finally {
       setIsLoading(false);
@@ -48,7 +45,6 @@ export function useOnboardingComplete(): {
       localStorage.setItem(STORAGE_KEY, "true");
       setIsComplete(true);
     } catch {
-      // Silently fail if localStorage is not available
       setIsComplete(true);
     }
   }, []);
