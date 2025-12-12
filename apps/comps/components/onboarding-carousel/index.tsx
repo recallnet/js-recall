@@ -174,8 +174,8 @@ export const OnboardingCarousel: React.FC<OnboardingCarouselProps> = ({
               animate="center"
               exit="exit"
               transition={{
-                x: { type: "spring", stiffness: 300, damping: 30 },
-                opacity: { duration: 0.2 },
+                x: { type: "spring", stiffness: 350, damping: 30 },
+                opacity: { duration: 0.12 },
               }}
               className="absolute inset-0"
             >
