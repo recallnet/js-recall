@@ -6,6 +6,7 @@ import { authMiddleware } from "@/rpc/middleware/auth";
  *
  * Returns an array of claimable rewards with their merkle roots and proofs
  * required for claiming rewards from the RewardAllocation smart contract
+ * Includes agent and competition metadata for each reward
  */
 export const getClaimData = base
   .use(authMiddleware)
