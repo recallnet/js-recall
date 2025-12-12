@@ -67,9 +67,9 @@ export const updateAgentProfile = base
         deactivationDate: updatedAgent.deactivationDate,
       };
 
-      // Invalidate the agent cache and agent list (profile appears in list)
       invalidateCacheTags([
         CacheTags.agent(updatedAgent.id),
+        CacheTags.publicUserAgents(context.user.id),
         CacheTags.agentList(),
       ]);
 
