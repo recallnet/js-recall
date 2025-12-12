@@ -658,6 +658,92 @@ describe("EigenAI Verification", () => {
     expect([400, 404]).toContain(errorResponse.status);
   });
 
+  test("should reject submission when competition is pending (not started)", async () => {
+    // Setup admin client
+    const adminClient = createTestClient();
+    await adminClient.loginAsAdmin(adminApiKey);
+
+    // Register an agent
+    const { agent, client: agentClient } =
+      await registerUserAndAgentAndGetClient({
+        adminApiKey,
+        agentName: `EigenAI Pending Comp Agent ${Date.now()}`,
+      });
+
+    // Create a competition but do NOT start it (status will be 'pending')
+    const createResponse = await adminClient.createCompetition({
+      name: `EigenAI Pending Test ${Date.now()}`,
+      type: "trading",
+    });
+    expect(createResponse.success).toBe(true);
+    const competition = (
+      createResponse as { success: true; competition: { id: string } }
+    ).competition;
+
+    // Add agent to the pending competition
+    await adminClient.addAgentToCompetition(competition.id, agent.id);
+
+    await wait(500);
+
+    // Try to submit signature to pending competition - should fail with 409
+    const submitResponse = await agentClient.submitEigenaiSignature({
+      competitionId: competition.id,
+      requestPrompt: EIGENAI_TEST_FIXTURE.fullPrompt,
+      responseModel: EIGENAI_TEST_FIXTURE.responseModel,
+      responseOutput: EIGENAI_TEST_FIXTURE.fullOutput,
+      signature: EIGENAI_TEST_FIXTURE.signature,
+    });
+
+    expect(submitResponse.success).toBe(false);
+    const errorResponse = submitResponse as ErrorResponse;
+    expect(errorResponse.status).toBe(409);
+    expect(errorResponse.error).toContain("not active");
+  });
+
+  test("should reject submission when competition has ended", async () => {
+    // Setup admin client
+    const adminClient = createTestClient();
+    await adminClient.loginAsAdmin(adminApiKey);
+
+    // Register an agent
+    const { agent, client: agentClient } =
+      await registerUserAndAgentAndGetClient({
+        adminApiKey,
+        agentName: `EigenAI Ended Comp Agent ${Date.now()}`,
+      });
+
+    // Start a competition
+    const competitionResponse = await startTestCompetition({
+      adminClient,
+      name: `EigenAI Ended Test ${Date.now()}`,
+      agentIds: [agent.id],
+    });
+    expect(competitionResponse.success).toBe(true);
+    const competition = competitionResponse.competition;
+
+    await wait(500);
+
+    // End the competition
+    const endResponse = await adminClient.endCompetition(competition.id);
+    expect(endResponse.success).toBe(true);
+
+    await wait(500);
+
+    // Try to submit signature to ended competition - should fail with 409
+    const submitResponse = await agentClient.submitEigenaiSignature({
+      competitionId: competition.id,
+      requestPrompt: EIGENAI_TEST_FIXTURE.fullPrompt,
+      responseModel: EIGENAI_TEST_FIXTURE.responseModel,
+      responseOutput: EIGENAI_TEST_FIXTURE.fullOutput,
+      signature: EIGENAI_TEST_FIXTURE.signature,
+    });
+
+    expect(submitResponse.success).toBe(false);
+    const errorResponse = submitResponse as ErrorResponse;
+    expect(errorResponse.status).toBe(409);
+    expect(errorResponse.error).toContain("not active");
+  });
+
   // =============================================================================
   // CRON JOB SIMULATION TESTS
   // These tests simulate the badge refresh cron job (refresh-eigenai-badges.ts)

@@ -50,6 +50,14 @@ export function makeEigenaiController(services: ServiceRegistry) {
           throw new ApiError(404, "Competition not found");
         }
 
+        // Verify competition is active (not pending or ended)
+        if (competition.status !== "active") {
+          throw new ApiError(
+            409,
+            `Competition is not active (status: ${competition.status}). Signature submissions are only allowed during active competitions.`,
+          );
+        }
+
         // Verify agent is registered in competition
         const isRegistered =
           await services.competitionService.isAgentActiveInCompetition(
