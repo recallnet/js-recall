@@ -1,13 +1,86 @@
+import { toSvg } from "jdenticon";
 import { ImageResponse } from "next/og";
 import { readFile } from "node:fs/promises";
 import { extname, join } from "node:path";
+import type { ReactElement } from "react";
 
+import { openForBoosting } from "@/lib/open-for-boosting";
 import { createSafeClient } from "@/rpc/clients/server-side";
+import { RouterOutputs } from "@/rpc/router";
+import { CompetitionLeaderboardEntry } from "@/types/nfl";
 import { formatCompetitionDates } from "@/utils/competition-utils";
-import { formatBigintAmount } from "@/utils/format";
+import { formatAmount, formatBigintAmount, toOrdinal } from "@/utils/format";
 
-const BUTTON_BLUE = "#0E66BE";
-const BUTTON_BLUE_LIGHT = "#1A8FE3";
+// =============================================================================
+// CONSTANTS
+// =============================================================================
+
+/** OG Image dimensions */
+const OG_WIDTH = 1200;
+const OG_HEIGHT = 675;
+
+/** Font families */
+const FONT_MONO = "Roboto Mono, sans-serif";
+const FONT_SANS = "Geist, sans-serif";
+
+/** Color palette */
+const COLORS = {
+  button: { base: "#0E66BE", light: "#1A8FE3" },
+  text: { gray: "#A7A7A7", white: "#ffffff", light: "#e5f2ff" },
+  trophy: {
+    first: { text: "#b79128", border: "#b79128" },
+    second: { text: "#6e7277", border: "#4b4e51" },
+    third: { text: "#834e25", border: "#834e25" },
+    default: { text: "#666", border: "#333" },
+  },
+  table: {
+    headerBg: "#0c0d12",
+    rowDark: "#050507",
+    rowLight: "#0c0d12",
+    border: "#303846",
+    textLight: "#93a5ba",
+    textSecondary: "#6d85a4",
+    headerText: "#e9edf1",
+    green: "#38a430",
+    red: "#ef4444",
+  },
+  fallbackBg: "#0f172a",
+  avatarBg: "#475569",
+};
+
+// =============================================================================
+// TYPES
+// =============================================================================
+
+type Competition = NonNullable<RouterOutputs["competitions"]["getById"]>;
+type CompetitionStatus = Competition["status"];
+type CompetitionType = Competition["type"];
+
+/** Trading competition agent data */
+interface TradingAgent {
+  type: "trading" | "perpetual_futures" | "spot_live_trading";
+  id: string;
+  name: string;
+  imageUrl: string | null;
+  rank: number | null;
+  portfolioValue: number;
+  pnl: number;
+  pnlPercent: number;
+}
+
+/** Sports prediction competition agent data */
+interface SportsAgent {
+  type: "sports_prediction";
+  id: string;
+  name: string;
+  imageUrl: string | null;
+  rank: number;
+  averageBrierScore: number;
+  gamesScored: number;
+}
+
+/** Union type for leaderboard entries */
+type LeaderboardEntry = TradingAgent | SportsAgent;
 
 /** Cached assets for OG image generation */
 interface CachedAssets {
@@ -24,26 +97,30 @@ interface FontConfig {
   style: "normal" | "italic";
 }
 
-/** Module-level cache for fonts to avoid repeated network requests */
-let cachedFontsPromise: Promise<FontConfig[]> | null = null;
+// =============================================================================
+// CACHES
+// =============================================================================
 
-/** Module-level cache for assets to avoid repeated file system reads */
+let cachedFontsPromise: Promise<FontConfig[]> | null = null;
 let cachedAssetsPromise: Promise<CachedAssets> | null = null;
+
+// =============================================================================
+// ASSET LOADERS
+// =============================================================================
 
 /**
  * Loads a font from Google Fonts.
- * Note: Satori (next/og) only supports TTF/OTF, not WOFF2, and Geist Mono is not supported.
- *
- * @param family - Font family name (e.g., "Geist" or "Roboto Mono")
- * @param weight - Font weight to load
- * @returns ArrayBuffer of font data
+ * Note: Satori (next/og) only supports TTF/OTF formats, and Geist Mono (our app's fallback mono
+ * font) is not supported due to encoding issues
+ * @param family - The font family to load.
+ * @param weight - The font weight to load.
+ * @returns The font data as an ArrayBuffer.
  */
 async function loadGoogleFont(
   family: string,
   weight: number,
 ): Promise<ArrayBuffer> {
-  const encodedFamily = encodeURIComponent(family);
-  const url = `https://fonts.googleapis.com/css2?family=${encodedFamily}:wght@${weight}&display=swap`;
+  const url = `https://fonts.googleapis.com/css2?family=${encodeURIComponent(family)}:wght@${weight}&display=swap`;
   const css = await (await fetch(url)).text();
   const resource = css.match(
     /src: url\((.+)\) format\('(opentype|truetype|woff2)'\)/,
@@ -60,28 +137,21 @@ async function loadGoogleFont(
 }
 
 /**
- * Loads fonts for OG image generation using Geist and Roboto Mono from Google Fonts.
- * Font data is cached in memory to avoid repeated network requests on each OG image generation.
- *
- * @returns Array of font configurations
+ * Loads and caches fonts for OG image generation.
+ * @returns Promise resolving to an array of font configurations.
  */
 async function loadFonts(): Promise<FontConfig[]> {
   if (!cachedFontsPromise) {
     cachedFontsPromise = (async () => {
       try {
-        const [
-          geistLight,
-          geistRegular,
-          geistBold,
-          robotoMonoRegular,
-          robotoMonoBold,
-        ] = await Promise.all([
-          loadGoogleFont("Geist", 300),
-          loadGoogleFont("Geist", 400),
-          loadGoogleFont("Geist", 700),
-          loadGoogleFont("Roboto Mono", 400),
-          loadGoogleFont("Roboto Mono", 700),
-        ]);
+        const [geistLight, geistRegular, geistBold, monoRegular, monoBold] =
+          await Promise.all([
+            loadGoogleFont("Geist", 300),
+            loadGoogleFont("Geist", 400),
+            loadGoogleFont("Geist", 700),
+            loadGoogleFont("Roboto Mono", 400),
+            loadGoogleFont("Roboto Mono", 700),
+          ]);
 
         return [
           { name: "Geist", data: geistLight, weight: 300, style: "normal" },
@@ -89,19 +159,13 @@ async function loadFonts(): Promise<FontConfig[]> {
           { name: "Geist", data: geistBold, weight: 700, style: "normal" },
           {
             name: "Roboto Mono",
-            data: robotoMonoRegular,
+            data: monoRegular,
             weight: 400,
             style: "normal",
           },
-          {
-            name: "Roboto Mono",
-            data: robotoMonoBold,
-            weight: 700,
-            style: "normal",
-          },
+          { name: "Roboto Mono", data: monoBold, weight: 700, style: "normal" },
         ];
       } catch (err) {
-        // Clear cache on error so subsequent requests can retry
         cachedFontsPromise = null;
         console.error("Failed to load fonts:", err);
         return [];
@@ -112,10 +176,9 @@ async function loadFonts(): Promise<FontConfig[]> {
 }
 
 /**
- * Loads an asset from the public directory and returns it as a base64 data URL.
- *
- * @param assetPath - Path relative to the public directory
- * @returns Base64 data URL for the asset, or null if the asset cannot be loaded
+ * Loads a file from public directory as base64 data URL.
+ * @param assetPath - The relative path to the asset in the public directory.
+ * @returns Promise resolving to a base64 data URL string, or null if loading fails.
  */
 async function loadAssetAsBase64(assetPath: string): Promise<string | null> {
   try {
@@ -124,9 +187,12 @@ async function loadAssetAsBase64(assetPath: string): Promise<string | null> {
     const base64 = buffer.toString("base64");
 
     const ext = extname(assetPath).toLowerCase();
-    let mimeType = "image/svg+xml";
-    if (ext === ".png") mimeType = "image/png";
-    if (ext === ".jpg" || ext === ".jpeg") mimeType = "image/jpeg";
+    const mimeType =
+      ext === ".png"
+        ? "image/png"
+        : ext === ".jpg" || ext === ".jpeg"
+          ? "image/jpeg"
+          : "image/svg+xml";
 
     return `data:${mimeType};base64,${base64}`;
   } catch (err) {
@@ -136,10 +202,8 @@ async function loadAssetAsBase64(assetPath: string): Promise<string | null> {
 }
 
 /**
- * Loads static assets for OG image generation.
- * Asset data is cached in memory to avoid repeated file system reads on each OG image generation.
- *
- * @returns Object containing base64-encoded assets
+ * Loads and caches static assets for OG image generation.
+ * @returns Promise resolving to cached assets object containing background image and SVG logos.
  */
 async function loadAssets(): Promise<CachedAssets> {
   if (!cachedAssetsPromise) {
@@ -156,12 +220,532 @@ async function loadAssets(): Promise<CachedAssets> {
   return cachedAssetsPromise;
 }
 
+// =============================================================================
+// HELPERS
+// =============================================================================
+
+/**
+ * Generates an identicon SVG as a data URL for agents without profile images.
+ * @param agentId - The unique identifier for the agent.
+ * @param size - The size of the identicon in pixels. Defaults to 32.
+ * @returns A base64-encoded SVG data URL.
+ */
+function generateIdenticonDataUrl(agentId: string, size: number = 32): string {
+  const svg = toSvg(agentId, size, {
+    padding: 0.1,
+    hues: [227],
+    lightness: { color: [0.74, 1.0], grayscale: [0.63, 0.82] },
+    saturation: { color: 0.51, grayscale: 0.67 },
+    backColor: COLORS.avatarBg,
+  });
+  return `data:image/svg+xml;base64,${Buffer.from(svg).toString("base64")}`;
+}
+
+/**
+ * Returns rank colors based on position.
+ * @param rank - The rank position (1st, 2nd, 3rd, etc.), or null.
+ * @returns An object containing text and border color strings.
+ */
+function getRankColors(rank: number | null): { text: string; border: string } {
+  if (rank === 1) return COLORS.trophy.first;
+  if (rank === 2) return COLORS.trophy.second;
+  if (rank === 3) return COLORS.trophy.third;
+  return COLORS.trophy.default;
+}
+
+/**
+ * Truncates text to max length with ellipsis.
+ * @param text - The text to truncate.
+ * @param maxLength - The maximum length before truncation.
+ * @returns The truncated text with ellipsis if needed.
+ */
+function truncate(text: string, maxLength: number): string {
+  return text.length > maxLength ? `${text.slice(0, maxLength)}…` : text;
+}
+
+/**
+ * Determines if competition should show the agents leaderboard table.
+ * @param status - The competition status.
+ * @returns True if the leaderboard table should be shown.
+ */
+function shouldShowAgentsTable(status: CompetitionStatus | undefined): boolean {
+  return status ? ["active", "ending", "ended"].includes(status) : false;
+}
+
+/**
+ * Determines the CTA button text based on competition status.
+ * @param competition - The competition object.
+ * @returns The CTA button text.
+ */
+function getCtaText(competition: Competition): string {
+  return openForBoosting(competition) || competition.status === "pending"
+    ? "PREDICT"
+    : "RESULTS";
+}
+
+/**
+ * Determines the value column header based on competition type.
+ * @param competitionType - The type of competition.
+ * @returns The column header text.
+ */
+function getValueColumnHeader(competitionType: CompetitionType): string {
+  return competitionType === "sports_prediction" ? "Score" : "Portfolio";
+}
+
+// =============================================================================
+// UI COMPONENTS
+// =============================================================================
+
+/**
+ * Props for the left section component.
+ */
+interface LeftSectionProps {
+  competition: Competition;
+  logoSvg: string;
+}
+
+/**
+ * Left section component for the OG image.
+ * @param props - Component props.
+ * @param props.competition - The competition object.
+ * @param props.logoSvg - The Recall logo SVG data URL.
+ * @returns React element for the left section.
+ */
+function LeftSection({ competition, logoSvg }: LeftSectionProps): ReactElement {
+  return (
+    <div
+      tw="flex flex-col w-1/2 px-16 mb-12"
+      style={{ justifyContent: "flex-end" }}
+    >
+      <div tw="flex flex-col items-center">
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img
+          src={logoSvg}
+          alt="Recall logo"
+          height={28}
+          width={120}
+          style={{ marginBottom: 6 }}
+        />
+        <div
+          tw="text-6xl text-white leading-tight text-center font-bold uppercase"
+          style={{ margin: "0 0 4px 0" }}
+        >
+          {competition.name}
+        </div>
+        <span
+          tw="text-3xl tracking-widest uppercase leading-tight"
+          style={{ margin: 0, color: COLORS.text.gray }}
+        >
+          {formatCompetitionDates(competition.startDate, competition.endDate)}
+        </span>
+      </div>
+    </div>
+  );
+}
+
+/**
+ * Props for the leaderboard row component.
+ */
+interface LeaderboardRowProps {
+  entry: LeaderboardEntry;
+  index: number;
+  isLast: boolean;
+}
+
+/**
+ * Leaderboard row component for the OG image.
+ * @param props - Component props.
+ * @param props.entry - The leaderboard entry data.
+ * @param props.index - The row index.
+ * @param props.isLast - Whether this is the last row.
+ * @returns React element for a leaderboard row.
+ */
+function LeaderboardRow({
+  entry,
+  index,
+  isLast,
+}: LeaderboardRowProps): ReactElement {
+  const rankColors = getRankColors(entry.rank);
+
+  return (
+    <div
+      tw="flex w-full items-center px-8 py-6 justify-between"
+      style={{
+        backgroundColor:
+          index % 2 === 0 ? COLORS.table.rowDark : COLORS.table.rowLight,
+        borderBottom: isLast ? "none" : `1px solid ${COLORS.table.border}`,
+      }}
+    >
+      {/* Rank badge */}
+      <div tw="w-20 flex items-center">
+        <div
+          tw="flex items-center justify-center px-2 py-1 rounded text-sm font-bold"
+          style={{
+            border: `1px solid ${rankColors.border}`,
+            color: rankColors.text,
+          }}
+        >
+          {entry.rank ? toOrdinal(entry.rank) : "N/A"}
+        </div>
+      </div>
+
+      {/* Agent info */}
+      <div tw="flex-1 flex items-center" style={{ gap: "8px" }}>
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img
+          src={entry.imageUrl || generateIdenticonDataUrl(entry.id)}
+          alt={entry.name}
+          width={32}
+          height={32}
+          tw="rounded-full"
+          style={{ backgroundColor: COLORS.avatarBg }}
+        />
+        <span tw="text-xl truncate" style={{ color: COLORS.table.textLight }}>
+          {truncate(entry.name, 15)}
+        </span>
+      </div>
+
+      {/* Value column - different for trading vs sports */}
+      {entry.type === "trading" ||
+      entry.type === "perpetual_futures" ||
+      entry.type === "spot_live_trading" ? (
+        <TradingValueColumn entry={entry} />
+      ) : entry.type === "sports_prediction" ? (
+        <SportsValueColumn entry={entry} />
+      ) : null}
+    </div>
+  );
+}
+
+/**
+ * Trading value column component for the OG image.
+ * @param props - Component props.
+ * @param props.entry - The trading agent entry data.
+ * @returns React element for the trading value column.
+ */
+function TradingValueColumn({ entry }: { entry: TradingAgent }): ReactElement {
+  const isPositive = entry.pnlPercent >= 0;
+
+  return (
+    <div tw="flex flex-col items-end">
+      <span tw="text-xl" style={{ color: COLORS.table.textLight }}>
+        ${formatAmount(entry.portfolioValue, 2, true, 2)}
+      </span>
+      <div tw="flex" style={{ gap: "4px" }}>
+        <span
+          tw="text-sm"
+          style={{
+            color: isPositive ? COLORS.table.green : COLORS.table.red,
+          }}
+        >
+          ({isPositive ? "+" : ""}
+          {formatAmount(entry.pnlPercent)}%)
+        </span>
+        <span tw="text-sm" style={{ color: COLORS.table.textSecondary }}>
+          {entry.pnl >= 0 ? "+" : ""}${formatAmount(entry.pnl, 2, true, 2)}
+        </span>
+      </div>
+    </div>
+  );
+}
+
+/**
+ * Sports value column component for the OG image.
+ * @param props - Component props.
+ * @param props.entry - The sports agent entry data.
+ * @returns React element for the sports value column.
+ */
+function SportsValueColumn({ entry }: { entry: SportsAgent }): ReactElement {
+  return (
+    <div tw="flex flex-col items-end">
+      <span tw="text-xl" style={{ color: COLORS.table.textLight }}>
+        {formatAmount(entry.averageBrierScore, 4)}
+      </span>
+      <span tw="text-sm" style={{ color: COLORS.table.textSecondary }}>
+        {entry.gamesScored} game{entry.gamesScored !== 1 ? "s" : ""}
+      </span>
+    </div>
+  );
+}
+
+/**
+ * Props for the leaderboard table component.
+ */
+interface LeaderboardTableProps {
+  entries: LeaderboardEntry[];
+  competitionType: CompetitionType;
+}
+
+/**
+ * Leaderboard table component for the OG image.
+ * @param props - Component props.
+ * @param props.entries - Array of leaderboard entries.
+ * @param props.competitionType - The type of competition.
+ * @returns React element for the leaderboard table.
+ */
+function LeaderboardTable({
+  entries,
+  competitionType,
+}: LeaderboardTableProps): ReactElement {
+  const valueColumnHeader = getValueColumnHeader(competitionType);
+
+  return (
+    <div
+      tw="flex flex-col w-full rounded-lg overflow-hidden"
+      style={{ border: `1px solid ${COLORS.table.border}` }}
+    >
+      {/* Header */}
+      <div
+        tw="flex w-full px-8 py-3 text-sm font-semibold tracking-wider justify-between"
+        style={{
+          backgroundColor: COLORS.table.headerBg,
+          color: COLORS.table.headerText,
+          borderBottom: `1px solid ${COLORS.table.border}`,
+        }}
+      >
+        <div tw="w-20">Rank</div>
+        <div tw="flex-1">Agent</div>
+        <div>{valueColumnHeader}</div>
+      </div>
+
+      {/* Rows */}
+      {entries.map((entry, index) => (
+        <LeaderboardRow
+          key={entry.id}
+          entry={entry}
+          index={index}
+          isLast={index === entries.length - 1}
+        />
+      ))}
+    </div>
+  );
+}
+
+/**
+ * Props for the CTA button component.
+ */
+interface CtaButtonProps {
+  text: string;
+}
+
+/**
+ * CTA button component for the OG image.
+ * @param props - Component props.
+ * @param props.text - The button text.
+ * @returns React element for the CTA button.
+ */
+function CtaButton({ text }: CtaButtonProps): ReactElement {
+  return (
+    <div
+      tw="flex items-center justify-center rounded-xl text-white font-semibold mt-20 px-42 py-7 text-4xl tracking-widest w-full"
+      style={{
+        background: `linear-gradient(180deg, ${COLORS.button.light} 0%, ${COLORS.button.base} 100%)`,
+        boxShadow: "0 4px 20px rgba(0, 0, 0, 0.45)",
+        color: COLORS.text.light,
+      }}
+    >
+      {text}
+    </div>
+  );
+}
+
+/**
+ * Props for the right section active component.
+ */
+interface RightSectionActiveOrEndedProps {
+  competition: Competition;
+  entries: LeaderboardEntry[];
+}
+
+/**
+ * Right section active component for the OG image.
+ * @param props - Component props.
+ * @param props.competition - The competition object.
+ * @param props.entries - Array of leaderboard entries.
+ * @returns React element for the right section when competition is active or ended.
+ */
+function RightSectionActiveOrEnded({
+  competition,
+  entries,
+}: RightSectionActiveOrEndedProps): ReactElement {
+  return (
+    <div tw="flex flex-col pt-30 w-full text-white h-full justify-between">
+      <LeaderboardTable entries={entries} competitionType={competition.type} />
+      <CtaButton text={getCtaText(competition)} />
+    </div>
+  );
+}
+
+/**
+ * Props for the right section pending component.
+ */
+interface RightSectionPendingProps {
+  competition: Competition;
+  totalRewards: bigint;
+  tokenSvg: string;
+}
+
+/**
+ * Right section pending component for the OG image.
+ * @param props - Component props.
+ * @param props.competition - The competition object.
+ * @param props.totalRewards - The total rewards amount.
+ * @param props.tokenSvg - The Recall token SVG data URL.
+ * @returns React element for the right section when competition is pending.
+ */
+function RightSectionPending({
+  competition,
+  totalRewards,
+  tokenSvg,
+}: RightSectionPendingProps): ReactElement {
+  return (
+    <div tw="flex flex-col items-center text-3xl tracking-wider gap-y-5 h-full pt-30 justify-between">
+      {/* Top text - left aligned */}
+      <div tw="flex flex-col items-start w-full">
+        <div style={{ display: "flex", columnGap: "20px" }}>
+          <span style={{ color: COLORS.text.gray }}>{"///"}</span>
+          <span tw="text-white">PREDICT</span>
+          <span style={{ color: COLORS.text.gray }}>WINNERS</span>
+        </div>
+      </div>
+
+      {/* Reward amount */}
+      <div tw="flex items-center" style={{ gap: "16px" }}>
+        <div tw="flex items-center justify-center w-14 h-14 bg-white rounded-full">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src={tokenSvg} alt="Recall token" width={36} height={36} />
+        </div>
+        <span
+          tw="text-white font-bold text-[120px]"
+          style={{ fontFamily: FONT_SANS }}
+        >
+          {formatBigintAmount(totalRewards, undefined, false)}
+        </span>
+      </div>
+
+      {/* Bottom text - right aligned */}
+      <div tw="flex flex-col items-end w-full">
+        <div style={{ display: "flex", columnGap: "20px" }}>
+          <span tw="text-white">REWARD</span>
+          <span style={{ color: COLORS.text.gray }}>POOL</span>
+          <span style={{ color: COLORS.text.gray }}>{"///"}</span>
+        </div>
+      </div>
+
+      <CtaButton text={getCtaText(competition)} />
+    </div>
+  );
+}
+
+/**
+ * Fallback image component for the OG image.
+ * @param title - The title text to display.
+ * @param fonts - Array of font configurations.
+ * @returns ImageResponse for the fallback image.
+ */
+function FallbackImage(title: string, fonts: FontConfig[]): ImageResponse {
+  return new ImageResponse(
+    (
+      <div
+        tw="flex w-full h-full items-center justify-center text-white text-5xl font-bold"
+        style={{ fontFamily: FONT_MONO, backgroundColor: COLORS.fallbackBg }}
+      >
+        {title}
+      </div>
+    ),
+    { width: OG_WIDTH, height: OG_HEIGHT, fonts },
+  );
+}
+
+// =============================================================================
+// ROUTE HANDLER
+// =============================================================================
+
+/**
+ * Fetches trading competition leaderboard entries.
+ * @param client - The RPC client instance.
+ * @param competitionId - The competition ID.
+ * @param competitionType - The type of trading competition.
+ * @returns Promise resolving to an array of trading agent entries.
+ */
+async function fetchTradingLeaderboard(
+  client: Awaited<ReturnType<typeof createSafeClient>>,
+  competitionId: string,
+  competitionType: "trading" | "perpetual_futures" | "spot_live_trading",
+): Promise<TradingAgent[]> {
+  const result = await client.competitions.getAgents({
+    competitionId,
+    paging: { limit: 3, offset: 0, sort: "rank" },
+    includeInactive: false,
+  });
+
+  if (!result.isSuccess) return [];
+
+  return result.data.agents.map((a) => ({
+    type: competitionType,
+    id: a.id,
+    name: a.name,
+    imageUrl: a.imageUrl,
+    rank: a.rank,
+    portfolioValue: a.portfolioValue,
+    pnl: a.pnl,
+    pnlPercent: a.pnlPercent,
+  }));
+}
+
+/**
+ * Fetches sports prediction competition leaderboard entries.
+ * Merges leaderboard data with agent images from the agents endpoint.
+ * @param client - The RPC client instance.
+ * @param competitionId - The competition ID.
+ * @param competitionType - The type of sports competition.
+ * @returns Promise resolving to an array of sports agent entries.
+ */
+async function fetchSportsLeaderboard(
+  client: Awaited<ReturnType<typeof createSafeClient>>,
+  competitionId: string,
+  competitionType: "sports_prediction",
+): Promise<SportsAgent[]> {
+  const [leaderboardResult, agentsResult] = await Promise.all([
+    client.nfl.getLeaderboard({ competitionId }),
+    client.competitions.getAgents({
+      competitionId,
+      paging: { limit: 3, offset: 0, sort: "rank" },
+      includeInactive: false,
+    }),
+  ]);
+
+  if (!leaderboardResult.isSuccess) return [];
+
+  // Build a map of agent IDs to image URLs
+  const agentImageMap = new Map<string, string | null>();
+  if (agentsResult.isSuccess) {
+    for (const agent of agentsResult.data.agents) {
+      agentImageMap.set(agent.id, agent.imageUrl);
+    }
+  }
+
+  // Filter to competition-level entries and take top 3
+  return (leaderboardResult.data.leaderboard as CompetitionLeaderboardEntry[])
+    .slice(0, 3)
+    .map((entry) => ({
+      type: competitionType,
+      id: entry.agentId,
+      name: entry.agentName ?? "Unknown Agent",
+      imageUrl: agentImageMap.get(entry.agentId) ?? null,
+      rank: entry.rank,
+      averageBrierScore: entry.averageBrierScore,
+      gamesScored: entry.gamesScored,
+    }));
+}
+
+/**
+ * GET route handler for generating OG images for competitions.
+ */
 export async function GET(
   _req: Request,
   context: { params: Promise<{ id: string }> },
 ): Promise<ImageResponse> {
-  const monospaceFontFamily = "Roboto Mono, sans-serif";
-
   try {
     const client = await createSafeClient();
     const { id } = await context.params;
@@ -171,146 +755,66 @@ export async function GET(
       loadFonts(),
       loadAssets(),
     ]);
-
     const { backgroundImage, recallTokenSvg, recallLogoSvg } = assets;
-    const normalFontFamily = "Geist, sans-serif";
 
-    // Fall back to simple image if any required assets failed to load
+    // Return fallback if required data is missing
     if (!competition || !backgroundImage || !recallTokenSvg || !recallLogoSvg) {
-      return new ImageResponse(
-        (
-          <div
-            tw="flex w-full h-full items-center justify-center bg-slate-950 text-white text-5xl font-bold"
-            style={{ fontFamily: monospaceFontFamily }}
-          >
-            {competition?.name || "Recall Competitions"}
-          </div>
-        ),
-        { width: 1200, height: 675, fonts },
-      );
+      return FallbackImage(competition?.name || "Recall Competitions", fonts);
+    }
+
+    // Fetch leaderboard entries for active/ended competitions
+    let leaderboardEntries: LeaderboardEntry[] = [];
+    if (shouldShowAgentsTable(competition.status)) {
+      try {
+        leaderboardEntries =
+          competition.type === "sports_prediction"
+            ? await fetchSportsLeaderboard(client, id, competition.type)
+            : await fetchTradingLeaderboard(client, id, competition.type);
+      } catch (err) {
+        console.error("Failed to load leaderboard:", err);
+      }
     }
 
     const totalRewards =
       BigInt(competition.rewardsTge?.agentPool ?? 0) +
       BigInt(competition.rewardsTge?.userPool ?? 0);
 
+    const showTable =
+      shouldShowAgentsTable(competition.status) &&
+      leaderboardEntries.length > 0;
+
     return new ImageResponse(
       (
         <div
           tw="flex w-full h-full"
           style={{
-            fontFamily: monospaceFontFamily,
+            fontFamily: FONT_MONO,
             backgroundImage: `url(${backgroundImage})`,
             backgroundSize: "cover",
           }}
         >
-          {/* Left section */}
-          <div
-            tw="flex flex-col w-1/2 px-16 pb-16"
-            style={{ justifyContent: "flex-end" }}
-          >
-            <div tw="flex flex-col items-center">
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img
-                src={recallLogoSvg}
-                alt="Recall logo"
-                height={28}
-                width={120}
+          <LeftSection competition={competition} logoSvg={recallLogoSvg} />
+
+          <div tw="flex flex-col w-1/2 px-8 pb-10">
+            {showTable ? (
+              <RightSectionActiveOrEnded
+                competition={competition}
+                entries={leaderboardEntries}
               />
-
-              <h1 tw="text-5xl text-white leading-tight mt-6 text-center font-bold uppercase">
-                {competition.name}
-              </h1>
-
-              <span tw="text-2xl mt-6 tracking-widest text-gray-400 uppercase font-semibold">
-                {formatCompetitionDates(
-                  competition.startDate,
-                  competition.endDate,
-                )}
-              </span>
-            </div>
-          </div>
-
-          {/* Right section */}
-          <div
-            tw="flex flex-col w-1/2 px-12"
-            style={{ justifyContent: "flex-end", paddingBottom: "70px" }}
-          >
-            <div tw="flex flex-col items-center font-normal">
-              {/* Top text - left aligned */}
-              <div tw="flex flex-col items-start w-full">
-                <div
-                  tw="text-3xl tracking-wider"
-                  style={{ display: "flex", columnGap: "20px" }}
-                >
-                  <span tw="text-gray-400">{"///"}</span>
-                  <span tw="text-white">PREDICT</span>
-                  <span tw="text-gray-400">WINNERS</span>
-                </div>
-              </div>
-
-              <div tw="flex items-center mt-2" style={{ gap: "16px" }}>
-                <div tw="flex items-center justify-center w-14 h-14 bg-white rounded-full">
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img
-                    src={recallTokenSvg}
-                    alt="Recall token"
-                    width={36}
-                    height={36}
-                  />
-                </div>
-                <span
-                  tw="text-white font-bold text-[120px]"
-                  style={{ fontFamily: normalFontFamily }}
-                >
-                  {formatBigintAmount(totalRewards, undefined, false)}
-                </span>
-              </div>
-
-              {/* Bottom text - right aligned */}
-              <div tw="flex flex-col items-end w-full mt-2">
-                <div
-                  tw="text-3xl tracking-wider"
-                  style={{ display: "flex", columnGap: "20px" }}
-                >
-                  <span tw="text-white">REWARD</span>
-                  <span tw="text-gray-400">POOL</span>
-                  <span tw="text-gray-400">{"///"}</span>
-                </div>
-              </div>
-
-              <div
-                tw="flex items-center justify-center mt-20 px-42 py-7 rounded-xl text-white text-4xl tracking-widest font-semibold"
-                style={{
-                  background: `linear-gradient(180deg, ${BUTTON_BLUE_LIGHT} 0%, ${BUTTON_BLUE} 100%)`,
-                  boxShadow: "0 4px 20px rgba(0, 0, 0, 0.45)",
-                }}
-              >
-                PREDICT
-              </div>
-            </div>
+            ) : (
+              <RightSectionPending
+                competition={competition}
+                totalRewards={totalRewards}
+                tokenSvg={recallTokenSvg}
+              />
+            )}
           </div>
         </div>
       ),
-      {
-        width: 1200,
-        height: 675,
-        fonts,
-      },
+      { width: OG_WIDTH, height: OG_HEIGHT, fonts },
     );
   } catch (err) {
     console.error("Failed to generate OG image:", err);
-    // Return a simple fallback image on any unexpected error
-    return new ImageResponse(
-      (
-        <div
-          tw="flex w-full h-full items-center justify-center bg-slate-950 text-white text-5xl font-bold"
-          style={{ fontFamily: monospaceFontFamily }}
-        >
-          Recall Competitions
-        </div>
-      ),
-      { width: 1200, height: 675 },
-    );
+    return FallbackImage("Recall Competitions", []);
   }
 }

@@ -23,7 +23,7 @@ export const createMetadata = (
     ? ogImageUrl.startsWith("http")
       ? ogImageUrl
       : `${baseUrl}${ogImageUrl}`
-    : `${baseUrl}/og_image.png`;
+    : `${baseUrl}/og-generic.png`;
   return {
     title,
     description,
