@@ -136,7 +136,6 @@ export const boostAwardService = new BoostAwardService(
   boostRepository,
   stakesRepository,
   userService,
-  config,
 );
 
 export const boostService = new BoostService(
@@ -145,7 +144,6 @@ export const boostService = new BoostService(
   userRepository,
   boostAwardService,
   db,
-  config,
   createLogger("BoostService"),
 );
 
