@@ -8,10 +8,12 @@ import { config } from "dotenv";
 import fs from "fs";
 import path from "path";
 
+import { arenas } from "@recallnet/db/schema/core/defs";
 import {
   MockHyperliquidServer,
   MockSymphonyServer,
   createLogger,
+  db,
   dbManager,
   startLoopsMockServer,
   startServer,
@@ -96,6 +98,15 @@ export async function setup() {
     process.env.EMAIL_MAILING_LIST_ID = "test-mailing-list";
   }
 
+  // Set SportsDataIO variables (NFL mock server runs on port 4569)
+  // The mock server itself is started per-test in nfl-competition.test.ts
+  if (!process.env.SPORTSDATAIO_BASE_URL) {
+    process.env.SPORTSDATAIO_BASE_URL = "http://localhost:4569";
+  }
+  if (!process.env.SPORTSDATAIO_API_KEY) {
+    process.env.SPORTSDATAIO_API_KEY = "mock-api-key";
+  }
+
   log("🚀 Setting up E2E test environment...");
 
   try {
@@ -125,9 +136,61 @@ export async function setup() {
     const HYPERLIQUID_API_URL = "http://localhost:4568";
     testLogger.info(`HYPERLIQUID_API_URL set to: ${HYPERLIQUID_API_URL}`);
 
-    // Start API server
+    // Start API server (runs migrations)
     log("🌐 Starting API server...");
     await startServer();
+
+    // Create default arenas for tests (after migrations have run)
+    log("🏟️  Creating default arenas...");
+    await db
+      .insert(arenas)
+      .values({
+        id: "default-paper-arena",
+        name: "Default Paper Trading Arena",
+        createdBy: "system",
+        category: "crypto_trading",
+        skill: "spot_paper_trading",
+        kind: "Competition",
+      })
+      .onConflictDoNothing();
+
+    await db
+      .insert(arenas)
+      .values({
+        id: "default-perps-arena",
+        name: "Default Perpetual Futures Arena",
+        createdBy: "system",
+        category: "crypto_trading",
+        skill: "perpetual_futures",
+        kind: "Competition",
+      })
+      .onConflictDoNothing();
+
+    await db
+      .insert(arenas)
+      .values({
+        id: "default-spot-live-arena",
+        name: "Default Spot Live Trading Arena",
+        createdBy: "system",
+        category: "crypto_trading",
+        skill: "spot_live_trading",
+        kind: "Competition",
+      })
+      .onConflictDoNothing();
+
+    await db
+      .insert(arenas)
+      .values({
+        id: "default-nfl-game-prediction-arena",
+        name: "Default NFL Game Prediction Arena",
+        createdBy: "system",
+        category: "sports",
+        skill: "sports_prediction",
+        kind: "Competition",
+      })
+      .onConflictDoNothing();
+
+    log("✅ Default arenas created");
 
     log("✅ Test environment ready");
   } catch (error) {
