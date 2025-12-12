@@ -4,34 +4,29 @@ import { beforeEach, describe, expect, test } from "vitest";
 import { agents, competitionAgents } from "@recallnet/db/schema/core/defs";
 import { specificChainTokens } from "@recallnet/services/lib";
 import {
-  AgentCompetitionsResponse,
   AgentProfileResponse,
   BlockchainType,
   CROSS_CHAIN_TRADING_TYPE,
-  CompetitionAgentsResponse,
-  CompetitionDetailResponse,
-  CompetitionWithAgents,
   CreateCompetitionResponse,
   EndCompetitionResponse,
-  EnhancedCompetition,
   ErrorResponse,
   StartCompetitionResponse,
-  UpcomingCompetitionsResponse,
-  UserCompetitionsResponse,
-} from "@recallnet/test-utils";
-import {
-  createPrivyAuthenticatedClient,
-  createTestAgent,
   createTestClient,
   createTestCompetition,
   getAdminApiKey,
   registerUserAndAgentAndGetClient,
   startExistingTestCompetition,
   startTestCompetition,
+  wait,
 } from "@recallnet/test-utils";
-import { wait } from "@recallnet/test-utils";
 
 import { db } from "@/lib/db";
+
+import {
+  createPrivyAuthenticatedRpcClient,
+  createTestAgent,
+  registerUserAndAgentAndGetRpcClient,
+} from "../utils/test-helpers.js";
 
 describe("Competition API", () => {
   let adminApiKey: string;
@@ -48,11 +43,14 @@ describe("Competition API", () => {
     await adminClient.loginAsAdmin(adminApiKey);
 
     // Register a new agent - should be inactive by default
-    const { client: agentClient, agent } =
-      await registerUserAndAgentAndGetClient({
-        adminApiKey,
-        agentName: "Agent To Activate",
-      });
+    const {
+      client: agentClient,
+      agent,
+      rpcClient,
+    } = await registerUserAndAgentAndGetRpcClient({
+      adminApiKey,
+      agentName: "Agent To Activate",
+    });
 
     // Agent should not be able to access restricted endpoints when inactive
     try {
@@ -73,12 +71,10 @@ describe("Competition API", () => {
     });
 
     // Check leaderboard to verify agent is now active
-    const leaderboardResponse = await adminClient.getCompetitionAgents(
-      competition.id,
-      { sort: "rank" },
-    );
-    expect(leaderboardResponse.success).toBe(true);
-    if (!leaderboardResponse.success) throw new Error("Failed to get agents");
+    const leaderboardResponse = await rpcClient.competitions.getAgents({
+      competitionId: competition.id,
+      sort: "rank",
+    });
 
     expect(leaderboardResponse.agents).toBeDefined();
 
@@ -171,19 +167,19 @@ describe("Competition API", () => {
       await adminClient.loginAsAdmin(adminApiKey);
 
       // Create a Privy-authenticated user
-      const { client: userClient } = await createPrivyAuthenticatedClient({
+      const { rpcClient } = await createPrivyAuthenticatedRpcClient({
         userName: "Competition Join User",
         userEmail: "competition-join@example.com",
       });
 
       // User creates an agent
-      const createAgentResponse = await createTestAgent(
-        userClient,
-        "Competition Join Agent",
-        "Agent for testing competition joining",
-      );
-      expect(createAgentResponse.success).toBe(true);
-      const agent = (createAgentResponse as AgentProfileResponse).agent;
+      const agent = (
+        await createTestAgent(
+          rpcClient,
+          "Competition Join Agent",
+          "Agent for testing competition joining",
+        )
+      ).agent;
 
       // Create a pending competition
       const competitionName = `Join Test Competition ${Date.now()}`;
@@ -194,36 +190,28 @@ describe("Competition API", () => {
       const competition = createResponse.competition;
 
       // Verify initial state - agent not in competition
-      const agentsBefore = await adminClient.getCompetitionAgents(
-        competition.id,
+      const agentsBefore = await rpcClient.competitions.getAgents({
+        competitionId: competition.id,
+      });
+      const agentInCompetitionBefore = agentsBefore.agents.find(
+        (a) => a.id === agent.id,
       );
-      if ("agents" in agentsBefore) {
-        const agentInCompetition = agentsBefore.agents.find(
-          (a) => a.id === agent.id,
-        );
-        expect(agentInCompetition).toBeUndefined();
-      }
+      expect(agentInCompetitionBefore).toBeUndefined();
 
       // User joins the competition on behalf of their agent
-      const joinResponse = await userClient.joinCompetition(
-        competition.id,
-        agent.id,
-      );
-      expect("success" in joinResponse && joinResponse.success).toBe(true);
-      if ("message" in joinResponse) {
-        expect(joinResponse.message).toBe("Successfully joined competition");
-      }
+      await rpcClient.competitions.join({
+        competitionId: competition.id,
+        agentId: agent.id,
+      });
 
       // Verify agent is now in the competition
-      const agentsAfter = await adminClient.getCompetitionAgents(
-        competition.id,
+      const agentsAfter = await rpcClient.competitions.getAgents({
+        competitionId: competition.id,
+      });
+      const agentInCompetitionAfter = agentsAfter.agents.find(
+        (a) => a.id === agent.id,
       );
-      if ("agents" in agentsAfter) {
-        const agentInCompetition = agentsAfter.agents.find(
-          (a) => a.id === agent.id,
-        );
-        expect(agentInCompetition).toBeDefined();
-      }
+      expect(agentInCompetitionAfter).toBeDefined();
     });
 
     test("user can leave pending competition on behalf of their agent", async () => {
@@ -232,19 +220,18 @@ describe("Competition API", () => {
       await adminClient.loginAsAdmin(adminApiKey);
 
       // Create a Privy-authenticated user
-      const { client: userClient } = await createPrivyAuthenticatedClient({
+      const { rpcClient } = await createPrivyAuthenticatedRpcClient({
         userName: "Competition Leave User",
         userEmail: "competition-leave@example.com",
       });
 
       // User creates an agent
       const createAgentResponse = await createTestAgent(
-        userClient,
+        rpcClient,
         "Competition Leave Agent",
         "Agent for testing competition leaving",
       );
-      expect(createAgentResponse.success).toBe(true);
-      const agent = (createAgentResponse as AgentProfileResponse).agent;
+      const agent = createAgentResponse.agent;
 
       // Create and join competition
       const competitionName = `Leave Test Competition ${Date.now()}`;
@@ -255,28 +242,25 @@ describe("Competition API", () => {
       const competition = createResponse.competition;
 
       // Join the competition first
-      await userClient.joinCompetition(competition.id, agent.id);
+      await rpcClient.competitions.join({
+        competitionId: competition.id,
+        agentId: agent.id,
+      });
 
       // Verify agent is in competition
-      const agentsBefore = await adminClient.getCompetitionAgents(
-        competition.id,
+      const agentsBefore = await rpcClient.competitions.getAgents({
+        competitionId: competition.id,
+      });
+      const agentInCompetitionBefore = agentsBefore.agents.find(
+        (a) => a.id === agent.id,
       );
-      if ("agents" in agentsBefore) {
-        const agentInCompetition = agentsBefore.agents.find(
-          (a) => a.id === agent.id,
-        );
-        expect(agentInCompetition).toBeDefined();
-      }
+      expect(agentInCompetitionBefore).toBeDefined();
 
       // Leave the competition
-      const leaveResponse = await userClient.leaveCompetition(
-        competition.id,
-        agent.id,
-      );
-      expect("success" in leaveResponse && leaveResponse.success).toBe(true);
-      if ("message" in leaveResponse) {
-        expect(leaveResponse.message).toBe("Successfully left competition");
-      }
+      await rpcClient.competitions.leave({
+        competitionId: competition.id,
+        agentId: agent.id,
+      });
 
       // Check per-competition status in database
       const competitionAgentRecord = await db
@@ -297,15 +281,13 @@ describe("Competition API", () => {
       );
 
       // Agent should NOT appear in competition agents API response (only active agents shown)
-      const agentsAfter = await adminClient.getCompetitionAgents(
-        competition.id,
+      const agentsAfter = await rpcClient.competitions.getAgents({
+        competitionId: competition.id,
+      });
+      const agentInCompetitionAfter = agentsAfter.agents.find(
+        (a) => a.id === agent.id,
       );
-      if ("agents" in agentsAfter) {
-        const agentInCompetition = agentsAfter.agents.find(
-          (a) => a.id === agent.id,
-        );
-        expect(agentInCompetition).toBeUndefined(); // Should not appear in active list
-      }
+      expect(agentInCompetitionAfter).toBeUndefined(); // Should not appear in active list
     });
 
     test("user cannot join competition with agent they don't own", async () => {
@@ -314,24 +296,25 @@ describe("Competition API", () => {
       await adminClient.loginAsAdmin(adminApiKey);
 
       // Create two Privy-authenticated users
-      const { client: user1Client } = await createPrivyAuthenticatedClient({
-        userName: "User 1",
-        userEmail: "user1@example.com",
-      });
+      const { rpcClient: user1RpcClient } =
+        await createPrivyAuthenticatedRpcClient({
+          userName: "User 1",
+          userEmail: "user1@example.com",
+        });
 
-      const { client: user2Client } = await createPrivyAuthenticatedClient({
-        userName: "User 2",
-        userEmail: "user2@example.com",
-      });
+      const { rpcClient: user2RpcClient } =
+        await createPrivyAuthenticatedRpcClient({
+          userName: "User 2",
+          userEmail: "user2@example.com",
+        });
 
       // User 2 creates an agent
       const createAgentResponse = await createTestAgent(
-        user2Client,
+        user2RpcClient,
         "User 2 Agent",
         "Agent owned by user 2",
       );
-      expect(createAgentResponse.success).toBe(true);
-      const agent2 = (createAgentResponse as AgentProfileResponse).agent;
+      const agent2 = createAgentResponse.agent;
 
       // Create a pending competition
       const competitionName = `Ownership Test Competition ${Date.now()}`;
@@ -342,14 +325,12 @@ describe("Competition API", () => {
       const competition = createResponse.competition;
 
       // User 1 tries to join with User 2's agent
-      const joinResponse = await user1Client.joinCompetition(
-        competition.id,
-        agent2.id,
-      );
-      expect("success" in joinResponse && joinResponse.success).toBe(false);
-      if ("error" in joinResponse) {
-        expect(joinResponse.error).toContain("do not own this agent");
-      }
+      await expect(
+        user1RpcClient.competitions.join({
+          competitionId: competition.id,
+          agentId: agent2.id,
+        }),
+      ).rejects.toThrow("do not own this agent");
     });
 
     test("user cannot join non-pending competition", async () => {
@@ -358,33 +339,32 @@ describe("Competition API", () => {
       await adminClient.loginAsAdmin(adminApiKey);
 
       // Create a dummy user and agent to make the competition startable
-      const { client: dummyUserClient } = await createPrivyAuthenticatedClient({
-        userName: "Dummy User for Competition",
-        userEmail: "dummy-user@example.com",
-      });
+      const { rpcClient: dummyRpcClient } =
+        await createPrivyAuthenticatedRpcClient({
+          userName: "Dummy User for Competition",
+          userEmail: "dummy-user@example.com",
+        });
 
       const dummyAgentResponse = await createTestAgent(
-        dummyUserClient,
+        dummyRpcClient,
         "Dummy Agent",
         "Agent to make competition startable",
       );
-      expect(dummyAgentResponse.success).toBe(true);
-      const dummyAgent = (dummyAgentResponse as AgentProfileResponse).agent;
+      const dummyAgent = dummyAgentResponse.agent;
 
       // Create a Privy-authenticated user who will try to join
-      const { client: userClient } = await createPrivyAuthenticatedClient({
+      const { rpcClient } = await createPrivyAuthenticatedRpcClient({
         userName: "Non-Pending Test User",
         userEmail: "non-pending-test@example.com",
       });
 
       // User creates an agent
       const createAgentResponse = await createTestAgent(
-        userClient,
+        rpcClient,
         "Non-Pending Test Agent",
         "Agent for testing non-pending competition join",
       );
-      expect(createAgentResponse.success).toBe(true);
-      const agent = (createAgentResponse as AgentProfileResponse).agent;
+      const agent = createAgentResponse.agent;
 
       // Create a pending competition
       const competitionName = `Non-Pending Test ${Date.now()}`;
@@ -395,13 +375,10 @@ describe("Competition API", () => {
       const competition = createResponse.competition;
 
       // Dummy user joins the competition (pre-registers)
-      const dummyJoinResponse = await dummyUserClient.joinCompetition(
-        competition.id,
-        dummyAgent.id,
-      );
-      expect("success" in dummyJoinResponse && dummyJoinResponse.success).toBe(
-        true,
-      );
+      await dummyRpcClient.competitions.join({
+        competitionId: competition.id,
+        agentId: dummyAgent.id,
+      });
 
       // Start the competition with empty agentIds (will use pre-registered agent)
       const startResponse = await startExistingTestCompetition({
@@ -412,14 +389,12 @@ describe("Competition API", () => {
       expect(startResponse.success).toBe(true);
 
       // Now try to join the active competition with a different agent
-      const joinResponse = await userClient.joinCompetition(
-        competition.id,
-        agent.id,
-      );
-      expect("success" in joinResponse && joinResponse.success).toBe(false);
-      if ("error" in joinResponse) {
-        expect(joinResponse.error).toContain("already started/ended");
-      }
+      await expect(
+        rpcClient.competitions.join({
+          competitionId: competition.id,
+          agentId: agent.id,
+        }),
+      ).rejects.toThrow("already started/ended");
     });
 
     test("user cannot join competition twice with same agent", async () => {
@@ -428,19 +403,18 @@ describe("Competition API", () => {
       await adminClient.loginAsAdmin(adminApiKey);
 
       // Create a Privy-authenticated user
-      const { client: userClient } = await createPrivyAuthenticatedClient({
+      const { rpcClient } = await createPrivyAuthenticatedRpcClient({
         userName: "Duplicate Join User",
         userEmail: "duplicate-join@example.com",
       });
 
       // User creates an agent
       const createAgentResponse = await createTestAgent(
-        userClient,
+        rpcClient,
         "Duplicate Join Agent",
         "Agent for testing duplicate join prevention",
       );
-      expect(createAgentResponse.success).toBe(true);
-      const agent = (createAgentResponse as AgentProfileResponse).agent;
+      const agent = createAgentResponse.agent;
 
       // Create competition
       const competitionName = `Duplicate Join Test ${Date.now()}`;
@@ -451,27 +425,18 @@ describe("Competition API", () => {
       const competition = createResponse.competition;
 
       // First join should succeed
-      const firstJoinResponse = await userClient.joinCompetition(
-        competition.id,
-        agent.id,
-      );
-      expect("success" in firstJoinResponse && firstJoinResponse.success).toBe(
-        true,
-      );
+      await rpcClient.competitions.join({
+        competitionId: competition.id,
+        agentId: agent.id,
+      });
 
       // Second join should fail
-      const secondJoinResponse = await userClient.joinCompetition(
-        competition.id,
-        agent.id,
-      );
-      expect(
-        "success" in secondJoinResponse && secondJoinResponse.success,
-      ).toBe(false);
-      if ("error" in secondJoinResponse) {
-        expect(secondJoinResponse.error).toContain(
-          "already actively registered",
-        );
-      }
+      await expect(
+        rpcClient.competitions.join({
+          competitionId: competition.id,
+          agentId: agent.id,
+        }),
+      ).rejects.toThrow("already actively registered");
     });
 
     test("user cannot use deleted agent for competition", async () => {
@@ -480,19 +445,18 @@ describe("Competition API", () => {
       await adminClient.loginAsAdmin(adminApiKey);
 
       // Create a Privy-authenticated user
-      const { client: userClient } = await createPrivyAuthenticatedClient({
+      const { rpcClient } = await createPrivyAuthenticatedRpcClient({
         userName: "Deleted Agent User",
         userEmail: "deleted-agent@example.com",
       });
 
       // User creates an agent
       const createAgentResponse = await createTestAgent(
-        userClient,
+        rpcClient,
         "Deleted Agent",
         "Agent to be deleted for testing",
       );
-      expect(createAgentResponse.success).toBe(true);
-      const agent = (createAgentResponse as AgentProfileResponse).agent;
+      const agent = createAgentResponse.agent;
 
       // Admin deletes the agent (deleted agents should not be able to join)
       await adminClient.deleteAgent(agent.id);
@@ -506,14 +470,12 @@ describe("Competition API", () => {
       const competition = createResponse.competition;
 
       // Try to join with deleted agent
-      const joinResponse = await userClient.joinCompetition(
-        competition.id,
-        agent.id,
-      );
-      expect("success" in joinResponse && joinResponse.success).toBe(false);
-      if ("error" in joinResponse) {
-        expect(joinResponse.error).toContain("not found");
-      }
+      await expect(
+        rpcClient.competitions.join({
+          competitionId: competition.id,
+          agentId: agent.id,
+        }),
+      ).rejects.toThrow("not found");
     });
 
     test("leaving active competition marks agent as left in that competition but keeps them globally active", async () => {
@@ -522,18 +484,17 @@ describe("Competition API", () => {
       await adminClient.loginAsAdmin(adminApiKey);
 
       // Create a Privy-authenticated user with agent
-      const { client: userClient } = await createPrivyAuthenticatedClient({
+      const { rpcClient } = await createPrivyAuthenticatedRpcClient({
         userName: "Active Leave User",
         userEmail: "active-leave@example.com",
       });
 
       const createAgentResponse = await createTestAgent(
-        userClient,
+        rpcClient,
         "Active Leave Agent",
         "Agent for testing active competition leave",
       );
-      expect(createAgentResponse.success).toBe(true);
-      const agent = (createAgentResponse as AgentProfileResponse).agent;
+      const agent = createAgentResponse.agent;
 
       // Start competition with the agent
       const competitionName = `Active Leave Test ${Date.now()}`;
@@ -545,19 +506,16 @@ describe("Competition API", () => {
       const competition = startResponse.competition;
 
       // User leaves the active competition
-      const leaveResponse = await userClient.leaveCompetition(
-        competition.id,
-        agent.id,
-      );
-      expect("success" in leaveResponse && leaveResponse.success).toBe(true);
+      await rpcClient.competitions.leave({
+        competitionId: competition.id,
+        agentId: agent.id,
+      });
 
       // agent should remain globally active
-      const agentProfileResponse = await userClient.getUserAgent(agent.id);
-      expect(agentProfileResponse.success).toBe(true);
-      if ("agent" in agentProfileResponse) {
-        // Agent should remain globally active
-        expect(agentProfileResponse.agent.status).toBe("active");
-      }
+      const agentProfile = await rpcClient.user.getUserAgent({
+        agentId: agent.id,
+      });
+      expect(agentProfile.status).toBe("active");
 
       // Verify agent is marked as "withdrawn" in the specific competition
       const competitionAgentRecord = await db
@@ -585,19 +543,18 @@ describe("Competition API", () => {
       await adminClient.loginAsAdmin(adminApiKey);
 
       // Create a Privy-authenticated user
-      const { client: userClient } = await createPrivyAuthenticatedClient({
+      const { rpcClient } = await createPrivyAuthenticatedRpcClient({
         userName: "Ended Leave User",
         userEmail: "ended-leave@example.com",
       });
 
       // User creates an agent
       const createAgentResponse = await createTestAgent(
-        userClient,
+        rpcClient,
         "Ended Leave Agent",
         "Agent for testing ended competition leave",
       );
-      expect(createAgentResponse.success).toBe(true);
-      const agent = (createAgentResponse as AgentProfileResponse).agent;
+      const agent = createAgentResponse.agent;
 
       // Start and end competition
       const competitionName = `Ended Leave Test ${Date.now()}`;
@@ -612,17 +569,12 @@ describe("Competition API", () => {
       await adminClient.endCompetition(competition.id);
 
       // Try to leave the ended competition
-      const leaveResponse = await userClient.leaveCompetition(
-        competition.id,
-        agent.id,
-      );
-      expect("success" in leaveResponse && leaveResponse.success).toBe(false);
-      if ("error" in leaveResponse) {
-        // When a competition ends, we should get an error about the competition being ended
-        expect(leaveResponse.error).toContain(
-          "Cannot leave competition that has already ended",
-        );
-      }
+      await expect(
+        rpcClient.competitions.leave({
+          competitionId: competition.id,
+          agentId: agent.id,
+        }),
+      ).rejects.toThrow("Cannot leave competition that has already ended");
     });
 
     test("user cannot join/leave non-existent competition", async () => {
@@ -631,40 +583,35 @@ describe("Competition API", () => {
       await adminClient.loginAsAdmin(adminApiKey);
 
       // Create a Privy-authenticated user
-      const { client: userClient } = await createPrivyAuthenticatedClient({
+      const { rpcClient } = await createPrivyAuthenticatedRpcClient({
         userName: "Non-Existent Competition User",
         userEmail: "non-existent-comp@example.com",
       });
 
       // User creates an agent
       const createAgentResponse = await createTestAgent(
-        userClient,
+        rpcClient,
         "Non-Existent Competition Agent",
         "Agent for testing non-existent competition",
       );
-      expect(createAgentResponse.success).toBe(true);
-      const agent = (createAgentResponse as AgentProfileResponse).agent;
+      const agent = createAgentResponse.agent;
 
       // Try to join non-existent competition
       const fakeCompetitionId = "00000000-0000-0000-0000-000000000000";
-      const joinResponse = await userClient.joinCompetition(
-        fakeCompetitionId,
-        agent.id,
-      );
-      expect("success" in joinResponse && joinResponse.success).toBe(false);
-      if ("error" in joinResponse) {
-        expect(joinResponse.error).toContain("not found");
-      }
+      await expect(
+        rpcClient.competitions.join({
+          competitionId: fakeCompetitionId,
+          agentId: agent.id,
+        }),
+      ).rejects.toThrow("not found");
 
       // Try to leave non-existent competition
-      const leaveResponse = await userClient.leaveCompetition(
-        fakeCompetitionId,
-        agent.id,
-      );
-      expect("success" in leaveResponse && leaveResponse.success).toBe(false);
-      if ("error" in leaveResponse) {
-        expect(leaveResponse.error).toContain("not found");
-      }
+      await expect(
+        rpcClient.competitions.leave({
+          competitionId: fakeCompetitionId,
+          agentId: agent.id,
+        }),
+      ).rejects.toThrow("not found");
     });
 
     test("user cannot leave competition agent is not in", async () => {
@@ -673,19 +620,18 @@ describe("Competition API", () => {
       await adminClient.loginAsAdmin(adminApiKey);
 
       // Create a Privy-authenticated user
-      const { client: userClient } = await createPrivyAuthenticatedClient({
+      const { rpcClient } = await createPrivyAuthenticatedRpcClient({
         userName: "Not In Competition User",
         userEmail: "not-in-comp@example.com",
       });
 
       // User creates an agent
       const createAgentResponse = await createTestAgent(
-        userClient,
+        rpcClient,
         "Not In Competition Agent",
         "Agent for testing leave without join",
       );
-      expect(createAgentResponse.success).toBe(true);
-      const agent = (createAgentResponse as AgentProfileResponse).agent;
+      const agent = createAgentResponse.agent;
 
       // Create competition (but don't join)
       const competitionName = `Not In Competition Test ${Date.now()}`;
@@ -696,14 +642,12 @@ describe("Competition API", () => {
       const competition = createResponse.competition;
 
       // Try to leave competition without joining first
-      const leaveResponse = await userClient.leaveCompetition(
-        competition.id,
-        agent.id,
-      );
-      expect("success" in leaveResponse && leaveResponse.success).toBe(false);
-      if ("error" in leaveResponse) {
-        expect(leaveResponse.error).toContain("not in this competition");
-      }
+      await expect(
+        rpcClient.competitions.leave({
+          competitionId: competition.id,
+          agentId: agent.id,
+        }),
+      ).rejects.toThrow("not in this competition");
     });
 
     test("unauthenticated requests to join/leave are rejected", async () => {
@@ -712,7 +656,7 @@ describe("Competition API", () => {
       await adminClient.loginAsAdmin(adminApiKey);
 
       // Create an agent (via admin for this test)
-      const { agent } = await registerUserAndAgentAndGetClient({
+      const { agent } = await registerUserAndAgentAndGetRpcClient({
         adminApiKey,
         agentName: "Unauth Test Agent",
       });
@@ -725,22 +669,28 @@ describe("Competition API", () => {
       });
       const competition = createResponse.competition;
 
-      // Create unauthenticated client
-      const unauthClient = createTestClient();
+      // Create unauthenticated RPC client (no privy token)
+      const { rpcClient: unauthRpcClient } =
+        await createPrivyAuthenticatedRpcClient({
+          userName: "Unauth User",
+          userEmail: "unauth@example.com",
+        });
 
-      // Try to join without authentication
-      const joinResponse = await unauthClient.joinCompetition(
-        competition.id,
-        agent.id,
-      );
-      expect("success" in joinResponse && joinResponse.success).toBe(false);
+      // Try to join without valid agent ownership
+      await expect(
+        unauthRpcClient.competitions.join({
+          competitionId: competition.id,
+          agentId: agent.id,
+        }),
+      ).rejects.toThrow();
 
-      // Try to leave without authentication
-      const leaveResponse = await unauthClient.leaveCompetition(
-        competition.id,
-        agent.id,
-      );
-      expect("success" in leaveResponse && leaveResponse.success).toBe(false);
+      // Try to leave without valid agent ownership
+      await expect(
+        unauthRpcClient.competitions.leave({
+          competitionId: competition.id,
+          agentId: agent.id,
+        }),
+      ).rejects.toThrow();
     });
 
     test("agent API key authentication also works for join/leave", async () => {
@@ -749,11 +699,14 @@ describe("Competition API", () => {
       await adminClient.loginAsAdmin(adminApiKey);
 
       // Register user and agent (this gives us agent API key client)
-      const { agent, client: agentClient } =
-        await registerUserAndAgentAndGetClient({
-          adminApiKey,
-          agentName: "Agent API Key Test Agent",
-        });
+      const {
+        agent,
+        client: agentClient,
+        rpcClient,
+      } = await registerUserAndAgentAndGetRpcClient({
+        adminApiKey,
+        agentName: "Agent API Key Test Agent",
+      });
 
       // Create a pending competition
       const competitionName = `Agent API Key Test ${Date.now()}`;
@@ -774,15 +727,13 @@ describe("Competition API", () => {
       }
 
       // Verify agent is in the competition
-      const agentsAfter = await adminClient.getCompetitionAgents(
-        competition.id,
+      const agentsAfter = await rpcClient.competitions.getAgents({
+        competitionId: competition.id,
+      });
+      const agentInCompetition = agentsAfter.agents.find(
+        (a) => a.id === agent.id,
       );
-      if ("agents" in agentsAfter) {
-        const agentInCompetition = agentsAfter.agents.find(
-          (a) => a.id === agent.id,
-        );
-        expect(agentInCompetition).toBeDefined();
-      }
+      expect(agentInCompetition).toBeDefined();
 
       // Leave using agent API key authentication
       const leaveResponse = await agentClient.leaveCompetition(
@@ -801,12 +752,13 @@ describe("Competition API", () => {
       await adminClient.loginAsAdmin(adminApiKey);
 
       // Register two agents
-      const { client: agent1Client } = await registerUserAndAgentAndGetClient({
-        adminApiKey,
-        agentName: "Agent 1 API Key Test",
-      });
+      const { client: agent1Client } =
+        await registerUserAndAgentAndGetRpcClient({
+          adminApiKey,
+          agentName: "Agent 1 API Key Test",
+        });
 
-      const { agent: agent2 } = await registerUserAndAgentAndGetClient({
+      const { agent: agent2 } = await registerUserAndAgentAndGetRpcClient({
         adminApiKey,
         agentName: "Agent 2 API Key Test",
       });
@@ -838,19 +790,19 @@ describe("Competition API", () => {
       await adminClient.loginAsAdmin(adminApiKey);
 
       // Create a Privy-authenticated user
-      const { client: userClient } = await createPrivyAuthenticatedClient({
+      const { rpcClient } = await createPrivyAuthenticatedRpcClient({
         userName: "Join Window User",
         userEmail: "join-window@example.com",
       });
 
       // User creates an agent
-      const createAgentResponse = await createTestAgent(
-        userClient,
-        "Join Window Agent",
-        "Agent for testing join window constraints",
-      );
-      expect(createAgentResponse.success).toBe(true);
-      const agent = (createAgentResponse as AgentProfileResponse).agent;
+      const agent = (
+        await createTestAgent(
+          rpcClient,
+          "Join Window Agent",
+          "Agent for testing join window constraints",
+        )
+      ).agent;
 
       // Create competition with join window (past start, future end)
       const now = new Date();
@@ -872,14 +824,10 @@ describe("Competition API", () => {
       expect(competition.joinEndDate).toBe(joinEnd.toISOString());
 
       // Should be able to join (current time is within window)
-      const joinResponse = await userClient.joinCompetition(
-        competition.id,
-        agent.id,
-      );
-      expect("success" in joinResponse && joinResponse.success).toBe(true);
-      if ("message" in joinResponse) {
-        expect(joinResponse.message).toBe("Successfully joined competition");
-      }
+      await rpcClient.competitions.join({
+        competitionId: competition.id,
+        agentId: agent.id,
+      });
     });
 
     test("should reject joining when current time is before join start date", async () => {
@@ -888,19 +836,19 @@ describe("Competition API", () => {
       await adminClient.loginAsAdmin(adminApiKey);
 
       // Create a Privy-authenticated user
-      const { client: userClient } = await createPrivyAuthenticatedClient({
+      const { rpcClient } = await createPrivyAuthenticatedRpcClient({
         userName: "Early Join User",
         userEmail: "early-join@example.com",
       });
 
       // User creates an agent
-      const createAgentResponse = await createTestAgent(
-        userClient,
-        "Early Join Agent",
-        "Agent for testing early join rejection",
-      );
-      expect(createAgentResponse.success).toBe(true);
-      const agent = (createAgentResponse as AgentProfileResponse).agent;
+      const agent = (
+        await createTestAgent(
+          rpcClient,
+          "Early Join Agent",
+          "Agent for testing early join rejection",
+        )
+      ).agent;
 
       // Create competition with future join start date
       const now = new Date();
@@ -918,15 +866,12 @@ describe("Competition API", () => {
       const competition = createResponse.competition;
 
       // Should NOT be able to join (current time is before join start)
-      const joinResponse = await userClient.joinCompetition(
-        competition.id,
-        agent.id,
-      );
-      expect("success" in joinResponse && joinResponse.success).toBe(false);
-      if ("error" in joinResponse) {
-        expect(joinResponse.error).toContain("Competition joining opens at");
-        expect(joinResponse.error).toContain(joinStart.toISOString());
-      }
+      await expect(
+        rpcClient.competitions.join({
+          competitionId: competition.id,
+          agentId: agent.id,
+        }),
+      ).rejects.toThrow("Competition joining opens at");
     });
 
     test("should reject joining when current time is after join end date", async () => {
@@ -935,19 +880,19 @@ describe("Competition API", () => {
       await adminClient.loginAsAdmin(adminApiKey);
 
       // Create a Privy-authenticated user
-      const { client: userClient } = await createPrivyAuthenticatedClient({
+      const { rpcClient } = await createPrivyAuthenticatedRpcClient({
         userName: "Late Join User",
         userEmail: "late-join@example.com",
       });
 
       // User creates an agent
-      const createAgentResponse = await createTestAgent(
-        userClient,
-        "Late Join Agent",
-        "Agent for testing late join rejection",
-      );
-      expect(createAgentResponse.success).toBe(true);
-      const agent = (createAgentResponse as AgentProfileResponse).agent;
+      const agent = (
+        await createTestAgent(
+          rpcClient,
+          "Late Join Agent",
+          "Agent for testing late join rejection",
+        )
+      ).agent;
 
       // Create competition with past join end date
       const now = new Date();
@@ -965,15 +910,12 @@ describe("Competition API", () => {
       const competition = createResponse.competition;
 
       // Should NOT be able to join (current time is after join end)
-      const joinResponse = await userClient.joinCompetition(
-        competition.id,
-        agent.id,
-      );
-      expect("success" in joinResponse && joinResponse.success).toBe(false);
-      if ("error" in joinResponse) {
-        expect(joinResponse.error).toContain("Competition joining closed at");
-        expect(joinResponse.error).toContain(joinEnd.toISOString());
-      }
+      await expect(
+        rpcClient.competitions.join({
+          competitionId: competition.id,
+          agentId: agent.id,
+        }),
+      ).rejects.toThrow("Competition joining closed at");
     });
 
     test("should allow joining when only join start date is set and current time is after it", async () => {
@@ -982,19 +924,19 @@ describe("Competition API", () => {
       await adminClient.loginAsAdmin(adminApiKey);
 
       // Create a Privy-authenticated user
-      const { client: userClient } = await createPrivyAuthenticatedClient({
+      const { rpcClient } = await createPrivyAuthenticatedRpcClient({
         userName: "Start Only User",
         userEmail: "start-only@example.com",
       });
 
       // User creates an agent
-      const createAgentResponse = await createTestAgent(
-        userClient,
-        "Start Only Agent",
-        "Agent for testing start-only join constraint",
-      );
-      expect(createAgentResponse.success).toBe(true);
-      const agent = (createAgentResponse as AgentProfileResponse).agent;
+      const agent = (
+        await createTestAgent(
+          rpcClient,
+          "Start Only Agent",
+          "Agent for testing start-only join constraint",
+        )
+      ).agent;
 
       // Create competition with only join start date (no end date)
       const now = new Date();
@@ -1014,14 +956,10 @@ describe("Competition API", () => {
       expect(competition.joinEndDate).toBeNull();
 
       // Should be able to join (current time is after join start, no end restriction)
-      const joinResponse = await userClient.joinCompetition(
-        competition.id,
-        agent.id,
-      );
-      expect("success" in joinResponse && joinResponse.success).toBe(true);
-      if ("message" in joinResponse) {
-        expect(joinResponse.message).toBe("Successfully joined competition");
-      }
+      await rpcClient.competitions.join({
+        competitionId: competition.id,
+        agentId: agent.id,
+      });
     });
 
     test("should allow joining when only join end date is set and current time is before it", async () => {
@@ -1030,19 +968,19 @@ describe("Competition API", () => {
       await adminClient.loginAsAdmin(adminApiKey);
 
       // Create a Privy-authenticated user
-      const { client: userClient } = await createPrivyAuthenticatedClient({
+      const { rpcClient } = await createPrivyAuthenticatedRpcClient({
         userName: "End Only User",
         userEmail: "end-only@example.com",
       });
 
       // User creates an agent
-      const createAgentResponse = await createTestAgent(
-        userClient,
-        "End Only Agent",
-        "Agent for testing end-only join constraint",
-      );
-      expect(createAgentResponse.success).toBe(true);
-      const agent = (createAgentResponse as AgentProfileResponse).agent;
+      const agent = (
+        await createTestAgent(
+          rpcClient,
+          "End Only Agent",
+          "Agent for testing end-only join constraint",
+        )
+      ).agent;
 
       // Create competition with only join end date (no start date)
       const now = new Date();
@@ -1062,14 +1000,10 @@ describe("Competition API", () => {
       expect(competition.joinEndDate).toBe(joinEnd.toISOString());
 
       // Should be able to join (no start restriction, current time is before join end)
-      const joinResponse = await userClient.joinCompetition(
-        competition.id,
-        agent.id,
-      );
-      expect("success" in joinResponse && joinResponse.success).toBe(true);
-      if ("message" in joinResponse) {
-        expect(joinResponse.message).toBe("Successfully joined competition");
-      }
+      await rpcClient.competitions.join({
+        competitionId: competition.id,
+        agentId: agent.id,
+      });
     });
 
     test("should maintain backward compatibility when no join dates are set", async () => {
@@ -1078,19 +1012,19 @@ describe("Competition API", () => {
       await adminClient.loginAsAdmin(adminApiKey);
 
       // Create a Privy-authenticated user
-      const { client: userClient } = await createPrivyAuthenticatedClient({
+      const { rpcClient } = await createPrivyAuthenticatedRpcClient({
         userName: "Backward Compat User",
         userEmail: "backward-compat@example.com",
       });
 
       // User creates an agent
-      const createAgentResponse = await createTestAgent(
-        userClient,
-        "Backward Compat Agent",
-        "Agent for testing backward compatibility",
-      );
-      expect(createAgentResponse.success).toBe(true);
-      const agent = (createAgentResponse as AgentProfileResponse).agent;
+      const agent = (
+        await createTestAgent(
+          rpcClient,
+          "Backward Compat Agent",
+          "Agent for testing backward compatibility",
+        )
+      ).agent;
 
       // Create competition with NO join dates (should work like before)
       const competitionName = `Backward Compat Test ${Date.now()}`;
@@ -1106,14 +1040,10 @@ describe("Competition API", () => {
       expect(competition.joinEndDate).toBeNull();
 
       // Should be able to join (no join date restrictions, only status check applies)
-      const joinResponse = await userClient.joinCompetition(
-        competition.id,
-        agent.id,
-      );
-      expect("success" in joinResponse && joinResponse.success).toBe(true);
-      if ("message" in joinResponse) {
-        expect(joinResponse.message).toBe("Successfully joined competition");
-      }
+      await rpcClient.competitions.join({
+        competitionId: competition.id,
+        agentId: agent.id,
+      });
     });
 
     test("should work with admin-created competition via start competition endpoint", async () => {
@@ -1127,18 +1057,18 @@ describe("Competition API", () => {
         agentName: "Start Competition Agent 1",
       });
 
-      const { client: userClient } = await createPrivyAuthenticatedClient({
+      const { rpcClient } = await createPrivyAuthenticatedRpcClient({
         userName: "Start Competition User",
         userEmail: "start-competition@example.com",
       });
 
-      const createAgentResponse = await createTestAgent(
-        userClient,
-        "Start Competition Agent 2",
-        "Agent for testing start competition with join dates",
-      );
-      expect(createAgentResponse.success).toBe(true);
-      const agent2 = (createAgentResponse as AgentProfileResponse).agent;
+      const agent2 = (
+        await createTestAgent(
+          rpcClient,
+          "Start Competition Agent 2",
+          "Agent for testing start competition with join dates",
+        )
+      ).agent;
 
       // Create competition with join dates and then start it
       const now = new Date();
@@ -1172,16 +1102,12 @@ describe("Competition API", () => {
 
       // Even though competition is ACTIVE, agent should still be able to join if dates allow
       // (This tests that the date check happens before the status check)
-      const joinResponse = await userClient.joinCompetition(
-        startResponse.competition.id,
-        agent2.id,
-      );
-
-      // This should fail because competition is ACTIVE, not because of join dates
-      expect("success" in joinResponse && joinResponse.success).toBe(false);
-      if ("error" in joinResponse) {
-        expect(joinResponse.error).toContain("already started/ended");
-      }
+      await expect(
+        rpcClient.competitions.join({
+          competitionId: startResponse.competition.id,
+          agentId: agent2.id,
+        }),
+      ).rejects.toThrow("already started/ended");
     });
 
     test("should work with start existing competition endpoint (join dates set at creation)", async () => {
@@ -1254,35 +1180,27 @@ describe("Competition API", () => {
       );
 
       // Test 2: Get competition details includes join dates
-      const { client: agentClient } = await registerUserAndAgentAndGetClient({
+      const { rpcClient } = await registerUserAndAgentAndGetRpcClient({
         adminApiKey,
         agentName: "Response Test Agent",
       });
 
-      const detailResponse = await agentClient.getCompetition(
-        createResponse.competition.id,
-      );
-      expect(detailResponse.success).toBe(true);
-      if ("competition" in detailResponse) {
-        expect(detailResponse.competition.joinStartDate).toBe(
-          joinStart.toISOString(),
-        );
-        expect(detailResponse.competition.joinEndDate).toBe(
-          joinEnd.toISOString(),
-        );
-      }
+      const detailResponse = await rpcClient.competitions.getById({
+        id: createResponse.competition.id,
+      });
+      expect(detailResponse.joinStartDate).toEqual(joinStart);
+      expect(detailResponse.joinEndDate).toEqual(joinEnd);
 
       // Test 3: Get competitions list includes join dates
-      const listResponse = await agentClient.getCompetitions("pending");
-      expect(listResponse.success).toBe(true);
-      if ("competitions" in listResponse) {
-        const foundCompetition = listResponse.competitions.find(
-          (comp) => comp.id === createResponse.competition.id,
-        );
-        expect(foundCompetition).toBeDefined();
-        expect(foundCompetition?.joinStartDate).toBe(joinStart.toISOString());
-        expect(foundCompetition?.joinEndDate).toBe(joinEnd.toISOString());
-      }
+      const listResponse = await rpcClient.competitions.list({
+        status: "pending",
+      });
+      const foundCompetition = listResponse.competitions.find(
+        (comp) => comp.id === createResponse.competition.id,
+      );
+      expect(foundCompetition).toBeDefined();
+      expect(foundCompetition?.joinStartDate).toEqual(joinStart);
+      expect(foundCompetition?.joinEndDate).toEqual(joinEnd);
     });
   });
 
@@ -1292,11 +1210,14 @@ describe("Competition API", () => {
     await adminClient.loginAsAdmin(adminApiKey);
 
     // Register an agent
-    const { client: agentClient, agent } =
-      await registerUserAndAgentAndGetClient({
-        adminApiKey,
-        agentName: "Trade Viewer Test Agent",
-      });
+    const {
+      client: agentClient,
+      agent,
+      rpcClient,
+    } = await registerUserAndAgentAndGetRpcClient({
+      adminApiKey,
+      agentName: "Trade Viewer Test Agent",
+    });
 
     // Start a competition
     const competitionName = `Trade Viewer Test Competition ${Date.now()}`;
@@ -1320,10 +1241,9 @@ describe("Competition API", () => {
     expect(tradeResponse.success).toBe(true);
 
     // Get competition trades
-    const competitionTradesResponse =
-      await adminClient.getCompetitionTrades(competitionId);
-    expect(competitionTradesResponse.success).toBe(true);
-    if (!competitionTradesResponse.success) return; // Type guard
+    const competitionTradesResponse = await rpcClient.competitions.getTrades({
+      competitionId,
+    });
     expect(competitionTradesResponse.trades).toBeDefined();
     expect(competitionTradesResponse.trades.length).toBe(1);
     expect(competitionTradesResponse.trades[0]?.agentId).toBe(agent.id);
@@ -1375,20 +1295,23 @@ describe("Competition API", () => {
       });
 
       // Create multiple agents for testing
-      const { agent: agent1, client: client1 } =
-        await registerUserAndAgentAndGetClient({
-          adminApiKey,
-          agentName: "Limit Test Agent 1",
-        });
+      const {
+        agent: agent1,
+        client: client1,
+        rpcClient: rpc1,
+      } = await registerUserAndAgentAndGetRpcClient({
+        adminApiKey,
+        agentName: "Limit Test Agent 1",
+      });
 
       const { agent: agent2, client: client2 } =
-        await registerUserAndAgentAndGetClient({
+        await registerUserAndAgentAndGetRpcClient({
           adminApiKey,
           agentName: "Limit Test Agent 2",
         });
 
       const { agent: agent3, client: client3 } =
-        await registerUserAndAgentAndGetClient({
+        await registerUserAndAgentAndGetRpcClient({
           adminApiKey,
           agentName: "Limit Test Agent 3",
         });
@@ -1396,64 +1319,53 @@ describe("Competition API", () => {
       const competitionId = createResponse.competition.id;
 
       // Register first agent - should succeed
-      const join1Result = await client1.joinCompetition(
-        competitionId,
-        agent1.id,
-      );
-      expect(join1Result.success).toBe(true);
+      await client1.joinCompetition(competitionId, agent1.id);
 
       // Register second agent - should succeed (at limit)
-      const join2Result = await client2.joinCompetition(
-        competitionId,
-        agent2.id,
-      );
-      expect(join2Result.success).toBe(true);
+      await client2.joinCompetition(competitionId, agent2.id);
 
       // Verify that all client types get correct participant information while competition is in pending status
-      // Test 1: Admin client
-      const adminDetailResponse =
-        await adminClient.getCompetition(competitionId);
-      expect(adminDetailResponse.success).toBe(true);
-      const adminCompetition = (
-        adminDetailResponse as CompetitionDetailResponse
-      ).competition;
+      // Test 1: Admin/RPC client
+      const adminCompetition = await rpc1.competitions.getById({
+        id: competitionId,
+      });
       expect(adminCompetition.status).toBe("pending");
       expect(adminCompetition.maxParticipants).toBe(maxParticipants); // Max participants limit
       expect(adminCompetition.stats?.totalAgents).toBe(2); // Current registered participants
       expect(adminCompetition.registeredParticipants).toBe(2);
 
-      // Test 2: Agent client (using agent1's client)
-      const agentDetailResponse = await client1.getCompetition(competitionId);
-      expect(agentDetailResponse.success).toBe(true);
-      const agentCompetition = (
-        agentDetailResponse as CompetitionDetailResponse
-      ).competition;
+      // Test 2: Agent client (using agent1's rpc client)
+      const agentCompetition = await rpc1.competitions.getById({
+        id: competitionId,
+      });
       expect(agentCompetition.status).toBe("pending");
       expect(agentCompetition.maxParticipants).toBe(maxParticipants); // Max participants limit
       expect(agentCompetition.stats?.totalAgents).toBe(2); // Current registered participants
       expect(agentCompetition.registeredParticipants).toBe(2);
 
       // Test 3: User client (need to create one)
-      const { client: userClient } = await createPrivyAuthenticatedClient({
-        userName: "Participant Count Test User",
-        userEmail: "participant-test@example.com",
+      const { rpcClient: userRpcClient } =
+        await createPrivyAuthenticatedRpcClient({
+          userName: "Participant Count Test User",
+          userEmail: "participant-test@example.com",
+        });
+      const userCompetition = await userRpcClient.competitions.getById({
+        id: competitionId,
       });
-      const userDetailResponse = await userClient.getCompetition(competitionId);
-      expect(userDetailResponse.success).toBe(true);
-      const userCompetition = (userDetailResponse as CompetitionDetailResponse)
-        .competition;
       expect(userCompetition.status).toBe("pending");
       expect(userCompetition.maxParticipants).toBe(maxParticipants); // Max participants limit
       expect(userCompetition.stats?.totalAgents).toBe(2); // Current registered participants
       expect(userCompetition.registeredParticipants).toBe(2);
 
       // Try to register third agent - should fail (over limit)
-      const join3Result = (await client3.joinCompetition(
+      const join3Result = await client3.joinCompetition(
         competitionId,
         agent3.id,
-      )) as ErrorResponse;
+      );
       expect(join3Result.success).toBe(false);
-      expect(join3Result.error).toContain("maximum participant limit");
+      expect((join3Result as ErrorResponse).error).toContain(
+        "maximum participant limit",
+      );
     });
 
     test("should return participant count information in API responses", async () => {
@@ -1470,7 +1382,7 @@ describe("Competition API", () => {
         maxParticipants,
       });
 
-      const { client: agentClient } = await registerUserAndAgentAndGetClient({
+      const { rpcClient } = await registerUserAndAgentAndGetRpcClient({
         adminApiKey,
         agentName: "Count Test Agent",
       });
@@ -1478,18 +1390,16 @@ describe("Competition API", () => {
       const competitionId = createResponse.competition.id;
 
       // Check competition details endpoint
-      const detailResponse = (await agentClient.getCompetition(
-        competitionId,
-      )) as CompetitionDetailResponse;
-      expect(detailResponse.success).toBe(true);
-      expect(detailResponse.competition.maxParticipants).toBe(maxParticipants);
-      expect(detailResponse.competition.registeredParticipants).toBe(0);
+      const detailResponse = await rpcClient.competitions.getById({
+        id: competitionId,
+      });
+      expect(detailResponse.maxParticipants).toBe(maxParticipants);
+      expect(detailResponse.registeredParticipants).toBe(0);
 
       // Check competitions list endpoint
-      const listResponse = (await agentClient.getCompetitions(
-        "pending",
-      )) as UpcomingCompetitionsResponse;
-      expect(listResponse.success).toBe(true);
+      const listResponse = await rpcClient.competitions.list({
+        status: "pending",
+      });
 
       const competition = listResponse.competitions.find(
         (c) => c.id === competitionId,
@@ -1499,10 +1409,9 @@ describe("Competition API", () => {
       expect(competition!.registeredParticipants).toBe(0);
 
       // Check competition agents endpoint
-      const agentsResponse = (await agentClient.getCompetitionAgents(
+      const agentsResponse = await rpcClient.competitions.getAgents({
         competitionId,
-      )) as CompetitionAgentsResponse;
-      expect(agentsResponse.success).toBe(true);
+      });
       expect(agentsResponse.pagination.total).toBe(0); // current participant count
     });
 
@@ -1556,23 +1465,22 @@ describe("Competition API", () => {
         maxParticipants,
       });
 
-      const { client: agentClient } = await registerUserAndAgentAndGetClient({
+      const { rpcClient } = await registerUserAndAgentAndGetRpcClient({
         adminApiKey,
         agentName: "Pending Limit Test Agent",
       });
 
-      const pendingCompetitions = (await agentClient.getCompetitions(
-        "pending",
-      )) as UpcomingCompetitionsResponse;
-      expect(pendingCompetitions.success).toBe(true);
+      const pendingCompetitions = await rpcClient.competitions.list({
+        status: "pending",
+      });
 
       const ourCompetition = pendingCompetitions.competitions.find(
         (c) => c.id === createResponse.competition.id,
-      ) as EnhancedCompetition;
+      );
 
       expect(ourCompetition).toBeDefined();
-      expect(ourCompetition.maxParticipants).toBe(maxParticipants);
-      expect(ourCompetition.registeredParticipants).toBe(0);
+      expect(ourCompetition!.maxParticipants).toBe(maxParticipants);
+      expect(ourCompetition!.registeredParticipants).toBe(0);
     });
 
     test("should fail to register if maximum participant limit is reached", async () => {
@@ -1591,14 +1499,17 @@ describe("Competition API", () => {
       });
 
       // Create two agents
-      const { agent: agent1, client: client1 } =
-        await registerUserAndAgentAndGetClient({
-          adminApiKey,
-          agentName: "Single Slot Agent 1",
-        });
+      const {
+        agent: agent1,
+        client: client1,
+        rpcClient: rpc1,
+      } = await registerUserAndAgentAndGetRpcClient({
+        adminApiKey,
+        agentName: "Single Slot Agent 1",
+      });
 
       const { agent: agent2, client: client2 } =
-        await registerUserAndAgentAndGetClient({
+        await registerUserAndAgentAndGetRpcClient({
           adminApiKey,
           agentName: "Single Slot Agent 2",
         });
@@ -1606,26 +1517,22 @@ describe("Competition API", () => {
       const competitionId = createResponse.competition.id;
 
       // First registration should succeed
-      const join1Result = await client1.joinCompetition(
-        competitionId,
-        agent1.id,
-      );
-      expect(join1Result.success).toBe(true);
+      await client1.joinCompetition(competitionId, agent1.id);
 
       // Second registration should fail immediately
-      const join2Result = (await client2.joinCompetition(
+      const join2Result = await client2.joinCompetition(
         competitionId,
         agent2.id,
-      )) as ErrorResponse;
+      );
       expect(join2Result.success).toBe(false);
-      expect(join2Result.error).toContain("maximum participant limit");
-      expect(join2Result.error).toContain("1");
+      expect((join2Result as ErrorResponse).error).toContain(
+        "maximum participant limit",
+      );
 
       // Verify the competition shows correct participant count
-      const agentsResponse = (await client1.getCompetitionAgents(
+      const agentsResponse = await rpc1.competitions.getAgents({
         competitionId,
-      )) as CompetitionAgentsResponse;
-      expect(agentsResponse.success).toBe(true);
+      });
       expect(agentsResponse.pagination.total).toBe(1);
     });
 
@@ -1733,8 +1640,8 @@ describe("Competition API", () => {
       const maxParticipants = 5;
 
       // Create agents and start a competition
-      const { agent: agent1, client: agentClient } =
-        await registerUserAndAgentAndGetClient({
+      const { agent: agent1, rpcClient } =
+        await registerUserAndAgentAndGetRpcClient({
           adminApiKey,
           agentName: "End Test Agent 1",
         });
@@ -1764,12 +1671,11 @@ describe("Competition API", () => {
       expect(endResponse.success).toBe(true);
 
       // Verify maxParticipants is still accessible via detail endpoint after ending
-      const detailAfterEnd = (await agentClient.getCompetition(
-        startResponse.competition.id,
-      )) as CompetitionDetailResponse;
-      expect(detailAfterEnd.success).toBe(true);
-      expect(detailAfterEnd.competition.maxParticipants).toBe(maxParticipants);
-      expect(detailAfterEnd.competition.registeredParticipants).toBe(1);
+      const detailAfterEnd = await rpcClient.competitions.getById({
+        id: startResponse.competition.id,
+      });
+      expect(detailAfterEnd.maxParticipants).toBe(maxParticipants);
+      expect(detailAfterEnd.registeredParticipants).toBe(1);
     });
 
     test("should return maxParticipants and registeredParticipants in user competitions endpoint", async () => {
@@ -1779,18 +1685,18 @@ describe("Competition API", () => {
       const maxParticipants = 4;
 
       // Create a Privy authenticated user
-      const { client: userClient } = await createPrivyAuthenticatedClient({
+      const { rpcClient } = await createPrivyAuthenticatedRpcClient({
         userName: "User Competition Test",
       });
 
       // Create an agent for this user via Privy session
-      const agentResponse = (await createTestAgent(
-        userClient,
-        "User Competition Agent",
-        "Agent for user competition endpoint test",
-      )) as AgentProfileResponse;
-      expect(agentResponse.success).toBe(true);
-      const agent = agentResponse.agent;
+      const agent = (
+        await createTestAgent(
+          rpcClient,
+          "User Competition Agent",
+          "Agent for user competition endpoint test",
+        )
+      ).agent;
 
       // Create competition with maxParticipants first
       const competitionName = `User Competition Test ${Date.now()}`;
@@ -1810,19 +1716,19 @@ describe("Competition API", () => {
       expect(startResponse.success).toBe(true);
 
       // Get user competitions
-      const userCompetitionsResponse = (await userClient.getUserCompetitions({
+      const userCompetitionsResponse = await rpcClient.user.getCompetitions({
         limit: 10,
-      })) as UserCompetitionsResponse;
-      expect(userCompetitionsResponse.success).toBe(true);
+        offset: 0,
+      });
 
       // Find our competition in the results
       const ourCompetition = userCompetitionsResponse.competitions.find(
         (c) => c.id === startResponse.competition.id,
-      ) as CompetitionWithAgents;
+      );
 
       expect(ourCompetition).toBeDefined();
-      expect(ourCompetition.maxParticipants).toBe(maxParticipants);
-      expect(ourCompetition.registeredParticipants).toBe(1);
+      expect(ourCompetition!.maxParticipants).toBe(maxParticipants);
+      expect(ourCompetition!.registeredParticipants).toBe(1);
     });
 
     test("should return maxParticipants and registeredParticipants in agent competitions endpoint", async () => {
@@ -1832,11 +1738,10 @@ describe("Competition API", () => {
       const maxParticipants = 6;
 
       // Create agent
-      const { agent, client: agentClient } =
-        await registerUserAndAgentAndGetClient({
-          adminApiKey,
-          agentName: "Agent Competition Test",
-        });
+      const { agent, rpcClient } = await registerUserAndAgentAndGetRpcClient({
+        adminApiKey,
+        agentName: "Agent Competition Test",
+      });
 
       // Create competition with maxParticipants first
       const competitionName = `Agent Competition Test ${Date.now()}`;
@@ -1856,19 +1761,20 @@ describe("Competition API", () => {
       expect(startResponse.success).toBe(true);
 
       // Get agent competitions
-      const agentCompetitionsResponse = (await agentClient.getAgentCompetitions(
-        agent.id,
-      )) as AgentCompetitionsResponse;
-      expect(agentCompetitionsResponse.success).toBe(true);
+      const agentCompetitionsResponse = await rpcClient.agent.getCompetitions({
+        agentId: agent.id,
+        filters: {},
+        paging: { limit: 50, offset: 0 },
+      });
 
       // Find our competition in the results
       const ourCompetition = agentCompetitionsResponse.competitions.find(
         (c) => c.id === startResponse.competition.id,
-      ) as EnhancedCompetition;
+      );
 
       expect(ourCompetition).toBeDefined();
-      expect(ourCompetition.maxParticipants).toBe(maxParticipants);
-      expect(ourCompetition.registeredParticipants).toBe(1);
+      expect(ourCompetition!.maxParticipants).toBe(maxParticipants);
+      expect(ourCompetition!.registeredParticipants).toBe(1);
     });
 
     test("should return maxParticipants and registeredParticipants in competitions endpoint", async () => {
@@ -1876,7 +1782,7 @@ describe("Competition API", () => {
       await adminClient.loginAsAdmin(adminApiKey);
 
       // Create agent
-      const { agent } = await registerUserAndAgentAndGetClient({
+      const { agent, rpcClient } = await registerUserAndAgentAndGetRpcClient({
         adminApiKey,
         agentName: "Competitions Test Agent",
       });
@@ -1898,16 +1804,15 @@ describe("Competition API", () => {
       expect(startResponse.success).toBe(true);
 
       // Get upcoming competitions
-      const competitionsResponse =
-        (await adminClient.getCompetitions()) as UpcomingCompetitionsResponse;
-      expect(competitionsResponse.success).toBe(true);
+      const competitionsResponse = await rpcClient.competitions.list({
+        status: "active",
+      });
 
-      const ourCompetition = competitionsResponse
-        .competitions[0] as EnhancedCompetition;
+      const ourCompetition = competitionsResponse.competitions[0];
 
       expect(ourCompetition).toBeDefined();
-      expect(ourCompetition.maxParticipants).toBeNull();
-      expect(ourCompetition.registeredParticipants).toBe(1);
+      expect(ourCompetition!.maxParticipants).toBeNull();
+      expect(ourCompetition!.registeredParticipants).toBe(1);
     });
 
     test("should handle null maxParticipants across all endpoints", async () => {
@@ -1915,11 +1820,10 @@ describe("Competition API", () => {
       await adminClient.loginAsAdmin(adminApiKey);
 
       // Create agent
-      const { agent, client: agentClient } =
-        await registerUserAndAgentAndGetClient({
-          adminApiKey,
-          agentName: "Null Limit Test Agent",
-        });
+      const { agent, rpcClient } = await registerUserAndAgentAndGetRpcClient({
+        adminApiKey,
+        agentName: "Null Limit Test Agent",
+      });
 
       // Create competition without maxParticipants (should be null/unlimited)
       const competitionName = `Null Limit Test ${Date.now()}`;
@@ -1934,12 +1838,11 @@ describe("Competition API", () => {
       expect(createResponse.competition.maxParticipants).toBeNull();
 
       // Test that the same null value appears in other endpoints
-      const detailResponse = (await agentClient.getCompetition(
-        competitionId,
-      )) as CompetitionDetailResponse;
-      expect(detailResponse.success).toBe(true);
-      expect(detailResponse.competition.maxParticipants).toBeNull();
-      expect(detailResponse.competition.registeredParticipants).toBe(0);
+      const detailResponse = await rpcClient.competitions.getById({
+        id: competitionId,
+      });
+      expect(detailResponse.maxParticipants).toBeNull();
+      expect(detailResponse.registeredParticipants).toBe(0);
 
       // Test agent competitions endpoint
       const startResponse = (await startExistingTestCompetition({
@@ -1948,41 +1851,42 @@ describe("Competition API", () => {
         agentIds: [agent.id],
       })) as StartCompetitionResponse;
       expect(startResponse.success).toBe(true);
-      const agentCompetitionsResponse = (await agentClient.getAgentCompetitions(
-        agent.id,
-      )) as AgentCompetitionsResponse;
-      expect(agentCompetitionsResponse.success).toBe(true);
+      const agentCompetitionsResponse = await rpcClient.agent.getCompetitions({
+        agentId: agent.id,
+        filters: {},
+        paging: { limit: 50, offset: 0 },
+      });
 
       const ourCompetition = agentCompetitionsResponse.competitions.find(
         (c) => c.id === competitionId,
-      ) as EnhancedCompetition;
+      );
       expect(ourCompetition).toBeDefined();
-      expect(ourCompetition.maxParticipants).toBeNull();
-      expect(ourCompetition.registeredParticipants).toBe(1);
+      expect(ourCompetition!.maxParticipants).toBeNull();
+      expect(ourCompetition!.registeredParticipants).toBe(1);
 
       // Test user competitions endpoint
-      const userCompetitionsResponse = (await agentClient.getUserCompetitions({
+      const userCompetitionsResponse = await rpcClient.user.getCompetitions({
         limit: 10,
-      })) as UserCompetitionsResponse;
-      expect(userCompetitionsResponse.success).toBe(true);
+        offset: 0,
+      });
 
       const ourCompetition2 = userCompetitionsResponse.competitions.find(
         (c) => c.id === competitionId,
-      ) as CompetitionWithAgents;
+      );
       expect(ourCompetition2).toBeDefined();
-      expect(ourCompetition2.maxParticipants).toBeNull();
-      expect(ourCompetition2.registeredParticipants).toBe(1);
+      expect(ourCompetition2!.maxParticipants).toBeNull();
+      expect(ourCompetition2!.registeredParticipants).toBe(1);
 
-      const multipleCompetitionsResponse =
-        (await agentClient.getCompetitions()) as UpcomingCompetitionsResponse;
-      expect(multipleCompetitionsResponse.success).toBe(true);
+      const multipleCompetitionsResponse = await rpcClient.competitions.list({
+        status: "active",
+      });
 
       const ourCompetition3 = multipleCompetitionsResponse.competitions.find(
         (c) => c.id === competitionId,
-      ) as CompetitionWithAgents;
+      );
       expect(ourCompetition3).toBeDefined();
-      expect(ourCompetition3.maxParticipants).toBeNull();
-      expect(ourCompetition3.registeredParticipants).toBe(1);
+      expect(ourCompetition3!.maxParticipants).toBeNull();
+      expect(ourCompetition3!.registeredParticipants).toBe(1);
     });
 
     test("should handle disqualifying agent in registeredParticipants", async () => {
@@ -1990,11 +1894,10 @@ describe("Competition API", () => {
       await adminClient.loginAsAdmin(adminApiKey);
 
       // Create agent
-      const { agent, client: agentClient } =
-        await registerUserAndAgentAndGetClient({
-          adminApiKey,
-          agentName: "Null Limit Test Agent",
-        });
+      const { agent, rpcClient } = await registerUserAndAgentAndGetRpcClient({
+        adminApiKey,
+        agentName: "Null Limit Test Agent",
+      });
 
       // Create competition without maxParticipants (should be null/unlimited)
       const competitionName = `Null Limit Test ${Date.now()}`;
@@ -2025,16 +1928,16 @@ describe("Competition API", () => {
       expect(removeResponse.success).toBe(true);
 
       // Test multiple competitions endpoint, but with zero registered participants (by DQ'ing the agent)
-      const multipleCompetitionsResponse =
-        (await agentClient.getCompetitions()) as UpcomingCompetitionsResponse;
-      expect(multipleCompetitionsResponse.success).toBe(true);
+      const multipleCompetitionsResponse = await rpcClient.competitions.list({
+        status: "active",
+      });
 
       const ourCompetition3 = multipleCompetitionsResponse.competitions.find(
         (c) => c.id === competitionId,
-      ) as CompetitionWithAgents;
+      );
       expect(ourCompetition3).toBeDefined();
-      expect(ourCompetition3.maxParticipants).toBeNull();
-      expect(ourCompetition3.registeredParticipants).toBe(0);
+      expect(ourCompetition3!.maxParticipants).toBeNull();
+      expect(ourCompetition3!.registeredParticipants).toBe(0);
     });
 
     test("inactive agents should have last-place rank and appear at end of list", async () => {
@@ -2044,23 +1947,23 @@ describe("Competition API", () => {
 
       // Create 5 agents for testing
       const agents = await Promise.all([
-        registerUserAndAgentAndGetClient({
+        registerUserAndAgentAndGetRpcClient({
           adminApiKey,
           agentName: "Agent Alpha",
         }),
-        registerUserAndAgentAndGetClient({
+        registerUserAndAgentAndGetRpcClient({
           adminApiKey,
           agentName: "Agent Beta",
         }),
-        registerUserAndAgentAndGetClient({
+        registerUserAndAgentAndGetRpcClient({
           adminApiKey,
           agentName: "Agent Gamma",
         }),
-        registerUserAndAgentAndGetClient({
+        registerUserAndAgentAndGetRpcClient({
           adminApiKey,
           agentName: "Agent Delta",
         }),
-        registerUserAndAgentAndGetClient({
+        registerUserAndAgentAndGetRpcClient({
           adminApiKey,
           agentName: "Agent Epsilon",
         }),
@@ -2094,15 +1997,12 @@ describe("Competition API", () => {
       );
 
       // Fetch all agents including inactive ones, sorted by rank
-      const agentsResponse = (await adminClient.getCompetitionAgents(
+      const agentsResponse = await agents[0]!.rpcClient.competitions.getAgents({
         competitionId,
-        {
-          includeInactive: true,
-          sort: "rank",
-        },
-      )) as CompetitionAgentsResponse;
+        includeInactive: true,
+        sort: "rank",
+      });
 
-      expect(agentsResponse.success).toBe(true);
       expect(agentsResponse.agents).toBeDefined();
       expect(agentsResponse.agents.length).toBe(5);
 
@@ -2116,7 +2016,9 @@ describe("Competition API", () => {
       expect(activeAgents.length).toBe(3);
 
       // Verify agents have correct ranks
-      const activeRanks = activeAgents.map((a) => a.rank).sort((a, b) => a - b);
+      const activeRanks = activeAgents
+        .map((a) => a.rank ?? 0)
+        .sort((a, b) => a - b);
       expect(activeRanks).toEqual([1, 2, 3]);
       for (const inactiveAgent of inactiveAgents) {
         expect(inactiveAgent.rank).toBe(totalAgents);

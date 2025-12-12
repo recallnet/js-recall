@@ -78,7 +78,9 @@
     "cron:auto-calculate-rewards": "tsx scripts/auto-calculate-rewards.ts",
     "cron:auto-calculate-rewards:run-once": "tsx scripts/auto-calculate-rewards.ts --run-once",
     "cron:nfl-plays-ingester": "tsx scripts/nfl-plays-ingester.ts",
-    "cron:nfl-schedule-ingester": "tsx scripts/nfl-schedule-ingester.ts"
+    "cron:nfl-schedule-ingester": "tsx scripts/nfl-schedule-ingester.ts",
+    "cron:refresh-eigenai-badges": "tsx scripts/refresh-eigenai-badges.ts",
+    "cron:refresh-eigenai-badges:run-once": "tsx scripts/refresh-eigenai-badges.ts --run-once"
   },
   "keywords": [
     "solana",

@@ -64,7 +64,7 @@
     "jose": "^6.0.11",
     "jotai": "^2.12.3",
     "lucide-react": "^0.511.0",
-    "next": "^15.3.6",
+    "next": "15.3.8",
     "next-navigation-guard": "^0.1.2",
     "pg": "^8.10.0",
     "pino": "^10.1.0",

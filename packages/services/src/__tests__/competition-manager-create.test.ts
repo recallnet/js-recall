@@ -22,6 +22,7 @@ import type { BalanceService } from "../balance.service.js";
 import type { BoostBonusService } from "../boost-bonus.service.js";
 import type { CompetitionRewardService } from "../competition-reward.service.js";
 import { CompetitionService } from "../competition.service.js";
+import type { EigenaiService } from "../eigenai.service.js";
 import { specificChainTokens } from "../lib/config-utils.js";
 import type { PerpsDataProcessor } from "../perps-data-processor.service.js";
 import type { PortfolioSnapshotterService } from "../portfolio-snapshotter.service.js";
@@ -47,6 +48,7 @@ describe("CompetitionService - createCompetition", () => {
   let spotDataProcessor: MockProxy<SpotDataProcessor>;
   let spotLiveRepo: MockProxy<SpotLiveRepository>;
   let boostBonusService: MockProxy<BoostBonusService>;
+  let eigenaiService: MockProxy<EigenaiService>;
   let agentRepo: MockProxy<AgentRepository>;
   let agentScoreRepo: MockProxy<AgentScoreRepository>;
   let arenaRepo: MockProxy<ArenaRepository>;
@@ -79,6 +81,7 @@ describe("CompetitionService - createCompetition", () => {
     spotDataProcessor = mock<SpotDataProcessor>();
     spotLiveRepo = mock<SpotLiveRepository>();
     boostBonusService = mock<BoostBonusService>();
+    eigenaiService = mock<EigenaiService>();
     agentRepo = mock<AgentRepository>();
     agentScoreRepo = mock<AgentScoreRepository>();
     arenaRepo = mock<ArenaRepository>();
@@ -185,6 +188,7 @@ describe("CompetitionService - createCompetition", () => {
       perpsDataProcessor,
       spotDataProcessor,
       boostBonusService,
+      eigenaiService,
       agentRepo,
       agentScoreRepo,
       arenaRepo,
@@ -811,6 +815,7 @@ describe("CompetitionService - startCompetition with minFundingThreshold", () =>
   let spotDataProcessor: MockProxy<SpotDataProcessor>;
   let spotLiveRepo: MockProxy<SpotLiveRepository>;
   let boostBonusService: MockProxy<BoostBonusService>;
+  let eigenaiService: MockProxy<EigenaiService>;
   let agentRepo: MockProxy<AgentRepository>;
   let agentScoreRepo: MockProxy<AgentScoreRepository>;
   let arenaRepo: MockProxy<ArenaRepository>;
@@ -843,6 +848,7 @@ describe("CompetitionService - startCompetition with minFundingThreshold", () =>
     spotDataProcessor = mock<SpotDataProcessor>();
     spotLiveRepo = mock<SpotLiveRepository>();
     boostBonusService = mock<BoostBonusService>();
+    eigenaiService = mock<EigenaiService>();
     agentRepo = mock<AgentRepository>();
     agentScoreRepo = mock<AgentScoreRepository>();
     arenaRepo = mock<ArenaRepository>();
@@ -881,6 +887,7 @@ describe("CompetitionService - startCompetition with minFundingThreshold", () =>
       perpsDataProcessor,
       spotDataProcessor,
       boostBonusService,
+      eigenaiService,
       agentRepo,
       agentScoreRepo,
       arenaRepo,
@@ -1964,6 +1971,7 @@ describe("CompetitionService - startCompetition with minFundingThreshold", () =>
 
       expect(result).toBeDefined();
       expect(priceTrackerService.getPrice).toHaveBeenCalledTimes(2);
+      // "aerodrome" protocol creates 2 entries (V2 + Slipstream routers)
       expect(spotLiveRepo.batchCreateAllowedProtocols).toHaveBeenCalledWith(
         expect.any(String),
         [
@@ -1971,6 +1979,11 @@ describe("CompetitionService - startCompetition with minFundingThreshold", () =>
             protocol: "aerodrome",
             specificChain: "base",
             routerAddress: "0xcf77a3ba9a5ca399b7c97c74d54e5b1beb874e43",
+          }),
+          expect.objectContaining({
+            protocol: "aerodrome",
+            specificChain: "base",
+            routerAddress: "0xbe6d8f0d05cc4be24d5167a3ef062215be6d18a5",
           }),
         ],
         expect.anything(),

@@ -10,6 +10,7 @@ import { CompetitionRepository } from "@recallnet/db/repositories/competition";
 import { CompetitionGamesRepository } from "@recallnet/db/repositories/competition-games";
 import { CompetitionRewardsRepository } from "@recallnet/db/repositories/competition-rewards";
 import { ConvictionClaimsRepository } from "@recallnet/db/repositories/conviction-claims";
+import { EigenaiRepository } from "@recallnet/db/repositories/eigenai";
 import { GamesRepository } from "@recallnet/db/repositories/games";
 import { LeaderboardRepository } from "@recallnet/db/repositories/leaderboard";
 import { PaperTradingConfigRepository } from "@recallnet/db/repositories/paper-trading-config";
@@ -142,3 +143,9 @@ export const paperTradingConfigRepository = new PaperTradingConfigRepository(
 
 export const paperTradingInitialBalancesRepository =
   new PaperTradingInitialBalancesRepository(db);
+
+export const eigenaiRepository = new EigenaiRepository(
+  db,
+  db,
+  createLogger("EigenaiRepository"),
+);

@@ -437,6 +437,7 @@ class ServiceRegistry {
       this._perpsDataProcessor,
       this._spotDataProcessor,
       this._boostBonusService,
+      this._eigenaiService,
       this._agentRepository,
       agentScoreRepository,
       this._arenaRepository,

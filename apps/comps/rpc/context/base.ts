@@ -23,6 +23,7 @@ import {
   BoostAwardService,
   BoostService,
   CompetitionService,
+  EigenaiService,
   EmailService,
   LeaderboardService,
   RewardsService,
@@ -46,6 +47,7 @@ export interface CookieStore {
  * @property competitionService - Service for competition operations
  * @property agentService - Service for agent management operations
  * @property arenaService - Service for arena operations
+ * @property eigenaiService - Service for EigenAI verification badge operations
  * @property emailService - Service for email operations
  * @property leaderboardService - Service for leaderboard operations
  * @property rewardsService - Service for reward operations
@@ -67,6 +69,7 @@ export const base = os
     competitionService: CompetitionService;
     agentService: AgentService;
     arenaService: ArenaService;
+    eigenaiService: EigenaiService;
     emailService: EmailService;
     leaderboardService: LeaderboardService;
     rewardsService: RewardsService;

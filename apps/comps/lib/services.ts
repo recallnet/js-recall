@@ -15,6 +15,7 @@ import {
   CalmarRatioService,
   CompetitionRewardService,
   CompetitionService,
+  EigenaiService,
   EmailService,
   LeaderboardService,
   PartnerService,
@@ -59,6 +60,7 @@ import {
   competitionRepository,
   competitionRewardsRepository,
   convictionClaimsRepository,
+  eigenaiRepository,
   leaderboardRepository,
   paperTradingConfigRepository,
   paperTradingInitialBalancesRepository,
@@ -275,6 +277,12 @@ export const boostBonusService = new BoostBonusService(
   createLogger("BoostBonusService"),
 );
 
+export const eigenaiService = new EigenaiService(
+  eigenaiRepository,
+  { eigenai: {} },
+  createLogger("EigenaiService"),
+);
+
 export const competitionService = new CompetitionService(
   balanceService,
   tradeSimulatorService,
@@ -288,6 +296,7 @@ export const competitionService = new CompetitionService(
   perpsDataProcessor,
   spotDataProcessor,
   boostBonusService,
+  eigenaiService,
   agentRepository,
   agentScoreRepository,
   arenaRepository,
