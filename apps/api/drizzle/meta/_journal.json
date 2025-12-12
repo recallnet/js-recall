@@ -519,6 +519,13 @@
       "when": 1765468327242,
       "tag": "0073_handy_zombie",
       "breakpoints": true
+    },
+    {
+      "idx": 74,
+      "version": "7",
+      "when": 1765505472021,
+      "tag": "0074_amazing_sabretooth",
+      "breakpoints": true
     }
   ]
 }

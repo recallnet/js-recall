@@ -447,7 +447,7 @@ export const perpetualPositions = tradingComps.table(
     id: uuid().primaryKey().defaultRandom(),
     agentId: uuid("agent_id")
       .notNull()
-      .references(() => agents.id),
+      .references(() => agents.id, { onDelete: "cascade" }),
     competitionId: uuid("competition_id").notNull(),
 
     // Position identifiers (provider-agnostic)
@@ -498,7 +498,7 @@ export const perpsAccountSummaries = tradingComps.table(
     id: uuid().primaryKey().defaultRandom(),
     agentId: uuid("agent_id")
       .notNull()
-      .references(() => agents.id),
+      .references(() => agents.id, { onDelete: "cascade" }),
     competitionId: uuid("competition_id").notNull(),
 
     // Core equity metrics
@@ -563,7 +563,7 @@ export const perpsTransferHistory = tradingComps.table(
     id: uuid("id").primaryKey().defaultRandom(),
     agentId: uuid("agent_id")
       .notNull()
-      .references(() => agents.id),
+      .references(() => agents.id, { onDelete: "cascade" }),
     competitionId: uuid("competition_id").notNull(),
 
     // Transfer details
@@ -611,7 +611,7 @@ export const perpsRiskMetrics = tradingComps.table(
     id: uuid("id").primaryKey().defaultRandom(),
     agentId: uuid("agent_id")
       .notNull()
-      .references(() => agents.id),
+      .references(() => agents.id, { onDelete: "cascade" }),
     competitionId: uuid("competition_id").notNull(),
 
     // Core metrics for Calmar calculation
@@ -664,7 +664,7 @@ export const riskMetricsSnapshots = tradingComps.table(
     id: uuid("id").primaryKey().defaultRandom(),
     agentId: uuid("agent_id")
       .notNull()
-      .references(() => agents.id),
+      .references(() => agents.id, { onDelete: "cascade" }),
     competitionId: uuid("competition_id").notNull(),
 
     // Timestamp for this snapshot
@@ -708,7 +708,7 @@ export const perpsSelfFundingAlerts = tradingComps.table(
     id: uuid().primaryKey().defaultRandom(),
     agentId: uuid("agent_id")
       .notNull()
-      .references(() => agents.id),
+      .references(() => agents.id, { onDelete: "cascade" }),
     competitionId: uuid("competition_id").notNull(),
 
     // Detection details
