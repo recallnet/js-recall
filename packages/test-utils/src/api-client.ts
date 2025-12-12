@@ -58,6 +58,12 @@ import {
   DeleteArenaResponse,
   DeletePartnerResponse,
   DetailedHealthCheckResponse,
+  EigenaiBadgeStatusResponse,
+  EigenaiCompetitionStatsResponse,
+  EigenaiSubmissionsResponse,
+  EigenaiSubmitSignatureParams,
+  EigenaiSubmitSignatureResponse,
+  EigenaiVerificationStatus,
   ErrorResponse,
   GetArenaResponse,
   GetCompetitionPartnersResponse,
@@ -2920,6 +2926,100 @@ export class ApiClient {
       return response.data;
     } catch (error) {
       return this.handleApiError(error, "revoke bonus boosts");
+    }
+  }
+
+  /**
+   * EigenAI Verifiable Inference API Methods
+   */
+
+  /**
+   * Submit an EigenAI signature for verification
+   * Requires agent authentication (API key)
+   * @param params Signature submission parameters
+   * @returns A promise that resolves to the submission response
+   */
+  async submitEigenaiSignature(
+    params: EigenaiSubmitSignatureParams,
+  ): Promise<EigenaiSubmitSignatureResponse | ErrorResponse> {
+    try {
+      const response = await this.axiosInstance.post(
+        "/api/eigenai/signatures",
+        params,
+      );
+      return response.data;
+    } catch (error) {
+      return this.handleApiError(error, "submit EigenAI signature");
+    }
+  }
+
+  /**
+   * Get EigenAI badge status for the authenticated agent
+   * Requires agent authentication (API key)
+   * @param competitionId The competition ID to check badge status for
+   * @returns A promise that resolves to the badge status response
+   */
+  async getEigenaiBadgeStatus(
+    competitionId: string,
+  ): Promise<EigenaiBadgeStatusResponse | ErrorResponse> {
+    try {
+      const response = await this.axiosInstance.get(
+        `/api/eigenai/badge?competitionId=${encodeURIComponent(competitionId)}`,
+      );
+      return response.data;
+    } catch (error) {
+      return this.handleApiError(error, "get EigenAI badge status");
+    }
+  }
+
+  /**
+   * Get EigenAI signature submission history for the authenticated agent
+   * Requires agent authentication (API key)
+   * @param competitionId The competition ID to get submissions for
+   * @param params Optional pagination and filter parameters
+   * @returns A promise that resolves to the submissions response
+   */
+  async getEigenaiSubmissions(
+    competitionId: string,
+    params?: {
+      limit?: number;
+      offset?: number;
+      status?: EigenaiVerificationStatus;
+    },
+  ): Promise<EigenaiSubmissionsResponse | ErrorResponse> {
+    try {
+      const queryParams = new URLSearchParams();
+      queryParams.append("competitionId", competitionId);
+      if (params?.limit !== undefined)
+        queryParams.append("limit", params.limit.toString());
+      if (params?.offset !== undefined)
+        queryParams.append("offset", params.offset.toString());
+      if (params?.status) queryParams.append("status", params.status);
+
+      const response = await this.axiosInstance.get(
+        `/api/eigenai/submissions?${queryParams.toString()}`,
+      );
+      return response.data;
+    } catch (error) {
+      return this.handleApiError(error, "get EigenAI submissions");
+    }
+  }
+
+  /**
+   * Get EigenAI statistics for a competition (public endpoint)
+   * @param competitionId The competition ID to get stats for
+   * @returns A promise that resolves to the competition stats response
+   */
+  async getEigenaiCompetitionStats(
+    competitionId: string,
+  ): Promise<EigenaiCompetitionStatsResponse | ErrorResponse> {
+    try {
+      const response = await this.axiosInstance.get(
+        `/api/eigenai/competitions/${encodeURIComponent(competitionId)}/stats`,
+      );
+      return response.data;
+    } catch (error) {
+      return this.handleApiError(error, "get EigenAI competition stats");
     }
   }
 }

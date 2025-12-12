@@ -34,6 +34,8 @@ class MockCompetitionRepository {
   getCompetitionAgents = vi.fn();
   createPortfolioSnapshot = vi.fn();
   batchCreatePortfolioSnapshots = vi.fn();
+  getLatestPortfolioSnapshots = vi.fn();
+  updateAgentCompetitionStatus = vi.fn();
 }
 
 class MockSpotLiveRepository {
@@ -174,10 +176,12 @@ describe("SpotDataProcessor", () => {
       { id: "1", agentId: "agent1", tokenAddress: "0xusdc", amount: 1000 },
     ]);
 
-    // Default mock provider
+    // Default mock provider - getTradesSince returns TradesResult with trades array
     mockProvider = {
       getName: vi.fn().mockReturnValue("RPC Direct (Alchemy)"),
-      getTradesSince: vi.fn().mockResolvedValue([sampleOnChainTrade]),
+      getTradesSince: vi
+        .fn()
+        .mockResolvedValue({ trades: [sampleOnChainTrade] }),
       getTransferHistory: vi.fn().mockResolvedValue([sampleTransfer]),
       isHealthy: vi.fn().mockResolvedValue(true),
       getCurrentBlock: vi.fn().mockResolvedValue(2000000),
@@ -347,7 +351,7 @@ describe("SpotDataProcessor", () => {
     });
 
     it("should handle empty trade list gracefully", async () => {
-      mockProvider.getTradesSince = vi.fn().mockResolvedValue([]);
+      mockProvider.getTradesSince = vi.fn().mockResolvedValue({ trades: [] });
 
       const result = await processor.processAgentData(
         "agent-1",
@@ -450,6 +454,170 @@ describe("SpotDataProcessor", () => {
           new Date(),
         ),
       ).rejects.toThrow("[SpotDataProcessor] Provider is required");
+    });
+
+    describe("balance initialization retry logic", () => {
+      it("should return early with success when balance init creates balances", async () => {
+        // First sync: no existing balances
+        mockBalanceRepo.getAgentBalances.mockResolvedValueOnce([]);
+
+        // Mock provider with getTokenBalances (triggers init flow)
+        const providerWithTokenBalances = {
+          ...mockProvider,
+          getTokenBalances: vi
+            .fn()
+            .mockResolvedValue([
+              { contractAddress: "0xusdc", balance: "100000000" },
+            ]),
+          getNativeBalance: vi.fn().mockResolvedValue("10000000000000000"),
+          getTokenDecimals: vi.fn().mockResolvedValue(6),
+        };
+
+        // Mock price for balance init
+        mockPriceTracker.getBulkPrices.mockResolvedValue(
+          new Map([["0xusdc:base", { ...samplePrice, token: "0xusdc" }]]),
+        );
+
+        const result = await processor.processAgentData(
+          "agent-1",
+          "comp-1",
+          "0xagent123",
+          providerWithTokenBalances,
+          new Map(),
+          false,
+          ["base"],
+          new Date("2024-01-01"),
+        );
+
+        // Should return early with balances updated
+        expect(result.balancesUpdated).toBeGreaterThan(0);
+        expect(result.tradesProcessed).toBe(0);
+
+        // Should NOT call trade processing (returned early)
+        expect(mockProvider.getTradesSince).not.toHaveBeenCalled();
+
+        // Should log success
+        expect(mockLogger.info).toHaveBeenCalledWith(
+          expect.stringContaining("Completed initial balance setup"),
+        );
+      });
+
+      it("should return success with 0 balances when agent has no qualified tokens (no retry)", async () => {
+        // Agent has no existing balances
+        mockBalanceRepo.getAgentBalances.mockResolvedValueOnce([]);
+
+        // Provider returns empty token list (agent has no tokens)
+        const providerWithTokenBalances = {
+          ...mockProvider,
+          getTokenBalances: vi.fn().mockResolvedValue([]),
+          getNativeBalance: vi.fn().mockResolvedValue("0"),
+        };
+
+        const result = await processor.processAgentData(
+          "agent-1",
+          "comp-1",
+          "0xagent123",
+          providerWithTokenBalances,
+          new Map(),
+          false,
+          ["base"],
+          new Date("2024-01-01"),
+        );
+
+        // Should return success with 0 balances (no qualified tokens, but init succeeded)
+        expect(result.balancesUpdated).toBe(0);
+        expect(result.tradesProcessed).toBe(0);
+
+        // Should NOT call trade processing (returned early)
+        expect(mockProvider.getTradesSince).not.toHaveBeenCalled();
+
+        // Should log success (not warning)
+        expect(mockLogger.info).toHaveBeenCalledWith(
+          expect.stringContaining("Completed initial balance setup"),
+        );
+        expect(mockLogger.warn).not.toHaveBeenCalledWith(
+          expect.stringContaining("will retry on next sync"),
+        );
+      });
+
+      it("should return early with failure when RPC throws, allowing retry on next sync", async () => {
+        // First sync: no existing balances
+        mockBalanceRepo.getAgentBalances.mockResolvedValueOnce([]);
+
+        // Mock provider where getTokenBalances throws an error
+        const providerWithTokenBalances = {
+          ...mockProvider,
+          getTokenBalances: vi
+            .fn()
+            .mockRejectedValue(new Error("RPC connection failed")),
+          getNativeBalance: vi
+            .fn()
+            .mockRejectedValue(new Error("RPC connection failed")),
+        };
+
+        const result = await processor.processAgentData(
+          "agent-1",
+          "comp-1",
+          "0xagent123",
+          providerWithTokenBalances,
+          new Map(),
+          false,
+          ["base"],
+          new Date("2024-01-01"),
+        );
+
+        // Should return early with 0 balances (failure)
+        expect(result.balancesUpdated).toBe(0);
+        expect(result.tradesProcessed).toBe(0);
+
+        // Should NOT call trade processing (returned early)
+        expect(mockProvider.getTradesSince).not.toHaveBeenCalled();
+
+        // Should NOT update sync state (so next cron will retry)
+        expect(mockSpotLiveRepo.upsertAgentSyncState).not.toHaveBeenCalled();
+
+        // Should log warning about retry
+        expect(mockLogger.warn).toHaveBeenCalledWith(
+          expect.stringContaining("will retry on next sync"),
+        );
+      });
+
+      it("should retry balance initialization on subsequent sync after RPC failure", async () => {
+        // Simulate second sync after failed first sync
+        mockBalanceRepo.getAgentBalances.mockResolvedValueOnce([]);
+
+        const providerWithTokenBalances = {
+          ...mockProvider,
+          getTokenBalances: vi
+            .fn()
+            .mockResolvedValue([
+              { contractAddress: "0xusdc", balance: "100000000" },
+            ]),
+          getNativeBalance: vi.fn().mockResolvedValue("10000000000000000"),
+          getTokenDecimals: vi.fn().mockResolvedValue(6),
+        };
+
+        mockPriceTracker.getBulkPrices.mockResolvedValue(
+          new Map([["0xusdc:base", { ...samplePrice, token: "0xusdc" }]]),
+        );
+
+        const result = await processor.processAgentData(
+          "agent-1",
+          "comp-1",
+          "0xagent123",
+          providerWithTokenBalances,
+          new Map(),
+          false,
+          ["base"],
+          new Date("2024-01-01"),
+        );
+
+        // Should succeed on retry
+        expect(result.balancesUpdated).toBeGreaterThan(0);
+        expect(mockLogger.info).toHaveBeenCalledWith(
+          expect.stringContaining("Completed initial balance setup"),
+        );
+      });
     });
 
     it("should use incremental block syncing when latest block exists", async () => {
@@ -652,6 +820,220 @@ describe("SpotDataProcessor", () => {
       );
     });
 
+    describe("late minFundingThreshold enforcement", () => {
+      const configWithThreshold: SelectSpotLiveCompetitionConfig = {
+        ...sampleSpotLiveConfig,
+        minFundingThreshold: "250", // $250 threshold
+      };
+
+      beforeEach(() => {
+        mockSpotLiveRepo.getSpotLiveCompetitionConfig.mockResolvedValue(
+          configWithThreshold,
+        );
+        mockCompetitionRepo.getLatestPortfolioSnapshots.mockResolvedValue([]);
+        mockCompetitionRepo.updateAgentCompetitionStatus.mockResolvedValue(
+          undefined,
+        );
+      });
+
+      it("should skip late enforcement during initial sync (skipMonitoring=true)", async () => {
+        // Initial sync at competition start
+        const result = await processor.processSpotLiveCompetition(
+          "comp-1",
+          true, // skipMonitoring = true (initial sync)
+        );
+
+        expect(result.syncResult.successful).toHaveLength(1);
+
+        // Should NOT call getLatestPortfolioSnapshots for late enforcement check
+        // (only called for the standard snapshot taking)
+        expect(
+          mockCompetitionRepo.getLatestPortfolioSnapshots,
+        ).not.toHaveBeenCalled();
+
+        // Should NOT call updateAgentCompetitionStatus
+        expect(
+          mockCompetitionRepo.updateAgentCompetitionStatus,
+        ).not.toHaveBeenCalled();
+      });
+
+      it("should run late enforcement during cron sync (skipMonitoring=false) for agents without prior snapshots", async () => {
+        // Mock: agent-1 had no snapshot before this sync
+        mockCompetitionRepo.getLatestPortfolioSnapshots
+          .mockResolvedValueOnce([]) // Before takePortfolioSnapshots: no snapshots
+          .mockResolvedValueOnce([
+            // After takePortfolioSnapshots: agent-1 now has one below threshold
+            {
+              id: 1,
+              agentId: "agent-1",
+              competitionId: "comp-1",
+              timestamp: new Date(),
+              totalValue: 100, // Below $250 threshold
+            },
+          ]);
+
+        const result = await processor.processSpotLiveCompetition(
+          "comp-1",
+          false, // skipMonitoring = false (cron sync)
+        );
+
+        expect(result.syncResult.successful).toHaveLength(1);
+
+        // Should check for agents without prior snapshots
+        expect(
+          mockCompetitionRepo.getLatestPortfolioSnapshots,
+        ).toHaveBeenCalledTimes(2);
+
+        // Should disqualify agent-1 for being below threshold
+        expect(
+          mockCompetitionRepo.updateAgentCompetitionStatus,
+        ).toHaveBeenCalledWith(
+          "comp-1",
+          "agent-1",
+          "disqualified",
+          expect.stringContaining("Insufficient initial funding"),
+        );
+
+        expect(mockLogger.warn).toHaveBeenCalledWith(
+          expect.stringContaining("Late threshold enforcement"),
+        );
+      });
+
+      it("should pass agents who meet threshold during late enforcement", async () => {
+        // Mock: agent-1 had no snapshot before this sync
+        mockCompetitionRepo.getLatestPortfolioSnapshots
+          .mockResolvedValueOnce([]) // Before: no snapshots
+          .mockResolvedValueOnce([
+            // After: agent-1 now has one ABOVE threshold
+            {
+              id: 1,
+              agentId: "agent-1",
+              competitionId: "comp-1",
+              timestamp: new Date(),
+              totalValue: 500, // Above $250 threshold
+            },
+          ]);
+
+        await processor.processSpotLiveCompetition("comp-1", false);
+
+        // Should NOT disqualify
+        expect(
+          mockCompetitionRepo.updateAgentCompetitionStatus,
+        ).not.toHaveBeenCalled();
+
+        // Should log success
+        expect(mockLogger.info).toHaveBeenCalledWith(
+          expect.stringContaining("Late threshold check passed"),
+        );
+      });
+
+      it("should skip late enforcement when all agents already have snapshots", async () => {
+        // Mock: agent-1 already has a snapshot from previous sync
+        mockCompetitionRepo.getLatestPortfolioSnapshots.mockResolvedValue([
+          {
+            id: 1,
+            agentId: "agent-1",
+            competitionId: "comp-1",
+            timestamp: new Date(),
+            totalValue: 100, // Below threshold, but already had snapshot
+          },
+        ]);
+
+        await processor.processSpotLiveCompetition("comp-1", false);
+
+        // Should only be called once (for checking existing snapshots)
+        // Not called again for late enforcement since no agents without prior snapshots
+        expect(
+          mockCompetitionRepo.getLatestPortfolioSnapshots,
+        ).toHaveBeenCalledTimes(1);
+
+        // Should NOT call late enforcement (agent already had snapshot)
+        expect(
+          mockCompetitionRepo.updateAgentCompetitionStatus,
+        ).not.toHaveBeenCalled();
+      });
+
+      it("should skip late enforcement when minFundingThreshold is not configured", async () => {
+        // Config without threshold
+        mockSpotLiveRepo.getSpotLiveCompetitionConfig.mockResolvedValue(
+          sampleSpotLiveConfig, // minFundingThreshold: null
+        );
+
+        await processor.processSpotLiveCompetition("comp-1", false);
+
+        // Should NOT call getLatestPortfolioSnapshots for late enforcement
+        expect(
+          mockCompetitionRepo.getLatestPortfolioSnapshots,
+        ).not.toHaveBeenCalled();
+      });
+
+      it("should isolate late enforcement failures - one agent failure should not affect others", async () => {
+        // Setup: two agents without prior snapshots
+        mockCompetitionRepo.getCompetitionAgents.mockResolvedValue([
+          "agent-1",
+          "agent-2",
+        ]);
+        mockAgentRepo.findByIds.mockResolvedValue([
+          { id: "agent-1", walletAddress: "0xagent1", name: "Agent 1" },
+          { id: "agent-2", walletAddress: "0xagent2", name: "Agent 2" },
+        ] as SelectAgent[]);
+
+        // Before: no snapshots for either agent
+        mockCompetitionRepo.getLatestPortfolioSnapshots
+          .mockResolvedValueOnce([])
+          .mockResolvedValueOnce([
+            // After: both have snapshots below threshold
+            {
+              id: 1,
+              agentId: "agent-1",
+              competitionId: "comp-1",
+              timestamp: new Date(),
+              totalValue: 100, // Below $250
+            },
+            {
+              id: 2,
+              agentId: "agent-2",
+              competitionId: "comp-1",
+              timestamp: new Date(),
+              totalValue: 50, // Below $250
+            },
+          ]);
+
+        // First update succeeds, second fails
+        mockCompetitionRepo.updateAgentCompetitionStatus
+          .mockResolvedValueOnce(undefined) // agent-1 success
+          .mockRejectedValueOnce(new Error("Database error")); // agent-2 fails
+
+        const result = await processor.processSpotLiveCompetition(
+          "comp-1",
+          false,
+        );
+
+        // Should have attempted to disqualify both agents
+        expect(
+          mockCompetitionRepo.updateAgentCompetitionStatus,
+        ).toHaveBeenCalledTimes(2);
+
+        // First agent should be disqualified
+        expect(
+          mockCompetitionRepo.updateAgentCompetitionStatus,
+        ).toHaveBeenCalledWith(
+          "comp-1",
+          "agent-1",
+          "disqualified",
+          expect.stringContaining("Insufficient initial funding"),
+        );
+
+        // Second agent disqualification failed, but should have logged error
+        expect(mockLogger.error).toHaveBeenCalledWith(
+          expect.stringContaining("Failed to enforce late threshold"),
+        );
+
+        // Competition sync should still succeed overall
+        expect(result.syncResult.successful).toHaveLength(2);
+      });
+    });
+
     it("should handle batch processing with failures gracefully", async () => {
       mockCompetitionRepo.getCompetitionAgents.mockResolvedValue([
         "agent-1",
@@ -665,7 +1047,7 @@ describe("SpotDataProcessor", () => {
       // First agent succeeds, second fails
       mockProvider.getTradesSince = vi
         .fn()
-        .mockResolvedValueOnce([sampleOnChainTrade])
+        .mockResolvedValueOnce({ trades: [sampleOnChainTrade] })
         .mockRejectedValueOnce(new Error("RPC timeout"));
 
       const result = await processor.processSpotLiveCompetition("comp-1");
@@ -717,9 +1099,9 @@ describe("SpotDataProcessor", () => {
       // First and third succeed, second fails
       mockProvider.getTradesSince = vi
         .fn()
-        .mockResolvedValueOnce([sampleOnChainTrade])
+        .mockResolvedValueOnce({ trades: [sampleOnChainTrade] })
         .mockRejectedValueOnce(new Error("RPC timeout"))
-        .mockResolvedValueOnce([sampleOnChainTrade]);
+        .mockResolvedValueOnce({ trades: [sampleOnChainTrade] });
 
       const result = await processor["processBatchAgentData"](
         agents,

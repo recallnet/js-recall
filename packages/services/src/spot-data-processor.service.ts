@@ -10,6 +10,7 @@ import { SpecificChainSchema } from "@recallnet/db/repositories/types";
 import type {
   InsertSpotLiveTransferHistory,
   InsertTrade,
+  SelectPortfolioSnapshot,
 } from "@recallnet/db/schema/trading/types";
 
 import {
@@ -164,6 +165,7 @@ export class SpotDataProcessor {
   /**
    * Initialize agent balances from blockchain during first sync
    * Applies same constraints as trade processing: chain filter, token whitelist, price availability
+   * @returns Result indicating whether initialization completed (success=true even if 0 balances)
    */
   private async initializeAgentBalancesFromBlockchain(
     agentId: string,
@@ -173,7 +175,7 @@ export class SpotDataProcessor {
     chains: SpecificChain[],
     allowedTokens: Map<string, Set<string>>,
     tokenWhitelistEnabled: boolean,
-  ): Promise<void> {
+  ): Promise<{ success: boolean; balancesCreated: number }> {
     try {
       // 1. Fetch token balances from all enabled chains
       const allTokenBalances: Array<{
@@ -256,7 +258,7 @@ export class SpotDataProcessor {
         this.logger.info(
           `[SpotDataProcessor] No token balances to initialize for agent ${agentId}`,
         );
-        return;
+        return { success: true, balancesCreated: 0 };
       }
 
       // 3. Fetch prices for all tokens
@@ -335,6 +337,8 @@ export class SpotDataProcessor {
           balanceRecordsToInsert,
         );
       }
+
+      return { success: true, balancesCreated: balanceRecordsToInsert.length };
     } catch (error) {
       this.logger.error(
         {
@@ -344,6 +348,7 @@ export class SpotDataProcessor {
         `[SpotDataProcessor] Error initializing balances from blockchain`,
       );
       // Don't throw - allow competition to start even if balance init fails
+      return { success: false, balancesCreated: 0 };
     }
   }
 
@@ -491,7 +496,7 @@ export class SpotDataProcessor {
           `[SpotDataProcessor] First sync for agent ${agentId} - initializing token balances from blockchain`,
         );
 
-        await this.initializeAgentBalancesFromBlockchain(
+        const initResult = await this.initializeAgentBalancesFromBlockchain(
           agentId,
           competitionId,
           walletAddress,
@@ -501,11 +506,25 @@ export class SpotDataProcessor {
           tokenWhitelistEnabled,
         );
 
-        // Return early after balance initialization
-        // Current blockchain balances already reflect all past trading activity
-        // Subsequent syncs will process NEW swaps incrementally
-        this.logger.info(
-          `[SpotDataProcessor] Completed initial balance setup for agent ${agentId} - skipping historical trade processing`,
+        if (initResult.success) {
+          // Initialization completed (may have 0 balances if no qualified tokens)
+          // Return early - subsequent syncs will process NEW swaps incrementally
+          this.logger.info(
+            `[SpotDataProcessor] Completed initial balance setup for agent ${agentId} (${initResult.balancesCreated} balances) - skipping historical trade processing`,
+          );
+
+          return {
+            agentId,
+            tradesProcessed: 0,
+            balancesUpdated: initResult.balancesCreated,
+            violationsDetected: 0,
+          };
+        }
+
+        // Initialization failed (RPC error, circuit breaker, etc.)
+        // Return early without creating sync state so next cron will retry
+        this.logger.warn(
+          `[SpotDataProcessor] Balance initialization failed for agent ${agentId} - will retry on next sync`,
         );
 
         return {
@@ -565,33 +584,64 @@ export class SpotDataProcessor {
         }
 
         // Fetch trades for this chain only (per-chain incremental sync)
-        const chainTrades = await provider.getTradesSince(
+        const tradesResult = await provider.getTradesSince(
           walletAddress,
           since,
           [chain], // Single chain per request
         );
 
+        const chainTrades = tradesResult.trades;
         allTrades.push(...chainTrades);
 
-        // Update sync state to highest block SEEN
-        // CRITICAL: Update even if no trades found to prevent getting stuck
+        // Determine safe highest block for sync state
+        // If any transactions were skipped due to missing receipts, don't advance past them
+        let safeHighestBlock: number;
+
         if (chainTrades.length > 0) {
           const highestBlockSeen = Math.max(
             ...chainTrades.map((t) => t.blockNumber),
           );
-          syncStateUpdates.push({ chain, highestBlock: highestBlockSeen });
+
+          // Limit to lowest skipped block - 1 to ensure retry
+          if (tradesResult.lowestSkippedBlock !== undefined) {
+            safeHighestBlock = Math.min(
+              highestBlockSeen,
+              tradesResult.lowestSkippedBlock - 1,
+            );
+            this.logger.warn(
+              `[SpotDataProcessor] Agent ${agentId} on ${chain}: limiting sync state to block ${safeHighestBlock} due to skipped transaction at block ${tradesResult.lowestSkippedBlock}`,
+            );
+          } else {
+            safeHighestBlock = highestBlockSeen;
+          }
+
+          syncStateUpdates.push({ chain, highestBlock: safeHighestBlock });
 
           this.logger.debug(
-            `[SpotDataProcessor] Fetched ${chainTrades.length} trades for agent ${agentId} on ${chain}, highest block: ${highestBlockSeen}`,
+            `[SpotDataProcessor] Fetched ${chainTrades.length} trades for agent ${agentId} on ${chain}, sync state: ${safeHighestBlock}`,
           );
         } else {
           // No trades found - still need to update state to move forward
           // Get current chain tip to know what range we scanned
           const currentBlock = await provider.getCurrentBlock(chain);
-          syncStateUpdates.push({ chain, highestBlock: currentBlock });
+
+          // Limit to lowest skipped block - 1 to ensure retry
+          if (tradesResult.lowestSkippedBlock !== undefined) {
+            safeHighestBlock = Math.min(
+              currentBlock,
+              tradesResult.lowestSkippedBlock - 1,
+            );
+            this.logger.warn(
+              `[SpotDataProcessor] Agent ${agentId} on ${chain}: limiting sync state to block ${safeHighestBlock} due to skipped transaction at block ${tradesResult.lowestSkippedBlock}`,
+            );
+          } else {
+            safeHighestBlock = currentBlock;
+          }
+
+          syncStateUpdates.push({ chain, highestBlock: safeHighestBlock });
 
           this.logger.debug(
-            `[SpotDataProcessor] No trades for agent ${agentId} on ${chain}, scanned to block ${currentBlock}`,
+            `[SpotDataProcessor] No trades for agent ${agentId} on ${chain}, sync state: ${safeHighestBlock}`,
           );
         }
       }
@@ -1180,12 +1230,48 @@ export class SpotDataProcessor {
       );
 
       // 6. Create portfolio snapshots for all agents
+      // First, identify agents without snapshots (for late threshold enforcement)
+      // Only needed for cron syncs (!skipMonitoring) with minFundingThreshold configured
+      let agentsWithoutPriorSnapshots: string[] = [];
+      if (
+        !skipMonitoring &&
+        syncResult.successful.length > 0 &&
+        spotLiveConfig.minFundingThreshold
+      ) {
+        const allAgentIds =
+          await this.competitionRepo.getCompetitionAgents(competitionId);
+        const existingSnapshots =
+          await this.competitionRepo.getLatestPortfolioSnapshots(competitionId);
+        const agentsWithSnapshots = new Set(
+          existingSnapshots.map((s) => s.agentId),
+        );
+        agentsWithoutPriorSnapshots = allAgentIds.filter(
+          (id) => !agentsWithSnapshots.has(id),
+        );
+      }
+
       if (syncResult.successful.length > 0) {
         try {
           await this.portfolioSnapshotter.takePortfolioSnapshots(competitionId);
           this.logger.info(
             `[SpotDataProcessor] Portfolio snapshots updated for competition ${competitionId}`,
           );
+
+          // 6b. Late enforcement of minFundingThreshold for agents who just got their first snapshot
+          // This catches agents whose initial sync failed at competition start but recovered later
+          // Skip during initial sync (skipMonitoring=true) since CompetitionService.startCompetition
+          // handles threshold enforcement via enforceMinFundingThreshold after this returns
+          if (
+            !skipMonitoring &&
+            spotLiveConfig.minFundingThreshold &&
+            agentsWithoutPriorSnapshots.length > 0
+          ) {
+            await this.enforceLateMinFundingThreshold(
+              competitionId,
+              Number(spotLiveConfig.minFundingThreshold),
+              agentsWithoutPriorSnapshots,
+            );
+          }
         } catch (error) {
           this.logger.warn(
             `[SpotDataProcessor] Failed to create portfolio snapshots: ${error}`,
@@ -1287,5 +1373,71 @@ export class SpotDataProcessor {
     }
 
     return competition.type === "spot_live_trading";
+  }
+
+  /**
+   * Enforce minimum funding threshold for agents who just completed their first successful sync.
+   * This handles agents whose initial sync failed at competition start but recovered on a later sync cycle.
+   * @param competitionId Competition ID
+   * @param threshold Minimum portfolio value in USD
+   * @param agentsPreviouslyWithoutSnapshots Agent IDs that had no snapshots before this sync cycle
+   */
+  private async enforceLateMinFundingThreshold(
+    competitionId: string,
+    threshold: number,
+    agentsPreviouslyWithoutSnapshots: string[],
+  ): Promise<void> {
+    if (agentsPreviouslyWithoutSnapshots.length === 0) return;
+
+    this.logger.info(
+      `[SpotDataProcessor] Checking late minFundingThreshold enforcement for ${agentsPreviouslyWithoutSnapshots.length} agents`,
+    );
+
+    // Get fresh snapshots - these may include newly created ones
+    const latestSnapshots =
+      await this.competitionRepo.getLatestPortfolioSnapshots(competitionId);
+    const snapshotByAgentId = new Map<string, SelectPortfolioSnapshot>(
+      latestSnapshots.map((s) => [s.agentId, s]),
+    );
+
+    for (const agentId of agentsPreviouslyWithoutSnapshots) {
+      try {
+        const snapshot = snapshotByAgentId.get(agentId);
+        if (!snapshot) {
+          // Still no snapshot (balance sync must have failed again or no balances)
+          this.logger.debug(
+            `[SpotDataProcessor] Late enforcement: agent ${agentId} still has no snapshot - skipping threshold check`,
+          );
+          continue;
+        }
+
+        // This is their first snapshot - check threshold
+        const portfolioValue = snapshot.totalValue;
+
+        if (portfolioValue < threshold) {
+          this.logger.warn(
+            `[SpotDataProcessor] Late threshold enforcement: Agent ${agentId} has portfolio value ` +
+              `$${portfolioValue.toFixed(2)}, below threshold $${threshold}. Removing from competition.`,
+          );
+
+          await this.competitionRepo.updateAgentCompetitionStatus(
+            competitionId,
+            agentId,
+            "disqualified",
+            `Insufficient initial funding: $${portfolioValue.toFixed(2)} < $${threshold} minimum (late enforcement)`,
+          );
+        } else {
+          this.logger.info(
+            `[SpotDataProcessor] Late threshold check passed: Agent ${agentId} has ` +
+              `$${portfolioValue.toFixed(2)} >= $${threshold}`,
+          );
+        }
+      } catch (error) {
+        // Log error but continue processing other agents - isolation principle
+        this.logger.error(
+          `[SpotDataProcessor] Failed to enforce late threshold for agent ${agentId}: ${error}`,
+        );
+      }
+    }
   }
 }

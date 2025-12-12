@@ -19,12 +19,10 @@ import {
   ErrorResponse,
   GetCompetitionPartnersResponse,
   StartCompetitionResponse,
-  UpcomingCompetitionsResponse,
   UpdateCompetitionResponse,
 } from "@recallnet/test-utils";
 import { getBaseUrl } from "@recallnet/test-utils";
 import {
-  createPrivyAuthenticatedClient,
   createTestClient,
   createTestCompetition,
   getAdminApiKey,
@@ -36,6 +34,8 @@ import {
 } from "@recallnet/test-utils";
 
 import { db } from "@/lib/db";
+
+import { createTestRpcClient } from "../utils/rpc-client-helpers.js";
 
 describe("Competition API", () => {
   let adminApiKey: string;
@@ -700,7 +700,7 @@ describe("Competition API", () => {
       await adminClient.loginAsAdmin(adminApiKey);
 
       // Create a Privy authenticated client
-      const { client: userClient } = await createPrivyAuthenticatedClient({});
+      const userClient = await createTestRpcClient();
 
       // Create a pending competition with minTradesPerDay
       const competitionName = `Listed Competition ${Date.now()}`;
@@ -719,13 +719,9 @@ describe("Competition API", () => {
       });
 
       // Get competitions list as authenticated user
-      const listResponse = await userClient.getCompetitions("pending");
-      expect(listResponse.success).toBe(true);
-      expect("competitions" in listResponse).toBe(true);
-
-      // Find our competition
-      const competitions = (listResponse as UpcomingCompetitionsResponse)
-        .competitions;
+      const { competitions } = await userClient.competitions.list({
+        status: "pending",
+      });
       const ourCompetition = competitions.find(
         (c) => c.name === competitionName,
       );

@@ -1,5 +1,7 @@
+import { and, eq } from "drizzle-orm";
 import { beforeEach, describe, expect, test } from "vitest";
 
+import { portfolioSnapshots } from "@recallnet/db/schema/trading/defs";
 import {
   type AdminCompetitionTransferViolationsResponse,
   type AgentCompetitionsResponse,
@@ -23,6 +25,7 @@ import {
 } from "@recallnet/test-utils";
 import type { AdminAgentResponse } from "@recallnet/test-utils";
 
+import { db } from "@/database/db.js";
 import { ServiceRegistry } from "@/services/index.js";
 
 describe("Spot Live Competition", () => {
@@ -232,10 +235,16 @@ describe("Spot Live Competition", () => {
     expect(comp.stats?.totalTrades).toBeDefined();
 
     // Verify spotLiveConfig includes allowedProtocols and allowedTokens
+    // Note: "aerodrome" protocol now creates 2 entries (V2 + Slipstream routers)
     expect(comp.spotLiveConfig).toBeDefined();
     expect(comp.spotLiveConfig?.allowedProtocols).toBeDefined();
-    expect(comp.spotLiveConfig?.allowedProtocols?.length).toBe(1);
+    expect(comp.spotLiveConfig?.allowedProtocols?.length).toBe(2);
+    // Both entries should be for aerodrome on base chain
     expect(comp.spotLiveConfig?.allowedProtocols?.[0]).toMatchObject({
+      protocol: "aerodrome",
+      specificChain: "base",
+    });
+    expect(comp.spotLiveConfig?.allowedProtocols?.[1]).toMatchObject({
       protocol: "aerodrome",
       specificChain: "base",
     });
@@ -1646,6 +1655,198 @@ describe("Spot Live Competition", () => {
     expect(typedAgents.agents.length).toBe(1);
   });
 
+  test("should enforce late minimum funding threshold for agents that recovered from failed initial sync", async () => {
+    // Verifies late threshold enforcement runs for agents without prior snapshots.
+    // Both agents have balances above threshold, so both remain active after recovery.
+
+    const adminClient = createTestClient(getBaseUrl());
+    await adminClient.loginAsAdmin(adminApiKey);
+
+    const { agent: agentStaysActive } = await registerUserAndAgentAndGetClient({
+      adminApiKey,
+      agentName: "Stays Above Threshold",
+      agentWalletAddress: "0xaaaa000000000000000000000000000000000001", // $2000 USDC
+    });
+
+    const { agent: agentToRecover } = await registerUserAndAgentAndGetClient({
+      adminApiKey,
+      agentName: "Will Recover After Simulated Sync Failure",
+      agentWalletAddress: "0xbbbb000000000000000000000000000000000002", // $3000 USDC
+    });
+
+    const response = await startSpotLiveTestCompetition({
+      adminClient,
+      name: `Late Threshold Recovery Test ${Date.now()}`,
+      agentIds: [agentStaysActive.id, agentToRecover.id],
+      spotLiveConfig: {
+        dataSource: "rpc_direct" as const,
+        dataSourceConfig: {
+          type: "rpc_direct" as const,
+          provider: "alchemy" as const,
+          chains: ["base"],
+        },
+        chains: ["base"],
+        minFundingThreshold: 100, // $100 threshold
+        selfFundingThresholdUsd: 10,
+        syncIntervalMinutes: 2,
+      },
+    });
+
+    expect(response.success).toBe(true);
+    const competition = response.competition;
+
+    // Wait for competition start
+    await wait(2000);
+
+    // Verify both agents are active after competition start
+    const initialAgents = await adminClient.getCompetitionAgents(
+      competition.id,
+    );
+    expect(initialAgents.success).toBe(true);
+    expect((initialAgents as CompetitionAgentsResponse).agents.length).toBe(2);
+
+    // Delete agentToRecover's snapshot to simulate failed initial sync
+    await db
+      .delete(portfolioSnapshots)
+      .where(
+        and(
+          eq(portfolioSnapshots.competitionId, competition.id),
+          eq(portfolioSnapshots.agentId, agentToRecover.id),
+        ),
+      );
+
+    // Confirm agent has no snapshot before sync
+    const snapshotsBefore = await db
+      .select()
+      .from(portfolioSnapshots)
+      .where(
+        and(
+          eq(portfolioSnapshots.competitionId, competition.id),
+          eq(portfolioSnapshots.agentId, agentToRecover.id),
+        ),
+      );
+    expect(snapshotsBefore.length).toBe(0);
+
+    // Trigger sync - late enforcement runs for agent without prior snapshot
+    const services = new ServiceRegistry();
+    await services.spotDataProcessor.processSpotLiveCompetition(competition.id);
+
+    await wait(2000);
+
+    // Both agents remain active (both above $100 threshold)
+    const agentsResponse = await adminClient.getCompetitionAgents(
+      competition.id,
+    );
+    expect(agentsResponse.success).toBe(true);
+
+    const typedAgents = agentsResponse as CompetitionAgentsResponse;
+
+    const staysActiveEntry = typedAgents.agents.find(
+      (a) => a.id === agentStaysActive.id,
+    );
+    expect(staysActiveEntry).toBeDefined();
+    expect(staysActiveEntry?.active).toBe(true);
+
+    const recoveredEntry = typedAgents.agents.find(
+      (a) => a.id === agentToRecover.id,
+    );
+    expect(recoveredEntry).toBeDefined();
+    expect(recoveredEntry?.active).toBe(true);
+    expect(recoveredEntry?.portfolioValue).toBeGreaterThan(2500);
+  });
+
+  test("should disqualify agent via late enforcement when recovered with balance below threshold", async () => {
+    // Verifies late enforcement disqualifies agents below threshold.
+    // Mock balances:
+    //   0xbbbb: $3000 at sync 0, $2866 at sync 1+
+    //   0xaaaa: $2000 at sync 0, $1933 at sync 1+
+    // Threshold $1950: 0xaaaa passes at start but fails late enforcement.
+
+    const adminClient = createTestClient(getBaseUrl());
+    await adminClient.loginAsAdmin(adminApiKey);
+
+    const { agent: agentAboveThreshold } =
+      await registerUserAndAgentAndGetClient({
+        adminApiKey,
+        agentName: "Above Threshold After Sync",
+        agentWalletAddress: "0xbbbb000000000000000000000000000000000002", // $2866 after sync
+      });
+
+    const { agent: agentBelowThreshold } =
+      await registerUserAndAgentAndGetClient({
+        adminApiKey,
+        agentName: "Below Threshold After Sync",
+        agentWalletAddress: "0xaaaa000000000000000000000000000000000001", // $1933 after sync
+      });
+
+    const response = await startSpotLiveTestCompetition({
+      adminClient,
+      name: `Late Threshold Disqualify High Test ${Date.now()}`,
+      agentIds: [agentAboveThreshold.id, agentBelowThreshold.id],
+      spotLiveConfig: {
+        dataSource: "rpc_direct" as const,
+        dataSourceConfig: {
+          type: "rpc_direct" as const,
+          provider: "alchemy" as const,
+          chains: ["base"],
+        },
+        chains: ["base"],
+        minFundingThreshold: 1950, // $1950 threshold
+        selfFundingThresholdUsd: 10,
+        syncIntervalMinutes: 2,
+      },
+    });
+
+    expect(response.success).toBe(true);
+    const competition = response.competition;
+
+    await wait(2000);
+
+    // Both agents pass threshold at competition start (initial balances > $1950)
+    const initialAgents = await adminClient.getCompetitionAgents(
+      competition.id,
+    );
+    expect(initialAgents.success).toBe(true);
+    expect((initialAgents as CompetitionAgentsResponse).agents.length).toBe(2);
+
+    // Delete agentBelowThreshold's snapshot to simulate failed initial sync
+    await db
+      .delete(portfolioSnapshots)
+      .where(
+        and(
+          eq(portfolioSnapshots.competitionId, competition.id),
+          eq(portfolioSnapshots.agentId, agentBelowThreshold.id),
+        ),
+      );
+
+    // Trigger sync - late enforcement creates snapshot and checks threshold
+    const services = new ServiceRegistry();
+    await services.spotDataProcessor.processSpotLiveCompetition(competition.id);
+
+    await wait(2000);
+
+    const agentsResponse = await adminClient.getCompetitionAgents(
+      competition.id,
+    );
+    expect(agentsResponse.success).toBe(true);
+
+    const typedAgents = agentsResponse as CompetitionAgentsResponse;
+
+    // Agent above threshold remains active
+    const aboveEntry = typedAgents.agents.find(
+      (a) => a.id === agentAboveThreshold.id,
+    );
+    expect(aboveEntry).toBeDefined();
+    expect(aboveEntry?.active).toBe(true);
+    expect(aboveEntry?.portfolioValue).toBeGreaterThan(2500);
+
+    // Agent below threshold is removed by late enforcement
+    const belowEntry = typedAgents.agents.find(
+      (a) => a.id === agentBelowThreshold.id,
+    );
+    expect(belowEntry).toBeUndefined();
+  });
+
   test("should filter balances and portfolio by token whitelist", async () => {
     const adminClient = createTestClient(getBaseUrl());
     await adminClient.loginAsAdmin(adminApiKey);
@@ -1753,25 +1954,25 @@ describe("Spot Live Competition", () => {
     const adminClient = createTestClient(getBaseUrl());
     await adminClient.loginAsAdmin(adminApiKey);
 
-    // Register agents with specific ROI test wallets
+    // Register agents with UNIQUE ROI test wallets
     // These addresses are configured in MockAlchemyRpcProvider to return specific balances
     // that result in inverse correlation between portfolio value and ROI
     const { agent: agentHighROI } = await registerUserAndAgentAndGetClient({
       adminApiKey,
       agentName: "High ROI Low Portfolio Agent",
-      agentWalletAddress: "0x0001000000000000000000000000000000000001", // $100 → $150 = 50% ROI
+      agentWalletAddress: "0xa011000000000000000000000000000000000001", // $100 → $150 = 50% ROI
     });
 
     const { agent: agentMediumROI } = await registerUserAndAgentAndGetClient({
       adminApiKey,
       agentName: "Medium ROI High Portfolio Agent",
-      agentWalletAddress: "0x0002000000000000000000000000000000000002", // $1000 → $1200 = 20% ROI
+      agentWalletAddress: "0xa022000000000000000000000000000000000002", // $1000 → $1200 = 20% ROI
     });
 
     const { agent: agentLowROI } = await registerUserAndAgentAndGetClient({
       adminApiKey,
       agentName: "Low ROI Medium Portfolio Agent",
-      agentWalletAddress: "0x0003000000000000000000000000000000000003", // $500 → $550 = 10% ROI
+      agentWalletAddress: "0xa033000000000000000000000000000000000003", // $500 → $550 = 10% ROI
     });
 
     // Start spot live competition
@@ -2581,6 +2782,239 @@ describe("Spot Live Competition", () => {
       expect(
         (detailsAfter as CompetitionDetailResponse).competition.spotLiveConfig,
       ).toBeFalsy();
+    });
+  });
+
+  describe("Slipstream (Concentrated Liquidity) Router Support", () => {
+    test("should detect swaps via Slipstream router with CL Swap event", async () => {
+      // This test verifies that Aerodrome Slipstream (concentrated liquidity) swaps
+      // are correctly detected when the "aerodrome" protocol filter is enabled.
+      //
+      // Key differences from V2:
+      // - Different router address: 0xbe6d8f0d05cc4be24d5167a3ef062215be6d18a5
+      // - Different Swap event signature (CL Swap with int256 amounts, sqrtPriceX96, etc.)
+      // - Same ERC20 Transfer event flow for token detection
+
+      const adminClient = createTestClient(getBaseUrl());
+      await adminClient.loginAsAdmin(adminApiKey);
+
+      // Register agent with Slipstream swap activity
+      const { agent, client: agentClient } =
+        await registerUserAndAgentAndGetClient({
+          adminApiKey,
+          agentName: "Slipstream Swap Agent",
+          agentWalletAddress: "0x5110000000000000000000000000000000000001",
+        });
+
+      // Start competition with Aerodrome protocol filter (should include both V2 and Slipstream)
+      const response = await startSpotLiveTestCompetition({
+        adminClient,
+        name: `Slipstream Swap Test ${Date.now()}`,
+        agentIds: [agent.id],
+        spotLiveConfig: {
+          dataSource: "rpc_direct",
+          dataSourceConfig: {
+            type: "rpc_direct",
+            provider: "alchemy",
+            chains: ["base"],
+          },
+          chains: ["base"],
+          allowedProtocols: [
+            {
+              protocol: "aerodrome",
+              chain: "base",
+            },
+          ],
+          selfFundingThresholdUsd: 10,
+          syncIntervalMinutes: 2,
+        },
+      });
+
+      expect(response.success).toBe(true);
+      const competition = response.competition;
+
+      await wait(1000);
+
+      // Trigger sync - should detect Slipstream swap
+      const services = new ServiceRegistry();
+      await services.spotDataProcessor.processSpotLiveCompetition(
+        competition.id,
+      );
+      await wait(500);
+
+      // Agent checks THEIR trade history
+      const tradesResponse = await agentClient.getTradeHistory(competition.id);
+      expect(tradesResponse.success).toBe(true);
+
+      const typedTradesResponse = tradesResponse as TradeHistoryResponse;
+      expect(typedTradesResponse.trades).toBeDefined();
+      expect(typedTradesResponse.trades.length).toBeGreaterThan(0);
+
+      // Find the Slipstream swap
+      const slipstreamSwap = typedTradesResponse.trades.find(
+        (t) => t.txHash === "0xslipstream_swap_1",
+      );
+      expect(slipstreamSwap).toBeDefined();
+      expect(slipstreamSwap?.tradeType).toBe("spot_live");
+      expect(slipstreamSwap?.protocol).toBe("aerodrome");
+
+      // Verify token addresses (USDC → RIVER)
+      expect(slipstreamSwap?.fromToken.toLowerCase()).toBe(
+        "0x833589fcd6edb6e08f4c7c32d4f71b54bda02913", // USDC
+      );
+      expect(slipstreamSwap?.toToken.toLowerCase()).toBe(
+        "0xda7ad9dea9397cffddae2f8a052b82f1484252b3", // RIVER
+      );
+
+      // Verify amounts
+      expect(slipstreamSwap?.fromAmount).toBeCloseTo(50, 1); // 50 USDC
+      expect(slipstreamSwap?.toAmount).toBeCloseTo(8.028, 1); // ~8 RIVER
+
+      // Agent checks balances - should have RIVER now
+      const balancesResponse = await agentClient.getBalance(competition.id);
+      expect(balancesResponse.success).toBe(true);
+
+      const typedBalances = balancesResponse as BalancesResponse;
+      const riverBalance = typedBalances.balances.find(
+        (b) =>
+          b.tokenAddress.toLowerCase() ===
+          "0xda7ad9dea9397cffddae2f8a052b82f1484252b3",
+      );
+      expect(riverBalance).toBeDefined();
+      expect(riverBalance?.amount).toBeGreaterThan(0);
+    });
+
+    test("should detect both V2 and Slipstream swaps in same competition", async () => {
+      // This test verifies that a single agent using BOTH V2 and Slipstream routers
+      // has ALL swaps correctly detected when "aerodrome" protocol filter is enabled.
+      //
+      // The mock wallet 0xcomb... has:
+      // - V2 swap: USDC → AERO (via 0xcf77a3ba... router)
+      // - Slipstream swap: USDC → RIVER (via 0xbe6d8f0d... router)
+
+      const adminClient = createTestClient(getBaseUrl());
+      await adminClient.loginAsAdmin(adminApiKey);
+
+      // Register agent with combined V2+Slipstream swap activity
+      const { agent, client: agentClient } =
+        await registerUserAndAgentAndGetClient({
+          adminApiKey,
+          agentName: "Combined V2+Slipstream Agent",
+          agentWalletAddress: "0xc0b0000000000000000000000000000000000001",
+        });
+
+      // Start competition with Aerodrome protocol filter
+      const response = await startSpotLiveTestCompetition({
+        adminClient,
+        name: `Combined V2+Slipstream Test ${Date.now()}`,
+        agentIds: [agent.id],
+        spotLiveConfig: {
+          dataSource: "rpc_direct",
+          dataSourceConfig: {
+            type: "rpc_direct",
+            provider: "alchemy",
+            chains: ["base"],
+          },
+          chains: ["base"],
+          allowedProtocols: [
+            {
+              protocol: "aerodrome",
+              chain: "base",
+            },
+          ],
+          selfFundingThresholdUsd: 10,
+          syncIntervalMinutes: 2,
+        },
+      });
+
+      expect(response.success).toBe(true);
+      const competition = response.competition;
+
+      await wait(1000);
+
+      const services = new ServiceRegistry();
+
+      // First sync - should detect V2 swap (older, block 2005000)
+      await services.spotDataProcessor.processSpotLiveCompetition(
+        competition.id,
+      );
+      await wait(500);
+
+      // Second sync - should detect Slipstream swap (newer, block 2005010)
+      await services.spotDataProcessor.processSpotLiveCompetition(
+        competition.id,
+      );
+      await wait(500);
+
+      // Agent checks trade history - should have BOTH swaps
+      const tradesResponse = await agentClient.getTradeHistory(competition.id);
+      expect(tradesResponse.success).toBe(true);
+
+      const typedTradesResponse = tradesResponse as TradeHistoryResponse;
+      expect(typedTradesResponse.trades.length).toBe(2);
+
+      // Find V2 swap (USDC → AERO)
+      const v2Swap = typedTradesResponse.trades.find(
+        (t) => t.txHash === "0xcombined_v2_swap",
+      );
+      expect(v2Swap).toBeDefined();
+      expect(v2Swap?.protocol).toBe("aerodrome");
+      expect(v2Swap?.fromToken.toLowerCase()).toBe(
+        "0x833589fcd6edb6e08f4c7c32d4f71b54bda02913", // USDC
+      );
+      expect(v2Swap?.toToken.toLowerCase()).toBe(
+        "0x940181a94a35a4569e4529a3cdfb74e38fd98631", // AERO
+      );
+
+      // Find Slipstream swap (USDC → RIVER)
+      const slipSwap = typedTradesResponse.trades.find(
+        (t) => t.txHash === "0xcombined_slip_swap",
+      );
+      expect(slipSwap).toBeDefined();
+      expect(slipSwap?.protocol).toBe("aerodrome");
+      expect(slipSwap?.fromToken.toLowerCase()).toBe(
+        "0x833589fcd6edb6e08f4c7c32d4f71b54bda02913", // USDC
+      );
+      expect(slipSwap?.toToken.toLowerCase()).toBe(
+        "0xda7ad9dea9397cffddae2f8a052b82f1484252b3", // RIVER
+      );
+
+      // Agent checks balances - should have AERO and RIVER
+      const balancesResponse = await agentClient.getBalance(competition.id);
+      expect(balancesResponse.success).toBe(true);
+
+      const typedBalances = balancesResponse as BalancesResponse;
+
+      // AERO balance from V2 swap
+      const aeroBalance = typedBalances.balances.find(
+        (b) =>
+          b.tokenAddress.toLowerCase() ===
+          "0x940181a94a35a4569e4529a3cdfb74e38fd98631",
+      );
+      expect(aeroBalance).toBeDefined();
+      expect(aeroBalance?.amount).toBeCloseTo(50, 1);
+
+      // RIVER balance from Slipstream swap
+      const riverBalance = typedBalances.balances.find(
+        (b) =>
+          b.tokenAddress.toLowerCase() ===
+          "0xda7ad9dea9397cffddae2f8a052b82f1484252b3",
+      );
+      expect(riverBalance).toBeDefined();
+      expect(riverBalance?.amount).toBeGreaterThan(0);
+
+      // Verify portfolio shows all three tokens (USDC, AERO, RIVER)
+      const leaderboardResponse = await adminClient.getCompetitionAgents(
+        competition.id,
+      );
+      expect(leaderboardResponse.success).toBe(true);
+      const agentEntry = (
+        leaderboardResponse as CompetitionAgentsResponse
+      ).agents.find((a) => a.id === agent.id);
+
+      expect(agentEntry).toBeDefined();
+      // Portfolio value should include all tokens
+      expect(agentEntry?.portfolioValue).toBeGreaterThan(1800); // At least remaining USDC
     });
   });
 });

@@ -161,7 +161,7 @@ The application uses a layered architecture:
 ### Prerequisites
 
 - Node.js (v16+)
-- PostgreSQL (v13+)
+- PostgreSQL (v17+)
 - npm or yarn
 
 ## Baseline Migrations for Legacy Data
