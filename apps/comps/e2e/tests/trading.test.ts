@@ -24,15 +24,13 @@ import {
   startTestCompetition,
 } from "@recallnet/test-utils";
 
-import config from "@/config/index.js";
-import { db } from "@/database/db.js";
-import { ServiceRegistry } from "@/services/index.js";
+import { config } from "@/config/private";
+import { db } from "@/lib/db";
+import { priceTrackerService } from "@/lib/services";
 
 const reason = "trading end-to-end test";
 
 describe("Trading API", () => {
-  const services = new ServiceRegistry();
-
   let adminApiKey: string;
 
   beforeEach(async () => {
@@ -532,8 +530,7 @@ describe("Trading API", () => {
       if (tokenAddress === usdcTokenAddress) continue;
 
       // Only consolidate Solana (SVM) tokens - we want to avoid cross-chain trades
-      const tokenChain =
-        services.priceTrackerService.determineChain(tokenAddress);
+      const tokenChain = priceTrackerService.determineChain(tokenAddress);
       if (tokenChain !== BlockchainType.SVM) {
         continue;
       }
@@ -632,8 +629,7 @@ describe("Trading API", () => {
     for (const tokenAddress of tokenAddressesBefore) {
       if (tokenAddress === usdcTokenAddress) continue;
 
-      const tokenChain =
-        services.priceTrackerService.determineChain(tokenAddress);
+      const tokenChain = priceTrackerService.determineChain(tokenAddress);
       if (tokenChain !== BlockchainType.SVM) {
         continue;
       }

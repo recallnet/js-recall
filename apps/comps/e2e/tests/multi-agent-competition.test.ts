@@ -19,7 +19,7 @@ import {
   wait,
 } from "@recallnet/test-utils";
 
-import config from "@/config/index.js";
+import { config } from "@/config/private";
 
 describe("Multi-Agent Competition", () => {
   let adminApiKey: string;
