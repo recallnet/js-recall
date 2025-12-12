@@ -5,7 +5,11 @@ import { useRouter } from "next/navigation";
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 
 import { Button } from "@recallnet/ui2/components/button";
-import { Dialog, DialogContent } from "@recallnet/ui2/components/dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogTitle,
+} from "@recallnet/ui2/components/dialog";
 
 import { StepCard } from "./step-card";
 import { StepIndicators } from "./step-indicators";
@@ -159,6 +163,7 @@ export const OnboardingCarousel: React.FC<OnboardingCarouselProps> = ({
         showCloseButton={false}
         onKeyDown={handleKeyDown}
       >
+        <DialogTitle className="sr-only">Welcome to Recall</DialogTitle>
         <div className="relative min-h-[350px]">
           <AnimatePresence mode="wait" initial={false} custom={direction}>
             <motion.div
