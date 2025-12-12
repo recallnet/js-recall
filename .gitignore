@@ -69,3 +69,6 @@ packages/load-test/reports
 
 # Airdrop csv data
 apps/api/scripts/data/airdrop_*_*.csv
+
+# ESLint cache
+.eslintcache
