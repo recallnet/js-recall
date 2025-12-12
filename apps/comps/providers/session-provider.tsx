@@ -25,6 +25,7 @@ import {
   useCallback,
   useEffect,
   useMemo,
+  useRef,
   useState,
 } from "react";
 import { useAccount, useChainId, useDisconnect } from "wagmi";
@@ -32,10 +33,7 @@ import { useAccount, useChainId, useDisconnect } from "wagmi";
 import { WrongNetworkModal } from "@/components/modals/wrong-network";
 import { WrongWalletModal } from "@/components/modals/wrong-wallet";
 import { OnboardingCarousel } from "@/components/onboarding-carousel";
-import {
-  checkOnboardingComplete,
-  useOnboardingComplete,
-} from "@/hooks/useOnboardingComplete";
+import { useOnboardingComplete } from "@/hooks/useOnboardingComplete";
 import { mergeWithoutUndefined } from "@/lib/merge-without-undefined";
 import { userWalletState } from "@/lib/user-wallet-state";
 import { tanstackClient } from "@/rpc/clients/tanstack-query";
@@ -117,7 +115,15 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
   const [isWrongWalletModalOpen, setIsWrongWalletModalOpen] = useState(false);
   const [showOnboarding, setShowOnboarding] = useState(false);
 
-  const { markComplete: markOnboardingComplete } = useOnboardingComplete();
+  // Track user education onboarding completion
+  const {
+    isComplete: onboardingComplete,
+    markComplete: markOnboardingComplete,
+  } = useOnboardingComplete();
+  const onboardingCompleteRef = useRef(onboardingComplete);
+  useEffect(() => {
+    onboardingCompleteRef.current = onboardingComplete;
+  }, [onboardingComplete]);
 
   const handleCloseWrongWalletModal = useCallback(
     (open: boolean) => {
@@ -177,7 +183,7 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
 
       setShouldLinkWallet(isNewUser);
 
-      if (isNewUser && !checkOnboardingComplete()) {
+      if (isNewUser && !onboardingCompleteRef.current) {
         setShowOnboarding(true);
       }
 
