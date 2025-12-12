@@ -21,7 +21,7 @@ describe("Rate Limiter Disabled", () => {
 
     for (let i = 0; i < requestCount; i++) {
       try {
-        const response = await httpClient.get("/api/agents");
+        const response = await httpClient.get("/agents");
         responses.push(response);
       } catch (error) {
         console.error(error);

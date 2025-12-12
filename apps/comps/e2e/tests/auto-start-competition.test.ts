@@ -70,7 +70,7 @@ describe("Competition Start Date Processing", () => {
     // Verify an initial portfolio snapshot was taken
     const snapshotsResponse = (await adminClient.request(
       "get",
-      `/api/admin/competition/${competition.id}/snapshots`,
+      `/admin/competition/${competition.id}/snapshots`,
     )) as SnapshotResponse;
     expect(snapshotsResponse.success).toBe(true);
     expect(snapshotsResponse.snapshots.length).toBeGreaterThan(0);

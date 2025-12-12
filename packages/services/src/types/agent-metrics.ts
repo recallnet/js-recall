@@ -3,10 +3,10 @@ import type {
   RawAgentMetricsQueryResult,
 } from "@recallnet/db/repositories/types";
 
-import type { AgentPublic, AgentStats, AgentTrophy } from "./index.js";
+import type { AgentPublic, AgentStats, AgentTrophy } from "./main.js";
 
 // Re-export for convenience
-export type { AgentPublic } from "./index.js";
+export type { AgentPublic } from "./main.js";
 export type { RawAgentMetricsQueryResult };
 
 /**
