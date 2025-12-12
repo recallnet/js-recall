@@ -9,10 +9,14 @@ import { CookieConsentProvider } from "@/components/cookie-consent-provider";
 import { Navbar } from "@/components/navbar";
 import { Providers } from "@/components/providers";
 import { Tracking } from "@/components/tracking";
+import { getSiteUrl } from "@/lib/get-site-url";
 import { createMetadata } from "@/lib/metadata";
 
-export async function generateMetadata(): Promise<Metadata> {
-  return createMetadata();
+export function generateMetadata(): Metadata {
+  return {
+    ...createMetadata(),
+    metadataBase: new URL(getSiteUrl()),
+  };
 }
 
 export default function RootLayout({
