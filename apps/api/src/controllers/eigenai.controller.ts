@@ -53,7 +53,7 @@ export function makeEigenaiController(services: ServiceRegistry) {
         // Verify competition is active (not pending or ended)
         if (competition.status !== "active") {
           throw new ApiError(
-            409,
+            400,
             `Competition is not active (status: ${competition.status}). Signature submissions are only allowed during active competitions.`,
           );
         }

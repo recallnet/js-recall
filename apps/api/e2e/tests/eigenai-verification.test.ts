@@ -696,7 +696,7 @@ describe("EigenAI Verification", () => {
 
     expect(submitResponse.success).toBe(false);
     const errorResponse = submitResponse as ErrorResponse;
-    expect(errorResponse.status).toBe(409);
+    expect(errorResponse.status).toBe(400);
     expect(errorResponse.error).toContain("not active");
   });
 
@@ -740,7 +740,7 @@ describe("EigenAI Verification", () => {
 
     expect(submitResponse.success).toBe(false);
     const errorResponse = submitResponse as ErrorResponse;
-    expect(errorResponse.status).toBe(409);
+    expect(errorResponse.status).toBe(400);
     expect(errorResponse.error).toContain("not active");
   });
 
