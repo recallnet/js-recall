@@ -1,7 +1,102 @@
 /**
  * API response types and base interfaces
  */
+// Import and re-export canonical types from contracts
+import {
+  ACTOR_STATUSES,
+  type ActorStatus,
+  ActorStatusSchema,
+  type AgentStats,
+  AgentStatsSchema,
+  type AgentTrophy,
+  AgentTrophySchema,
+  BlockchainType,
+  COMPETITION_STATUSES,
+  COMPETITION_TYPES,
+  CROSS_CHAIN_TRADING_TYPES,
+  type CompetitionStatus,
+  CompetitionStatusSchema,
+  type CompetitionType,
+  CompetitionTypeSchema,
+  type CrossChainTradingType,
+  CrossChainTradingTypeSchema,
+  SPECIFIC_CHAIN_NAMES,
+  type SpecificChain,
+  SpecificChainSchema,
+  chainTypeMapping,
+  getBlockchainType,
+  isEvmChain,
+} from "@recallnet/contracts";
 import type { AgentPublic, User } from "@recallnet/services/types";
+
+export {
+  BlockchainType,
+  type SpecificChain,
+  SPECIFIC_CHAIN_NAMES,
+  SpecificChainSchema,
+  chainTypeMapping,
+  getBlockchainType,
+  isEvmChain,
+  type ActorStatus,
+  ACTOR_STATUSES,
+  ActorStatusSchema,
+  type CompetitionStatus,
+  COMPETITION_STATUSES,
+  CompetitionStatusSchema,
+  type CompetitionType,
+  COMPETITION_TYPES,
+  CompetitionTypeSchema,
+  type CrossChainTradingType,
+  CROSS_CHAIN_TRADING_TYPES,
+  CrossChainTradingTypeSchema,
+  type AgentTrophy,
+  AgentTrophySchema,
+  type AgentStats,
+  AgentStatsSchema,
+};
+
+/**
+ * Backwards-compatible object for CROSS_CHAIN_TRADING_TYPE
+ * Tests use CROSS_CHAIN_TRADING_TYPE.DISALLOW_ALL syntax
+ */
+export const CROSS_CHAIN_TRADING_TYPE = {
+  DISALLOW_ALL: "disallowAll",
+  DISALLOW_X_PARENT: "disallowXParent",
+  ALLOW: "allow",
+} as const;
+
+/**
+ * Backwards-compatible object for COMPETITION_STATUS
+ * Tests use COMPETITION_STATUS.PENDING syntax
+ */
+export const COMPETITION_STATUS = {
+  PENDING: "pending",
+  ACTIVE: "active",
+  ENDING: "ending",
+  ENDED: "ended",
+} as const;
+
+/**
+ * Backwards-compatible object for COMPETITION_TYPE
+ * Tests use COMPETITION_TYPE.TRADING syntax
+ */
+export const COMPETITION_TYPE = {
+  TRADING: "trading",
+  PERPETUAL_FUTURES: "perpetual_futures",
+  SPOT_LIVE_TRADING: "spot_live_trading",
+  SPORTS_PREDICTION: "sports_prediction",
+} as const;
+
+/**
+ * Backwards-compatible object for ACTOR_STATUS
+ * Tests use ACTOR_STATUS.ACTIVE syntax
+ */
+export const ACTOR_STATUS = {
+  ACTIVE: "active",
+  INACTIVE: "inactive",
+  SUSPENDED: "suspended",
+  DELETED: "deleted",
+} as const;
 
 // Base response type for all API responses
 export interface ApiResponse {
@@ -16,78 +111,12 @@ export interface ErrorResponse {
   status: number;
 }
 
-// Enum for blockchain types
-export enum BlockchainType {
-  EVM = "evm",
-  SVM = "svm",
-}
-
-// Enum for specific chains
-export enum SpecificChain {
-  ETH = "eth",
-  POLYGON = "polygon",
-  BSC = "bsc",
-  ARBITRUM = "arbitrum",
-  OPTIMISM = "optimism",
-  AVALANCHE = "avalanche",
-  BASE = "base",
-  LINEA = "linea",
-  ZKSYNC = "zksync",
-  SCROLL = "scroll",
-  MANTLE = "mantle",
-  SVM = "svm",
-}
-
-// Cross-chain trading type values
-export const CROSS_CHAIN_TRADING_TYPE = {
-  DISALLOW_ALL: "disallowAll",
-  DISALLOW_X_PARENT: "disallowXParent",
-  ALLOW: "allow",
-} as const;
-
-// Cross-chain trading type
-export type CrossChainTradingType =
-  (typeof CROSS_CHAIN_TRADING_TYPE)[keyof typeof CROSS_CHAIN_TRADING_TYPE];
-
-// Competition status values
-export const COMPETITION_STATUS = {
-  PENDING: "pending",
-  ACTIVE: "active",
-  ENDED: "ended",
-} as const;
-
-// Competition type values
-export const COMPETITION_TYPE = {
-  TRADING: "trading",
-  PERPETUAL_FUTURES: "perpetual_futures",
-  SPOT_LIVE_TRADING: "spot_live_trading",
-} as const;
-
-// Competition type
-export type CompetitionType =
-  (typeof COMPETITION_TYPE)[keyof typeof COMPETITION_TYPE];
-
-/**
- * USER AND AGENT TYPES
- */
-
-// User, admin, agent status
-export const ACTOR_STATUS = {
-  ACTIVE: "active",
-  INACTIVE: "inactive",
-  SUSPENDED: "suspended",
-  DELETED: "deleted",
-} as const;
-
-// Actor status
-export type ActorStatus = (typeof ACTOR_STATUS)[keyof typeof ACTOR_STATUS];
-
 // User metadata structure
 export interface UserMetadata {
   [key: string]: unknown;
 }
 
-// Agent metadata structure
+// Agent metadata structure (test-utils specific, includes legacy fields)
 export interface AgentMetadata {
   ref?: {
     name?: string;
@@ -101,15 +130,6 @@ export interface AgentMetadata {
     twitter?: string;
   };
   [key: string]: unknown;
-}
-
-// Agent trophy structure (from ended competitions)
-export interface AgentTrophy {
-  competitionId: string;
-  name: string;
-  rank: number;
-  imageUrl: string;
-  createdAt: string;
 }
 
 // Extended Agent type for API responses with computed fields
@@ -490,10 +510,6 @@ export interface TradeExecutionParams {
 /**
  * COMPETITION TYPES
  */
-
-// Competition status
-export type CompetitionStatus =
-  (typeof COMPETITION_STATUS)[keyof typeof COMPETITION_STATUS];
 
 // Portfolio source
 export enum PortfolioSource {

@@ -17,6 +17,7 @@
   },
   "dependencies": {
     "@privy-io/server-auth": "^1.31.0",
+    "@recallnet/contracts": "workspace:*",
     "@recallnet/db": "workspace:*",
     "@recallnet/services": "workspace:*",
     "axios": "^1.7.9",

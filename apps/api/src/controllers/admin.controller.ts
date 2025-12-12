@@ -3,8 +3,8 @@ import { NextFunction, Request, Response } from "express";
 import {
   ActorStatus,
   AdminCreateAgentSchema,
-  Agent,
   AgentPublic,
+  ApiAgent,
   ApiError,
   User,
   toApiAgent,
@@ -68,13 +68,13 @@ import { parseAdminSearchQuery } from "./request-helpers.js";
 interface AdminUserRegistrationResponse {
   success: boolean;
   user: User;
-  agent?: Agent;
+  agent?: ApiAgent;
   agentError?: string;
 }
 
 interface AdminAgentRegistrationResponse {
   success: boolean;
-  agent: Agent;
+  agent: ApiAgent;
   agentError?: string;
 }
 

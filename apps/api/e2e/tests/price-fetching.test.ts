@@ -2,7 +2,7 @@ import { beforeEach, describe, expect, test } from "vitest";
 
 import { BlockchainType } from "@recallnet/services/types";
 import { ApiClient } from "@recallnet/test-utils";
-import { PriceResponse, SpecificChain } from "@recallnet/test-utils";
+import { PriceResponse } from "@recallnet/test-utils";
 import {
   createTestClient,
   getAdminApiKey,
@@ -145,7 +145,7 @@ describe("Price Fetching", () => {
       const baseEthResponse = await client.getPrice(
         BASE_TOKENS.ETH,
         BlockchainType.EVM,
-        SpecificChain.BASE,
+        "base",
       );
 
       if (baseEthResponse.success && baseEthResponse.price) {
@@ -203,7 +203,7 @@ describe("Price Fetching", () => {
       const baseUsdcResponse = await client.getPrice(
         BASE_TOKENS.USDC,
         BlockchainType.EVM,
-        SpecificChain.BASE,
+        "base",
       );
 
       expect(baseUsdcResponse.success).toBe(true);
@@ -243,7 +243,7 @@ describe("Price Fetching", () => {
       const priceResponse = await client.getPrice(
         baseToken,
         BlockchainType.EVM,
-        SpecificChain.BASE,
+        "base",
       );
 
       expect(priceResponse.success).toBe(true);

@@ -6,7 +6,6 @@ import { ApiClient } from "@recallnet/test-utils";
 import {
   AgentProfileResponse,
   BalancesResponse,
-  SpecificChain,
   TradeResponse,
 } from "@recallnet/test-utils";
 import { getBaseUrl } from "@recallnet/test-utils";
@@ -287,8 +286,8 @@ describe("Multi-Agent Competition", () => {
         competitionId,
         fromChain: BlockchainType.EVM,
         toChain: BlockchainType.EVM,
-        fromSpecificChain: SpecificChain.BASE,
-        toSpecificChain: SpecificChain.BASE,
+        fromSpecificChain: "base",
+        toSpecificChain: "base",
         reason,
       })) as TradeResponse;
 

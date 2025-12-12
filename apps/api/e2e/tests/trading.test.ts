@@ -89,8 +89,8 @@ describe("Trading API", () => {
       reason: "Test: lowercase address should work",
       fromChain: BlockchainType.EVM,
       toChain: BlockchainType.EVM,
-      fromSpecificChain: "eth" as SpecificChain,
-      toSpecificChain: "eth" as SpecificChain,
+      fromSpecificChain: "eth",
+      toSpecificChain: "eth",
     });
 
     // Expect trade to succeed (case-insensitive lookups)
@@ -823,7 +823,7 @@ describe("Trading API", () => {
     const priceResponse = await agentClient.getPrice(
       wethTokenAddress,
       BlockchainType.SVM,
-      SpecificChain.SVM,
+      "svm",
     );
     expect(priceResponse.success).toBe(true);
     expect((priceResponse as PriceResponse).price).toBeDefined();
@@ -1101,8 +1101,8 @@ describe("Trading API", () => {
       competitionId,
       fromChain: BlockchainType.SVM,
       toChain: BlockchainType.EVM,
-      fromSpecificChain: SpecificChain.SVM,
-      toSpecificChain: SpecificChain.ETH,
+      fromSpecificChain: "svm",
+      toSpecificChain: "eth",
       reason,
     });
 
@@ -1534,8 +1534,8 @@ describe("Trading API", () => {
       competitionId,
       fromChain: BlockchainType.EVM,
       toChain: BlockchainType.EVM,
-      fromSpecificChain: SpecificChain.BASE,
-      toSpecificChain: SpecificChain.ETH,
+      fromSpecificChain: "base",
+      toSpecificChain: "eth",
       reason: "testing EVM-to-EVM with disallowXParent",
     });
 
@@ -1563,8 +1563,8 @@ describe("Trading API", () => {
       competitionId,
       fromChain: BlockchainType.EVM,
       toChain: BlockchainType.SVM,
-      fromSpecificChain: SpecificChain.ETH,
-      toSpecificChain: SpecificChain.SVM,
+      fromSpecificChain: "eth",
+      toSpecificChain: "svm",
       reason: "testing EVM-to-SVM with disallowXParent",
     });
 
@@ -1613,8 +1613,8 @@ describe("Trading API", () => {
       reason: "testing small numbers",
       fromChain: BlockchainType.EVM,
       toChain: BlockchainType.SVM,
-      fromSpecificChain: SpecificChain.ETH,
-      toSpecificChain: SpecificChain.SVM,
+      fromSpecificChain: "eth",
+      toSpecificChain: "svm",
     };
 
     const [result] = await db

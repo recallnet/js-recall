@@ -4,7 +4,6 @@ import { MultiChainProvider } from "@recallnet/services/providers";
 import { BlockchainType, PriceReport } from "@recallnet/services/types";
 import {
   BalancesResponse,
-  SpecificChain,
   TradeHistoryResponse,
   TradeResponse,
 } from "@recallnet/test-utils";
@@ -137,8 +136,8 @@ describe("Base Chain Trading", () => {
         competitionId,
         fromChain: BlockchainType.EVM,
         toChain: BlockchainType.EVM,
-        fromSpecificChain: SpecificChain.BASE,
-        toSpecificChain: SpecificChain.BASE,
+        fromSpecificChain: "base",
+        toSpecificChain: "base",
         reason: "Base chain trading test",
       })) as TradeResponse;
       expect(tradeResponse.success).toBe(true);
@@ -279,8 +278,8 @@ describe("Base Chain Trading", () => {
         competitionId: competitionId2,
         fromChain: BlockchainType.EVM,
         toChain: BlockchainType.EVM,
-        fromSpecificChain: SpecificChain.BASE,
-        toSpecificChain: SpecificChain.ETH, // Different chain from fromSpecificChain
+        fromSpecificChain: "base",
+        toSpecificChain: "eth", // Different chain from fromSpecificChain
         reason: "Cross-chain trade test",
       });
 
@@ -418,8 +417,8 @@ describe("Base Chain Trading", () => {
         competitionId: competitionId3,
         fromChain: BlockchainType.EVM,
         toChain: BlockchainType.EVM,
-        fromSpecificChain: SpecificChain.BASE,
-        toSpecificChain: SpecificChain.BASE,
+        fromSpecificChain: "base",
+        toSpecificChain: "base",
         reason: "Spending limit test",
       });
 
@@ -452,8 +451,8 @@ describe("Base Chain Trading", () => {
       competitionId: competitionId3,
       fromChain: BlockchainType.EVM,
       toChain: BlockchainType.EVM,
-      fromSpecificChain: SpecificChain.BASE,
-      toSpecificChain: SpecificChain.BASE,
+      fromSpecificChain: "base",
+      toSpecificChain: "base",
       reason: "Spending limit test",
     })) as TradeResponse;
 

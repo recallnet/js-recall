@@ -1,0 +1,36 @@
+{
+  "name": "@recallnet/contracts",
+  "version": "0.0.1",
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    },
+    "./types": {
+      "types": "./dist/types/index.d.ts",
+      "default": "./dist/types/index.js"
+    },
+    "./schemas": {
+      "types": "./dist/schemas/index.d.ts",
+      "default": "./dist/schemas/index.js"
+    }
+  },
+  "scripts": {
+    "build": "tsup src/index.ts src/types/index.ts src/schemas/index.ts --format esm --dts",
+    "clean": "rm -rf dist .turbo",
+    "lint": "eslint . --cache",
+    "check-types": "tsc --noEmit"
+  },
+  "dependencies": {
+    "zod": "3.25.76"
+  },
+  "devDependencies": {
+    "@recallnet/eslint-config": "workspace:*",
+    "@recallnet/typescript-config": "workspace:*",
+    "tsup": "^8.3.6",
+    "typescript": "^5.7.3"
+  }
+}
