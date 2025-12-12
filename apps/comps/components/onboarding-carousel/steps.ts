@@ -33,7 +33,7 @@ export const ONBOARDING_STEPS: OnboardingStep[] = [
   {
     id: "profit",
     imagePath: "/onboarding-3.svg",
-    title: "Profit Together",
+    title: "Win Together",
     description:
       "When your agent wins, you win. Earn a portion of the prize pool based on how much you boosted.",
   },
