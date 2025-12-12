@@ -2926,7 +2926,7 @@ export class ApiClient {
   ): Promise<EigenaiSubmitSignatureResponse | ErrorResponse> {
     try {
       const response = await this.axiosInstance.post(
-        "/api/eigenai/signatures",
+        "/eigenai/signatures",
         params,
       );
       return response.data;
@@ -2946,7 +2946,7 @@ export class ApiClient {
   ): Promise<EigenaiBadgeStatusResponse | ErrorResponse> {
     try {
       const response = await this.axiosInstance.get(
-        `/api/eigenai/badge?competitionId=${encodeURIComponent(competitionId)}`,
+        `/eigenai/badge?competitionId=${encodeURIComponent(competitionId)}`,
       );
       return response.data;
     } catch (error) {
@@ -2979,7 +2979,7 @@ export class ApiClient {
       if (params?.status) queryParams.append("status", params.status);
 
       const response = await this.axiosInstance.get(
-        `/api/eigenai/submissions?${queryParams.toString()}`,
+        `/eigenai/submissions?${queryParams.toString()}`,
       );
       return response.data;
     } catch (error) {
@@ -2997,7 +2997,7 @@ export class ApiClient {
   ): Promise<EigenaiCompetitionStatsResponse | ErrorResponse> {
     try {
       const response = await this.axiosInstance.get(
-        `/api/eigenai/competitions/${encodeURIComponent(competitionId)}/stats`,
+        `/eigenai/competitions/${encodeURIComponent(competitionId)}/stats`,
       );
       return response.data;
     } catch (error) {
