@@ -58,9 +58,11 @@ export function PublicUserCompetitionsSection({
         <div className="flex w-full items-center justify-between">
           <div className="ml-2 flex items-center gap-2">
             <span className="text-xl font-bold">Competitions</span>
-            <span className="text-secondary-foreground">
-              ({allCompetitions.length})
-            </span>
+            {data?.pagination.total !== undefined && (
+              <span className="text-secondary-foreground">
+                ({data.pagination.total})
+              </span>
+            )}
           </div>
         </div>
       </CollapsibleTrigger>
