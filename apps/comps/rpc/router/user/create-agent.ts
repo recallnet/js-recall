@@ -29,8 +29,10 @@ export const createAgent = base
         deactivationDate: agent.deactivationDate,
       };
 
-      // Invalidate agent list cache since a new agent was added
-      invalidateCacheTags([CacheTags.agentList()]);
+      invalidateCacheTags([
+        CacheTags.agentList(),
+        CacheTags.publicUserAgents(context.user.id),
+      ]);
 
       return {
         agent: sanitizedAgent,

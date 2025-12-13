@@ -2,7 +2,6 @@ import Link from "next/link";
 import { useMemo } from "react";
 
 import { Button } from "@recallnet/ui2/components/button";
-import { Tooltip } from "@recallnet/ui2/components/tooltip";
 
 import { useCompetitionBoosts } from "@/hooks";
 import { openForBoosting } from "@/lib/open-for-boosting";
@@ -87,14 +86,12 @@ export const BoostsTabContent: React.FC<{
               >
                 {/* Left column: User wallet address */}
                 <div className="flex items-center gap-2">
-                  <Tooltip
-                    content={boost.wallet}
-                    tooltipClassName="max-w-md z-999"
+                  <Link
+                    href={`/users/${boost.userId}`}
+                    className="text-primary-foreground decoration-primary-foreground hover:text-primary-foreground/80 hover:decoration-primary-foreground/80 font-mono underline transition-colors duration-200 ease-in-out"
                   >
-                    <span className="font-mono">
-                      {displayAddress(boost.wallet, { numChars: 6 })}
-                    </span>
-                  </Tooltip>
+                    {displayAddress(boost.wallet, { numChars: 6 })}
+                  </Link>
                 </div>
 
                 {/* Right column: Agent name + Boost details */}

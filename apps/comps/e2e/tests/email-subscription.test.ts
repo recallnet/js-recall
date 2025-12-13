@@ -15,10 +15,9 @@ import { createTestRpcClient } from "../utils/rpc-client-helpers.js";
 describe("email subscription", () => {
   test("should subscribe user to email list upon user creation", async () => {
     const testUser = createTestPrivyUser({
-      name: "Alice Test",
       email: "alice@example.com",
     });
-    const { name, email, privyId } = testUser;
+    const { email, privyId } = testUser;
 
     // Create mock Privy token and RPC client
     const privyToken = await createMockPrivyToken(testUser);
@@ -29,7 +28,6 @@ describe("email subscription", () => {
 
     // Get profile and verify user is subscribed by default
     const user = await rpcClient.user.getProfile();
-    expect(user.name).toBe(name);
     expect(user.email).toBe(email);
     expect(user.privyId).toBe(privyId);
     expect(user.isSubscribed).toBe(true);

@@ -11,6 +11,7 @@ import { Database, Transaction } from "@recallnet/db/types";
 
 import { EmailService } from "./email.service.js";
 import { checkUserUniqueConstraintViolation } from "./lib/error-utils.js";
+import { generateRandomUsername } from "./lib/handle-utils.js";
 import { verifyAndGetPrivyUserInfo } from "./lib/privy-verification.js";
 import { WalletWatchlist } from "./lib/watchlist.js";
 import { ApiError } from "./types/index.js";
@@ -442,8 +443,9 @@ export class UserService {
     privyClient: PrivyClient,
   ): Promise<SelectUser> {
     try {
-      const { privyId, name, email, embeddedWallet, customWallets } =
+      const { privyId, email, embeddedWallet, customWallets } =
         await verifyAndGetPrivyUserInfo(identityToken, privyClient);
+      const name = generateRandomUsername();
       const embeddedWalletAddress = embeddedWallet.address;
       const now = new Date();
 

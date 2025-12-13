@@ -25,13 +25,15 @@ import { ImageURLInput } from "../image-input/index";
 interface ProfilePictureProps {
   image?: string;
   isLoading?: boolean;
-  onSave: (url: string) => Promise<void>;
+  onSave?: (url: string) => Promise<void>;
   className?: string;
   /** User info for generating fallback display */
   fallbackData?: {
     walletAddress?: string;
     name?: string;
   };
+  /** When true, disables editing functionality */
+  readOnly?: boolean;
 }
 
 export const ProfilePicture: React.FC<ProfilePictureProps> = ({
@@ -40,6 +42,7 @@ export const ProfilePicture: React.FC<ProfilePictureProps> = ({
   onSave,
   className,
   fallbackData,
+  readOnly = false,
 }) => {
   const [showOverlay, setShowOverlay] = useState(false);
   const [dialogOpen, setDialogOpen] = useState(false);
@@ -60,7 +63,9 @@ export const ProfilePicture: React.FC<ProfilePictureProps> = ({
   }, [dialogOpen, url]);
 
   const handleSave = async () => {
-    await onSave(input);
+    if (onSave) {
+      await onSave(input);
+    }
     setUrl(input);
     setDialogOpen(false);
   };
@@ -108,9 +113,9 @@ export const ProfilePicture: React.FC<ProfilePictureProps> = ({
         isLoading && "animate-pulse",
         className,
       )}
-      onMouseEnter={() => setShowOverlay(true)}
-      onMouseLeave={() => setShowOverlay(false)}
-      onTouchEnd={handleTap}
+      onMouseEnter={() => !readOnly && setShowOverlay(true)}
+      onMouseLeave={() => !readOnly && setShowOverlay(false)}
+      onTouchEnd={!readOnly ? handleTap : undefined}
       tabIndex={0}
       aria-label="Profile picture"
     >
@@ -135,38 +140,44 @@ export const ProfilePicture: React.FC<ProfilePictureProps> = ({
           </AvatarFallback>
         </Avatar>
       )}
-      {overlay}
-      <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Profile Picture URL</DialogTitle>
-          </DialogHeader>
-          <div className="mt-2 flex flex-col gap-2">
-            <ImageURLInput
-              id="profile-url"
-              type="url"
-              placeholder="https://example.com/avatar.png"
-              value={input}
-              onChange={(e) => setInput(e.target.value)}
-              autoFocus
-              onValidationChange={setImageValid}
-              sublabel={
-                <span className="text-secondary-foreground mt-1 text-xs">
-                  Public PNG/JPG · Square ≥ 256 × 256 px
-                </span>
-              }
-            />
-          </div>
-          <DialogFooter className="mt-4">
-            <DialogClose asChild>
-              <Button variant="outline">Cancel</Button>
-            </DialogClose>
-            <Button variant="modal" onClick={handleSave} disabled={!imageValid}>
-              Save
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      {!readOnly && overlay}
+      {!readOnly && (
+        <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Profile Picture URL</DialogTitle>
+            </DialogHeader>
+            <div className="mt-2 flex flex-col gap-2">
+              <ImageURLInput
+                id="profile-url"
+                type="url"
+                placeholder="https://example.com/avatar.png"
+                value={input}
+                onChange={(e) => setInput(e.target.value)}
+                autoFocus
+                onValidationChange={setImageValid}
+                sublabel={
+                  <span className="text-secondary-foreground mt-1 text-xs">
+                    Public PNG/JPG · Square ≥ 256 × 256 px
+                  </span>
+                }
+              />
+            </div>
+            <DialogFooter className="mt-4">
+              <DialogClose asChild>
+                <Button variant="outline">Cancel</Button>
+              </DialogClose>
+              <Button
+                variant="modal"
+                onClick={handleSave}
+                disabled={!imageValid}
+              >
+                Save
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+      )}
     </div>
   );
 };

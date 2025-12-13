@@ -8,6 +8,7 @@ import { router as competitions } from "./competitions";
 import { router as eigenai } from "./eigenai";
 import { router as leaderboard } from "./leaderboard";
 import { router as nfl } from "./nfl";
+import { router as publicUser } from "./public-user";
 import { router as rewards } from "./rewards";
 import { router as user } from "./user";
 
@@ -20,6 +21,7 @@ export const router = {
   eigenai,
   leaderboard,
   nfl,
+  publicUser,
   user,
   rewards,
 } as const;

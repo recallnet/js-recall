@@ -1,3 +1,5 @@
+import { randomBytes } from "crypto";
+
 import { MAX_HANDLE_LENGTH } from "@recallnet/db/schema/core/defs";
 
 import { AgentHandleSchema, MIN_HANDLE_LENGTH } from "../types/index.js";
@@ -59,4 +61,41 @@ export function appendHandleSuffix(baseHandle: string, suffix: number): string {
   const maxBaseLength = MAX_HANDLE_LENGTH - suffixStr.length;
   const truncatedBase = baseHandle.substring(0, maxBaseLength);
   return `${truncatedBase}${suffixStr}`;
+}
+
+/**
+ * Generates a cryptographically random string of specified length
+ * @param length The length of the string to generate
+ * @returns A random alphanumeric string
+ * @example
+ * generateRandomString(8) // returns "a7x2m9kp"
+ */
+export function generateRandomString(length: number): string {
+  const chars = "abcdefghijklmnopqrstuvwxyz0123456789";
+  // Calculate the largest multiple of chars.length that fits in a byte (0-255)
+  // to avoid modulo bias. For 36 chars: floor(256/36) * 36 = 252
+  const maxUnbiasedValue = Math.floor(256 / chars.length) * chars.length;
+
+  let result = "";
+  while (result.length < length) {
+    const bytes = randomBytes(1);
+    const byte = bytes[0];
+    if (byte === undefined) {
+      throw new Error("Failed to generate random byte");
+    }
+    // Discard biased bytes (252-255 for 36 chars)
+    if (byte >= maxUnbiasedValue) {
+      continue;
+    }
+    result += chars.charAt(byte % chars.length);
+  }
+  return result;
+}
+
+/**
+ * Generates a random username in the format "user_XXXXXXXX"
+ * @returns A random username
+ */
+export function generateRandomUsername(): string {
+  return `user_${generateRandomString(8)}`;
 }
