@@ -6,17 +6,19 @@
  * that may have been stored. It generates random usernames in the
  * format "user_XXXXXXXX" where X is a random alphanumeric character.
  *
+ * Uses cursor-based pagination and batch updates for memory efficiency
+ * with large user counts.
+ *
  * Usage:
  *   pnpm tsx scripts/randomize-usernames.ts           # Dry run (preview changes)
  *   pnpm tsx scripts/randomize-usernames.ts --execute # Actually apply changes
  */
 import chalk from "chalk";
-import { sql } from "drizzle-orm";
+import { asc, gt, inArray, sql } from "drizzle-orm";
 import * as readline from "readline";
 import { parse } from "ts-command-line-args";
 
 import { users } from "@recallnet/db/schema/core/defs";
-import { generateRandomUsername } from "@recallnet/services/lib";
 
 import { db } from "@/database/db.js";
 import { logger } from "@/lib/logger.js";
@@ -48,7 +50,7 @@ async function promptConfirmation(message: string): Promise<boolean> {
 /**
  * Get current user count and sample names
  */
-async function checkCurrentState(): Promise<void> {
+async function checkCurrentState(): Promise<number> {
   const totalUsersResult = await db
     .select({ count: sql<number>`COUNT(*)::int` })
     .from(users);
@@ -70,15 +72,20 @@ async function checkCurrentState(): Promise<void> {
     });
   }
 
-  // Show sample of what new names will look like
+  // Show sample of what new names will look like (using the same SQL expression)
   console.log(chalk.blue("\n🔀 Sample new names (format):"));
-  for (let i = 0; i < 3; i++) {
-    console.log(`   - ${generateRandomUsername()}`);
+  const sampleNames = await db.execute<{ name: string }>(
+    sql`SELECT 'user_' || left(replace(gen_random_uuid()::text, '-', ''), 8) as name FROM generate_series(1, 3)`,
+  );
+  for (const row of sampleNames.rows) {
+    console.log(`   - ${row.name}`);
   }
+
+  return totalUsers;
 }
 
 /**
- * Main function to randomize usernames
+ * Main function to randomize usernames using cursor-based pagination
  */
 async function randomizeUsernames(
   execute: boolean,
@@ -92,15 +99,10 @@ async function randomizeUsernames(
     console.log(chalk.gray("   Run with --execute flag to apply changes\n"));
   }
 
-  await checkCurrentState();
-
-  // Get all users
-  const allUsers = await db
-    .select({ id: users.id, name: users.name })
-    .from(users);
+  const totalUsers = await checkCurrentState();
 
   console.log(
-    chalk.blue(`\n📋 Will update ${chalk.yellow(allUsers.length)} users\n`),
+    chalk.blue(`\n📋 Will update ${chalk.yellow(totalUsers)} users\n`),
   );
 
   if (!execute) {
@@ -112,7 +114,7 @@ async function randomizeUsernames(
   // Prompt for confirmation
   const confirmed = await promptConfirmation(
     chalk.red(
-      `\n⚠️  This will overwrite ALL ${allUsers.length} usernames. Continue?`,
+      `\n⚠️  This will overwrite ALL ${totalUsers} usernames. Continue?`,
     ),
   );
 
@@ -124,43 +126,54 @@ async function randomizeUsernames(
   console.log(chalk.blue("\n🚀 Starting username randomization...\n"));
 
   let updated = 0;
-  let errors = 0;
+  let batchCount = 0;
+  let lastId: string | null = null;
 
-  // Process in batches
-  for (let i = 0; i < allUsers.length; i += batchSize) {
-    const batch = allUsers.slice(i, i + batchSize);
+  // Cursor-based pagination for memory efficiency
+  while (true) {
+    const batch = await db
+      .select({ id: users.id })
+      .from(users)
+      .where(lastId ? gt(users.id, lastId) : undefined)
+      .orderBy(asc(users.id))
+      .limit(batchSize);
 
-    for (const user of batch) {
-      try {
-        const newUsername = generateRandomUsername();
-        await db
+    if (batch.length === 0) break;
+
+    const ids = batch.map((r) => r.id);
+
+    try {
+      // Single UPDATE statement for the entire batch with in-database random generation
+      await db.transaction(async (tx) => {
+        await tx
           .update(users)
-          .set({ name: newUsername })
-          .where(sql`${users.id} = ${user.id}`);
-        updated++;
-      } catch (error) {
-        errors++;
-        if (error instanceof Error) {
-          logger.error(`Failed to update user ${user.id}: ${error.message}`);
-        } else {
-          logger.error(`Failed to update user ${user.id}: unknown error`);
-        }
+          .set({
+            name: sql`'user_' || left(replace(gen_random_uuid()::text, '-', ''), 8)`,
+          })
+          .where(inArray(users.id, ids));
+      });
+
+      updated += batch.length;
+      batchCount++;
+    } catch (error) {
+      if (error instanceof Error) {
+        logger.error(`Failed batch ${batchCount + 1}: ${error.message}`);
+      } else {
+        logger.error(`Failed batch ${batchCount + 1}: unknown error`);
       }
     }
 
-    const progress = Math.min(i + batchSize, allUsers.length);
+    lastId = ids[ids.length - 1] ?? null;
     console.log(
       chalk.gray(
-        `   Progress: ${progress}/${allUsers.length} (${Math.round((progress / allUsers.length) * 100)}%)`,
+        `   Progress: ${updated}/${totalUsers} (${Math.round((updated / totalUsers) * 100)}%)`,
       ),
     );
   }
 
   console.log(chalk.green("\n✅ Username randomization complete!"));
-  console.log(`   Updated: ${chalk.green(updated)}`);
-  if (errors > 0) {
-    console.log(`   Errors: ${chalk.red(errors)}`);
-  }
+  console.log(`   Updated: ${chalk.green(updated)} users`);
+  console.log(`   Batches: ${chalk.green(batchCount)}`);
 }
 
 /**
