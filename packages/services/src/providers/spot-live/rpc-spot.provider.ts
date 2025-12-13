@@ -2,14 +2,16 @@ import * as Sentry from "@sentry/node";
 import { AssetTransfersWithMetadataResult } from "alchemy-sdk";
 import { Logger } from "pino";
 
+import { formatTokenAmount } from "../../lib/blockchain-math-utils.js";
 import { NATIVE_TOKEN_ADDRESS } from "../../lib/config-utils.js";
 import { SpecificChain } from "../../types/index.js";
-import { IRpcProvider } from "../../types/rpc.js";
+import { IRpcProvider, TransactionReceipt } from "../../types/rpc.js";
 import {
   ISpotLiveDataProvider,
   OnChainTrade,
   ProtocolFilter,
   SpotTransfer,
+  TradesResult,
 } from "../../types/spot-live.js";
 
 /**
@@ -18,7 +20,8 @@ import {
 interface Transfer {
   from: string;
   to: string;
-  value: number;
+  /** Value may be null when Alchemy cannot determine decimals for unknown tokens */
+  value: number | null;
   asset: string;
   hash: string;
   blockNum: string;
@@ -44,6 +47,28 @@ interface DetectedSwap {
   toAmount: number;
   protocol: string;
 }
+
+/**
+ * Transfer parsed from receipt log with deterministic ordering
+ */
+interface ParsedTransfer {
+  tokenAddress: string;
+  from: string;
+  to: string;
+  value: bigint;
+  logIndex: number;
+}
+
+/** ERC20 Transfer event signature: keccak256("Transfer(address,address,uint256)") */
+const ERC20_TRANSFER_TOPIC =
+  "0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef";
+
+/**
+ * Maximum age (in blocks) for tracking skipped transactions.
+ * If a transaction is older than this, we log an error and allow sync to progress
+ * rather than being permanently stuck. On Base (~2s blocks), 1800 blocks = ~1 hour.
+ */
+const MAX_SKIP_AGE_BLOCKS = 1800;
 
 /**
  * RPC-based spot live data provider with optional protocol filtering
@@ -198,14 +223,14 @@ export class RpcSpotProvider implements ISpotLiveDataProvider {
    * @param walletAddress Wallet address to monitor
    * @param since Start time or block number for scanning
    * @param chains Array of chains to scan
-   * @returns Array of detected on-chain trades
+   * @returns TradesResult with detected trades and skipped block metadata
    */
   async getTradesSince(
     walletAddress: string,
     since: Date | number,
     chains: SpecificChain[],
     toBlock?: number | string,
-  ): Promise<OnChainTrade[]> {
+  ): Promise<TradesResult> {
     const startTime = Date.now();
     const maskedAddress = this.maskAddress(walletAddress);
 
@@ -214,13 +239,13 @@ export class RpcSpotProvider implements ISpotLiveDataProvider {
       this.logger.warn(
         `[RpcSpotProvider] No chains provided for trade scanning`,
       );
-      return [];
+      return { trades: [] };
     }
 
     const firstChain = chains[0];
     if (!firstChain) {
       this.logger.warn(`[RpcSpotProvider] Empty chains array`);
-      return [];
+      return { trades: [] };
     }
 
     const sinceBlock =
@@ -250,9 +275,14 @@ export class RpcSpotProvider implements ISpotLiveDataProvider {
     );
 
     const allTrades: OnChainTrade[] = [];
+    // Track lowest block of any skipped transaction for safe sync state management
+    let lowestSkippedBlock: number | undefined;
 
     for (const chain of chains) {
       try {
+        // Fetch current block for max-age check on skipped transactions
+        const currentBlock = await this.rpcProvider.getBlockNumber(chain);
+
         // Check cache first (unified sync state means getTransferHistory will reuse this)
         const cacheKey = `${walletAddress}:${chain}:${sinceBlock}`;
         let allTransfers = this.transferCache.get(cacheKey);
@@ -305,17 +335,237 @@ export class RpcSpotProvider implements ISpotLiveDataProvider {
         const hasFilters = chainFilters.length > 0;
 
         // Process each transaction to detect swaps
+        // Uses receipt logs with logIndex ordering for deterministic from/to detection
         for (const [txHash, txTransfers] of transfersByTx) {
-          const swap = this.detectSwapPattern(txTransfers, walletAddress);
+          // Quick pre-filter: check if this could be a swap (has both directions)
+          if (!this.isSwapCandidate(txTransfers, walletAddress)) {
+            continue;
+          }
+
+          // Fetch receipt for accurate detection using logIndex ordering
+          let receipt: TransactionReceipt | null = null;
+          try {
+            receipt = await this.rpcProvider.getTransactionReceipt(
+              txHash,
+              chain,
+            );
+          } catch (receiptError) {
+            // Receipt fetch failed - track for retry unless too old
+            const firstTransfer = txTransfers[0];
+            if (firstTransfer) {
+              const blockNum = parseInt(firstTransfer.blockNum, 16);
+              const blockAge = currentBlock - blockNum;
+
+              if (blockAge > MAX_SKIP_AGE_BLOCKS) {
+                // Transaction too old - log error and skip (prevent permanent blocking)
+                this.logger.error(
+                  {
+                    txHash,
+                    chain,
+                    blockNum,
+                    currentBlock,
+                    blockAge,
+                    maxAge: MAX_SKIP_AGE_BLOCKS,
+                    error:
+                      receiptError instanceof Error
+                        ? receiptError.message
+                        : String(receiptError),
+                  },
+                  "[RpcSpotProvider] Receipt fetch failed for transaction older than max age - skipping permanently",
+                );
+                Sentry.captureMessage(
+                  `Skipped old transaction ${txHash} - receipt unavailable after ${blockAge} blocks`,
+                  {
+                    level: "error",
+                    extra: { txHash, chain, blockNum, blockAge },
+                  },
+                );
+              } else {
+                // Track for retry
+                if (
+                  lowestSkippedBlock === undefined ||
+                  blockNum < lowestSkippedBlock
+                ) {
+                  lowestSkippedBlock = blockNum;
+                }
+                this.logger.warn(
+                  {
+                    txHash,
+                    chain,
+                    blockNum,
+                    blockAge,
+                    error:
+                      receiptError instanceof Error
+                        ? receiptError.message
+                        : String(receiptError),
+                  },
+                  "[RpcSpotProvider] Receipt fetch failed - tracking for retry",
+                );
+              }
+            }
+            continue;
+          }
+
+          if (!receipt || !receipt.status) {
+            // Transaction not found or reverted - track for retry if missing (not if reverted)
+            if (!receipt) {
+              const firstTransfer = txTransfers[0];
+              if (firstTransfer) {
+                const blockNum = parseInt(firstTransfer.blockNum, 16);
+                const blockAge = currentBlock - blockNum;
+
+                if (blockAge > MAX_SKIP_AGE_BLOCKS) {
+                  // Transaction too old - log error and skip (prevent permanent blocking)
+                  this.logger.error(
+                    {
+                      txHash,
+                      chain,
+                      blockNum,
+                      currentBlock,
+                      blockAge,
+                      maxAge: MAX_SKIP_AGE_BLOCKS,
+                    },
+                    "[RpcSpotProvider] Receipt not found for transaction older than max age - skipping permanently",
+                  );
+                  Sentry.captureMessage(
+                    `Skipped old transaction ${txHash} - receipt not found after ${blockAge} blocks`,
+                    {
+                      level: "error",
+                      extra: { txHash, chain, blockNum, blockAge },
+                    },
+                  );
+                } else {
+                  // Track for retry
+                  if (
+                    lowestSkippedBlock === undefined ||
+                    blockNum < lowestSkippedBlock
+                  ) {
+                    lowestSkippedBlock = blockNum;
+                  }
+                  this.logger.debug(
+                    { txHash, chain, blockNum, blockAge },
+                    "[RpcSpotProvider] Receipt not found - tracking for retry",
+                  );
+                }
+              }
+            }
+            continue;
+          }
+
+          // Build token decimals map from getAssetTransfers data
+          // getAssetTransfers returns decimal-adjusted values, so we use 0 decimals
+          // to pass raw amounts through (the values are already adjusted)
+          const tokenDecimals = new Map<string, number>();
+          for (const t of txTransfers) {
+            const tokenAddr = this.getTokenAddress(t);
+            // Mark as 0 decimals since getAssetTransfers values are already adjusted
+            // We'll extract amounts from txTransfers, not from raw receipt logs
+            tokenDecimals.set(tokenAddr.toLowerCase(), 0);
+          }
+
+          // Detect swap using receipt logs (deterministic logIndex ordering)
+          // This handles ERC20 <-> ERC20 swaps with accurate from/to detection
+          let swap = this.detectSwapFromReceiptLogs(
+            receipt,
+            walletAddress,
+            tokenDecimals,
+          );
+
+          // Fallback to transfer-based detection when native ETH is involved
+          // Native ETH doesn't emit ERC20 Transfer events - only visible via getAssetTransfers
+          // Fallback if:
+          //   1. Receipt-based detection failed (detectSwapFromReceiptLogs returned null)
+          //   2. AND native ETH is involved (EXTERNAL category in getAssetTransfers)
+          // This handles both ETH→ERC20 and ERC20→ETH swaps
+          // Do NOT fallback for pure ERC20 swaps that failed (e.g., 0-value) - those are invalid
+          if (!swap) {
+            const hasNativeEthTransfer = this.hasNativeEthTransfer(txTransfers);
+            if (hasNativeEthTransfer) {
+              // Native ETH is involved - use transfer-based detection
+              swap = this.detectSwapPattern(txTransfers, walletAddress);
+            }
+          }
+
           if (!swap) {
             continue;
           }
 
-          // Apply protocol filter if configured for this chain
+          // Override amounts with getAssetTransfers values (already decimal-adjusted)
+          // Receipt logs provide deterministic token identification via logIndex ordering,
+          // but getAssetTransfers has more reliable pre-adjusted amounts.
+          // Note: Override is conditional - if value is null (unknown token), fetch decimals and calculate from raw logs
+          const wallet = walletAddress.toLowerCase();
+          const outboundTransfer = txTransfers.find(
+            (t) =>
+              t.from.toLowerCase() === wallet &&
+              this.getTokenAddress(t).toLowerCase() === swap.fromToken,
+          );
+          const inboundTransfer = txTransfers.find(
+            (t) =>
+              t.to.toLowerCase() === wallet &&
+              this.getTokenAddress(t).toLowerCase() === swap.toToken,
+          );
+
+          // Handle outbound amount - use Alchemy value if available, otherwise fetch decimals
+          if (outboundTransfer) {
+            if (outboundTransfer.value != null) {
+              swap.fromAmount = outboundTransfer.value;
+            } else {
+              // Alchemy returned null for unknown token - fetch decimals and calculate
+              // Uses same logIndex ordering as detectSwapFromReceiptLogs (first outbound)
+              const amount = await this.calculateAmountFromReceiptLog(
+                receipt,
+                swap.fromToken,
+                walletAddress,
+                "outbound",
+                chain,
+              );
+              if (amount !== null) {
+                swap.fromAmount = amount;
+                this.logger.debug(
+                  { txHash, token: swap.fromToken, amount },
+                  "[RpcSpotProvider] Calculated fromAmount from receipt log (Alchemy returned null)",
+                );
+              }
+            }
+          }
+
+          // Handle inbound amount - use Alchemy value if available, otherwise fetch decimals
+          if (inboundTransfer) {
+            if (inboundTransfer.value != null) {
+              swap.toAmount = inboundTransfer.value;
+            } else {
+              // Alchemy returned null for unknown token - fetch decimals and calculate
+              // Uses same logIndex ordering as detectSwapFromReceiptLogs (last inbound)
+              const amount = await this.calculateAmountFromReceiptLog(
+                receipt,
+                swap.toToken,
+                walletAddress,
+                "inbound",
+                chain,
+              );
+              if (amount !== null) {
+                swap.toAmount = amount;
+                this.logger.debug(
+                  { txHash, token: swap.toToken, amount },
+                  "[RpcSpotProvider] Calculated toAmount from receipt log (Alchemy returned null)",
+                );
+              }
+            }
+          }
+
+          // Set timestamp from transfer metadata
+          const firstTransfer = txTransfers[0];
+          if (firstTransfer) {
+            swap.timestamp = new Date(firstTransfer.metadata.blockTimestamp);
+          }
+
+          // Apply protocol filter if configured for this chain (reuse receipt)
           if (hasFilters) {
-            const filterResult = await this.checkProtocolFilter(
-              txHash,
-              chain,
+            const tx = await this.rpcProvider.getTransaction(txHash, chain);
+            const filterResult = this.checkProtocolFilterWithReceipt(
+              receipt,
+              tx?.to ?? undefined,
               chainFilters,
             );
 
@@ -336,11 +586,9 @@ export class RpcSpotProvider implements ISpotLiveDataProvider {
             }
           }
 
-          // Transform to OnChainTrade format (returns null for failed/reverted txs)
-          const trade = await this.enrichSwapWithGasData(swap, chain);
-          if (trade) {
-            allTrades.push(trade);
-          }
+          // Transform to OnChainTrade format (receipt already available)
+          const trade = this.enrichSwapFromReceipt(swap, receipt, chain);
+          allTrades.push(trade);
         }
       } catch (error) {
         // Capture exception with context
@@ -371,11 +619,15 @@ export class RpcSpotProvider implements ISpotLiveDataProvider {
         wallet: maskedAddress,
         tradeCount: allTrades.length,
         processingTime,
+        lowestSkippedBlock,
       },
       `[RpcSpotProvider] Detected swaps`,
     );
 
-    return allTrades;
+    return {
+      trades: allTrades,
+      lowestSkippedBlock,
+    };
   }
 
   /**
@@ -494,8 +746,8 @@ export class RpcSpotProvider implements ISpotLiveDataProvider {
           if (!isSwap) {
             // Not a swap - these are deposits/withdrawals
             for (const transfer of txTransfers) {
-              // Skip 0-value transfers (approvals, contract interactions, etc.)
-              if (transfer.value === 0) {
+              // Skip 0-value or null-value transfers (approvals, contract interactions, or unknown tokens)
+              if (transfer.value === 0 || transfer.value === null) {
                 continue;
               }
 
@@ -590,7 +842,9 @@ export class RpcSpotProvider implements ISpotLiveDataProvider {
       const normalizedTransfer: Transfer = {
         from: transfer.from.toLowerCase(),
         to: transfer.to ? transfer.to.toLowerCase() : "",
-        value: Number(transfer.value) || 0,
+        // Preserve null for unknown tokens (Alchemy returns null when it can't determine decimals)
+        // Don't convert to 0, as we need to detect this and fetch decimals manually
+        value: transfer.value != null ? Number(transfer.value) : null,
         asset: transfer.asset || "ETH",
         hash: normalizedHash,
         blockNum: transfer.blockNum,
@@ -649,9 +903,299 @@ export class RpcSpotProvider implements ISpotLiveDataProvider {
       timestamp: new Date(out.metadata.blockTimestamp),
       fromToken,
       toToken,
-      fromAmount: out.value,
-      toAmount: inc.value,
+      // Use 0 for null values (rare case - unknown tokens in fallback detection)
+      fromAmount: out.value ?? 0,
+      toAmount: inc.value ?? 0,
       protocol: "Unknown", // Will be set by protocol filter or left as Unknown
+    };
+  }
+
+  /**
+   * Parse ERC20 Transfer log into structured transfer data
+   * @param log Log entry from transaction receipt
+   * @returns Parsed transfer with token address, from/to addresses, value, and logIndex
+   */
+  private parseTransferLog(log: {
+    address: string;
+    topics: string[];
+    data: string;
+    logIndex: number;
+  }): ParsedTransfer {
+    // topics[1] = from (bytes32, address is last 20 bytes)
+    // topics[2] = to (bytes32, address is last 20 bytes)
+    // data = amount (uint256)
+    const from = "0x" + (log.topics[1]?.slice(26) ?? "");
+    const to = "0x" + (log.topics[2]?.slice(26) ?? "");
+
+    // Parse raw uint256 value from data
+    const value = log.data && log.data !== "0x" ? BigInt(log.data) : BigInt(0);
+
+    return {
+      tokenAddress: log.address.toLowerCase(),
+      from: from.toLowerCase(),
+      to: to.toLowerCase(),
+      value,
+      logIndex: log.logIndex,
+    };
+  }
+
+  /**
+   * Calculate decimal-adjusted amount from receipt log by fetching token decimals on-chain.
+   * Used when Alchemy's getAssetTransfers returns null for unknown tokens.
+   *
+   * Uses the same logIndex-based ordering as detectSwapFromReceiptLogs to ensure consistency:
+   * - For outbound (fromAmount): finds FIRST transfer FROM wallet for this token
+   * - For inbound (toAmount): finds LAST transfer TO wallet for this token
+   *
+   * @param receipt Transaction receipt with logs
+   * @param tokenAddress Token address to find and calculate amount for
+   * @param walletAddress Wallet address to match direction
+   * @param direction Whether this is an outbound (from wallet) or inbound (to wallet) transfer
+   * @param chain Chain to fetch decimals from
+   * @returns Decimal-adjusted amount or null if token not found in logs
+   */
+  private async calculateAmountFromReceiptLog(
+    receipt: TransactionReceipt,
+    tokenAddress: string,
+    walletAddress: string,
+    direction: "outbound" | "inbound",
+    chain: SpecificChain,
+  ): Promise<number | null> {
+    const normalizedToken = tokenAddress.toLowerCase();
+    const wallet = walletAddress.toLowerCase();
+
+    // Parse all Transfer logs sorted by logIndex (same as detectSwapFromReceiptLogs)
+    const transfers = receipt.logs
+      .filter((log) => log.topics[0] === ERC20_TRANSFER_TOPIC)
+      .sort((a, b) => a.logIndex - b.logIndex)
+      .map((log) => this.parseTransferLog(log));
+
+    // Find the correct transfer using same logic as detectSwapFromReceiptLogs:
+    // - outbound: FIRST transfer FROM wallet matching token
+    // - inbound: LAST transfer TO wallet matching token
+    let targetTransfer: ParsedTransfer | undefined;
+
+    if (direction === "outbound") {
+      // First transfer FROM wallet for this token
+      targetTransfer = transfers.find(
+        (t) => t.from === wallet && t.tokenAddress === normalizedToken,
+      );
+    } else {
+      // Last transfer TO wallet for this token (iterate in reverse)
+      for (let i = transfers.length - 1; i >= 0; i--) {
+        const t = transfers[i];
+        if (t && t.to === wallet && t.tokenAddress === normalizedToken) {
+          targetTransfer = t;
+          break;
+        }
+      }
+    }
+
+    if (!targetTransfer) {
+      return null;
+    }
+
+    const rawValue = targetTransfer.value;
+
+    if (rawValue === BigInt(0)) {
+      return 0;
+    }
+
+    // Fetch actual decimals from chain
+    try {
+      const decimals = await this.rpcProvider.getTokenDecimals(
+        tokenAddress,
+        chain,
+      );
+      // Use formatTokenAmount for precision-safe BigInt to decimal conversion
+      return parseFloat(formatTokenAmount(rawValue.toString(), decimals));
+    } catch (error) {
+      // If decimals fetch fails, fall back to 18 (most common)
+      this.logger.warn(
+        { tokenAddress, chain, error },
+        "[RpcSpotProvider] Failed to fetch decimals, falling back to 18",
+      );
+      // Use formatTokenAmount for precision-safe BigInt to decimal conversion
+      return parseFloat(formatTokenAmount(rawValue.toString(), 18));
+    }
+  }
+
+  /**
+   * Detect swap from transaction receipt logs using deterministic logIndex ordering
+   * Uses ERC20 Transfer events sorted by execution order to identify from/to tokens
+   *
+   * For multi-hop swaps (A -> B -> C), this correctly identifies:
+   * - First outbound transfer as input token (A)
+   * - Last inbound transfer as output token (C)
+   *
+   * @param receipt Transaction receipt with logs
+   * @param walletAddress Wallet address being monitored
+   * @param tokenDecimals Map of token address to decimals for amount conversion
+   * @returns Detected swap or null if not a swap pattern
+   */
+  private detectSwapFromReceiptLogs(
+    receipt: TransactionReceipt,
+    walletAddress: string,
+    tokenDecimals: Map<string, number>,
+  ): DetectedSwap | null {
+    const wallet = walletAddress.toLowerCase();
+
+    // Parse ERC20 Transfer events from logs, sorted by logIndex (deterministic execution order)
+    const transfers = receipt.logs
+      .filter((log) => log.topics[0] === ERC20_TRANSFER_TOPIC)
+      .sort((a, b) => a.logIndex - b.logIndex)
+      .map((log) => this.parseTransferLog(log));
+
+    // Find first outbound (FROM wallet) and last inbound (TO wallet)
+    // First outbound = input token, Last inbound = output token (handles multi-hop)
+    const outbound = transfers.find((t) => t.from === wallet);
+    const inbound = [...transfers].reverse().find((t) => t.to === wallet);
+
+    if (!outbound || !inbound) {
+      return null;
+    }
+
+    // Convert BigInt values to numbers with proper decimals
+    // These amounts serve dual purpose:
+    // 1. Validation: reject 0-value swaps before returning
+    // 2. Fallback: used if getAssetTransfers doesn't have matching tokens (edge case safety net)
+    // In normal flow, amounts are overridden by getAssetTransfers values which are pre-adjusted
+    const fromDecimals = tokenDecimals.get(outbound.tokenAddress) ?? 18;
+    const toDecimals = tokenDecimals.get(inbound.tokenAddress) ?? 18;
+
+    // Use formatTokenAmount for precision-safe BigInt to decimal conversion
+    const fromAmount = parseFloat(
+      formatTokenAmount(outbound.value.toString(), fromDecimals),
+    );
+    const toAmount = parseFloat(
+      formatTokenAmount(inbound.value.toString(), toDecimals),
+    );
+
+    // Validation: reject 0-value swaps as invalid
+    if (fromAmount === 0) {
+      this.logger.warn(
+        {
+          txHash: receipt.transactionHash,
+          fromToken: outbound.tokenAddress,
+          transferCount: transfers.length,
+        },
+        "[RpcSpotProvider] Detected swap with 0 outbound value - skipping",
+      );
+      return null;
+    }
+
+    return {
+      txHash: receipt.transactionHash,
+      blockNumber: receipt.blockNumber,
+      timestamp: new Date(), // Will be set from transfer metadata by caller
+      fromToken: outbound.tokenAddress,
+      toToken: inbound.tokenAddress,
+      fromAmount,
+      toAmount,
+      protocol: "Unknown",
+    };
+  }
+
+  /**
+   * Quick check if transaction might be a swap (has both outbound and inbound transfers)
+   * Used as pre-filter before fetching receipt for accurate detection
+   * @param transfers Transfers from getAssetTransfers
+   * @param walletAddress Wallet address being monitored
+   * @returns True if transaction has both directions (potential swap)
+   */
+  private isSwapCandidate(
+    transfers: Transfer[],
+    walletAddress: string,
+  ): boolean {
+    const wallet = walletAddress.toLowerCase();
+    const hasOutbound = transfers.some((t) => t.from === wallet);
+    const hasInbound = transfers.some((t) => t.to === wallet);
+    return hasOutbound && hasInbound;
+  }
+
+  /**
+   * Check if transfers include native ETH
+   * Used to determine whether to fallback to transfer-based detection
+   * Native ETH swaps (ETH→ERC20 or ERC20→ETH) have EXTERNAL transfers that don't emit ERC20 logs
+   * Native transfers have null/undefined rawContract.address
+   * @param transfers Transfers from getAssetTransfers
+   * @returns True if any transfer is a native ETH transfer
+   */
+  private hasNativeEthTransfer(transfers: Transfer[]): boolean {
+    return transfers.some(
+      (t) =>
+        // Native transfers (EXTERNAL/INTERNAL category) have null rawContract.address
+        !t.rawContract?.address,
+    );
+  }
+
+  /**
+   * Check protocol filter using already-fetched receipt
+   * Avoids duplicate RPC calls when receipt is already available
+   * @param receipt Transaction receipt
+   * @param txTo Transaction target address
+   * @param chainFilters Protocol filters for this chain
+   * @returns Filter result with allowed flag and protocol name if matched
+   */
+  private checkProtocolFilterWithReceipt(
+    receipt: TransactionReceipt,
+    txTo: string | undefined,
+    chainFilters: ProtocolFilter[],
+  ): { allowed: boolean; protocol?: string } {
+    if (!txTo) {
+      return { allowed: false };
+    }
+
+    for (const filter of chainFilters) {
+      if (txTo.toLowerCase() !== filter.routerAddress.toLowerCase()) {
+        continue;
+      }
+
+      const hasSwapEvent = receipt.logs.some(
+        (log) => log.topics[0] === filter.swapEventSignature,
+      );
+
+      if (hasSwapEvent) {
+        this.logger.debug(
+          {
+            txHash: receipt.transactionHash,
+            protocol: filter.protocol,
+          },
+          `[RpcSpotProvider] Swap matched protocol (receipt reuse)`,
+        );
+        return { allowed: true, protocol: filter.protocol };
+      }
+    }
+
+    return { allowed: false };
+  }
+
+  /**
+   * Enrich swap with gas data from already-fetched receipt
+   * Avoids duplicate receipt fetch when used with receipt-based detection
+   * @param swap Detected swap
+   * @param receipt Transaction receipt
+   * @param chain Chain where swap occurred
+   * @returns Complete OnChainTrade with gas data
+   */
+  private enrichSwapFromReceipt(
+    swap: DetectedSwap,
+    receipt: TransactionReceipt,
+    chain: SpecificChain,
+  ): OnChainTrade {
+    return {
+      txHash: swap.txHash,
+      blockNumber: swap.blockNumber,
+      timestamp: swap.timestamp,
+      chain,
+      fromToken: swap.fromToken,
+      toToken: swap.toToken,
+      fromAmount: swap.fromAmount,
+      toAmount: swap.toAmount,
+      protocol: swap.protocol,
+      gasUsed: Number(receipt.gasUsed),
+      gasPrice: Number(receipt.effectiveGasPrice),
+      gasCostUsd: undefined,
     };
   }
 

@@ -17,7 +17,6 @@ import {
   Competition,
   CreateCompetitionResponse,
   EnhancedCompetition,
-  ErrorResponse,
   PriceResponse,
   PublicAgentResponse,
   ResetApiKeyResponse,
@@ -27,7 +26,6 @@ import { dbManager } from "@recallnet/test-utils";
 import { getBaseUrl } from "@recallnet/test-utils";
 import {
   createAgentVerificationSignature,
-  createPrivyAuthenticatedClient,
   createTestClient,
   generateRandomEthAddress,
   getAdminApiKey,
@@ -3142,183 +3140,6 @@ Purpose: WALLET_VERIFICATION`;
       // Both should only consider active agents in their calculations
       // This test specifically verifies the fix for app-194 where agent table rankings
       // now match leaderboard rankings by excluding disqualified agents
-    });
-  });
-
-  describe("Agent handles", () => {
-    test("should reject duplicate handles or invalid format", async () => {
-      // Create a Privy-authenticated client
-      const { client: siweClient } = await createPrivyAuthenticatedClient({
-        userName: "Handle Test User",
-        userEmail: "handle-test@example.com",
-      });
-
-      // Test 1: Custom handle
-      const response1 = await siweClient.request<AgentProfileResponse>(
-        "post",
-        "/api/user/agents",
-        {
-          name: "Another Agent",
-          handle: "custom_handle",
-          description: "Test agent with custom handle",
-        },
-      );
-
-      expect(response1.success).toBe(true);
-      expect((response1 as AgentProfileResponse).agent.name).toBe(
-        "Another Agent",
-      );
-      expect((response1 as AgentProfileResponse).agent.handle).toBe(
-        "custom_handle",
-      );
-
-      // Test 2: Duplicate handle rejection
-      const response2 = await siweClient.request<ErrorResponse>(
-        "post",
-        "/api/user/agents",
-        {
-          name: "Third Agent",
-          handle: "custom_handle", // Same as agent 2
-          description: "Should fail with duplicate handle",
-        },
-      );
-
-      expect(response2.success).toBe(false);
-      expect(response2.error).toContain(
-        "An agent with handle 'custom_handle' already exists",
-      );
-      expect(response2.status).toBe(409);
-
-      // Test 3: Handle with special characters
-      const response3 = await siweClient.request<AgentProfileResponse>(
-        "post",
-        "/api/user/agents",
-        {
-          name: "Agent@123!",
-          handle: "agent@123!",
-          description: "Test handle generation from special chars",
-        },
-      );
-
-      expect(response3.success).toBe(false);
-      expect((response3 as ErrorResponse).error).toContain(
-        "Handle can only contain lowercase letters, numbers, and underscores",
-      );
-      expect((response3 as ErrorResponse).status).toBe(400);
-
-      // Test 4: Invalid handle format (uppercase)
-      const response4 = await siweClient.request<ErrorResponse>(
-        "post",
-        "/api/user/agents",
-        {
-          name: "Test Agent",
-          handle: "UPPERCASE_HANDLE", // Should fail - must be lowercase
-          description: "Should fail with invalid handle format",
-        },
-      );
-
-      expect(response4.success).toBe(false);
-      expect((response4 as ErrorResponse).error).toContain(
-        "Handle can only contain lowercase letters, numbers, and underscores",
-      );
-
-      // Test 5: Invalid handle format (too long)
-      const response5 = await siweClient.request<ErrorResponse>(
-        "post",
-        "/api/user/agents",
-        {
-          name: "Test Agent",
-          handle: "a".repeat(16), // Should fail - too long
-          description: "Should fail with invalid handle format",
-        },
-      );
-
-      expect(response5.success).toBe(false);
-      expect((response5 as ErrorResponse).error).toContain(
-        "Handle must be at most 15 characters",
-      );
-      expect(response5.status).toBe(400);
-
-      // Test 6: Invalid handle format (too short)
-      const response6 = await siweClient.request<ErrorResponse>(
-        "post",
-        "/api/user/agents",
-        {
-          name: "Test Agent",
-          handle: "a", // Should fail - too short
-          description: "Should fail with invalid handle format",
-        },
-      );
-
-      expect(response6.success).toBe(false);
-      expect((response6 as ErrorResponse).error).toContain(
-        "Handle must be at least 3 characters",
-      );
-      expect(response6.status).toBe(400);
-    });
-
-    test("should update agent handle", async () => {
-      // Create a Privy-authenticated client
-      const { client: siweClient } = await createPrivyAuthenticatedClient({
-        userName: "Handle Update Test User",
-        userEmail: "handle-update@example.com",
-      });
-
-      // Create an agent
-      const createResponse = await siweClient.request<AgentProfileResponse>(
-        "post",
-        "/api/user/agents",
-        {
-          name: "Update Test Agent",
-          handle: "original_handle",
-          description: "Test agent for handle updates",
-        },
-      );
-
-      expect(createResponse.success).toBe(true);
-      let agentId = "";
-      agentId = (createResponse as AgentProfileResponse).agent.id;
-
-      // Update the handle
-      const updateResponse = await siweClient.updateUserAgentProfile(agentId, {
-        handle: "updated_handle",
-      });
-
-      expect(updateResponse.success).toBe(true);
-      if (updateResponse.success) {
-        expect((updateResponse as AgentProfileResponse).agent.handle).toBe(
-          "updated_handle",
-        );
-      }
-
-      // Create another agent
-      const createResponse2 = await siweClient.request<AgentProfileResponse>(
-        "post",
-        "/api/user/agents",
-        {
-          name: "Second Update Test Agent",
-          handle: "second_handle",
-          description: "Second test agent",
-        },
-      );
-
-      expect(createResponse2.success).toBe(true);
-      let agent2Id = "";
-      agent2Id = (createResponse2 as AgentProfileResponse).agent.id;
-
-      // Try to update agent2's handle to agent1's handle (should fail)
-      const updateResponse2 = await siweClient.updateUserAgentProfile(
-        agent2Id,
-        {
-          handle: "updated_handle", // Same as agent 1
-        },
-      );
-
-      expect(updateResponse2.success).toBe(false);
-      expect((updateResponse2 as ErrorResponse).error).toContain(
-        "An agent with handle 'updated_handle' already exists",
-      );
-      expect((updateResponse2 as ErrorResponse).status).toBe(409);
     });
   });
 

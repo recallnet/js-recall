@@ -3,19 +3,14 @@ import { beforeEach, describe, expect, test } from "vitest";
 import { specificChainTokens } from "@recallnet/services/lib";
 import {
   CROSS_CHAIN_TRADING_TYPE,
-  CompetitionAgentsResponse,
-  CompetitionDetailResponse,
-  CompetitionRulesResponse,
+  CompetitionStatus,
   CreateCompetitionResponse,
-  ErrorResponse,
   GlobalLeaderboardResponse,
   StartCompetitionResponse,
   TradeResponse,
-  UpcomingCompetitionsResponse,
 } from "@recallnet/test-utils";
 import {
   createPerpsTestCompetition,
-  createPrivyAuthenticatedClient,
   createTestClient,
   createTestCompetition,
   getAdminApiKey,
@@ -27,13 +22,18 @@ import { wait } from "@recallnet/test-utils";
 
 import { portfolioSnapshotterService } from "@/lib/services";
 
+import { createTestRpcClient } from "../utils/rpc-client-helpers.js";
+
 describe("Competition API", () => {
   let adminApiKey: string;
+  let rpcClient: Awaited<ReturnType<typeof createTestRpcClient>>;
 
   // Clean up test state before each test
   beforeEach(async () => {
     // Store the admin API key for authentication
     adminApiKey = await getAdminApiKey();
+    // Create RPC client for public competition queries
+    rpcClient = await createTestRpcClient();
   });
 
   test("anyone can view competition rules by competition ID (public endpoint)", async () => {
@@ -60,45 +60,28 @@ describe("Competition API", () => {
     expect(createResponse.success).toBe(true);
     const competitionId = createResponse.competition.id;
 
-    // Test 1: Authenticated agent can access the rules
-    const { client: agentClient } = await registerUserAndAgentAndGetClient({
-      adminApiKey,
-      agentName: "Rules Viewer Agent",
+    // Test 1: Unauthenticated client can access the rules
+
+    const rules = await rpcClient.competitions.getRules({
+      competitionId,
     });
 
-    const agentRulesResponse = (await agentClient.getCompetitionRules(
-      competitionId,
-    )) as CompetitionRulesResponse;
-
-    expect(agentRulesResponse.success).toBe(true);
-    expect(agentRulesResponse.rules).toBeDefined();
-    expect(agentRulesResponse.competition).toBeDefined();
-    expect(agentRulesResponse.competition.id).toBe(competitionId);
-
     // Verify rules structure
-    expect(agentRulesResponse.rules.tradingRules).toBeDefined();
-    expect(agentRulesResponse.rules.tradingRules).toBeInstanceOf(Array);
-    expect(agentRulesResponse.rules.rateLimits).toBeDefined();
-    expect(agentRulesResponse.rules.availableChains).toBeDefined();
-    expect(agentRulesResponse.rules.slippageFormula).toBeDefined();
+    expect(rules.tradingRules).toBeDefined();
+    expect(rules.tradingRules).toBeInstanceOf(Array);
+    expect(rules.rateLimits).toBeDefined();
+    expect(rules.availableChains).toBeDefined();
+    expect(rules.slippageFormula).toBeDefined();
 
     // Verify trading constraints
-    expect(agentRulesResponse.rules.tradingConstraints).toBeDefined();
-    expect(
-      agentRulesResponse.rules.tradingConstraints?.minimumPairAgeHours,
-    ).toBe(96);
-    expect(
-      agentRulesResponse.rules.tradingConstraints?.minimum24hVolumeUsd,
-    ).toBe(100000);
-    expect(
-      agentRulesResponse.rules.tradingConstraints?.minimumLiquidityUsd,
-    ).toBe(200000);
-    expect(agentRulesResponse.rules.tradingConstraints?.minimumFdvUsd).toBe(
-      3000000,
-    );
+    expect(rules.tradingConstraints).toBeDefined();
+    expect(rules.tradingConstraints?.minimumPairAgeHours).toBe(96);
+    expect(rules.tradingConstraints?.minimum24hVolumeUsd).toBe(100000);
+    expect(rules.tradingConstraints?.minimumLiquidityUsd).toBe(200000);
+    expect(rules.tradingConstraints?.minimumFdvUsd).toBe(3000000);
 
     // Verify trading rules include the constraints
-    const tradingRules = agentRulesResponse.rules.tradingRules;
+    const tradingRules = rules.tradingRules;
     expect(
       tradingRules.some((rule: string) =>
         rule.includes("minimum 96 hours of trading history"),
@@ -110,39 +93,14 @@ describe("Competition API", () => {
       ),
     ).toBe(true);
 
-    // Test 2: Unauthenticated client can also access the rules
-    const unauthClient = createTestClient();
-    const unauthRulesResponse = (await unauthClient.getCompetitionRules(
-      competitionId,
-    )) as CompetitionRulesResponse;
+    // Test 2: Returns 404 for non-existent competition
+    await expect(
+      rpcClient.competitions.getRules({
+        competitionId: "00000000-0000-0000-0000-000000000000",
+      }),
+    ).rejects.toThrow("not found");
 
-    expect(unauthRulesResponse.success).toBe(true);
-    expect(unauthRulesResponse.rules).toBeDefined();
-    expect(unauthRulesResponse.competition.id).toBe(competitionId);
-
-    // Test 3: Privy authenticated user can access the rules
-    const { client: siweClient } = await createPrivyAuthenticatedClient({
-      userName: "Privy Rules Viewer",
-      userEmail: "siwe-rules@example.com",
-    });
-
-    const siweRulesResponse = (await siweClient.getCompetitionRules(
-      competitionId,
-    )) as CompetitionRulesResponse;
-
-    expect(siweRulesResponse.success).toBe(true);
-    expect(siweRulesResponse.rules).toBeDefined();
-    expect(siweRulesResponse.competition.id).toBe(competitionId);
-
-    // Test 4: Returns 404 for non-existent competition
-    const nonExistentResponse = await agentClient.getCompetitionRules(
-      "00000000-0000-0000-0000-000000000000",
-    );
-
-    expect(nonExistentResponse.success).toBe(false);
-    expect((nonExistentResponse as ErrorResponse).error).toContain("not found");
-
-    // Test 5: Works for both pending and active competitions
+    // Test 3: Works for both pending and active competitions
     // Start the competition
     const { agent } = await registerUserAndAgentAndGetClient({
       adminApiKey,
@@ -155,203 +113,18 @@ describe("Competition API", () => {
     });
 
     // Should still be able to get rules after competition is started
-    const activeRulesResponse = (await agentClient.getCompetitionRules(
+    const activeRules = await rpcClient.competitions.getRules({
       competitionId,
-    )) as CompetitionRulesResponse;
-
-    expect(activeRulesResponse.success).toBe(true);
-    expect(activeRulesResponse.rules).toBeDefined();
-    expect(activeRulesResponse.competition.status).toBe("active");
-  });
-
-  test("agents can view competition status and leaderboard", async () => {
-    // Setup admin client and register an agent
-    const adminClient = createTestClient();
-    await adminClient.loginAsAdmin(adminApiKey);
-
-    const { client: agentClient, agent } =
-      await registerUserAndAgentAndGetClient({
-        adminApiKey,
-        agentName: "Agent Gamma",
-      });
-
-    // Admin starts a competition with the agent
-    const competitionName = `Viewable Competition ${Date.now()}`;
-    const startedCompetition = await startTestCompetition({
-      adminClient,
-      name: competitionName,
-      agentIds: [agent.id],
-    });
-    const competitionId = startedCompetition.competition.id;
-
-    // Agent checks competition status
-    const competitionResponse = await agentClient.getCompetition(competitionId);
-    if (!competitionResponse.success) {
-      throw new Error("Failed to get competition");
-    }
-    const competition = competitionResponse.competition;
-    expect(competition.name).toBe(competitionName);
-    expect(competition.status).toBe("active");
-
-    // Agent checks leaderboard
-    const leaderboardResponse = await agentClient.getCompetitionAgents(
-      competition.id,
-      { sort: "rank" },
-    );
-    expect(leaderboardResponse.success).toBe(true);
-    if (!leaderboardResponse.success) throw new Error("Failed to get agents");
-
-    expect(leaderboardResponse.agents).toBeDefined();
-    expect(leaderboardResponse.agents).toBeInstanceOf(Array);
-
-    // There should be one agent in the leaderboard
-    expect(leaderboardResponse.agents.length).toBe(1);
-
-    // The agent should be in the leaderboard
-    const agentInLeaderboard = leaderboardResponse.agents.find(
-      (entry) => entry.name === "Agent Gamma",
-    );
-    expect(agentInLeaderboard).toBeDefined();
-  });
-
-  test("agents receive basic information for competitions they are not part of", async () => {
-    // Setup admin client
-    const adminClient = createTestClient();
-    await adminClient.loginAsAdmin(adminApiKey);
-
-    // Register agents - one in the competition, one not
-    const { client: agentInClient, agent: agentIn } =
-      await registerUserAndAgentAndGetClient({
-        adminApiKey,
-        agentName: "Inside Agent",
-      });
-    const { client: agentOutClient } = await registerUserAndAgentAndGetClient({
-      adminApiKey,
-      agentName: "Outside Agent",
     });
 
-    // Start a competition with only one agent
-    const { competition } = await startTestCompetition({
-      adminClient,
-      name: `Exclusive Competition ${Date.now()}`,
-      agentIds: [agentIn.id],
-    });
-
-    // Both agents can check status of the competition by ID
-    const competitionFromAgentInResponse = await agentInClient.getCompetition(
-      competition.id,
-    );
-    if (!competitionFromAgentInResponse.success) {
-      throw new Error("Failed to get competition");
-    }
-    const competitionFromAgentIn = competitionFromAgentInResponse.competition;
-    expect(competitionFromAgentIn.id).toBe(competition.id);
-    expect(competitionFromAgentIn.status).toBe("active");
-
-    const competitionFromAgentOutResponse = await agentOutClient.getCompetition(
-      competition.id,
-    );
-    if (!competitionFromAgentOutResponse.success) {
-      throw new Error("Failed to get competition");
-    }
-    const competitionFromAgentOut = competitionFromAgentOutResponse.competition;
-    expect(competitionFromAgentOut.id).toBe(competition.id);
-    expect(competitionFromAgentOut.status).toBe("active");
-  });
-
-  test("admin can access competition status without being a participant", async () => {
-    // Setup admin client
-    const adminClient = createTestClient();
-    await adminClient.loginAsAdmin(adminApiKey);
-
-    // Register a regular agent
-    const { client: agentClient, agent } =
-      await registerUserAndAgentAndGetClient({
-        adminApiKey,
-        agentName: "Regular Agent",
-      });
-
-    // Start a competition with only the regular agent (admin is not a participant)
-    const competitionName = `Admin Access Test Competition ${Date.now()}`;
-    const startedComp = await startTestCompetition({
-      adminClient,
-      name: competitionName,
-      agentIds: [agent.id],
-    });
-    const competitionId = startedComp.competition.id;
-
-    // Admin checks competition status with full details
-    const adminCompetitionResponse =
-      await adminClient.getCompetition(competitionId);
-    if (!adminCompetitionResponse.success) {
-      throw new Error("Failed to get competition");
-    }
-    const adminCompetition = adminCompetitionResponse.competition;
-    expect(adminCompetition.name).toBe(competitionName);
-    expect(adminCompetition.status).toBe("active");
-    expect(adminCompetition.description).toBeDefined();
-    expect(adminCompetition.externalUrl).toBeDefined();
-    expect(adminCompetition.imageUrl).toBeDefined();
-    expect(adminCompetition.startDate).toBeDefined();
-    expect(adminCompetition.endDate).toBeDefined();
-
-    // Admin checks leaderboard
-    const adminLeaderboardResponse = await adminClient.getCompetitionAgents(
-      adminCompetition.id,
-      { sort: "rank" },
-    );
-    expect(adminLeaderboardResponse.success).toBe(true);
-    if (!adminLeaderboardResponse.success)
-      throw new Error("Failed to get agents");
-
-    expect(adminLeaderboardResponse.agents).toBeDefined();
-    expect(adminLeaderboardResponse.agents).toBeInstanceOf(Array);
-
-    // There should be one agent in the leaderboard
-    expect(adminLeaderboardResponse.agents.length).toBe(1);
-    expect(adminLeaderboardResponse.agents[0]?.name).toBe("Regular Agent");
-
-    // Admin checks competition rules
-    const adminRulesResponse = (await adminClient.getRules(
-      competitionId,
-    )) as CompetitionRulesResponse;
-    expect(adminRulesResponse.success).toBe(true);
-    expect(adminRulesResponse.rules).toBeDefined();
-    expect(adminRulesResponse.rules.tradingRules).toBeDefined();
-    expect(adminRulesResponse.rules.rateLimits).toBeDefined();
-    expect(adminRulesResponse.rules.availableChains).toBeDefined();
-    expect(adminRulesResponse.rules.slippageFormula).toBeDefined();
-
-    // Regular agent checks all the same endpoints to verify they work for participants too
-    const agentCompetitionResponse =
-      await agentClient.getCompetition(competitionId);
-    if (!agentCompetitionResponse.success) {
-      throw new Error("Failed to get competition");
-    }
-    const agentCompetition = agentCompetitionResponse.competition;
-    expect(agentCompetition.id).toBe(adminCompetition.id);
-    expect(agentCompetition.status).toBe("active");
-
-    const agentLeaderboardResponse = await agentClient.getCompetitionAgents(
-      agentCompetition.id,
-    );
-    expect(agentLeaderboardResponse.success).toBe(true);
-
-    // Regular agent checks rules
-    const agentRulesResponse = await agentClient.getRules(competitionId);
-    expect(agentRulesResponse.success).toBe(true);
+    expect(activeRules).toBeDefined();
   });
 
   describe("get competitions", () => {
-    test("agents can get list of upcoming competitions", async () => {
-      // Setup admin client and register an agent
+    test("can get list of competitions by status", async () => {
+      // Setup admin client
       const adminClient = createTestClient();
       await adminClient.loginAsAdmin(adminApiKey);
-
-      const { client: agentClient } = await registerUserAndAgentAndGetClient({
-        adminApiKey,
-        agentName: "Upcoming competitions viewer test",
-      });
 
       // Create several competitions in PENDING state
       const comp1Name = `Upcoming Competition 1 ${Date.now()}`;
@@ -380,27 +153,26 @@ describe("Competition API", () => {
       expect(createResponse2.competition.status).toBe("pending");
       expect(createResponse3.competition.status).toBe("pending");
 
-      // Call the competitions endpoint with pending status
-      const upcomingResponse = (await agentClient.getCompetitions(
-        "pending",
-      )) as UpcomingCompetitionsResponse;
+      // Get pending competitions
+      const pendingResponse = await rpcClient.competitions.list({
+        status: "pending",
+      });
 
       // Verify the response
-      expect(upcomingResponse.success).toBe(true);
-      expect(upcomingResponse.competitions).toBeDefined();
-      expect(Array.isArray(upcomingResponse.competitions)).toBe(true);
-      expect(upcomingResponse.competitions.length).toBe(3);
+      expect(pendingResponse.competitions).toBeDefined();
+      expect(Array.isArray(pendingResponse.competitions)).toBe(true);
+      expect(pendingResponse.competitions.length).toBe(3);
 
       // Validate pagination metadata
-      expect(upcomingResponse.pagination).toBeDefined();
-      expect(upcomingResponse.pagination.total).toBe(3); // total competitions created
-      expect(upcomingResponse.pagination.limit).toBe(10); // default limit
-      expect(upcomingResponse.pagination.offset).toBe(0); // default offset
-      expect(typeof upcomingResponse.pagination.hasMore).toBe("boolean");
-      expect(upcomingResponse.pagination.hasMore).toBe(false); // 3 competitions < 10 limit
+      expect(pendingResponse.pagination).toBeDefined();
+      expect(pendingResponse.pagination.total).toBe(3); // total competitions created
+      expect(pendingResponse.pagination.limit).toBe(10); // default limit
+      expect(pendingResponse.pagination.offset).toBe(0); // default offset
+      expect(typeof pendingResponse.pagination.hasMore).toBe("boolean");
+      expect(pendingResponse.pagination.hasMore).toBe(false); // 3 competitions < 10 limit
 
       // Verify each competition has all expected fields
-      upcomingResponse.competitions.forEach((comp) => {
+      pendingResponse.competitions.forEach((comp) => {
         expect(comp.id).toBeDefined();
         expect(comp.name).toBeDefined();
         expect(comp.status).toBe("pending");
@@ -415,72 +187,56 @@ describe("Competition API", () => {
         agentName: "Upcoming competitions viewer test agent",
       });
 
-      // Start one of the competitions to verify it disappears from upcoming list
+      // Start one of the competitions to verify it moves from pending to active
       await startExistingTestCompetition({
         adminClient,
         competitionId: createResponse1.competition.id,
         agentIds: [agent.id],
       });
 
-      // Get upcoming competitions again
-      const upcomingResponseAfterStart = (await agentClient.getCompetitions(
-        "pending",
-      )) as UpcomingCompetitionsResponse;
+      // Get pending competitions again - should be 2 now
+      const pendingResponseAfterStart = await rpcClient.competitions.list({
+        status: "pending",
+      });
+      expect(pendingResponseAfterStart.competitions.length).toBe(2);
 
-      expect(upcomingResponseAfterStart.competitions.length).toBe(2);
-
-      // Get active competitions
-      const activeResponse = (await agentClient.getCompetitions(
-        "active",
-      )) as UpcomingCompetitionsResponse;
-
+      // Get active competitions - should be 1 now
+      const activeResponse = await rpcClient.competitions.list({
+        status: "active",
+      });
       expect(activeResponse.competitions.length).toBe(1);
     });
 
-    test("viewing competitions with invalid querystring values returns 400", async () => {
+    test("rejects invalid status parameter", async () => {
       // Setup admin client
       const adminClient = createTestClient();
       await adminClient.loginAsAdmin(adminApiKey);
 
-      // Register a user/agent
-      const { client: agentClient } = await registerUserAndAgentAndGetClient({
-        adminApiKey,
-        agentName: "Upcoming Viewer Agent",
-      });
-
-      // Create the competitions
+      // Create a competition
       await adminClient.createCompetition({
-        name: `Upcoming Competition ${Date.now()}`,
-        description: "Test competition 1",
+        name: `Validation Test Competition ${Date.now()}`,
+        description: "Test competition for validation",
         tradingType: CROSS_CHAIN_TRADING_TYPE.ALLOW,
       });
 
-      // Call the new endpoint to get competitions sorted by start date ascending
-      const ascResponse = (await agentClient.getCompetitions(
-        "pending",
-        "foo",
-      )) as ErrorResponse;
-
-      expect(ascResponse.success).toBe(false);
-      expect(ascResponse.status).toBe(400);
+      // Try to get competitions with invalid status - should throw error
+      await expect(
+        rpcClient.competitions.list({
+          status: "invalid_status" as CompetitionStatus,
+        }),
+      ).rejects.toThrow("Input validation failed");
     });
 
-    test("agents can view sorted competitions", async () => {
+    test("can sort competitions by creation date", async () => {
       // Setup admin client
       const adminClient = createTestClient();
       await adminClient.loginAsAdmin(adminApiKey);
 
-      // Register a user/agent
-      const { client: agentClient } = await registerUserAndAgentAndGetClient({
-        adminApiKey,
-        agentName: "Upcoming Viewer Agent",
-      });
-
       // Create several competitions in PENDING state that are at least 1200 ms
-      // apart in started date, since we are storing at a 1 second precision.
-      const comp1Name = `Upcoming Competition 1 ${Date.now()}`;
-      const comp2Name = `Upcoming Competition 2 ${Date.now()}`;
-      const comp3Name = `Upcoming Competition 3 ${Date.now()}`;
+      // apart in creation date, since we are storing at a 1 second precision.
+      const comp1Name = `Sort Test Competition 1 ${Date.now()}`;
+      const comp2Name = `Sort Test Competition 2 ${Date.now()}`;
+      const comp3Name = `Sort Test Competition 3 ${Date.now()}`;
 
       // Create the competitions
       await adminClient.createCompetition({
@@ -501,28 +257,26 @@ describe("Competition API", () => {
         tradingType: CROSS_CHAIN_TRADING_TYPE.ALLOW,
       });
 
-      // Call the new endpoint to get competitions sorted by start date ascending
-      const ascResponse = (await agentClient.getCompetitions(
-        "pending",
-        "createdAt",
-      )) as UpcomingCompetitionsResponse;
+      // Get competitions sorted by creation date ascending
+      const ascResponse = await rpcClient.competitions.list({
+        status: "pending",
+        paging: { sort: "createdAt" },
+      });
 
-      // Verify the response
-      expect(ascResponse.success).toBe(true);
+      // Verify ascending order
       expect(ascResponse.competitions).toBeDefined();
       expect(Array.isArray(ascResponse.competitions)).toBe(true);
       expect(ascResponse.competitions[0]?.name).toBe(comp1Name);
       expect(ascResponse.competitions[1]?.name).toBe(comp2Name);
       expect(ascResponse.competitions[2]?.name).toBe(comp3Name);
 
-      // Call the new endpoint to get competitions sorted by start date descending NOTE: the '-' at the beginning of the sort value
-      const descResponse = (await agentClient.getCompetitions(
-        "pending",
-        "-createdAt",
-      )) as UpcomingCompetitionsResponse;
+      // Get competitions sorted by creation date descending (note the '-' prefix)
+      const descResponse = await rpcClient.competitions.list({
+        status: "pending",
+        paging: { sort: "-createdAt" },
+      });
 
-      // Verify the response
-      expect(descResponse.success).toBe(true);
+      // Verify descending order
       expect(descResponse.competitions).toBeDefined();
       expect(Array.isArray(descResponse.competitions)).toBe(true);
       expect(descResponse.competitions[0]?.name).toBe(comp3Name);
@@ -534,12 +288,6 @@ describe("Competition API", () => {
       // Setup admin client
       const adminClient = createTestClient();
       await adminClient.loginAsAdmin(adminApiKey);
-
-      // Register a user/agent
-      const { client: agentClient } = await registerUserAndAgentAndGetClient({
-        adminApiKey,
-        agentName: "Pagination Test Agent",
-      });
 
       // Create multiple competitions for pagination testing
       const competitionNames: string[] = [];
@@ -556,14 +304,11 @@ describe("Competition API", () => {
       }
 
       // Test first page with limit 3
-      const firstPageResponse = (await agentClient.getCompetitions(
-        "pending",
-        undefined,
-        3,
-        0,
-      )) as UpcomingCompetitionsResponse;
+      const firstPageResponse = await rpcClient.competitions.list({
+        status: "pending",
+        paging: { limit: 3, offset: 0 },
+      });
 
-      expect(firstPageResponse.success).toBe(true);
       expect(firstPageResponse.competitions.length).toBe(3);
       expect(firstPageResponse.pagination.total).toBe(5);
       expect(firstPageResponse.pagination.limit).toBe(3);
@@ -571,14 +316,11 @@ describe("Competition API", () => {
       expect(firstPageResponse.pagination.hasMore).toBe(true); // 0 + 3 < 5
 
       // Test second page with limit 3, offset 3
-      const secondPageResponse = (await agentClient.getCompetitions(
-        "pending",
-        undefined,
-        3,
-        3,
-      )) as UpcomingCompetitionsResponse;
+      const secondPageResponse = await rpcClient.competitions.list({
+        status: "pending",
+        paging: { limit: 3, offset: 3 },
+      });
 
-      expect(secondPageResponse.success).toBe(true);
       expect(secondPageResponse.competitions.length).toBe(2); // remaining competitions
       expect(secondPageResponse.pagination.total).toBe(5);
       expect(secondPageResponse.pagination.limit).toBe(3);
@@ -586,14 +328,11 @@ describe("Competition API", () => {
       expect(secondPageResponse.pagination.hasMore).toBe(false); // 3 + 3 > 5
 
       // Test beyond last page
-      const emptyPageResponse = (await agentClient.getCompetitions(
-        "pending",
-        undefined,
-        3,
-        6,
-      )) as UpcomingCompetitionsResponse;
+      const emptyPageResponse = await rpcClient.competitions.list({
+        status: "pending",
+        paging: { limit: 3, offset: 6 },
+      });
 
-      expect(emptyPageResponse.success).toBe(true);
       expect(emptyPageResponse.competitions.length).toBe(0);
       expect(emptyPageResponse.pagination.total).toBe(5);
       expect(emptyPageResponse.pagination.limit).toBe(3);
@@ -608,11 +347,10 @@ describe("Competition API", () => {
     await adminClient.loginAsAdmin(adminApiKey);
 
     // Register an agent
-    const { client: agentClient, agent } =
-      await registerUserAndAgentAndGetClient({
-        adminApiKey,
-        agentName: "Link and Image Test Agent",
-      });
+    const { agent } = await registerUserAndAgentAndGetClient({
+      adminApiKey,
+      agentName: "Link and Image Test Agent",
+    });
 
     // Test data for new fields
     const externalUrl = "https://example.com/competition-details";
@@ -648,50 +386,35 @@ describe("Competition API", () => {
     expect(startResponse.competition.externalUrl).toBe(externalUrl);
     expect(startResponse.competition.imageUrl).toBe(imageUrl);
 
-    // 3. Verify the fields are in the competition status response for participating agents
+    // 3. Verify the fields are in the competition detail response
     const competitionId = startResponse.competition.id;
-    const agentCompetitionResponse =
-      await agentClient.getCompetition(competitionId);
-    if (!agentCompetitionResponse.success) {
-      throw new Error("Failed to get competition");
-    }
-    const agentCompetition = agentCompetitionResponse.competition;
-    expect(agentCompetition.id).toBe(competitionId);
-    expect(agentCompetition.status).toBe("active");
-    expect(agentCompetition.externalUrl).toBe(externalUrl);
-    expect(agentCompetition.imageUrl).toBe(imageUrl);
+    const competition = await rpcClient.competitions.getById({
+      id: competitionId,
+    });
+    expect(competition.id).toBe(competitionId);
+    expect(competition.status).toBe("active");
+    expect(competition.externalUrl).toBe(externalUrl);
+    expect(competition.imageUrl).toBe(imageUrl);
 
-    // 4. Verify the fields are in the competition detail response
-    const competitionDetail = await agentClient.getCompetition(
-      startResponse.competition.id,
-    );
-    if (competitionDetail.success && "competition" in competitionDetail) {
-      expect(competitionDetail.competition.externalUrl).toBe(externalUrl);
-      expect(competitionDetail.competition.imageUrl).toBe(imageUrl);
-    }
-
-    // 5. Verify the fields are in the upcoming competitions endpoint for pending competitions
+    // 4. Verify the fields are in the competitions list for pending competitions
     // First, end the active competition
-    if (startResponse.success) {
-      await adminClient.endCompetition(startResponse.competition.id);
-    }
+    await adminClient.endCompetition(startResponse.competition.id);
 
-    // Get upcoming competitions
-    const upcomingResponse = await agentClient.getCompetitions("pending");
+    // Get pending competitions using RPC
+    const pendingCompetitionsResponse = await rpcClient.competitions.list({
+      status: "pending",
+    });
 
-    if (upcomingResponse.success && "competitions" in upcomingResponse) {
-      // Find our created but not started competition
-      const pendingCompetition = upcomingResponse.competitions.find(
-        (comp) => comp.id === createResponse.competition.id,
-      );
+    // Find our created but not started competition
+    const pendingCompetition = pendingCompetitionsResponse.competitions.find(
+      (comp) => comp.id === createResponse.competition.id,
+    );
 
-      expect(pendingCompetition).toBeDefined();
-      if (pendingCompetition) {
-        expect(pendingCompetition.externalUrl).toBe(externalUrl);
-        expect(pendingCompetition.imageUrl).toBe(imageUrl);
-      }
-    }
+    expect(pendingCompetition).toBeDefined();
+    expect(pendingCompetition?.externalUrl).toBe(externalUrl);
+    expect(pendingCompetition?.imageUrl).toBe(imageUrl);
 
+    // 5. Test starting an existing competition
     const startExistingResponse = await startExistingTestCompetition({
       adminClient,
       competitionId: createResponse.competition.id,
@@ -704,18 +427,11 @@ describe("Competition API", () => {
     expect(startExistingResponse.competition.imageUrl).toBe(imageUrl);
   });
 
-  // test cases for GET /competitions/{competitionId}
   describe("get competition details by ID", () => {
     test("should get competition details by ID", async () => {
       // Setup admin client
       const adminClient = createTestClient();
       await adminClient.loginAsAdmin(adminApiKey);
-
-      // Register an agent
-      const { client: agentClient } = await registerUserAndAgentAndGetClient({
-        adminApiKey,
-        agentName: "Competition Detail Test Agent",
-      });
 
       // Create a competition
       const competitionName = `Detail Test Competition ${Date.now()}`;
@@ -725,45 +441,28 @@ describe("Competition API", () => {
         description: "Test competition for detail endpoint",
       });
 
-      // Test getting competition details by ID
-      const detailResponse = (await agentClient.getCompetition(
-        createResponse.competition.id,
-      )) as CompetitionDetailResponse;
+      // Get competition details by ID
+      const competition = await rpcClient.competitions.getById({
+        id: createResponse.competition.id,
+      });
 
       // Verify the response
-      expect(detailResponse.success).toBe(true);
-      expect(detailResponse.competition).toBeDefined();
-      expect(detailResponse.competition.id).toBe(createResponse.competition.id);
-      expect(detailResponse.competition.name).toBe(competitionName);
-      expect(detailResponse.competition.description).toBe(
+      expect(competition).toBeDefined();
+      expect(competition.id).toBe(createResponse.competition.id);
+      expect(competition.name).toBe(competitionName);
+      expect(competition.description).toBe(
         "Test competition for detail endpoint",
       );
-      expect(detailResponse.competition.status).toBe("pending");
-      expect(detailResponse.competition.createdAt).toBeDefined();
-      expect(detailResponse.competition.updatedAt).toBeDefined();
-      expect(detailResponse.competition.endDate).toBeNull();
-
-      // Test admin access
-      const adminDetailResponse = (await adminClient.getCompetition(
-        createResponse.competition.id,
-      )) as CompetitionDetailResponse;
-
-      expect(adminDetailResponse.success).toBe(true);
-      expect(adminDetailResponse.competition.id).toBe(
-        createResponse.competition.id,
-      );
+      expect(competition.status).toBe("pending");
+      expect(competition.createdAt).toBeDefined();
+      expect(competition.updatedAt).toBeDefined();
+      expect(competition.endDate).toBeNull();
     });
 
     test("should include trading constraints in competition details by ID", async () => {
       // Setup admin client
       const adminClient = createTestClient();
       await adminClient.loginAsAdmin(adminApiKey);
-
-      // Register an agent
-      const { client: agentClient } = await registerUserAndAgentAndGetClient({
-        adminApiKey,
-        agentName: "Trading Constraints Detail Test Agent",
-      });
 
       // Create a competition with custom trading constraints
       const competitionName = `Trading Constraints Detail Test ${Date.now()}`;
@@ -782,48 +481,27 @@ describe("Competition API", () => {
         tradingConstraints: customConstraints,
       })) as CreateCompetitionResponse;
 
-      // Test getting competition details includes trading constraints
-      const detailResponse = (await agentClient.getCompetition(
-        createResponse.competition.id,
-      )) as CompetitionDetailResponse;
-
-      // Verify the response includes trading constraints
-      expect(detailResponse.success).toBe(true);
-      expect(detailResponse.competition).toBeDefined();
-      expect(detailResponse.competition.tradingConstraints).toBeDefined();
-      expect(
-        detailResponse.competition.tradingConstraints?.minimumPairAgeHours,
-      ).toBe(72);
-      expect(
-        detailResponse.competition.tradingConstraints?.minimum24hVolumeUsd,
-      ).toBe(500000);
-      expect(
-        detailResponse.competition.tradingConstraints?.minimumLiquidityUsd,
-      ).toBe(300000);
-      expect(detailResponse.competition.tradingConstraints?.minimumFdvUsd).toBe(
-        5000000,
-      );
-    });
-
-    test("should return 404 for non-existent competition", async () => {
-      // Setup admin client
-      const adminClient = createTestClient();
-      await adminClient.loginAsAdmin(adminApiKey);
-
-      // Register an agent
-      const { client: agentClient } = await registerUserAndAgentAndGetClient({
-        adminApiKey,
-        agentName: "404 Test Agent",
+      // Get competition details
+      const competition = await rpcClient.competitions.getById({
+        id: createResponse.competition.id,
       });
 
-      // Try to get a non-existent competition
-      const response = await agentClient.getCompetition(
-        "00000000-0000-0000-0000-000000000000",
-      );
+      // Verify the response includes trading constraints
+      expect(competition).toBeDefined();
+      expect(competition.tradingConstraints).toBeDefined();
+      expect(competition.tradingConstraints?.minimumPairAgeHours).toBe(72);
+      expect(competition.tradingConstraints?.minimum24hVolumeUsd).toBe(500000);
+      expect(competition.tradingConstraints?.minimumLiquidityUsd).toBe(300000);
+      expect(competition.tradingConstraints?.minimumFdvUsd).toBe(5000000);
+    });
 
-      // Should return error response
-      expect(response.success).toBe(false);
-      expect((response as ErrorResponse).error).toContain("not found");
+    test("should throw error for non-existent competition", async () => {
+      // Try to get a non-existent competition - should throw error
+      await expect(
+        rpcClient.competitions.getById({
+          id: "00000000-0000-0000-0000-000000000000",
+        }),
+      ).rejects.toThrow("not found");
     });
 
     test("should include all required fields in competition details", async () => {
@@ -832,11 +510,10 @@ describe("Competition API", () => {
       await adminClient.loginAsAdmin(adminApiKey);
 
       // Register an agent
-      const { client: agentClient, agent } =
-        await registerUserAndAgentAndGetClient({
-          adminApiKey,
-          agentName: "Fields Test Agent",
-        });
+      const { agent } = await registerUserAndAgentAndGetClient({
+        adminApiKey,
+        agentName: "Fields Test Agent",
+      });
 
       // Create and start a competition
       const competitionName = `Fields Test Competition ${Date.now()}`;
@@ -850,30 +527,27 @@ describe("Competition API", () => {
       });
 
       expect(startResponse.success).toBe(true);
-      const competition = (startResponse as StartCompetitionResponse)
-        .competition;
+      const competitionId = (startResponse as StartCompetitionResponse)
+        .competition.id;
 
       // Get competition details
-      const detailResponse = await agentClient.getCompetition(competition.id);
-      expect(detailResponse.success).toBe(true);
-
-      const competitionDetail = (detailResponse as CompetitionDetailResponse)
-        .competition;
+      const competition = await rpcClient.competitions.getById({
+        id: competitionId,
+      });
 
       // Verify all required fields are present
-      expect(competitionDetail.id).toBe(competition.id);
-      expect(competitionDetail.name).toBe(competitionName);
-      expect(competitionDetail.description).toBe(
+      expect(competition.id).toBe(competitionId);
+      expect(competition.name).toBe(competitionName);
+      expect(competition.description).toBe(
         "Test competition for field validation",
       );
-      expect(competitionDetail.status).toBe("active");
-      expect(competitionDetail.crossChainTradingType).toBe("disallowAll");
-      expect(competitionDetail.externalUrl).toBe("https://example.com");
-      expect(competitionDetail.imageUrl).toBe("https://example.com/image.png");
-      expect(competitionDetail.createdAt).toBeDefined();
-      expect(competitionDetail.updatedAt).toBeDefined();
-      expect(competitionDetail.startDate).toBeDefined();
-      expect(competitionDetail.endDate).toBeNull();
+      expect(competition.status).toBe("active");
+      expect(competition.externalUrl).toBe("https://example.com");
+      expect(competition.imageUrl).toBe("https://example.com/image.png");
+      expect(competition.createdAt).toBeDefined();
+      expect(competition.updatedAt).toBeDefined();
+      expect(competition.startDate).toBeDefined();
+      expect(competition.endDate).toBeNull();
     });
 
     test("should include arena and participation fields in competition details", async () => {
@@ -918,19 +592,10 @@ describe("Competition API", () => {
       const competitionId = (createResponse as CreateCompetitionResponse)
         .competition.id;
 
-      // Register an agent to fetch the competition
-      const { client: agentClient } = await registerUserAndAgentAndGetClient({
-        adminApiKey,
-        agentName: "Arena Fields Viewer",
+      // Get competition details
+      const competition = await rpcClient.competitions.getById({
+        id: competitionId,
       });
-
-      // Get competition details and verify new fields are present
-      const detailResponse = (await agentClient.getCompetition(
-        competitionId,
-      )) as CompetitionDetailResponse;
-
-      expect(detailResponse.success).toBe(true);
-      const competition = detailResponse.competition;
 
       // Verify arena and engine fields
       expect(competition.arenaId).toBe(arenaId);
@@ -994,17 +659,9 @@ describe("Competition API", () => {
       });
 
       // Fetch competition and verify fields are returned
-      const { client: agentClient } = await registerUserAndAgentAndGetClient({
-        adminApiKey,
-        agentName: "Field Viewer",
+      const competition = await rpcClient.competitions.getById({
+        id: competitionId,
       });
-
-      const detailResponse = (await agentClient.getCompetition(
-        competitionId,
-      )) as CompetitionDetailResponse;
-
-      expect(detailResponse.success).toBe(true);
-      const competition = detailResponse.competition;
 
       // Verify fields are in the response
       expect(competition.arenaId).toBe(arenaId);
@@ -1019,7 +676,6 @@ describe("Competition API", () => {
     });
   });
 
-  // test cases for GET /competitions/{competitionId}/agents
   describe("get competition agents", () => {
     test("should get competition agents with scores and ranks", async () => {
       // Setup admin client
@@ -1027,11 +683,10 @@ describe("Competition API", () => {
       await adminClient.loginAsAdmin(adminApiKey);
 
       // Register multiple agents
-      const { client: agentClient1, agent: agent1 } =
-        await registerUserAndAgentAndGetClient({
-          adminApiKey,
-          agentName: "Agent One",
-        });
+      const { agent: agent1 } = await registerUserAndAgentAndGetClient({
+        adminApiKey,
+        agentName: "Agent One",
+      });
 
       const { agent: agent2 } = await registerUserAndAgentAndGetClient({
         adminApiKey,
@@ -1052,12 +707,10 @@ describe("Competition API", () => {
         .competition;
 
       // Get competition agents
-      const agentsResponse = await agentClient1.getCompetitionAgents(
-        competition.id,
-      );
-      expect(agentsResponse.success).toBe(true);
+      const agentsData = await rpcClient.competitions.getAgents({
+        competitionId: competition.id,
+      });
 
-      const agentsData = agentsResponse as CompetitionAgentsResponse;
       expect(agentsData.agents).toHaveLength(2);
 
       // Verify agent data structure
@@ -1085,40 +738,22 @@ describe("Competition API", () => {
 
       // Verify agents are ordered by rank
       const ranks = agentsData.agents.map((a) => a.rank);
-      expect(ranks).toEqual([...ranks].sort((a, b) => a - b));
+      expect(ranks).toEqual([...ranks].sort((a, b) => (a ?? 0) - (b ?? 0)));
     });
 
     test("should return 404 for agents of non-existent competition", async () => {
-      // Setup admin client
-      const adminClient = createTestClient();
-      await adminClient.loginAsAdmin(adminApiKey);
-
-      // Register an agent
-      const { client: agentClient } = await registerUserAndAgentAndGetClient({
-        adminApiKey,
-        agentName: "404 Agents Test Agent",
-      });
-
       // Try to get agents for a non-existent competition
-      const response = await agentClient.getCompetitionAgents(
-        "00000000-0000-0000-0000-000000000000",
-      );
-
-      // Should return error response
-      expect(response.success).toBe(false);
-      expect((response as ErrorResponse).error).toContain("not found");
+      await expect(
+        rpcClient.competitions.getAgents({
+          competitionId: "00000000-0000-0000-0000-000000000000",
+        }),
+      ).rejects.toThrow(/not found/i);
     });
 
     test("should handle competitions with no agents", async () => {
       // Setup admin client
       const adminClient = createTestClient();
       await adminClient.loginAsAdmin(adminApiKey);
-
-      // Register an agent for testing
-      const { client: agentClient } = await registerUserAndAgentAndGetClient({
-        adminApiKey,
-        agentName: "Empty Competition Test Agent",
-      });
 
       // Create a competition without starting it (no agents)
       const competitionName = `Empty Competition ${Date.now()}`;
@@ -1128,408 +763,14 @@ describe("Competition API", () => {
       });
 
       // Test getting agents for competition with no agents
-      const agentsResponse = (await agentClient.getCompetitionAgents(
-        createResponse.competition.id,
-      )) as CompetitionAgentsResponse;
+      const agentsResponse = await rpcClient.competitions.getAgents({
+        competitionId: createResponse.competition.id,
+      });
 
       // Verify the response
-      expect(agentsResponse.success).toBe(true);
-      expect(agentsResponse.competitionId).toBe(createResponse.competition.id);
       expect(agentsResponse.agents).toBeDefined();
       expect(Array.isArray(agentsResponse.agents)).toBe(true);
       expect(agentsResponse.agents.length).toBe(0);
-    });
-
-    test("should handle agent data completeness and ordering", async () => {
-      // Setup admin client
-      const adminClient = createTestClient();
-      await adminClient.loginAsAdmin(adminApiKey);
-
-      // Register multiple agents with different names for ordering test
-      const { client: agentClient, agent: agent1 } =
-        await registerUserAndAgentAndGetClient({
-          adminApiKey,
-          agentName: "Agent Charlie",
-        });
-      const { agent: agent2 } = await registerUserAndAgentAndGetClient({
-        adminApiKey,
-        agentName: "Agent Alpha",
-      });
-      const { agent: agent3 } = await registerUserAndAgentAndGetClient({
-        adminApiKey,
-        agentName: "Agent Beta",
-      });
-
-      // Start a competition with multiple agents
-      const competitionName = `Ordering Test Competition ${Date.now()}`;
-      const startResponse = await startTestCompetition({
-        adminClient,
-        name: competitionName,
-        agentIds: [agent1.id, agent2.id, agent3.id],
-      });
-
-      // Test getting competition agents
-      const agentsResponse = (await agentClient.getCompetitionAgents(
-        startResponse.competition.id,
-      )) as CompetitionAgentsResponse;
-
-      // Verify the response
-      expect(agentsResponse.success).toBe(true);
-      expect(agentsResponse.agents.length).toBe(3);
-
-      // Verify ranks are sequential
-      agentsResponse.agents.forEach((agent, index) => {
-        expect(agent.rank).toBe(index + 1);
-
-        // Verify all required fields are present and have correct types
-        expect(typeof agent.id).toBe("string");
-        expect(typeof agent.name).toBe("string");
-        expect(typeof agent.score).toBe("number");
-        expect(typeof agent.rank).toBe("number");
-        expect(typeof agent.portfolioValue).toBe("number");
-        expect(typeof agent.active).toBe("boolean");
-
-        // Verify new PnL and 24h change fields
-        expect(typeof agent.pnl).toBe("number");
-        expect(typeof agent.pnlPercent).toBe("number");
-        expect(typeof agent.change24h).toBe("number");
-        expect(typeof agent.change24hPercent).toBe("number");
-
-        // Optional fields should be null or string
-        if (agent.description !== null) {
-          expect(typeof agent.description).toBe("string");
-        }
-        if (agent.imageUrl !== null) {
-          expect(typeof agent.imageUrl).toBe("string");
-        }
-        if (agent.deactivationReason !== null) {
-          expect(typeof agent.deactivationReason).toBe("string");
-        }
-      });
-    });
-
-    // test cases for Privy user authentication
-    describe("Privy user authentication", () => {
-      test("Privy users can access competition details endpoint", async () => {
-        // Setup admin client
-        const adminClient = createTestClient();
-        await adminClient.loginAsAdmin(adminApiKey);
-
-        // Create a Privy-authenticated user client
-        const { client: siweClient } = await createPrivyAuthenticatedClient({
-          userName: "Privy Competition Detail User",
-          userEmail: "siwe-competition-detail@example.com",
-        });
-
-        // Create a competition
-        const competitionName = `Privy Detail Test Competition ${Date.now()}`;
-        const createResponse = await createTestCompetition({
-          adminClient,
-          name: competitionName,
-          description: "Test competition for Privy user access",
-        });
-
-        // Test Privy user can get competition details by ID
-        const detailResponse = await siweClient.getCompetition(
-          createResponse.competition.id,
-        );
-
-        // Verify the response
-        expect(detailResponse.success).toBe(true);
-        expect(
-          (detailResponse as CompetitionDetailResponse).competition,
-        ).toBeDefined();
-        expect(
-          (detailResponse as CompetitionDetailResponse).competition.id,
-        ).toBe(createResponse.competition.id);
-        expect(
-          (detailResponse as CompetitionDetailResponse).competition.name,
-        ).toBe(competitionName);
-        expect(
-          (detailResponse as CompetitionDetailResponse).competition.status,
-        ).toBe("pending");
-
-        // Test Privy user gets 404 for non-existent competition
-        const notFoundResponse = await siweClient.getCompetition(
-          "00000000-0000-0000-0000-000000000000",
-        );
-        expect(notFoundResponse.success).toBe(false);
-        expect((notFoundResponse as ErrorResponse).error).toContain(
-          "not found",
-        );
-      });
-
-      test("Privy users can access competition agents endpoint", async () => {
-        // Setup admin client
-        const adminClient = createTestClient();
-        await adminClient.loginAsAdmin(adminApiKey);
-
-        // Create a Privy-authenticated user client
-        const { client: siweClient } = await createPrivyAuthenticatedClient({
-          userName: "Privy Competition Agents User",
-          userEmail: "siwe-competition-agents@example.com",
-        });
-
-        // Register multiple agents for the competition
-        const { agent: agent1 } = await registerUserAndAgentAndGetClient({
-          adminApiKey,
-          agentName: "Privy Test Agent One",
-        });
-
-        const { agent: agent2 } = await registerUserAndAgentAndGetClient({
-          adminApiKey,
-          agentName: "Privy Test Agent Two",
-        });
-
-        // Create and start a competition with multiple agents
-        const competitionName = `Privy Agents Test Competition ${Date.now()}`;
-        const startResponse = await adminClient.startCompetition({
-          name: competitionName,
-          description: "Test competition for Privy user agents access",
-          agentIds: [agent1.id, agent2.id],
-          tradingType: CROSS_CHAIN_TRADING_TYPE.DISALLOW_ALL,
-        });
-
-        expect(startResponse.success).toBe(true);
-        const competition = (startResponse as StartCompetitionResponse)
-          .competition;
-
-        // Test Privy user can get competition agents
-        const agentsResponse = await siweClient.getCompetitionAgents(
-          competition.id,
-        );
-        expect(agentsResponse.success).toBe(true);
-
-        const agentsData = agentsResponse as CompetitionAgentsResponse;
-        expect(agentsData.agents).toHaveLength(2);
-
-        // Verify agent data structure
-        for (const agent of agentsData.agents) {
-          expect(agent.id).toBeDefined();
-          expect(agent.name).toBeDefined();
-          expect(typeof agent.score).toBe("number");
-          expect(typeof agent.rank).toBe("number");
-          expect(typeof agent.portfolioValue).toBe("number");
-          expect(typeof agent.active).toBe("boolean");
-          expect(agent.deactivationReason).toBeNull();
-
-          // Verify new PnL and 24h change fields are accessible to Privy users
-          expect(typeof agent.pnl).toBe("number");
-          expect(typeof agent.pnlPercent).toBe("number");
-          expect(typeof agent.change24h).toBe("number");
-          expect(typeof agent.change24hPercent).toBe("number");
-
-          // Values should be finite (not NaN or Infinity)
-          expect(Number.isFinite(agent.pnl)).toBe(true);
-          expect(Number.isFinite(agent.pnlPercent)).toBe(true);
-          expect(Number.isFinite(agent.change24h)).toBe(true);
-          expect(Number.isFinite(agent.change24hPercent)).toBe(true);
-        }
-
-        // Test Privy user gets 404 for non-existent competition
-        const notFoundResponse = await siweClient.getCompetitionAgents(
-          "00000000-0000-0000-0000-000000000000",
-        );
-        expect(notFoundResponse.success).toBe(false);
-        expect((notFoundResponse as ErrorResponse).error).toContain(
-          "not found",
-        );
-      });
-
-      test("Privy users can access existing competitions endpoint", async () => {
-        // Setup admin client
-        const adminClient = createTestClient();
-        await adminClient.loginAsAdmin(adminApiKey);
-
-        // Create a Privy-authenticated user client
-        const { client: siweClient } = await createPrivyAuthenticatedClient({
-          userName: "Privy Competitions List User",
-          userEmail: "siwe-competitions-list@example.com",
-        });
-
-        // Create several competitions in different states
-        const pendingComp = await createTestCompetition({
-          adminClient,
-          name: `Pending Competition ${Date.now()}`,
-        });
-
-        // Register an agent for active competition
-        const { agent } = await registerUserAndAgentAndGetClient({
-          adminApiKey,
-          agentName: "Privy Active Competition Agent",
-        });
-
-        const activeComp = await startTestCompetition({
-          adminClient,
-          name: `Active Competition ${Date.now()}`,
-          agentIds: [agent.id],
-        });
-
-        // Test Privy user can get pending competitions
-        const pendingResponse = await siweClient.getCompetitions("pending");
-        expect(pendingResponse.success).toBe(true);
-        expect(
-          (pendingResponse as UpcomingCompetitionsResponse).competitions,
-        ).toBeDefined();
-
-        // Should find our pending competition
-        const foundPending = (
-          pendingResponse as UpcomingCompetitionsResponse
-        ).competitions.find((comp) => comp.id === pendingComp.competition.id);
-        expect(foundPending).toBeDefined();
-
-        // Test Privy user can get active competitions
-        const activeResponse = await siweClient.getCompetitions("active");
-        expect(activeResponse.success).toBe(true);
-        expect(
-          (activeResponse as UpcomingCompetitionsResponse).competitions,
-        ).toBeDefined();
-
-        // Should find our active competition
-        const foundActive = (
-          activeResponse as UpcomingCompetitionsResponse
-        ).competitions.find((comp) => comp.id === activeComp.competition.id);
-        expect(foundActive).toBeDefined();
-
-        // Test Privy user can use sorting
-        const sortedResponse = await siweClient.getCompetitions(
-          "pending",
-          "createdAt",
-        );
-        expect(sortedResponse.success).toBe(true);
-        expect(
-          (sortedResponse as UpcomingCompetitionsResponse).competitions,
-        ).toBeDefined();
-      });
-
-      test("Privy users have same access as agent API key users for competition endpoints", async () => {
-        // Setup admin client
-        const adminClient = createTestClient();
-        await adminClient.loginAsAdmin(adminApiKey);
-
-        // Create a Privy-authenticated user client
-        const { client: siweClient } = await createPrivyAuthenticatedClient({
-          userName: "Privy Access Comparison User",
-          userEmail: "siwe-access-comparison@example.com",
-        });
-
-        // Create an agent API key authenticated client
-        const { client: agentClient, agent } =
-          await registerUserAndAgentAndGetClient({
-            adminApiKey,
-            agentName: "API Key Access Comparison Agent",
-          });
-
-        // Create and start a competition
-        const competitionName = `Access Comparison Competition ${Date.now()}`;
-        const startResponse = await startTestCompetition({
-          adminClient,
-          name: competitionName,
-          agentIds: [agent.id],
-        });
-
-        const competitionId = startResponse.competition.id;
-
-        // Test both clients can access competition details
-        const siweDetailResponse =
-          await siweClient.getCompetition(competitionId);
-        const agentDetailResponse =
-          await agentClient.getCompetition(competitionId);
-
-        expect(siweDetailResponse.success).toBe(true);
-        expect(agentDetailResponse.success).toBe(true);
-
-        // Both should return the same competition data
-        expect(
-          (siweDetailResponse as CompetitionDetailResponse).competition.id,
-        ).toBe(
-          (agentDetailResponse as CompetitionDetailResponse).competition.id,
-        );
-        expect(
-          (siweDetailResponse as CompetitionDetailResponse).competition.name,
-        ).toBe(
-          (agentDetailResponse as CompetitionDetailResponse).competition.name,
-        );
-
-        // Test both clients can access competition agents
-        const siweAgentsResponse =
-          await siweClient.getCompetitionAgents(competitionId);
-        const agentAgentsResponse =
-          await agentClient.getCompetitionAgents(competitionId);
-
-        expect(siweAgentsResponse.success).toBe(true);
-        expect(agentAgentsResponse.success).toBe(true);
-
-        // Both should return the same agents data
-        expect(
-          (siweAgentsResponse as CompetitionAgentsResponse).agents.length,
-        ).toBe(
-          (agentAgentsResponse as CompetitionAgentsResponse).agents.length,
-        );
-
-        // Test both clients can access competitions list
-        const siweListResponse = await siweClient.getCompetitions("active");
-        const agentListResponse = await agentClient.getCompetitions("active");
-
-        expect(siweListResponse.success).toBe(true);
-        expect(agentListResponse.success).toBe(true);
-
-        // Both should return the same competitions list
-        expect(
-          (siweListResponse as UpcomingCompetitionsResponse).competitions
-            .length,
-        ).toBe(
-          (agentListResponse as UpcomingCompetitionsResponse).competitions
-            .length,
-        );
-      });
-    });
-
-    test("should get competition agents with API key authentication", async () => {
-      // Setup admin client
-      const adminClient = createTestClient();
-      await adminClient.loginAsAdmin(adminApiKey);
-
-      // Register agent and get client
-      const { agent, client } = await registerUserAndAgentAndGetClient({
-        adminApiKey,
-        agentName: "Competition Agents Test Agent",
-      });
-
-      // Start a competition with our agent
-      const competitionName = `Competition Agents Test ${Date.now()}`;
-      const startResult = await startTestCompetition({
-        adminClient,
-        name: competitionName,
-        agentIds: [agent.id],
-      });
-      const competitionId = startResult.competition.id;
-
-      // Get competition agents using agent API key
-      const response = (await client.getCompetitionAgents(
-        competitionId,
-      )) as CompetitionAgentsResponse;
-
-      expect(response.success).toBe(true);
-      expect(response.competitionId).toBe(competitionId);
-      expect(response.agents).toBeDefined();
-      expect(Array.isArray(response.agents)).toBe(true);
-      expect(response.agents.length).toBe(1);
-
-      const agentData = response.agents[0]!;
-      expect(agentData).toBeDefined();
-      expect(agentData.id).toBe(agent.id);
-      expect(agentData.name).toBe(agent.name);
-      expect(typeof agentData.score).toBe("number");
-      expect(typeof agentData.rank).toBe("number");
-      expect(typeof agentData.portfolioValue).toBe("number");
-      expect(typeof agentData.active).toBe("boolean");
-
-      // Verify new PnL and 24h change fields
-      expect(typeof agentData.pnl).toBe("number");
-      expect(typeof agentData.pnlPercent).toBe("number");
-      expect(typeof agentData.change24h).toBe("number");
-      expect(typeof agentData.change24hPercent).toBe("number");
     });
 
     test("should calculate PnL and 24h change fields correctly", async () => {
@@ -1538,11 +779,10 @@ describe("Competition API", () => {
       await adminClient.loginAsAdmin(adminApiKey);
 
       // Register multiple agents
-      const { agent: agent1, client: client1 } =
-        await registerUserAndAgentAndGetClient({
-          adminApiKey,
-          agentName: "PnL Test Agent 1",
-        });
+      const { agent: agent1 } = await registerUserAndAgentAndGetClient({
+        adminApiKey,
+        agentName: "PnL Test Agent 1",
+      });
 
       const { agent: agent2 } = await registerUserAndAgentAndGetClient({
         adminApiKey,
@@ -1562,11 +802,10 @@ describe("Competition API", () => {
       await new Promise((resolve) => setTimeout(resolve, 1000));
 
       // Get competition agents
-      const response = (await client1.getCompetitionAgents(
+      const response = await rpcClient.competitions.getAgents({
         competitionId,
-      )) as CompetitionAgentsResponse;
+      });
 
-      expect(response.success).toBe(true);
       expect(response.agents).toBeDefined();
       expect(response.agents.length).toBe(2);
 
@@ -1659,9 +898,11 @@ describe("Competition API", () => {
         (acc, trade) => acc + (trade.transaction.tradeAmountUsd ?? 0),
         0,
       );
-      const { competition } = (await client1.getCompetition(
-        competitionId,
-      )) as CompetitionDetailResponse;
+
+      const competition = await rpcClient.competitions.getById({
+        id: competitionId,
+      });
+
       const stats = competition.stats;
       expect(stats).toBeDefined();
       expect(stats?.totalTrades).toBe(4);
@@ -1676,7 +917,7 @@ describe("Competition API", () => {
       await adminClient.loginAsAdmin(adminApiKey);
 
       // Register agent
-      const { agent, client } = await registerUserAndAgentAndGetClient({
+      const { agent } = await registerUserAndAgentAndGetClient({
         adminApiKey,
         agentName: "Edge Case Test Agent",
       });
@@ -1691,11 +932,10 @@ describe("Competition API", () => {
       const competitionId = startResult.competition.id;
 
       // Get competition agents immediately (before snapshots might be taken)
-      const response = (await client.getCompetitionAgents(
+      const response = await rpcClient.competitions.getAgents({
         competitionId,
-      )) as CompetitionAgentsResponse;
+      });
 
-      expect(response.success).toBe(true);
       expect(response.agents.length).toBe(1);
 
       const agentData = response.agents[0]!;
@@ -1837,11 +1077,10 @@ describe("Competition API", () => {
       // ===== Step 4: Verify pending competitions use type-specific global scores =====
 
       const pendingTradingAgentsResponse =
-        await adminClient.getCompetitionAgents(pendingTradingCompId);
-      expect(pendingTradingAgentsResponse.success).toBe(true);
-      const pendingTradingAgents = (
-        pendingTradingAgentsResponse as CompetitionAgentsResponse
-      ).agents;
+        await rpcClient.competitions.getAgents({
+          competitionId: pendingTradingCompId,
+        });
+      const pendingTradingAgents = pendingTradingAgentsResponse.agents;
       const agent1Trading = pendingTradingAgents.find(
         (a) => a.id === agent1.id,
       );
@@ -1851,12 +1090,12 @@ describe("Competition API", () => {
       expect(agent1Trading!.rank).toBe(1);
       expect(agent3Trading!.rank).toBe(2);
 
-      const pendingPerpsAgentsResponse =
-        await adminClient.getCompetitionAgents(pendingPerpsCompId);
-      expect(pendingPerpsAgentsResponse.success).toBe(true);
-      const pendingPerpsAgents = (
-        pendingPerpsAgentsResponse as CompetitionAgentsResponse
-      ).agents;
+      const pendingPerpsAgentsResponse = await rpcClient.competitions.getAgents(
+        {
+          competitionId: pendingPerpsCompId,
+        },
+      );
+      const pendingPerpsAgents = pendingPerpsAgentsResponse.agents;
       const agent2Perps = pendingPerpsAgents.find((a) => a.id === agent2.id);
       const agent4Perps = pendingPerpsAgents.find((a) => a.id === agent4.id);
       expect(agent2Perps!.rank).toBe(1);
@@ -1887,19 +1126,12 @@ describe("Competition API", () => {
       });
       const competitionId = startResult.competition.id;
 
-      // Create a client for testing
-      const { client } = await registerUserAndAgentAndGetClient({
-        adminApiKey,
-        agentName: "Pagination Test Client Agent",
+      // Test pagination with limit=2, offset=0
+      const page1Response = await rpcClient.competitions.getAgents({
+        competitionId,
+        paging: { limit: 2, offset: 0 },
       });
 
-      // Test pagination with limit=2, offset=0
-      const page1Response = (await client.getCompetitionAgents(competitionId, {
-        limit: 2,
-        offset: 0,
-      })) as CompetitionAgentsResponse;
-
-      expect(page1Response.success).toBe(true);
       expect(page1Response.agents.length).toBe(2);
       expect(page1Response.pagination.total).toBe(5);
       expect(page1Response.pagination.limit).toBe(2);
@@ -1907,12 +1139,11 @@ describe("Competition API", () => {
       expect(page1Response.pagination.hasMore).toBe(true);
 
       // Test pagination with limit=2, offset=2
-      const page2Response = (await client.getCompetitionAgents(competitionId, {
-        limit: 2,
-        offset: 2,
-      })) as CompetitionAgentsResponse;
+      const page2Response = await rpcClient.competitions.getAgents({
+        competitionId,
+        paging: { limit: 2, offset: 2 },
+      });
 
-      expect(page2Response.success).toBe(true);
       expect(page2Response.agents.length).toBe(2);
       expect(page2Response.pagination.total).toBe(5);
       expect(page2Response.pagination.limit).toBe(2);
@@ -1920,12 +1151,11 @@ describe("Competition API", () => {
       expect(page2Response.pagination.hasMore).toBe(true);
 
       // Test pagination with limit=2, offset=4 (last page)
-      const page3Response = (await client.getCompetitionAgents(competitionId, {
-        limit: 2,
-        offset: 4,
-      })) as CompetitionAgentsResponse;
+      const page3Response = await rpcClient.competitions.getAgents({
+        competitionId,
+        paging: { limit: 2, offset: 4 },
+      });
 
-      expect(page3Response.success).toBe(true);
       expect(page3Response.agents.length).toBe(1);
       expect(page3Response.pagination.total).toBe(5);
       expect(page3Response.pagination.limit).toBe(2);
@@ -1970,18 +1200,12 @@ describe("Competition API", () => {
       });
       const competitionId = startResult.competition.id;
 
-      // Create a client for testing
-      const { client } = await registerUserAndAgentAndGetClient({
-        adminApiKey,
-        agentName: "Filter Test Client Agent",
+      // Test filtering by "Filter" - should return Alpha and Beta agents
+      const filterResponse = await rpcClient.competitions.getAgents({
+        competitionId,
+        filter: "Filter",
       });
 
-      // Test filtering by "Filter" - should return Alpha and Beta agents
-      const filterResponse = (await client.getCompetitionAgents(competitionId, {
-        filter: "Filter",
-      })) as CompetitionAgentsResponse;
-
-      expect(filterResponse.success).toBe(true);
       expect(filterResponse.agents.length).toBe(2);
       expect(filterResponse.pagination.total).toBe(2);
 
@@ -1991,23 +1215,20 @@ describe("Competition API", () => {
       expect(filteredNames).not.toContain("Gamma Different Agent");
 
       // Test filtering by "Alpha" - should return only Alpha agent
-      const alphaResponse = (await client.getCompetitionAgents(competitionId, {
+      const alphaResponse = await rpcClient.competitions.getAgents({
+        competitionId,
         filter: "Alpha",
-      })) as CompetitionAgentsResponse;
+      });
 
-      expect(alphaResponse.success).toBe(true);
       expect(alphaResponse.agents.length).toBe(1);
       expect(alphaResponse.agents[0]?.name).toBe("Alpha Filter Agent");
 
       // Test filtering by non-existent term
-      const noMatchResponse = (await client.getCompetitionAgents(
+      const noMatchResponse = await rpcClient.competitions.getAgents({
         competitionId,
-        {
-          filter: "NonExistent",
-        },
-      )) as CompetitionAgentsResponse;
+        filter: "NonExistent",
+      });
 
-      expect(noMatchResponse.success).toBe(true);
       expect(noMatchResponse.agents.length).toBe(0);
       expect(noMatchResponse.pagination.total).toBe(0);
     });
@@ -2047,33 +1268,24 @@ describe("Competition API", () => {
       });
       const competitionId = startResult.competition.id;
 
-      // Create a client for testing
-      const { client } = await registerUserAndAgentAndGetClient({
-        adminApiKey,
-        agentName: "Sort Test Client Agent",
-      });
       // Force a snapshot directly
       await portfolioSnapshotterService.takePortfolioSnapshots(competitionId);
 
       // Test sorting by default (rank)
-      const rankDefaultResponse = (await client.getCompetitionAgents(
+      const rankDefaultResponse = await rpcClient.competitions.getAgents({
         competitionId,
-      )) as CompetitionAgentsResponse;
+      });
 
-      expect(rankDefaultResponse.success).toBe(true);
       expect(rankDefaultResponse.agents[0]!.rank).toBe(1);
       expect(rankDefaultResponse.agents[1]!.rank).toBe(2);
       expect(rankDefaultResponse.agents[2]!.rank).toBe(3);
 
       // Test sorting by name (ascending)
-      const nameAscResponse = (await client.getCompetitionAgents(
+      const nameAscResponse = await rpcClient.competitions.getAgents({
         competitionId,
-        {
-          sort: "name",
-        },
-      )) as CompetitionAgentsResponse;
+        sort: "name",
+      });
 
-      expect(nameAscResponse.success).toBe(true);
       expect(nameAscResponse.agents.length).toBe(3);
 
       const nameAscOrder = nameAscResponse.agents.map((a) => a.name);
@@ -2082,14 +1294,11 @@ describe("Competition API", () => {
       expect(nameAscOrder[2]).toBe("Charlie Sort Agent");
 
       // Test sorting by name (descending)
-      const nameDescResponse = (await client.getCompetitionAgents(
+      const nameDescResponse = await rpcClient.competitions.getAgents({
         competitionId,
-        {
-          sort: "-name",
-        },
-      )) as CompetitionAgentsResponse;
+        sort: "-name",
+      });
 
-      expect(nameDescResponse.success).toBe(true);
       expect(nameDescResponse.agents.length).toBe(3);
 
       const nameDescOrder = nameDescResponse.agents.map((a) => a.name);
@@ -2098,68 +1307,53 @@ describe("Competition API", () => {
       expect(nameDescOrder[2]).toBe("Alpha Sort Agent");
 
       // Test sorting by rank
-      const rankAscResponse = (await client.getCompetitionAgents(
+      const rankAscResponse = await rpcClient.competitions.getAgents({
         competitionId,
-        {
-          sort: "rank",
-        },
-      )) as CompetitionAgentsResponse;
+        sort: "rank",
+      });
 
-      expect(rankAscResponse.success).toBe(true);
       expect(rankAscResponse.agents[0]!.rank).toBe(1);
       expect(rankAscResponse.agents[1]!.rank).toBe(2);
       expect(rankAscResponse.agents[2]!.rank).toBe(3);
 
       // Test sorting by rank (descending)
-      const rankDescResponse = (await client.getCompetitionAgents(
+      const rankDescResponse = await rpcClient.competitions.getAgents({
         competitionId,
-        {
-          sort: "-rank",
-        },
-      )) as CompetitionAgentsResponse;
-      expect(rankDescResponse.success).toBe(true);
+        sort: "-rank",
+      });
       expect(rankDescResponse.agents[0]!.rank).toBe(3);
       expect(rankDescResponse.agents[1]!.rank).toBe(2);
       expect(rankDescResponse.agents[2]!.rank).toBe(1);
 
       // Test sorting by score (ascending)
-      const scoreAscResponse = (await client.getCompetitionAgents(
+      const scoreAscResponse = await rpcClient.competitions.getAgents({
         competitionId,
-        {
-          sort: "score",
-        },
-      )) as CompetitionAgentsResponse;
-      expect(scoreAscResponse.success).toBe(true);
-      expect(scoreAscResponse.agents[0]!.score).toBeLessThanOrEqual(
-        scoreAscResponse.agents[1]!.score,
+        sort: "score",
+      });
+      expect(scoreAscResponse.agents[0]!.score ?? 0).toBeLessThanOrEqual(
+        scoreAscResponse.agents[1]!.score ?? 0,
       );
-      expect(scoreAscResponse.agents[1]!.score).toBeLessThanOrEqual(
-        scoreAscResponse.agents[2]!.score,
+      expect(scoreAscResponse.agents[1]!.score ?? 0).toBeLessThanOrEqual(
+        scoreAscResponse.agents[2]!.score ?? 0,
       );
 
       // Test sorting by score (descending)
-      const scoreDescResponse = (await client.getCompetitionAgents(
+      const scoreDescResponse = await rpcClient.competitions.getAgents({
         competitionId,
-        {
-          sort: "-score",
-        },
-      )) as CompetitionAgentsResponse;
-      expect(scoreDescResponse.success).toBe(true);
-      expect(scoreDescResponse.agents[0]!.score).toBeGreaterThanOrEqual(
-        scoreDescResponse.agents[1]!.score,
+        sort: "-score",
+      });
+      expect(scoreDescResponse.agents[0]!.score ?? 0).toBeGreaterThanOrEqual(
+        scoreDescResponse.agents[1]!.score ?? 0,
       );
-      expect(scoreDescResponse.agents[1]!.score).toBeGreaterThanOrEqual(
-        scoreDescResponse.agents[2]!.score,
+      expect(scoreDescResponse.agents[1]!.score ?? 0).toBeGreaterThanOrEqual(
+        scoreDescResponse.agents[2]!.score ?? 0,
       );
 
       // Test sorting by portfolioValue (ascending)
-      const portfolioValueAscResponse = (await client.getCompetitionAgents(
+      const portfolioValueAscResponse = await rpcClient.competitions.getAgents({
         competitionId,
-        {
-          sort: "portfolioValue",
-        },
-      )) as CompetitionAgentsResponse;
-      expect(portfolioValueAscResponse.success).toBe(true);
+        sort: "portfolioValue",
+      });
       expect(
         portfolioValueAscResponse.agents[0]!.portfolioValue,
       ).toBeLessThanOrEqual(
@@ -2172,13 +1366,12 @@ describe("Competition API", () => {
       );
 
       // Test sorting by portfolioValue (descending)
-      const portfolioValueDescResponse = (await client.getCompetitionAgents(
-        competitionId,
+      const portfolioValueDescResponse = await rpcClient.competitions.getAgents(
         {
+          competitionId,
           sort: "-portfolioValue",
         },
-      )) as CompetitionAgentsResponse;
-      expect(portfolioValueDescResponse.success).toBe(true);
+      );
       expect(
         portfolioValueDescResponse.agents[0]!.portfolioValue,
       ).toBeGreaterThanOrEqual(
@@ -2191,10 +1384,10 @@ describe("Competition API", () => {
       );
 
       // Check PnL (ascending)
-      const pnlAscResponse = (await client.getCompetitionAgents(competitionId, {
+      const pnlAscResponse = await rpcClient.competitions.getAgents({
+        competitionId,
         sort: "pnl",
-      })) as CompetitionAgentsResponse;
-      expect(pnlAscResponse.success).toBe(true);
+      });
       expect(pnlAscResponse.agents[0]!.pnl).toBeGreaterThanOrEqual(
         pnlAscResponse.agents[1]!.pnl,
       );
@@ -2203,13 +1396,10 @@ describe("Competition API", () => {
       );
 
       // Check PnL (descending)
-      const pnlDescResponse = (await client.getCompetitionAgents(
+      const pnlDescResponse = await rpcClient.competitions.getAgents({
         competitionId,
-        {
-          sort: "-pnl",
-        },
-      )) as CompetitionAgentsResponse;
-      expect(pnlDescResponse.success).toBe(true);
+        sort: "-pnl",
+      });
       expect(pnlDescResponse.agents[0]!.pnl).toBeGreaterThanOrEqual(
         pnlDescResponse.agents[1]!.pnl,
       );
@@ -2218,13 +1408,10 @@ describe("Competition API", () => {
       );
 
       // Verify PnL percentage is in ascending order
-      const pnlPercentAscResponse = (await client.getCompetitionAgents(
+      const pnlPercentAscResponse = await rpcClient.competitions.getAgents({
         competitionId,
-        {
-          sort: "pnlPercent",
-        },
-      )) as CompetitionAgentsResponse;
-      expect(pnlPercentAscResponse.success).toBe(true);
+        sort: "pnlPercent",
+      });
       expect(
         pnlPercentAscResponse.agents[0]!.pnlPercent,
       ).toBeGreaterThanOrEqual(pnlPercentAscResponse.agents[1]!.pnlPercent);
@@ -2233,13 +1420,10 @@ describe("Competition API", () => {
       ).toBeGreaterThanOrEqual(pnlPercentAscResponse.agents[2]!.pnlPercent);
 
       // Verify PnL percentage is in descending order
-      const pnlPercentDescResponse = (await client.getCompetitionAgents(
+      const pnlPercentDescResponse = await rpcClient.competitions.getAgents({
         competitionId,
-        {
-          sort: "-pnlPercent",
-        },
-      )) as CompetitionAgentsResponse;
-      expect(pnlPercentDescResponse.success).toBe(true);
+        sort: "-pnlPercent",
+      });
       expect(pnlPercentDescResponse.agents[0]!.pnlPercent).toBeLessThanOrEqual(
         pnlPercentDescResponse.agents[1]!.pnlPercent,
       );
@@ -2248,13 +1432,10 @@ describe("Competition API", () => {
       );
 
       // Verify change24h is in ascending order
-      const change24hAscResponse = (await client.getCompetitionAgents(
+      const change24hAscResponse = await rpcClient.competitions.getAgents({
         competitionId,
-        {
-          sort: "change24h",
-        },
-      )) as CompetitionAgentsResponse;
-      expect(change24hAscResponse.success).toBe(true);
+        sort: "change24h",
+      });
       expect(change24hAscResponse.agents[0]!.change24h).toBeGreaterThanOrEqual(
         change24hAscResponse.agents[1]!.change24h,
       );
@@ -2263,13 +1444,10 @@ describe("Competition API", () => {
       );
 
       // Verify change24h is in descending order
-      const change24hDescResponse = (await client.getCompetitionAgents(
+      const change24hDescResponse = await rpcClient.competitions.getAgents({
         competitionId,
-        {
-          sort: "-change24h",
-        },
-      )) as CompetitionAgentsResponse;
-      expect(change24hDescResponse.success).toBe(true);
+        sort: "-change24h",
+      });
       expect(change24hDescResponse.agents[0]!.change24h).toBeLessThanOrEqual(
         change24hDescResponse.agents[1]!.change24h,
       );
@@ -2278,13 +1456,11 @@ describe("Competition API", () => {
       );
 
       // Verify change24h percentage is in ascending order
-      const change24hPercentAscResponse = (await client.getCompetitionAgents(
-        competitionId,
-        {
+      const change24hPercentAscResponse =
+        await rpcClient.competitions.getAgents({
+          competitionId,
           sort: "change24hPercent",
-        },
-      )) as CompetitionAgentsResponse;
-      expect(change24hPercentAscResponse.success).toBe(true);
+        });
       expect(
         change24hPercentAscResponse.agents[0]!.change24hPercent,
       ).toBeGreaterThanOrEqual(
@@ -2297,13 +1473,11 @@ describe("Competition API", () => {
       );
 
       // Verify change24h percentage is in descending order
-      const change24hPercentDescResponse = (await client.getCompetitionAgents(
-        competitionId,
-        {
+      const change24hPercentDescResponse =
+        await rpcClient.competitions.getAgents({
+          competitionId,
           sort: "-change24hPercent",
-        },
-      )) as CompetitionAgentsResponse;
-      expect(change24hPercentDescResponse.success).toBe(true);
+        });
       expect(
         change24hPercentDescResponse.agents[0]!.change24hPercent,
       ).toBeLessThanOrEqual(
@@ -2340,20 +1514,13 @@ describe("Competition API", () => {
       });
       const competitionId = startResult.competition.id;
 
-      // Create a client for testing
-      const { client } = await registerUserAndAgentAndGetClient({
-        adminApiKey,
-        agentName: "Pagination Test Client Agent",
+      // Test 1: Database sorting
+      const dbSortResponse = await rpcClient.competitions.getAgents({
+        competitionId,
+        sort: "name", // Database field (no computed fields)
+        paging: { limit: 3, offset: 0 },
       });
 
-      // Test 1: Database sorting
-      const dbSortResponse = (await client.getCompetitionAgents(competitionId, {
-        sort: "name", // Database field (no computed fields)
-        limit: 3,
-        offset: 0,
-      })) as CompetitionAgentsResponse;
-
-      expect(dbSortResponse.success).toBe(true);
       expect(dbSortResponse.agents.length).toBe(3);
       expect(dbSortResponse.pagination.limit).toBe(3);
       expect(dbSortResponse.pagination.offset).toBe(0);
@@ -2361,16 +1528,11 @@ describe("Competition API", () => {
       expect(dbSortResponse.pagination.hasMore).toBe(true);
 
       // Test 2: Computed sorting
-      const computedSortResponse = (await client.getCompetitionAgents(
+      const computedSortResponse = await rpcClient.competitions.getAgents({
         competitionId,
-        {
-          sort: "rank", // Computed field
-          limit: 3,
-          offset: 0,
-        },
-      )) as CompetitionAgentsResponse;
-
-      expect(computedSortResponse.success).toBe(true);
+        sort: "rank", // Computed field
+        paging: { limit: 3, offset: 0 },
+      });
 
       expect(computedSortResponse.agents.length).toBe(3);
       expect(computedSortResponse.pagination.limit).toBe(3);
@@ -2388,25 +1550,23 @@ describe("Competition API", () => {
       ];
 
       for (const field of testFields) {
-        const response = (await client.getCompetitionAgents(competitionId, {
+        const response = await rpcClient.competitions.getAgents({
+          competitionId,
           sort: field,
-          limit: 2,
-          offset: 0,
-        })) as CompetitionAgentsResponse;
+          paging: { limit: 2, offset: 0 },
+        });
 
-        expect(response.success).toBe(true);
         expect(response.agents.length).toBe(2);
         expect(response.pagination.limit).toBe(2);
       }
 
       // Test 4: Demonstrate that offset is also ignored
-      const offsetResponse = (await client.getCompetitionAgents(competitionId, {
+      const offsetResponse = await rpcClient.competitions.getAgents({
+        competitionId,
         sort: "rank",
-        limit: 2,
-        offset: 3, // Should skip first 3 agents
-      })) as CompetitionAgentsResponse;
+        paging: { limit: 2, offset: 3 },
+      });
 
-      expect(offsetResponse.success).toBe(true);
       expect(offsetResponse.agents.length).toBe(2);
       expect(offsetResponse.pagination.offset).toBe(3);
       expect(offsetResponse.pagination.limit).toBe(2);
@@ -2442,21 +1602,14 @@ describe("Competition API", () => {
       });
       const competitionId = startResult.competition.id;
 
-      // Create a client for testing
-      const { client } = await registerUserAndAgentAndGetClient({
-        adminApiKey,
-        agentName: "Combined Test Client Agent",
-      });
-
       // Test filtering by "Test", sorting by name, with pagination
-      const response = (await client.getCompetitionAgents(competitionId, {
+      const response = await rpcClient.competitions.getAgents({
+        competitionId,
         filter: "Test",
         sort: "name",
-        limit: 2,
-        offset: 0,
-      })) as CompetitionAgentsResponse;
+        paging: { limit: 2, offset: 0 },
+      });
 
-      expect(response.success).toBe(true);
       expect(response.agents.length).toBe(2);
       expect(response.pagination.total).toBe(4); // Only "Test" agents
       expect(response.pagination.limit).toBe(2);
@@ -2471,14 +1624,13 @@ describe("Competition API", () => {
       expect(agentNames[0]?.localeCompare(agentNames[1] || "")).toBeLessThan(0);
 
       // Test second page
-      const page2Response = (await client.getCompetitionAgents(competitionId, {
+      const page2Response = await rpcClient.competitions.getAgents({
+        competitionId,
         filter: "Test",
         sort: "name",
-        limit: 2,
-        offset: 2,
-      })) as CompetitionAgentsResponse;
+        paging: { limit: 2, offset: 2 },
+      });
 
-      expect(page2Response.success).toBe(true);
       expect(page2Response.agents.length).toBe(2);
       expect(page2Response.pagination.total).toBe(4);
       expect(page2Response.pagination.hasMore).toBe(false);
@@ -2490,7 +1642,7 @@ describe("Competition API", () => {
       await adminClient.loginAsAdmin(adminApiKey);
 
       // Register an agent
-      const { agent, client } = await registerUserAndAgentAndGetClient({
+      const { agent } = await registerUserAndAgentAndGetClient({
         adminApiKey,
         agentName: "Validation Test Agent",
       });
@@ -2505,44 +1657,99 @@ describe("Competition API", () => {
       const competitionId = startResult.competition.id;
 
       // Test invalid limit (too high)
-      try {
-        await client.getCompetitionAgents(competitionId, {
-          limit: 150, // Max is 100
-        });
-        expect(false).toBe(true); // Should not reach here
-      } catch (error) {
-        expect(error).toBeDefined();
-      }
+      await expect(
+        rpcClient.competitions.getAgents({
+          competitionId,
+          paging: { limit: 150 }, // Max is 100
+        }),
+      ).rejects.toThrow();
 
       // Test invalid limit (too low)
-      try {
-        await client.getCompetitionAgents(competitionId, {
-          limit: 0, // Min is 1
-        });
-        expect(false).toBe(true); // Should not reach here
-      } catch (error) {
-        expect(error).toBeDefined();
-      }
+      await expect(
+        rpcClient.competitions.getAgents({
+          competitionId,
+          paging: { limit: 0 }, // Min is 1
+        }),
+      ).rejects.toThrow();
 
       // Test invalid offset (negative)
-      try {
-        await client.getCompetitionAgents(competitionId, {
-          offset: -1, // Min is 0
-        });
-        expect(false).toBe(true); // Should not reach here
-      } catch (error) {
-        expect(error).toBeDefined();
-      }
+      await expect(
+        rpcClient.competitions.getAgents({
+          competitionId,
+          paging: { offset: -1 }, // Min is 0
+        }),
+      ).rejects.toThrow();
 
       // Test valid parameters should work
-      const validResponse = (await client.getCompetitionAgents(competitionId, {
-        limit: 50,
-        offset: 0,
-        sort: "name",
+      const validResponse = await rpcClient.competitions.getAgents({
+        competitionId,
         filter: "Test",
-      })) as CompetitionAgentsResponse;
+        sort: "name",
+        paging: { limit: 50, offset: 0 },
+      });
 
-      expect(validResponse.success).toBe(true);
+      expect(validResponse.agents).toBeDefined();
     });
+  });
+
+  // Basic sanity check to verify that the API client can access all competition query endpoints
+  test("API client can access all competition query endpoints", async () => {
+    // Setup admin client
+    const adminClient = createTestClient();
+    await adminClient.loginAsAdmin(adminApiKey);
+
+    // Register an agent
+    const { client: agentClient, agent } =
+      await registerUserAndAgentAndGetClient({
+        adminApiKey,
+        agentName: "API Sanity Check Agent",
+      });
+
+    // Create and start a competition
+    const startResult = await startTestCompetition({
+      adminClient,
+      name: `API Sanity Check Competition ${Date.now()}`,
+      agentIds: [agent.id],
+    });
+    const competitionId = startResult.competition.id;
+
+    // Test 1: getCompetition - verify API client can get competition details
+    const detailResponse = await agentClient.getCompetition(competitionId);
+    expect(detailResponse.success).toBe(true);
+    if (detailResponse.success) {
+      expect(detailResponse.competition.id).toBe(competitionId);
+      expect(detailResponse.competition.status).toBe("active");
+    }
+
+    // Test 2: getCompetitionAgents - verify API client can get competition agents
+    const agentsResponse =
+      await agentClient.getCompetitionAgents(competitionId);
+    expect(agentsResponse.success).toBe(true);
+    if (agentsResponse.success) {
+      expect(agentsResponse.agents).toBeDefined();
+      expect(Array.isArray(agentsResponse.agents)).toBe(true);
+      expect(agentsResponse.agents.length).toBeGreaterThan(0);
+    }
+
+    // Test 3: getRules - verify API client can get competition rules
+    const rulesResponse = await agentClient.getRules(competitionId);
+    expect(rulesResponse.success).toBe(true);
+    if (rulesResponse.success) {
+      expect(rulesResponse.rules).toBeDefined();
+      expect(rulesResponse.rules.tradingRules).toBeDefined();
+    }
+
+    // Test 4: getCompetitions - verify API client can list competitions
+    const listResponse = await agentClient.getCompetitions("active");
+    expect(listResponse.success).toBe(true);
+    if (listResponse.success) {
+      expect(listResponse.competitions).toBeDefined();
+      expect(Array.isArray(listResponse.competitions)).toBe(true);
+      // Should find our competition in the list
+      const foundCompetition = listResponse.competitions.find(
+        (comp) => comp.id === competitionId,
+      );
+      expect(foundCompetition).toBeDefined();
+    }
   });
 });

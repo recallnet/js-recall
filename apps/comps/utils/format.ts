@@ -96,8 +96,10 @@ export const formatAmount = (
   amount: number,
   maxDecimals: number = 2,
   thousandsSeparator: boolean = false,
+  minimumFractionDigits: number = 0,
 ): string => {
   return new Intl.NumberFormat("en-US", {
+    minimumFractionDigits,
     maximumFractionDigits: maxDecimals,
     useGrouping: thousandsSeparator,
   }).format(amount);

@@ -52,6 +52,20 @@ export interface ProtocolFilter {
 }
 
 /**
+ * Result from getTradesSince with metadata about skipped transactions
+ * Enables robust sync state management to prevent permanent gaps
+ */
+export interface TradesResult {
+  /** Detected on-chain trades */
+  trades: OnChainTrade[];
+  /**
+   * Lowest block number of any transaction that was skipped due to missing receipt
+   * If set, sync state should not advance past this block to ensure retry
+   */
+  lowestSkippedBlock?: number;
+}
+
+/**
  * Provider interface for spot live trading data sources
  * Mirrors IPerpsDataProvider structure
  *
@@ -65,13 +79,13 @@ export interface ISpotLiveDataProvider {
    * @param walletAddress Wallet address to monitor
    * @param since Start time or block number for scanning
    * @param chains Array of chains to scan
-   * @returns Array of detected on-chain trades
+   * @returns Trades result with detected trades and skipped block metadata
    */
   getTradesSince(
     walletAddress: string,
     since: Date | number,
     chains: SpecificChain[],
-  ): Promise<OnChainTrade[]>;
+  ): Promise<TradesResult>;
 
   /**
    * Get transfer history for self-funding detection

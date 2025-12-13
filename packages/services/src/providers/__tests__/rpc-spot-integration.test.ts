@@ -48,19 +48,143 @@ const KNOWN_NATIVE_ETH_SWAP = {
   description: "Native ETH → Token swap via Aerodrome",
 };
 
-// Get Aerodrome protocol config from constants
-const aerodromeConfig = getDexProtocolConfig("aerodrome", "base");
-if (!aerodromeConfig) {
+// Regression test case: Multi-transfer swap that was incorrectly parsed before logIndex fix
+// Transaction has a 0-value ETH external call AND an AERO→USDC swap.
+// Before the fix, getAssetTransfers ordering was non-deterministic and the 0-value
+// transfer was sometimes picked as fromToken/fromAmount instead of the real AERO transfer.
+const KNOWN_MULTI_TRANSFER_SWAP = {
+  txHash: "0x193e73f9ab0aae74226d8b19b4d95823a78a0451ec6757126315ea8fd702895b",
+  blockNumber: 39235682,
+  wallet: "0x91de90c092ba6df8fa714541d4335c08e7d76a0b", // deepseek 3.2 aero agent
+  expectedFromToken: "0x940181a94a35a4569e4529a3cdfb74e38fd98631".toLowerCase(), // AERO
+  expectedToToken: "0x833589fcd6edb6e08f4c7c32d4f71b54bda02913".toLowerCase(), // USDC
+  // Exact amounts from blockchain (immutable) - use toBeCloseTo for float comparison
+  expectedFromAmount: 106.83240652919557, // AERO (18 decimals)
+  expectedToAmount: 69.824083, // USDC (6 decimals)
+  expectedProtocol: "aerodrome",
+  expectedChain: "base",
+  description:
+    "AERO → USDC swap with 0-value ETH contract call (regression test)",
+};
+
+// =============================================================================
+// SLIPSTREAM ROUTER TEST FIXTURES
+// Aerodrome Slipstream uses concentrated liquidity pools (Uniswap V3 style)
+// =============================================================================
+
+// Slipstream exactInputSingle: USDC → KRWQ
+const KNOWN_SLIPSTREAM_EXACT_INPUT_SINGLE = {
+  txHash: "0x7fa109fea467781934b21a91d3dca8bc5ffc7635782b4aa5d1c757a09c50cc29",
+  blockNumber: 39299526,
+  wallet: "0xBBF09c739fDfC0408BA80fB6e6DCB72A1D4A1Bfe",
+  expectedFromToken: "0x833589fcd6edb6e08f4c7c32d4f71b54bda02913".toLowerCase(), // USDC
+  expectedToToken: "0x370923d39f139c64813f173a1bf0b4f9ba36a24f".toLowerCase(), // KRWQ
+  expectedFromAmount: 70.662997,
+  expectedToAmount: 101572.91, // Approximate
+  expectedProtocol: "aerodrome",
+  expectedChain: "base",
+  routerFunction: "exactInputSingle",
+  description: "USDC → KRWQ via Slipstream exactInputSingle",
+};
+
+// Slipstream exactOutputSingle: ANY → WETH
+const KNOWN_SLIPSTREAM_EXACT_OUTPUT_SINGLE = {
+  txHash: "0x21ee44d7b49715201576bf03d0dffbe58015fc4682aa37b85c21d029a3309254",
+  blockNumber: 39299526,
+  wallet: "0x004bc7477782fca15508D638e5a9C0C162706D8d",
+  expectedFromToken: "0xc17dda248e2d50fc006d8febb5a406dd31972712".toLowerCase(), // ANY
+  expectedToToken: "0x4200000000000000000000000000000000000006".toLowerCase(), // WETH
+  expectedFromAmount: 1733.916, // Approximate
+  expectedToAmount: 0.04391726516278588,
+  expectedProtocol: "aerodrome",
+  expectedChain: "base",
+  routerFunction: "exactOutputSingle",
+  description: "ANY → WETH via Slipstream exactOutputSingle",
+};
+
+// Slipstream exactInput (single-hop via path): USDC → RIVER
+const KNOWN_SLIPSTREAM_EXACT_INPUT = {
+  txHash: "0x73391e3a716817714e86d6fc52651d6d631e2e449f9a39eab094c35143a7e184",
+  blockNumber: 39299502,
+  wallet: "0xD3C2dD3E69997B45e11C9795435f87ef22269CAe",
+  expectedFromToken: "0x833589fcd6edb6e08f4c7c32d4f71b54bda02913".toLowerCase(), // USDC
+  expectedToToken: "0xda7ad9dea9397cffddae2f8a052b82f1484252b3".toLowerCase(), // RIVER
+  expectedFromAmount: 50,
+  expectedToAmount: 8.028053222696023,
+  expectedProtocol: "aerodrome",
+  expectedChain: "base",
+  routerFunction: "exactInput",
+  description: "USDC → RIVER via Slipstream exactInput",
+};
+
+// Slipstream exactInput multi-hop: ETH → WETH → EMP → Token
+// Input is native ETH (tx.value), 4 ERC-20 transfers
+const KNOWN_SLIPSTREAM_MULTIHOP = {
+  txHash: "0x2bb56ed06c46c1e2be721231c09fff5a1bf83e33cae5cca4504864c8eeda1f18",
+  blockNumber: 38813273,
+  wallet: "0xf5c299316699131d29adcb7ef87af8e97bbc7ead",
+  expectedFromToken: NATIVE_TOKEN_ADDRESS, // Native ETH (wrapped to WETH in router)
+  expectedToToken: "0x288f4eb27400fa220d14b864259ad1b7f77c1594".toLowerCase(), // Output token
+  expectedFromAmount: 0.055, // ETH sent as tx.value
+  expectedToAmount: 39179573.67, // Approximate
+  expectedProtocol: "aerodrome",
+  expectedChain: "base",
+  routerFunction: "exactInput",
+  transferCount: 4, // Multi-hop confirmed
+  description: "ETH → WETH → EMP → Token via Slipstream exactInput (multi-hop)",
+};
+
+// Get Aerodrome protocol configs from constants (V2 + Slipstream)
+const aerodromeConfigs = getDexProtocolConfig("aerodrome", "base");
+if (!aerodromeConfigs || aerodromeConfigs.length === 0) {
   throw new Error("Aerodrome config not found in KNOWN_DEX_PROTOCOLS");
 }
 
-const AERODROME_FILTER: ProtocolFilter = {
+// V2 Router config (first in array) - used by existing tests
+const aerodromeV2Config = aerodromeConfigs.find((c) => c.routerType === "v2");
+if (!aerodromeV2Config) {
+  throw new Error("Aerodrome V2 config not found");
+}
+
+// Slipstream Router config - used by new Slipstream tests
+const aerodromeSlipstreamConfig = aerodromeConfigs.find(
+  (c) => c.routerType === "slipstream",
+);
+if (!aerodromeSlipstreamConfig) {
+  throw new Error("Aerodrome Slipstream config not found");
+}
+
+// V2 filter for existing tests
+const AERODROME_V2_FILTER: ProtocolFilter = {
   protocol: "aerodrome",
   chain: "base",
-  routerAddress: aerodromeConfig.routerAddress,
-  swapEventSignature: aerodromeConfig.swapEventSignature,
-  factoryAddress: aerodromeConfig.factoryAddress,
+  routerAddress: aerodromeV2Config.routerAddress,
+  swapEventSignature: aerodromeV2Config.swapEventSignature,
+  factoryAddress: aerodromeV2Config.factoryAddress,
 };
+
+// Slipstream filter for new tests
+const AERODROME_SLIPSTREAM_FILTER: ProtocolFilter = {
+  protocol: "aerodrome",
+  chain: "base",
+  routerAddress: aerodromeSlipstreamConfig.routerAddress,
+  swapEventSignature: aerodromeSlipstreamConfig.swapEventSignature,
+  factoryAddress: aerodromeSlipstreamConfig.factoryAddress,
+};
+
+// Combined filter with both routers (for real competition scenarios)
+const AERODROME_COMBINED_FILTERS: ProtocolFilter[] = aerodromeConfigs.map(
+  (config) => ({
+    protocol: "aerodrome",
+    chain: "base",
+    routerAddress: config.routerAddress,
+    swapEventSignature: config.swapEventSignature,
+    factoryAddress: config.factoryAddress,
+  }),
+);
+
+// Backward compatibility: alias for V2 filter used by existing tests
+const AERODROME_FILTER = AERODROME_V2_FILTER;
 
 describe("RpcSpotProvider - Integration Tests (Real Blockchain)", () => {
   let realRpcProvider: InstanceType<typeof AlchemyRpcProvider>;
@@ -118,12 +242,13 @@ describe("RpcSpotProvider - Integration Tests (Real Blockchain)", () => {
 
     console.log(`Scanning blocks ${fromBlock} to ${toBlock} on Base...`);
 
-    const trades = await provider.getTradesSince(
+    const result = await provider.getTradesSince(
       TEST_WALLETS.aerodromeSwapper, // Use known active wallet
       fromBlock,
       ["base"],
       toBlock, // Specify toBlock for faster, deterministic tests
     );
+    const trades = result.trades;
 
     console.log(`Found ${trades.length} trades from real blockchain`);
 
@@ -210,12 +335,13 @@ describe("RpcSpotProvider - Integration Tests (Real Blockchain)", () => {
     }
 
     // Now test swap detection WITHOUT protocol filter
-    const trades = await provider.getTradesSince(
+    const result = await provider.getTradesSince(
       KNOWN_AERODROME_SWAP.wallet,
       fromBlock,
       ["base"],
       toBlock, // Specify toBlock for faster, deterministic test
     );
+    const trades = result.trades;
 
     console.log(
       `  RpcSpotProvider detected ${trades.length} swaps (no filter)`,
@@ -235,7 +361,7 @@ describe("RpcSpotProvider - Integration Tests (Real Blockchain)", () => {
       console.log(`    To: ${knownSwap.toToken} (${knownSwap.toAmount})`);
       console.log(`    Protocol: ${knownSwap.protocol}`);
     } else {
-      console.error(`  ❌ CRITICAL: Swap NOT detected even without filter`);
+      console.error(`  ❌ Swap NOT detected even without filter`);
       console.error(`  This means detectSwapPattern() is broken`);
     }
 
@@ -307,12 +433,13 @@ describe("RpcSpotProvider - Integration Tests (Real Blockchain)", () => {
       console.error(`    3. Alchemy API issue`);
     }
 
-    const trades = await provider.getTradesSince(
+    const result = await provider.getTradesSince(
       KNOWN_AERODROME_SWAP.wallet,
       fromBlock,
       ["base"],
       toBlock, // Specify toBlock for faster, deterministic tests
     );
+    const trades = result.trades;
 
     console.log(
       `  RpcSpotProvider detected ${trades.length} swaps WITH filter`,
@@ -359,13 +486,13 @@ describe("RpcSpotProvider - Integration Tests (Real Blockchain)", () => {
     const currentBlock = await realRpcProvider.getBlockNumber("base");
     const fromBlock = currentBlock - 100;
 
-    const trades = await provider.getTradesSince(inactiveWallet, fromBlock, [
+    const result = await provider.getTradesSince(inactiveWallet, fromBlock, [
       "base",
     ]);
 
     // Should return empty array, not throw error
-    expect(Array.isArray(trades)).toBe(true);
-    expect(trades.length).toBe(0);
+    expect(Array.isArray(result.trades)).toBe(true);
+    expect(result.trades.length).toBe(0);
     console.log("✓ Correctly returned empty array for inactive wallet");
   });
 
@@ -384,12 +511,13 @@ describe("RpcSpotProvider - Integration Tests (Real Blockchain)", () => {
 
     console.log(`Scanning trades since ${searchStartDate.toISOString()}...`);
 
-    const trades = await provider.getTradesSince(
+    const result = await provider.getTradesSince(
       TEST_WALLETS.aerodromeSwapper, // Use known active wallet
       searchStartDate,
       ["base"],
       KNOWN_AERODROME_SWAP.blockNumber + 10, // Narrow range for fast test
     );
+    const trades = result.trades;
 
     console.log(`Found ${trades.length} trades`);
 
@@ -432,17 +560,19 @@ describe("RpcSpotProvider - Integration Tests (Real Blockchain)", () => {
     // Provider WITHOUT filter (all DEXs)
     const openProvider = new RpcSpotProvider(realRpcProvider, [], mockLogger);
 
-    const aeroTrades = await aerodromeProvider.getTradesSince(
+    const aeroResult = await aerodromeProvider.getTradesSince(
       TEST_WALLETS.aerodromeSwapper,
       fromBlock,
       ["base"],
     );
+    const aeroTrades = aeroResult.trades;
 
-    const allTrades = await openProvider.getTradesSince(
+    const allResult = await openProvider.getTradesSince(
       TEST_WALLETS.aerodromeSwapper,
       fromBlock,
       ["base"],
     );
+    const allTrades = allResult.trades;
 
     console.log(`Aerodrome filter: ${aeroTrades.length} trades`);
     console.log(`No filter: ${allTrades.length} trades`);
@@ -475,12 +605,13 @@ describe("RpcSpotProvider - Integration Tests (Real Blockchain)", () => {
     // Use narrow range around known swap for fast test
     const fromBlock = KNOWN_AERODROME_SWAP.blockNumber - 10;
 
-    const trades = await provider.getTradesSince(
+    const result = await provider.getTradesSince(
       KNOWN_AERODROME_SWAP.wallet,
       fromBlock,
       ["base"],
       KNOWN_AERODROME_SWAP.blockNumber + 10, // Narrow range for fast test
     );
+    const trades = result.trades;
 
     expect(trades.length).toBeGreaterThan(0);
 
@@ -568,12 +699,13 @@ describe("RpcSpotProvider - Integration Tests (Real Blockchain)", () => {
       `Looking for native ETH swap: ${KNOWN_NATIVE_ETH_SWAP.description}`,
     );
 
-    const trades = await provider.getTradesSince(
+    const result = await provider.getTradesSince(
       KNOWN_NATIVE_ETH_SWAP.wallet,
       fromBlock,
       ["base"],
       toBlock,
     );
+    const trades = result.trades;
 
     console.log(`Found ${trades.length} trades from real blockchain`);
 
@@ -642,5 +774,392 @@ describe("RpcSpotProvider - Integration Tests (Real Blockchain)", () => {
     console.log(
       `✓ Format verified: both native and tokens return DECIMAL strings`,
     );
+  }, 30000);
+
+  test("should correctly detect AERO→USDC swap when transaction has 0-value ETH transfer (regression)", async () => {
+    if (!process.env.ALCHEMY_API_KEY) {
+      console.log("Skipping test - no ALCHEMY_API_KEY");
+      return;
+    }
+
+    // This test verifies the fix for a bug where transactions with multiple outbound
+    // transfers (e.g., a real ERC20 swap + a 0-value external call) would sometimes
+    // incorrectly identify the 0-value transfer as the fromToken/fromAmount.
+    //
+    // The fix uses logIndex ordering from transaction receipts to deterministically
+    // identify the first outbound and last inbound ERC20 transfers.
+
+    provider = new RpcSpotProvider(
+      realRpcProvider,
+      [AERODROME_FILTER], // Use Aerodrome filter since this is an Aerodrome swap
+      mockLogger,
+    );
+
+    const fromBlock = KNOWN_MULTI_TRANSFER_SWAP.blockNumber - 5;
+    const toBlock = KNOWN_MULTI_TRANSFER_SWAP.blockNumber + 5;
+
+    console.log(`\n[REGRESSION TEST] ${KNOWN_MULTI_TRANSFER_SWAP.description}`);
+    console.log(`  TxHash: ${KNOWN_MULTI_TRANSFER_SWAP.txHash}`);
+    console.log(`  Wallet: ${KNOWN_MULTI_TRANSFER_SWAP.wallet}`);
+    console.log(`  Scanning blocks ${fromBlock} to ${toBlock}...`);
+
+    const result = await provider.getTradesSince(
+      KNOWN_MULTI_TRANSFER_SWAP.wallet,
+      fromBlock,
+      ["base"],
+      toBlock,
+    );
+    const trades = result.trades;
+
+    console.log(`  Found ${trades.length} trades`);
+
+    // Find our specific transaction
+    const targetSwap = trades.find(
+      (t) =>
+        t.txHash.toLowerCase() ===
+        KNOWN_MULTI_TRANSFER_SWAP.txHash.toLowerCase(),
+    );
+
+    expect(targetSwap).toBeDefined();
+    console.log(`\n✓ Found target swap transaction:`);
+    console.log(`  From Token: ${targetSwap?.fromToken}`);
+    console.log(`  To Token: ${targetSwap?.toToken}`);
+    console.log(`  From Amount: ${targetSwap?.fromAmount}`);
+    console.log(`  To Amount: ${targetSwap?.toAmount}`);
+    console.log(`  Protocol: ${targetSwap?.protocol}`);
+    console.log(`  Chain: ${targetSwap?.chain}`);
+    console.log(`  Block: ${targetSwap?.blockNumber}`);
+
+    // Before the fix, fromToken could incorrectly be the zero address (native ETH)
+    // and fromAmount could be 0 due to the 0-value external call.
+
+    // Verify fromToken is AERO (not zero address / native ETH)
+    expect(targetSwap?.fromToken.toLowerCase()).toBe(
+      KNOWN_MULTI_TRANSFER_SWAP.expectedFromToken,
+    );
+    console.log(`✓ fromToken is correctly AERO (not zero address)`);
+
+    // Verify toToken is USDC
+    expect(targetSwap?.toToken.toLowerCase()).toBe(
+      KNOWN_MULTI_TRANSFER_SWAP.expectedToToken,
+    );
+    console.log(`✓ toToken is correctly USDC`);
+
+    // Verify fromAmount matches expected value (blockchain data is immutable)
+    expect(targetSwap?.fromAmount).toBeCloseTo(
+      KNOWN_MULTI_TRANSFER_SWAP.expectedFromAmount,
+      4, // 4 decimal places precision
+    );
+    console.log(
+      `✓ fromAmount (${targetSwap?.fromAmount}) ≈ ${KNOWN_MULTI_TRANSFER_SWAP.expectedFromAmount}`,
+    );
+
+    // Verify toAmount matches expected value
+    expect(targetSwap?.toAmount).toBeCloseTo(
+      KNOWN_MULTI_TRANSFER_SWAP.expectedToAmount,
+      4,
+    );
+    console.log(
+      `✓ toAmount (${targetSwap?.toAmount}) ≈ ${KNOWN_MULTI_TRANSFER_SWAP.expectedToAmount}`,
+    );
+
+    // Verify protocol and chain
+    expect(targetSwap?.protocol).toBe(
+      KNOWN_MULTI_TRANSFER_SWAP.expectedProtocol,
+    );
+    expect(targetSwap?.chain).toBe(KNOWN_MULTI_TRANSFER_SWAP.expectedChain);
+    console.log(`✓ protocol is ${targetSwap?.protocol}`);
+    console.log(`✓ chain is ${targetSwap?.chain}`);
+
+    // Verify block number
+    expect(targetSwap?.blockNumber).toBe(KNOWN_MULTI_TRANSFER_SWAP.blockNumber);
+    console.log(`✓ blockNumber is ${targetSwap?.blockNumber}`);
+
+    console.log(`\n✓ REGRESSION TEST PASSED: logIndex-based detection works`);
+  }, 30000);
+
+  // ===========================================================================
+  // SLIPSTREAM ROUTER TESTS
+  // These tests verify Aerodrome Slipstream (concentrated liquidity) detection
+  // ===========================================================================
+
+  test("should detect Slipstream exactInputSingle swap (USDC → KRWQ)", async () => {
+    if (!process.env.ALCHEMY_API_KEY) {
+      console.log("Skipping test - no ALCHEMY_API_KEY");
+      return;
+    }
+
+    provider = new RpcSpotProvider(
+      realRpcProvider,
+      [AERODROME_SLIPSTREAM_FILTER],
+      mockLogger,
+    );
+
+    const fromBlock = KNOWN_SLIPSTREAM_EXACT_INPUT_SINGLE.blockNumber - 5;
+    const toBlock = KNOWN_SLIPSTREAM_EXACT_INPUT_SINGLE.blockNumber + 5;
+
+    console.log(
+      `\n[SLIPSTREAM TEST] ${KNOWN_SLIPSTREAM_EXACT_INPUT_SINGLE.description}`,
+    );
+    console.log(`  TxHash: ${KNOWN_SLIPSTREAM_EXACT_INPUT_SINGLE.txHash}`);
+    console.log(`  Scanning blocks ${fromBlock} to ${toBlock}...`);
+
+    const result = await provider.getTradesSince(
+      KNOWN_SLIPSTREAM_EXACT_INPUT_SINGLE.wallet,
+      fromBlock,
+      ["base"],
+      toBlock,
+    );
+    const trades = result.trades;
+
+    console.log(`  Found ${trades.length} trades`);
+
+    const targetSwap = trades.find(
+      (t) =>
+        t.txHash.toLowerCase() ===
+        KNOWN_SLIPSTREAM_EXACT_INPUT_SINGLE.txHash.toLowerCase(),
+    );
+
+    expect(targetSwap).toBeDefined();
+    console.log(`✓ Found Slipstream exactInputSingle swap`);
+    console.log(`  From: ${targetSwap?.fromToken} (${targetSwap?.fromAmount})`);
+    console.log(`  To: ${targetSwap?.toToken} (${targetSwap?.toAmount})`);
+
+    // Verify tokens
+    expect(targetSwap?.fromToken.toLowerCase()).toBe(
+      KNOWN_SLIPSTREAM_EXACT_INPUT_SINGLE.expectedFromToken,
+    );
+    expect(targetSwap?.toToken.toLowerCase()).toBe(
+      KNOWN_SLIPSTREAM_EXACT_INPUT_SINGLE.expectedToToken,
+    );
+    console.log(`✓ Tokens correctly identified`);
+
+    // Verify amounts are sensible
+    expect(targetSwap?.fromAmount).toBeGreaterThan(0);
+    expect(targetSwap?.toAmount).toBeGreaterThan(0);
+    console.log(`✓ Amounts are valid`);
+  }, 30000);
+
+  test("should detect Slipstream exactOutputSingle swap (ANY → WETH)", async () => {
+    if (!process.env.ALCHEMY_API_KEY) {
+      console.log("Skipping test - no ALCHEMY_API_KEY");
+      return;
+    }
+
+    provider = new RpcSpotProvider(
+      realRpcProvider,
+      [AERODROME_SLIPSTREAM_FILTER],
+      mockLogger,
+    );
+
+    const fromBlock = KNOWN_SLIPSTREAM_EXACT_OUTPUT_SINGLE.blockNumber - 5;
+    const toBlock = KNOWN_SLIPSTREAM_EXACT_OUTPUT_SINGLE.blockNumber + 5;
+
+    console.log(
+      `\n[SLIPSTREAM TEST] ${KNOWN_SLIPSTREAM_EXACT_OUTPUT_SINGLE.description}`,
+    );
+    console.log(`  TxHash: ${KNOWN_SLIPSTREAM_EXACT_OUTPUT_SINGLE.txHash}`);
+    console.log(`  Scanning blocks ${fromBlock} to ${toBlock}...`);
+
+    const result = await provider.getTradesSince(
+      KNOWN_SLIPSTREAM_EXACT_OUTPUT_SINGLE.wallet,
+      fromBlock,
+      ["base"],
+      toBlock,
+    );
+    const trades = result.trades;
+
+    console.log(`  Found ${trades.length} trades`);
+
+    const targetSwap = trades.find(
+      (t) =>
+        t.txHash.toLowerCase() ===
+        KNOWN_SLIPSTREAM_EXACT_OUTPUT_SINGLE.txHash.toLowerCase(),
+    );
+
+    expect(targetSwap).toBeDefined();
+    console.log(`✓ Found Slipstream exactOutputSingle swap`);
+    console.log(`  From: ${targetSwap?.fromToken} (${targetSwap?.fromAmount})`);
+    console.log(`  To: ${targetSwap?.toToken} (${targetSwap?.toAmount})`);
+
+    // Verify tokens
+    expect(targetSwap?.fromToken.toLowerCase()).toBe(
+      KNOWN_SLIPSTREAM_EXACT_OUTPUT_SINGLE.expectedFromToken,
+    );
+    expect(targetSwap?.toToken.toLowerCase()).toBe(
+      KNOWN_SLIPSTREAM_EXACT_OUTPUT_SINGLE.expectedToToken,
+    );
+    console.log(`✓ Tokens correctly identified`);
+  }, 30000);
+
+  test("should detect Slipstream exactInput swap (USDC → RIVER)", async () => {
+    if (!process.env.ALCHEMY_API_KEY) {
+      console.log("Skipping test - no ALCHEMY_API_KEY");
+      return;
+    }
+
+    provider = new RpcSpotProvider(
+      realRpcProvider,
+      [AERODROME_SLIPSTREAM_FILTER],
+      mockLogger,
+    );
+
+    const fromBlock = KNOWN_SLIPSTREAM_EXACT_INPUT.blockNumber - 5;
+    const toBlock = KNOWN_SLIPSTREAM_EXACT_INPUT.blockNumber + 5;
+
+    console.log(
+      `\n[SLIPSTREAM TEST] ${KNOWN_SLIPSTREAM_EXACT_INPUT.description}`,
+    );
+    console.log(`  TxHash: ${KNOWN_SLIPSTREAM_EXACT_INPUT.txHash}`);
+    console.log(`  Scanning blocks ${fromBlock} to ${toBlock}...`);
+
+    const result = await provider.getTradesSince(
+      KNOWN_SLIPSTREAM_EXACT_INPUT.wallet,
+      fromBlock,
+      ["base"],
+      toBlock,
+    );
+    const trades = result.trades;
+
+    console.log(`  Found ${trades.length} trades`);
+
+    const targetSwap = trades.find(
+      (t) =>
+        t.txHash.toLowerCase() ===
+        KNOWN_SLIPSTREAM_EXACT_INPUT.txHash.toLowerCase(),
+    );
+
+    expect(targetSwap).toBeDefined();
+    console.log(`✓ Found Slipstream exactInput swap`);
+    console.log(`  From: ${targetSwap?.fromToken} (${targetSwap?.fromAmount})`);
+    console.log(`  To: ${targetSwap?.toToken} (${targetSwap?.toAmount})`);
+
+    // Verify tokens
+    expect(targetSwap?.fromToken.toLowerCase()).toBe(
+      KNOWN_SLIPSTREAM_EXACT_INPUT.expectedFromToken,
+    );
+    expect(targetSwap?.toToken.toLowerCase()).toBe(
+      KNOWN_SLIPSTREAM_EXACT_INPUT.expectedToToken,
+    );
+    console.log(`✓ Tokens correctly identified`);
+
+    // Verify amounts match expected (blockchain data is immutable)
+    expect(targetSwap?.fromAmount).toBeCloseTo(
+      KNOWN_SLIPSTREAM_EXACT_INPUT.expectedFromAmount,
+      4,
+    );
+    expect(targetSwap?.toAmount).toBeCloseTo(
+      KNOWN_SLIPSTREAM_EXACT_INPUT.expectedToAmount,
+      4,
+    );
+    console.log(`✓ Amounts match expected values`);
+  }, 30000);
+
+  test("should detect Slipstream multi-hop swap with native ETH input", async () => {
+    if (!process.env.ALCHEMY_API_KEY) {
+      console.log("Skipping test - no ALCHEMY_API_KEY");
+      return;
+    }
+
+    provider = new RpcSpotProvider(
+      realRpcProvider,
+      [AERODROME_SLIPSTREAM_FILTER],
+      mockLogger,
+    );
+
+    const fromBlock = KNOWN_SLIPSTREAM_MULTIHOP.blockNumber - 5;
+    const toBlock = KNOWN_SLIPSTREAM_MULTIHOP.blockNumber + 5;
+
+    console.log(`\n[SLIPSTREAM TEST] ${KNOWN_SLIPSTREAM_MULTIHOP.description}`);
+    console.log(`  TxHash: ${KNOWN_SLIPSTREAM_MULTIHOP.txHash}`);
+    console.log(
+      `  Expected: ${KNOWN_SLIPSTREAM_MULTIHOP.transferCount} ERC-20 transfers (multi-hop)`,
+    );
+    console.log(`  Scanning blocks ${fromBlock} to ${toBlock}...`);
+
+    const result = await provider.getTradesSince(
+      KNOWN_SLIPSTREAM_MULTIHOP.wallet,
+      fromBlock,
+      ["base"],
+      toBlock,
+    );
+    const trades = result.trades;
+
+    console.log(`  Found ${trades.length} trades`);
+
+    const targetSwap = trades.find(
+      (t) =>
+        t.txHash.toLowerCase() ===
+        KNOWN_SLIPSTREAM_MULTIHOP.txHash.toLowerCase(),
+    );
+
+    expect(targetSwap).toBeDefined();
+    console.log(`✓ Found Slipstream multi-hop swap`);
+    console.log(`  From: ${targetSwap?.fromToken} (${targetSwap?.fromAmount})`);
+    console.log(`  To: ${targetSwap?.toToken} (${targetSwap?.toAmount})`);
+
+    // Verify input is detected as native ETH (zero address)
+    expect(targetSwap?.fromToken.toLowerCase()).toBe(
+      KNOWN_SLIPSTREAM_MULTIHOP.expectedFromToken.toLowerCase(),
+    );
+    console.log(`✓ Native ETH input correctly detected (zero address)`);
+
+    // Verify output token
+    expect(targetSwap?.toToken.toLowerCase()).toBe(
+      KNOWN_SLIPSTREAM_MULTIHOP.expectedToToken,
+    );
+    console.log(`✓ Output token correctly identified`);
+
+    // Verify amounts are sensible
+    expect(targetSwap?.fromAmount).toBeGreaterThan(0);
+    expect(targetSwap?.toAmount).toBeGreaterThan(0);
+    console.log(`✓ Multi-hop swap amounts are valid`);
+  }, 30000);
+
+  test("should detect swaps from both V2 and Slipstream routers with combined filters", async () => {
+    if (!process.env.ALCHEMY_API_KEY) {
+      console.log("Skipping test - no ALCHEMY_API_KEY");
+      return;
+    }
+
+    // Use combined filters (both V2 and Slipstream) like a real competition would
+    provider = new RpcSpotProvider(
+      realRpcProvider,
+      AERODROME_COMBINED_FILTERS,
+      mockLogger,
+    );
+
+    // Test with a V2 transaction
+    const fromBlock = KNOWN_AERODROME_SWAP.blockNumber - 5;
+    const toBlock = KNOWN_AERODROME_SWAP.blockNumber + 5;
+
+    console.log(`\n[COMBINED FILTER TEST] Testing V2 + Slipstream detection`);
+    console.log(
+      `  Using ${AERODROME_COMBINED_FILTERS.length} protocol filters`,
+    );
+    console.log(
+      `  Testing V2 swap at block ${KNOWN_AERODROME_SWAP.blockNumber}`,
+    );
+
+    const result = await provider.getTradesSince(
+      KNOWN_AERODROME_SWAP.wallet,
+      fromBlock,
+      ["base"],
+      toBlock,
+    );
+    const trades = result.trades;
+
+    const v2Swap = trades.find(
+      (t) =>
+        t.txHash.toLowerCase() === KNOWN_AERODROME_SWAP.txHash.toLowerCase(),
+    );
+
+    expect(v2Swap).toBeDefined();
+    console.log(`✓ V2 swap detected with combined filters`);
+    console.log(`  Protocol: ${v2Swap?.protocol}`);
+
+    // Verify it's still identified as aerodrome
+    expect(v2Swap?.protocol).toBe("aerodrome");
+    console.log(`✓ Combined filter test passed`);
   }, 30000);
 });

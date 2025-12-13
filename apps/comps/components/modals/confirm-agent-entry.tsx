@@ -152,8 +152,8 @@ export const ConfirmAgentEntryModal: React.FC<ChooseAgentModalProps> = ({
                     ></span>
                     Minimum agent stake to compete:
                     <div className="text-primary-foreground ml-1 flex items-center gap-1 font-bold">
-                      {formatAmount(competition.minimumStake, 0, true)}{" "}
-                      <Recall />
+                      <Recall />{" "}
+                      {formatAmount(competition.minimumStake, 0, true)}
                     </div>
                   </span>
                 </li>

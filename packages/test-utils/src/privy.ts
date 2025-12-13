@@ -1,6 +1,6 @@
 import { LinkedAccountWithMetadata } from "@privy-io/server-auth";
-import { SignJWT, importPKCS8 } from "jose";
 import { randomUUID } from "crypto";
+import { SignJWT, importPKCS8 } from "jose";
 
 import { generateRandomEthAddress } from "./test-helpers.js";
 

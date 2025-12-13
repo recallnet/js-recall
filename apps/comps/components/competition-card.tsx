@@ -136,7 +136,7 @@ export const CompetitionCard: React.FC<CompetitionCardProps> = ({
               <div className="text-primary-foreground flex items-center gap-1 font-bold">
                 {competition.minimumStake ? (
                   <>
-                    {formatAmount(competition.minimumStake, 0, true)} <Recall />
+                    <Recall /> {formatAmount(competition.minimumStake, 0, true)}
                   </>
                 ) : (
                   <span className="text-primary-foreground font-semibold">

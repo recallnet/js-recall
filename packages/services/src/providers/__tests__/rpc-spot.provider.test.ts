@@ -208,15 +208,47 @@ describe("RpcSpotProvider", () => {
         [],
       );
 
-      expect(result).toEqual([]);
+      expect(result.trades).toEqual([]);
       expect(mockLogger.warn).toHaveBeenCalledWith(
         expect.stringContaining("No chains provided"),
       );
     });
 
     it("should detect swap from transfer pattern", async () => {
+      // Use native ETH swap for basic detection test (no complex receipt logs needed)
+      const BASIC_WALLET = "0xbasic1230000000000000000000000000000000000";
+      const BASIC_ROUTER = "0xrouter456000000000000000000000000000000000";
+      const USDC_ADDR = "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913";
+
+      const basicSwapTransfers = [
+        createMockTransfer({
+          from: BASIC_WALLET,
+          to: BASIC_ROUTER,
+          value: 1.0,
+          asset: "ETH",
+          hash: "0xtxhash1",
+          blockNum: "0x1000000",
+          metadata: { blockTimestamp: "2025-01-15T10:00:00.000Z" },
+          rawContract: { address: null, decimal: null, value: "0x" },
+          category: AssetTransfersCategory.EXTERNAL,
+          uniqueId: "unique1",
+        }),
+        createMockTransfer({
+          from: BASIC_ROUTER,
+          to: BASIC_WALLET,
+          value: 2000,
+          asset: "USDC",
+          hash: "0xtxhash1",
+          blockNum: "0x1000000",
+          metadata: { blockTimestamp: "2025-01-15T10:00:00.000Z" },
+          rawContract: { address: USDC_ADDR, decimal: "6", value: "0x" },
+          category: AssetTransfersCategory.ERC20,
+          uniqueId: "unique2",
+        }),
+      ];
+
       mockRpcProvider.getAssetTransfers.mockResolvedValue({
-        transfers: sampleSwapTransfers,
+        transfers: basicSwapTransfers,
         pageKey: undefined,
       });
 
@@ -226,22 +258,22 @@ describe("RpcSpotProvider", () => {
         gasUsed: "150000",
         effectiveGasPrice: "50000000000",
         status: true,
-        from: "0xagent123",
-        to: "0xrouter456",
-        logs: [],
+        from: BASIC_WALLET,
+        to: BASIC_ROUTER,
+        logs: [], // Native ETH swaps work with empty ERC20 logs
       });
 
-      const result = await provider.getTradesSince("0xagent123", 10000, [
+      const result = await provider.getTradesSince(BASIC_WALLET, 10000, [
         "base",
       ]);
 
-      expect(result).toHaveLength(1);
-      expect(result[0]).toMatchObject({
+      expect(result.trades).toHaveLength(1);
+      expect(result.trades[0]).toMatchObject({
         txHash: "0xtxhash1",
-        fromToken: "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913",
-        toToken: "0x940181a94A35A4569E4529A3CDfB74e38FD98631",
-        fromAmount: 100,
-        toAmount: 50,
+        fromToken: "0x0000000000000000000000000000000000000000", // Native ETH = zero address
+        toToken: USDC_ADDR,
+        fromAmount: 1.0,
+        toAmount: 2000,
         chain: "base",
         protocol: "Unknown", // No filtering
       });
@@ -257,7 +289,7 @@ describe("RpcSpotProvider", () => {
         "base",
       ]);
 
-      expect(result).toHaveLength(0);
+      expect(result.trades).toHaveLength(0);
     });
 
     it("should handle empty transfers gracefully", async () => {
@@ -270,14 +302,46 @@ describe("RpcSpotProvider", () => {
         "base",
       ]);
 
-      expect(result).toEqual([]);
+      expect(result.trades).toEqual([]);
     });
 
     it("should continue processing other chains when one fails", async () => {
+      // Use native ETH swap for this test
+      const CHAIN_WALLET = "0xchain1230000000000000000000000000000000000";
+      const CHAIN_ROUTER = "0xrouter456000000000000000000000000000000000";
+      const USDC_ADDR = "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913";
+
+      const chainTestTransfers = [
+        createMockTransfer({
+          from: CHAIN_WALLET,
+          to: CHAIN_ROUTER,
+          value: 1.0,
+          asset: "ETH",
+          hash: "0xtxhash1",
+          blockNum: "0x1000000",
+          metadata: { blockTimestamp: "2025-01-15T10:00:00.000Z" },
+          rawContract: { address: null, decimal: null, value: "0x" },
+          category: AssetTransfersCategory.EXTERNAL,
+          uniqueId: "unique1",
+        }),
+        createMockTransfer({
+          from: CHAIN_ROUTER,
+          to: CHAIN_WALLET,
+          value: 2000,
+          asset: "USDC",
+          hash: "0xtxhash1",
+          blockNum: "0x1000000",
+          metadata: { blockTimestamp: "2025-01-15T10:00:00.000Z" },
+          rawContract: { address: USDC_ADDR, decimal: "6", value: "0x" },
+          category: AssetTransfersCategory.ERC20,
+          uniqueId: "unique2",
+        }),
+      ];
+
       mockRpcProvider.getAssetTransfers
         .mockRejectedValueOnce(new Error("RPC error for base"))
         .mockResolvedValueOnce({
-          transfers: sampleSwapTransfers,
+          transfers: chainTestTransfers,
           pageKey: undefined,
         });
 
@@ -287,12 +351,12 @@ describe("RpcSpotProvider", () => {
         gasUsed: "150000",
         effectiveGasPrice: "50000000000",
         status: true,
-        from: "0xagent123",
-        to: "0xrouter456",
-        logs: [],
+        from: CHAIN_WALLET,
+        to: CHAIN_ROUTER,
+        logs: [], // Native ETH swap works with empty logs
       });
 
-      const result = await provider.getTradesSince("0xagent123", 10000, [
+      const result = await provider.getTradesSince(CHAIN_WALLET, 10000, [
         "base",
         "arbitrum",
       ]);
@@ -306,7 +370,7 @@ describe("RpcSpotProvider", () => {
       );
 
       // Should still process arbitrum
-      expect(result).toHaveLength(1);
+      expect(result.trades).toHaveLength(1);
     });
 
     it("should convert Date to block number", async () => {
@@ -325,6 +389,39 @@ describe("RpcSpotProvider", () => {
   });
 
   describe("getTradesSince with protocol filtering", () => {
+    const PROTO_WALLET = "0xproto1230000000000000000000000000000000000";
+    const AERODROME_ROUTER = "0xcF77a3Ba9A5CA399B7c97c74d54e5b1Beb874E43";
+    const WRONG_ROUTER = "0xWrongRouter111111111111111111111111111111";
+    const USDC_ADDR = "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913";
+
+    // Native ETH swap transfers for protocol filter tests
+    const protoFilterTransfers = [
+      createMockTransfer({
+        from: PROTO_WALLET,
+        to: AERODROME_ROUTER,
+        value: 1.0,
+        asset: "ETH",
+        hash: "0xtxhash1",
+        blockNum: "0x1000000",
+        metadata: { blockTimestamp: "2025-01-15T10:00:00.000Z" },
+        rawContract: { address: null, decimal: null, value: "0x" },
+        category: AssetTransfersCategory.EXTERNAL,
+        uniqueId: "unique1",
+      }),
+      createMockTransfer({
+        from: AERODROME_ROUTER,
+        to: PROTO_WALLET,
+        value: 2000,
+        asset: "USDC",
+        hash: "0xtxhash1",
+        blockNum: "0x1000000",
+        metadata: { blockTimestamp: "2025-01-15T10:00:00.000Z" },
+        rawContract: { address: USDC_ADDR, decimal: "6", value: "0x" },
+        category: AssetTransfersCategory.ERC20,
+        uniqueId: "unique2",
+      }),
+    ];
+
     beforeEach(() => {
       provider = new RpcSpotProvider(
         mockRpcProvider,
@@ -336,14 +433,14 @@ describe("RpcSpotProvider", () => {
 
     it("should accept swap matching protocol filter", async () => {
       mockRpcProvider.getAssetTransfers.mockResolvedValue({
-        transfers: sampleSwapTransfers,
+        transfers: protoFilterTransfers,
         pageKey: undefined,
       });
 
-      // Mock tx to match Aerodrome router
+      // Mock transaction to get 'to' address for protocol filter
       mockRpcProvider.getTransaction.mockResolvedValue({
-        to: "0xcF77a3Ba9A5CA399B7c97c74d54e5b1Beb874E43", // Aerodrome router
-        from: "0xagent123",
+        to: AERODROME_ROUTER,
+        from: PROTO_WALLET,
       });
 
       // Mock receipt with Aerodrome swap event
@@ -353,8 +450,8 @@ describe("RpcSpotProvider", () => {
         gasUsed: "150000",
         effectiveGasPrice: "50000000000",
         status: true,
-        from: "0xagent123",
-        to: "0xcF77a3Ba9A5CA399B7c97c74d54e5b1Beb874E43",
+        from: PROTO_WALLET,
+        to: AERODROME_ROUTER,
         logs: [
           {
             topics: [
@@ -364,24 +461,52 @@ describe("RpcSpotProvider", () => {
         ],
       });
 
-      const result = await provider.getTradesSince("0xagent123", 10000, [
+      const result = await provider.getTradesSince(PROTO_WALLET, 10000, [
         "base",
       ]);
 
-      expect(result).toHaveLength(1);
-      expect(result[0]?.protocol).toBe("aerodrome");
+      expect(result.trades).toHaveLength(1);
+      expect(result.trades[0]?.protocol).toBe("aerodrome");
     });
 
     it("should reject swap with wrong router address", async () => {
+      // Transfers with wrong router
+      const wrongRouterTransfers = [
+        createMockTransfer({
+          from: PROTO_WALLET,
+          to: WRONG_ROUTER,
+          value: 1.0,
+          asset: "ETH",
+          hash: "0xtxhash1",
+          blockNum: "0x1000000",
+          metadata: { blockTimestamp: "2025-01-15T10:00:00.000Z" },
+          rawContract: { address: null, decimal: null, value: "0x" },
+          category: AssetTransfersCategory.EXTERNAL,
+          uniqueId: "unique1",
+        }),
+        createMockTransfer({
+          from: WRONG_ROUTER,
+          to: PROTO_WALLET,
+          value: 2000,
+          asset: "USDC",
+          hash: "0xtxhash1",
+          blockNum: "0x1000000",
+          metadata: { blockTimestamp: "2025-01-15T10:00:00.000Z" },
+          rawContract: { address: USDC_ADDR, decimal: "6", value: "0x" },
+          category: AssetTransfersCategory.ERC20,
+          uniqueId: "unique2",
+        }),
+      ];
+
       mockRpcProvider.getAssetTransfers.mockResolvedValue({
-        transfers: sampleSwapTransfers,
+        transfers: wrongRouterTransfers,
         pageKey: undefined,
       });
 
-      // Mock tx with wrong router (Uniswap, not Aerodrome)
+      // Mock transaction with wrong router
       mockRpcProvider.getTransaction.mockResolvedValue({
-        to: "0xWrongRouter111111111111111111111111111111",
-        from: "0xagent123",
+        to: WRONG_ROUTER,
+        from: PROTO_WALLET,
       });
 
       mockRpcProvider.getTransactionReceipt.mockResolvedValue({
@@ -390,16 +515,16 @@ describe("RpcSpotProvider", () => {
         gasUsed: "150000",
         effectiveGasPrice: "50000000000",
         status: true,
-        from: "0xagent123",
-        to: "0xWrongRouter",
+        from: PROTO_WALLET,
+        to: WRONG_ROUTER,
         logs: [],
       });
 
-      const result = await provider.getTradesSince("0xagent123", 10000, [
+      const result = await provider.getTradesSince(PROTO_WALLET, 10000, [
         "base",
       ]);
 
-      expect(result).toHaveLength(0);
+      expect(result.trades).toHaveLength(0);
       expect(mockLogger.debug).toHaveBeenCalledWith(
         expect.objectContaining({ txHash: "0xtxhash1" }),
         expect.stringContaining("not from allowed protocol"),
@@ -408,25 +533,25 @@ describe("RpcSpotProvider", () => {
 
     it("should reject swap with correct router but wrong event signature", async () => {
       mockRpcProvider.getAssetTransfers.mockResolvedValue({
-        transfers: sampleSwapTransfers,
+        transfers: protoFilterTransfers,
         pageKey: undefined,
       });
 
-      // Correct router
+      // Mock transaction with correct router
       mockRpcProvider.getTransaction.mockResolvedValue({
-        to: "0xcF77a3Ba9A5CA399B7c97c74d54e5b1Beb874E43",
-        from: "0xagent123",
+        to: AERODROME_ROUTER,
+        from: PROTO_WALLET,
       });
 
-      // But wrong event signature (not Aerodrome swap)
+      // Correct router but wrong event signature (not Aerodrome swap)
       mockRpcProvider.getTransactionReceipt.mockResolvedValue({
         transactionHash: "0xtxhash1",
         blockNumber: 1000000,
         gasUsed: "150000",
         effectiveGasPrice: "50000000000",
         status: true,
-        from: "0xagent123",
-        to: "0xcF77a3Ba9A5CA399B7c97c74d54e5b1Beb874E43",
+        from: PROTO_WALLET,
+        to: AERODROME_ROUTER,
         logs: [
           {
             topics: [
@@ -436,32 +561,30 @@ describe("RpcSpotProvider", () => {
         ],
       });
 
-      const result = await provider.getTradesSince("0xagent123", 10000, [
+      const result = await provider.getTradesSince(PROTO_WALLET, 10000, [
         "base",
       ]);
 
-      expect(result).toHaveLength(0);
+      expect(result.trades).toHaveLength(0);
     });
 
     it("should handle missing transaction data gracefully", async () => {
       mockRpcProvider.getAssetTransfers.mockResolvedValue({
-        transfers: sampleSwapTransfers,
+        transfers: protoFilterTransfers,
         pageKey: undefined,
       });
 
-      // Transaction not found
-      mockRpcProvider.getTransaction.mockResolvedValue(null);
+      // Transaction receipt not found - swap detection requires receipt for logIndex ordering
       mockRpcProvider.getTransactionReceipt.mockResolvedValue(null);
 
-      const result = await provider.getTradesSince("0xagent123", 10000, [
+      const result = await provider.getTradesSince(PROTO_WALLET, 10000, [
         "base",
       ]);
 
-      expect(result).toHaveLength(0);
-      expect(mockLogger.debug).toHaveBeenCalledWith(
-        expect.objectContaining({ txHash: "0xtxhash1" }),
-        expect.stringContaining("Could not fetch tx/receipt"),
-      );
+      // No swaps detected without receipt
+      expect(result.trades).toHaveLength(0);
+      // Should track skipped block for retry
+      expect(result.lowestSkippedBlock).toBeDefined();
     });
   });
 
@@ -613,7 +736,7 @@ describe("RpcSpotProvider", () => {
         "base",
       ]);
 
-      expect(result).toHaveLength(0);
+      expect(result.trades).toHaveLength(0);
     });
 
     it("should not detect swap with only inbound transfers", async () => {
@@ -645,7 +768,7 @@ describe("RpcSpotProvider", () => {
         "base",
       ]);
 
-      expect(result).toHaveLength(0);
+      expect(result.trades).toHaveLength(0);
     });
 
     it("should handle native ETH transfers with zero address", async () => {
@@ -702,11 +825,11 @@ describe("RpcSpotProvider", () => {
         "base",
       ]);
 
-      expect(result).toHaveLength(1);
+      expect(result.trades).toHaveLength(1);
       // fromToken must be zero address for proper price lookup
       // (mapped to WETH in spot-data-processor)
-      expect(result[0]?.fromToken).toBe(NATIVE_TOKEN_ADDRESS);
-      expect(result[0]?.toToken).toBe(
+      expect(result.trades[0]?.fromToken).toBe(NATIVE_TOKEN_ADDRESS);
+      expect(result.trades[0]?.toToken).toBe(
         "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913",
       );
     });
@@ -764,12 +887,12 @@ describe("RpcSpotProvider", () => {
         "base",
       ]);
 
-      expect(result).toHaveLength(1);
-      expect(result[0]?.fromToken).toBe(
+      expect(result.trades).toHaveLength(1);
+      expect(result.trades[0]?.fromToken).toBe(
         "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913",
       );
       // toToken must be zero address for proper price lookup
-      expect(result[0]?.toToken).toBe(NATIVE_TOKEN_ADDRESS);
+      expect(result.trades[0]?.toToken).toBe(NATIVE_TOKEN_ADDRESS);
     });
   });
 
@@ -796,14 +919,48 @@ describe("RpcSpotProvider", () => {
   });
 
   describe("gas data enrichment", () => {
+    const TRANSFER_TOPIC =
+      "0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef";
+    const GAS_TEST_WALLET = "0xagent1230000000000000000000000000000000000";
+    const GAS_TEST_ROUTER = "0xrouter456000000000000000000000000000000000";
+    const USDC_ADDR = "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913";
+
     beforeEach(() => {
       provider = new RpcSpotProvider(mockRpcProvider, [], mockLogger);
       mockRpcProvider.getBlockNumber.mockResolvedValue(1000000);
     });
 
     it("should include gas data when receipt is available", async () => {
+      // Use native ETH swap so we can test gas enrichment without complex receipt logs
+      const nativeEthTransfers = [
+        createMockTransfer({
+          from: GAS_TEST_WALLET,
+          to: GAS_TEST_ROUTER,
+          value: 0.5,
+          asset: "ETH",
+          hash: "0xtxhash1",
+          blockNum: "0x1000000",
+          metadata: { blockTimestamp: "2025-01-15T10:00:00.000Z" },
+          rawContract: { address: null, decimal: null, value: "0x" },
+          category: AssetTransfersCategory.EXTERNAL,
+          uniqueId: "unique1",
+        }),
+        createMockTransfer({
+          from: GAS_TEST_ROUTER,
+          to: GAS_TEST_WALLET,
+          value: 100,
+          asset: "USDC",
+          hash: "0xtxhash1",
+          blockNum: "0x1000000",
+          metadata: { blockTimestamp: "2025-01-15T10:00:00.000Z" },
+          rawContract: { address: USDC_ADDR, decimal: "6", value: "0x" },
+          category: AssetTransfersCategory.ERC20,
+          uniqueId: "unique2",
+        }),
+      ];
+
       mockRpcProvider.getAssetTransfers.mockResolvedValue({
-        transfers: sampleSwapTransfers,
+        transfers: nativeEthTransfers,
         pageKey: undefined,
       });
 
@@ -813,21 +970,39 @@ describe("RpcSpotProvider", () => {
         gasUsed: "150000",
         effectiveGasPrice: "50000000000",
         status: true,
-        from: "0xagent123",
-        to: "0xrouter456",
-        logs: [],
+        from: GAS_TEST_WALLET,
+        to: GAS_TEST_ROUTER,
+        logs: [
+          // Only USDC inbound log (native ETH has no ERC20 log)
+          {
+            address: USDC_ADDR,
+            topics: [
+              TRANSFER_TOPIC,
+              "0x" + GAS_TEST_ROUTER.slice(2).padStart(64, "0"),
+              "0x" + GAS_TEST_WALLET.slice(2).padStart(64, "0"),
+            ],
+            data: "0x" + BigInt("100000000").toString(16).padStart(64, "0"),
+            logIndex: 0,
+            blockNumber: 1000000,
+            blockHash: "0xblockhash",
+            transactionIndex: 0,
+            transactionHash: "0xtxhash1",
+            removed: false,
+          },
+        ],
       });
 
-      const result = await provider.getTradesSince("0xagent123", 10000, [
+      const result = await provider.getTradesSince(GAS_TEST_WALLET, 10000, [
         "base",
       ]);
 
-      expect(result).toHaveLength(1);
-      expect(result[0]?.gasUsed).toBe(150000);
-      expect(result[0]?.gasPrice).toBe(50000000000);
+      expect(result.trades).toHaveLength(1);
+      expect(result.trades[0]?.gasUsed).toBe(150000);
+      expect(result.trades[0]?.gasPrice).toBe(50000000000);
     });
 
-    it("should handle missing receipt gracefully", async () => {
+    it("should skip transactions when receipt is missing and track for retry", async () => {
+      // Receipt is required for deterministic swap detection via logIndex ordering
       mockRpcProvider.getAssetTransfers.mockResolvedValue({
         transfers: sampleSwapTransfers,
         pageKey: undefined,
@@ -839,12 +1014,14 @@ describe("RpcSpotProvider", () => {
         "base",
       ]);
 
-      expect(result).toHaveLength(1);
-      expect(result[0]?.gasUsed).toBe(0);
-      expect(result[0]?.gasPrice).toBe(0);
+      // No trades detected without receipt
+      expect(result.trades).toHaveLength(0);
+      // Should track skipped block for retry
+      expect(result.lowestSkippedBlock).toBeDefined();
     });
 
-    it("should log warning when gas fetch fails", async () => {
+    it("should skip transactions when receipt fetch fails and track for retry", async () => {
+      // Receipt is required for deterministic swap detection
       mockRpcProvider.getAssetTransfers.mockResolvedValue({
         transfers: sampleSwapTransfers,
         pageKey: undefined,
@@ -858,15 +1035,107 @@ describe("RpcSpotProvider", () => {
         "base",
       ]);
 
-      expect(result).toHaveLength(1);
-      expect(mockLogger.warn).toHaveBeenCalledWith(
-        expect.objectContaining({ error: "Receipt fetch failed" }),
-        expect.stringContaining("Could not fetch gas data"),
+      // No trades detected when receipt fetch fails
+      expect(result.trades).toHaveLength(0);
+      // Should track skipped block for retry
+      expect(result.lowestSkippedBlock).toBeDefined();
+    });
+
+    it("should NOT track lowestSkippedBlock for very old transactions (max-age safeguard)", async () => {
+      // Simulate a very old transaction (>1800 blocks old) where receipt is unavailable
+      const CURRENT_BLOCK = 2000000;
+      // Use block that's 2000 blocks behind current (>1800 max age threshold)
+      const OLD_BLOCK = CURRENT_BLOCK - 2000;
+      const OLD_BLOCK_HEX = `0x${OLD_BLOCK.toString(16)}`;
+
+      mockRpcProvider.getBlockNumber.mockResolvedValue(CURRENT_BLOCK);
+
+      const oldTransfers = [
+        createMockTransfer({
+          from: "0x0000000000000000000000000000000000000123",
+          to: "0xrouter456",
+          value: 1.0,
+          asset: "USDC",
+          hash: "0xoldtx123",
+          blockNum: OLD_BLOCK_HEX,
+          metadata: { blockTimestamp: "2025-01-01T10:00:00.000Z" },
+          rawContract: { address: "0xusdc123", decimal: "6", value: "0x" },
+          category: AssetTransfersCategory.ERC20,
+          uniqueId: "unique1",
+        }),
+        createMockTransfer({
+          from: "0xrouter456",
+          to: "0x0000000000000000000000000000000000000123",
+          value: 0.5,
+          asset: "WETH",
+          hash: "0xoldtx123",
+          blockNum: OLD_BLOCK_HEX,
+          metadata: { blockTimestamp: "2025-01-01T10:00:00.000Z" },
+          rawContract: { address: "0xweth456", decimal: "18", value: "0x" },
+          category: AssetTransfersCategory.ERC20,
+          uniqueId: "unique2",
+        }),
+      ];
+
+      mockRpcProvider.getAssetTransfers.mockResolvedValue({
+        transfers: oldTransfers,
+        pageKey: undefined,
+      });
+
+      // Receipt not found for old transaction
+      mockRpcProvider.getTransactionReceipt.mockResolvedValue(null);
+
+      const result = await provider.getTradesSince(
+        "0x0000000000000000000000000000000000000123",
+        OLD_BLOCK - 100,
+        ["base"],
       );
+
+      // No trades detected
+      expect(result.trades).toHaveLength(0);
+
+      // Should NOT track skipped block because transaction is too old (>1800 blocks)
+      // This allows sync to progress instead of being permanently stuck
+      expect(result.lowestSkippedBlock).toBeUndefined();
     });
   });
 
   describe("multi-chain processing", () => {
+    const MULTICHAIN_WALLET = "0xmultichain000000000000000000000000000000";
+    const MULTICHAIN_ROUTER = "0xrouter4560000000000000000000000000000000";
+
+    // Native ETH swap transfers for testing (works with empty receipt logs)
+    const multiChainTransfers = [
+      createMockTransfer({
+        from: MULTICHAIN_WALLET,
+        to: MULTICHAIN_ROUTER,
+        value: 1.0,
+        asset: "ETH",
+        hash: "0xtxhash1",
+        blockNum: "0x1000000",
+        metadata: { blockTimestamp: "2025-01-15T10:00:00.000Z" },
+        rawContract: { address: null, decimal: null, value: "0x" },
+        category: AssetTransfersCategory.EXTERNAL,
+        uniqueId: "unique1",
+      }),
+      createMockTransfer({
+        from: MULTICHAIN_ROUTER,
+        to: MULTICHAIN_WALLET,
+        value: 2000,
+        asset: "USDC",
+        hash: "0xtxhash1",
+        blockNum: "0x1000000",
+        metadata: { blockTimestamp: "2025-01-15T10:00:00.000Z" },
+        rawContract: {
+          address: "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913",
+          decimal: "6",
+          value: "0x",
+        },
+        category: AssetTransfersCategory.ERC20,
+        uniqueId: "unique2",
+      }),
+    ];
+
     beforeEach(() => {
       provider = new RpcSpotProvider(mockRpcProvider, [], mockLogger);
       mockRpcProvider.getBlockNumber.mockResolvedValue(1000000);
@@ -876,19 +1145,19 @@ describe("RpcSpotProvider", () => {
         gasUsed: "150000",
         effectiveGasPrice: "50000000000",
         status: true,
-        from: "0xagent123",
-        to: "0xrouter456",
-        logs: [],
+        from: MULTICHAIN_WALLET,
+        to: MULTICHAIN_ROUTER,
+        logs: [], // Empty logs is fine for native ETH swaps
       });
     });
 
     it("should process multiple chains", async () => {
       mockRpcProvider.getAssetTransfers.mockResolvedValue({
-        transfers: sampleSwapTransfers,
+        transfers: multiChainTransfers,
         pageKey: undefined,
       });
 
-      const result = await provider.getTradesSince("0xagent123", 10000, [
+      const result = await provider.getTradesSince(MULTICHAIN_WALLET, 10000, [
         "base",
         "arbitrum",
         "optimism",
@@ -896,7 +1165,7 @@ describe("RpcSpotProvider", () => {
 
       // Should call getAssetTransfers for each chain
       expect(mockRpcProvider.getAssetTransfers).toHaveBeenCalledTimes(3);
-      expect(result.length).toBeGreaterThan(0);
+      expect(result.trades.length).toBeGreaterThan(0);
     });
   });
 
@@ -936,6 +1205,418 @@ describe("RpcSpotProvider", () => {
       }
 
       expect(mockRpcProvider.getBalance).toHaveBeenCalledTimes(4);
+    });
+  });
+
+  describe("Receipt-based swap detection (logIndex ordering)", () => {
+    beforeEach(() => {
+      provider = new RpcSpotProvider(mockRpcProvider, [], mockLogger);
+      mockRpcProvider.getBlockNumber.mockResolvedValue(1000000);
+    });
+
+    // ERC20 Transfer event signature
+    const TRANSFER_TOPIC =
+      "0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef";
+
+    // Helper to create mock receipt log
+    function createTransferLog(
+      tokenAddress: string,
+      from: string,
+      to: string,
+      value: bigint,
+      logIndex: number,
+    ) {
+      // Pad addresses to 32 bytes (64 hex chars)
+      const fromPadded = "0x" + from.slice(2).toLowerCase().padStart(64, "0");
+      const toPadded = "0x" + to.slice(2).toLowerCase().padStart(64, "0");
+      // Convert value to hex data (32 bytes)
+      const valueHex = "0x" + value.toString(16).padStart(64, "0");
+
+      return {
+        address: tokenAddress,
+        topics: [TRANSFER_TOPIC, fromPadded, toPadded],
+        data: valueHex,
+        logIndex,
+        blockNumber: 1000000,
+        blockHash: "0xblockhash",
+        transactionIndex: 0,
+        removed: false,
+        transactionHash: "0xtxhash",
+      };
+    }
+
+    it("should detect swap using logIndex ordering, picking correct tokens regardless of array order", async () => {
+      // Simulates the deepseek bug scenario:
+      // - Transaction has ERC20 AERO transfer (logIndex 0) and 0-value ETH transfer
+      // - Old code would pick based on getAssetTransfers order (non-deterministic)
+      // - New code uses logIndex ordering (deterministic)
+
+      const AERO_ADDRESS = "0x940181a94a35a4569e4529a3cdfb74e38fd98631";
+      const USDC_ADDRESS = "0x833589fcd6edb6e08f4c7c32d4f71b54bda02913";
+      const WALLET = "0x1234567890abcdef1234567890abcdef12345678";
+
+      // Create receipt with ERC20 transfers in logIndex order
+      const mockReceipt = {
+        transactionHash: "0xtxhash1",
+        blockNumber: 1000000,
+        gasUsed: "150000",
+        effectiveGasPrice: "50000000000",
+        status: true,
+        from: WALLET,
+        to: "0xrouter456",
+        logs: [
+          // AERO outbound at logIndex 0 (first in execution order)
+          createTransferLog(
+            AERO_ADDRESS,
+            WALLET,
+            "0xrouter456",
+            BigInt("106830000000000000000"), // 106.83 AERO (18 decimals)
+            0,
+          ),
+          // USDC inbound at logIndex 1
+          createTransferLog(
+            USDC_ADDRESS,
+            "0xrouter456",
+            WALLET,
+            BigInt("69820000"), // 69.82 USDC (6 decimals)
+            1,
+          ),
+        ],
+      };
+
+      // Mock getAssetTransfers to return transfers (for amount extraction)
+      // Note: Order here doesn't matter - logIndex determines token selection
+      mockRpcProvider.getAssetTransfers.mockResolvedValue({
+        transfers: [
+          createMockTransfer({
+            from: WALLET,
+            to: "0xrouter456",
+            value: 106.83, // Already decimal-adjusted
+            asset: "AERO",
+            hash: "0xtxhash1",
+            blockNum: "0xf4240",
+            metadata: { blockTimestamp: "2025-01-15T10:00:00.000Z" },
+            rawContract: {
+              address: AERO_ADDRESS,
+              decimal: "18",
+              value: "0x",
+            },
+            category: AssetTransfersCategory.ERC20,
+            uniqueId: "unique1",
+          }),
+          createMockTransfer({
+            from: "0xrouter456",
+            to: WALLET,
+            value: 69.82,
+            asset: "USDC",
+            hash: "0xtxhash1",
+            blockNum: "0xf4240",
+            metadata: { blockTimestamp: "2025-01-15T10:00:00.000Z" },
+            rawContract: {
+              address: USDC_ADDRESS,
+              decimal: "6",
+              value: "0x",
+            },
+            category: AssetTransfersCategory.ERC20,
+            uniqueId: "unique2",
+          }),
+        ],
+        pageKey: undefined,
+      });
+
+      mockRpcProvider.getTransactionReceipt.mockResolvedValue(mockReceipt);
+
+      const result = await provider.getTradesSince(WALLET, 999990, ["base"]);
+
+      expect(result.trades).toHaveLength(1);
+      const trade = result.trades[0]!;
+
+      // CRITICAL: Verify we picked AERO as fromToken (not ETH)
+      expect(trade.fromToken.toLowerCase()).toBe(AERO_ADDRESS.toLowerCase());
+      expect(trade.toToken.toLowerCase()).toBe(USDC_ADDRESS.toLowerCase());
+
+      // Verify amounts are correct (not 0)
+      expect(trade.fromAmount).toBeCloseTo(106.83, 1);
+      expect(trade.toAmount).toBeCloseTo(69.82, 1);
+    });
+
+    it("should handle multi-hop swap by picking first outbound and last inbound", async () => {
+      // Multi-hop: AERO -> WETH -> USDC
+      // Should pick AERO as input (first outbound) and USDC as output (last inbound)
+
+      const AERO_ADDRESS = "0x940181a94a35a4569e4529a3cdfb74e38fd98631";
+      const WETH_ADDRESS = "0x4200000000000000000000000000000000000006";
+      const USDC_ADDRESS = "0x833589fcd6edb6e08f4c7c32d4f71b54bda02913";
+      const WALLET = "0x1234567890abcdef1234567890abcdef12345678";
+
+      const mockReceipt = {
+        transactionHash: "0xtxhash1",
+        blockNumber: 1000000,
+        gasUsed: "200000",
+        effectiveGasPrice: "50000000000",
+        status: true,
+        from: WALLET,
+        to: "0xrouter456",
+        logs: [
+          // Hop 1: AERO out from wallet (logIndex 0)
+          createTransferLog(
+            AERO_ADDRESS,
+            WALLET,
+            "0xpool1",
+            BigInt("100000000000000000000"),
+            0,
+          ),
+          // Hop 1: WETH in to router (logIndex 1) - intermediate
+          createTransferLog(
+            WETH_ADDRESS,
+            "0xpool1",
+            "0xrouter456",
+            BigInt("50000000000000000"),
+            1,
+          ),
+          // Hop 2: WETH out from router (logIndex 2) - intermediate
+          createTransferLog(
+            WETH_ADDRESS,
+            "0xrouter456",
+            "0xpool2",
+            BigInt("50000000000000000"),
+            2,
+          ),
+          // Hop 2: USDC in to wallet (logIndex 3) - final output
+          createTransferLog(
+            USDC_ADDRESS,
+            "0xpool2",
+            WALLET,
+            BigInt("150000000"),
+            3,
+          ),
+        ],
+      };
+
+      mockRpcProvider.getAssetTransfers.mockResolvedValue({
+        transfers: [
+          createMockTransfer({
+            from: WALLET,
+            to: "0xpool1",
+            value: 100,
+            asset: "AERO",
+            hash: "0xtxhash1",
+            blockNum: "0xf4240",
+            metadata: { blockTimestamp: "2025-01-15T10:00:00.000Z" },
+            rawContract: { address: AERO_ADDRESS, decimal: "18", value: "0x" },
+            category: AssetTransfersCategory.ERC20,
+            uniqueId: "unique1",
+          }),
+          createMockTransfer({
+            from: "0xpool2",
+            to: WALLET,
+            value: 150,
+            asset: "USDC",
+            hash: "0xtxhash1",
+            blockNum: "0xf4240",
+            metadata: { blockTimestamp: "2025-01-15T10:00:00.000Z" },
+            rawContract: { address: USDC_ADDRESS, decimal: "6", value: "0x" },
+            category: AssetTransfersCategory.ERC20,
+            uniqueId: "unique2",
+          }),
+        ],
+        pageKey: undefined,
+      });
+
+      mockRpcProvider.getTransactionReceipt.mockResolvedValue(mockReceipt);
+
+      const result = await provider.getTradesSince(WALLET, 999990, ["base"]);
+
+      expect(result.trades).toHaveLength(1);
+      const trade = result.trades[0]!;
+
+      // Should pick AERO (first outbound) and USDC (last inbound)
+      // NOT WETH (intermediate hop)
+      expect(trade.fromToken.toLowerCase()).toBe(AERO_ADDRESS.toLowerCase());
+      expect(trade.toToken.toLowerCase()).toBe(USDC_ADDRESS.toLowerCase());
+    });
+
+    it("should skip transactions with zero-value outbound transfers only", async () => {
+      const WALLET = "0x1234567890abcdef1234567890abcdef12345678";
+      const ROUTER = "0xabcdef1234567890abcdef1234567890abcdef12";
+      const USDC_ADDRESS = "0x833589fcd6edb6e08f4c7c32d4f71b54bda02913";
+      const SOME_TOKEN = "0xdeadbeef1234567890abcdef1234567890abcdef";
+
+      // Receipt where the only outbound has 0 value
+      const mockReceipt = {
+        transactionHash: "0xtxhash1",
+        blockNumber: 1000000,
+        gasUsed: "150000",
+        effectiveGasPrice: "50000000000",
+        status: true,
+        from: WALLET,
+        to: ROUTER,
+        logs: [
+          // 0-value outbound (contract interaction)
+          createTransferLog(SOME_TOKEN, WALLET, ROUTER, BigInt(0), 0),
+          // Inbound USDC
+          createTransferLog(
+            USDC_ADDRESS,
+            ROUTER,
+            WALLET,
+            BigInt("100000000"),
+            1,
+          ),
+        ],
+      };
+
+      mockRpcProvider.getAssetTransfers.mockResolvedValue({
+        transfers: [
+          createMockTransfer({
+            from: WALLET,
+            to: ROUTER,
+            value: 0,
+            asset: "TOKEN",
+            hash: "0xtxhash1",
+            blockNum: "0xf4240",
+            metadata: { blockTimestamp: "2025-01-15T10:00:00.000Z" },
+            rawContract: { address: SOME_TOKEN, decimal: "18", value: "0x" },
+            category: AssetTransfersCategory.ERC20,
+            uniqueId: "unique1",
+          }),
+          createMockTransfer({
+            from: ROUTER,
+            to: WALLET,
+            value: 100,
+            asset: "USDC",
+            hash: "0xtxhash1",
+            blockNum: "0xf4240",
+            metadata: { blockTimestamp: "2025-01-15T10:00:00.000Z" },
+            rawContract: { address: USDC_ADDRESS, decimal: "6", value: "0x" },
+            category: AssetTransfersCategory.ERC20,
+            uniqueId: "unique2",
+          }),
+        ],
+        pageKey: undefined,
+      });
+
+      mockRpcProvider.getTransactionReceipt.mockResolvedValue(mockReceipt);
+
+      const result = await provider.getTradesSince(WALLET, 999990, ["base"]);
+
+      // Should NOT detect this as a valid swap (0-value outbound)
+      expect(result.trades).toHaveLength(0);
+
+      // Should have logged warning
+      expect(mockLogger.warn).toHaveBeenCalledWith(
+        expect.objectContaining({
+          txHash: "0xtxhash1",
+        }),
+        expect.stringContaining("0 outbound value"),
+      );
+    });
+
+    it("should fallback to transfer-based detection for native ETH swaps", async () => {
+      // Native ETH swaps don't emit ERC20 Transfer events for the ETH side
+      // detectSwapFromReceiptLogs will fail, should fallback to detectSwapPattern
+      const WALLET = "0xagent123";
+      const USDC_ADDRESS = "0x833589fcd6edb6e08f4c7c32d4f71b54bda02913";
+      const NATIVE_ADDRESS = "0x0000000000000000000000000000000000000000";
+
+      // Receipt with only inbound ERC20 (ETH outbound has no ERC20 log)
+      const mockReceipt = {
+        transactionHash: "0xtxhash1",
+        blockNumber: 1000000,
+        gasUsed: "150000",
+        effectiveGasPrice: "50000000000",
+        status: true,
+        from: WALLET,
+        to: "0xrouter456",
+        logs: [
+          // Only USDC inbound - no ERC20 log for native ETH
+          createTransferLog(
+            USDC_ADDRESS,
+            "0xrouter456",
+            WALLET,
+            BigInt("100000000"), // 100 USDC
+            0,
+          ),
+        ],
+      };
+
+      // getAssetTransfers includes both ETH (EXTERNAL category) and ERC20
+      mockRpcProvider.getAssetTransfers.mockResolvedValue({
+        transfers: [
+          // Native ETH outbound (EXTERNAL category, no rawContract.address)
+          createMockTransfer({
+            from: WALLET,
+            to: "0xrouter456",
+            value: 0.5, // 0.5 ETH
+            asset: "ETH",
+            hash: "0xtxhash1",
+            blockNum: "0xf4240",
+            metadata: { blockTimestamp: "2025-01-15T10:00:00.000Z" },
+            rawContract: { address: null, decimal: null, value: "0x" },
+            category: AssetTransfersCategory.EXTERNAL,
+            uniqueId: "unique1",
+          }),
+          // USDC inbound
+          createMockTransfer({
+            from: "0xrouter456",
+            to: WALLET,
+            value: 100,
+            asset: "USDC",
+            hash: "0xtxhash1",
+            blockNum: "0xf4240",
+            metadata: { blockTimestamp: "2025-01-15T10:00:00.000Z" },
+            rawContract: { address: USDC_ADDRESS, decimal: "6", value: "0x" },
+            category: AssetTransfersCategory.ERC20,
+            uniqueId: "unique2",
+          }),
+        ],
+        pageKey: undefined,
+      });
+
+      mockRpcProvider.getTransactionReceipt.mockResolvedValue(mockReceipt);
+
+      const result = await provider.getTradesSince(WALLET, 999990, ["base"]);
+
+      // Fallback should detect this as a swap
+      expect(result.trades).toHaveLength(1);
+      const trade = result.trades[0]!;
+
+      // Native ETH as fromToken (zero address)
+      expect(trade.fromToken.toLowerCase()).toBe(NATIVE_ADDRESS);
+      expect(trade.toToken.toLowerCase()).toBe(USDC_ADDRESS.toLowerCase());
+      expect(trade.fromAmount).toBeCloseTo(0.5, 1);
+      expect(trade.toAmount).toBeCloseTo(100, 1);
+    });
+
+    it("should not detect deposit-only transactions as swaps", async () => {
+      const WALLET = "0xagent123";
+      const USDC_ADDRESS = "0x833589fcd6edb6e08f4c7c32d4f71b54bda02913";
+
+      // Only inbound transfer (deposit)
+      mockRpcProvider.getAssetTransfers.mockResolvedValue({
+        transfers: [
+          createMockTransfer({
+            from: "0xexternal",
+            to: WALLET,
+            value: 1000,
+            asset: "USDC",
+            hash: "0xtxhash1",
+            blockNum: "0xf4240",
+            metadata: { blockTimestamp: "2025-01-15T10:00:00.000Z" },
+            rawContract: { address: USDC_ADDRESS, decimal: "6", value: "0x" },
+            category: AssetTransfersCategory.ERC20,
+            uniqueId: "unique1",
+          }),
+        ],
+        pageKey: undefined,
+      });
+
+      const result = await provider.getTradesSince(WALLET, 999990, ["base"]);
+
+      // Deposit-only should not be detected as swap
+      expect(result.trades).toHaveLength(0);
+
+      // Should NOT have fetched receipt (pre-filter catches this)
+      expect(mockRpcProvider.getTransactionReceipt).not.toHaveBeenCalled();
     });
   });
 });

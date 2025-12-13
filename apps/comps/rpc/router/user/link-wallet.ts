@@ -3,7 +3,6 @@ import { z } from "zod";
 
 import { verifyPrivyUserHasLinkedWallet } from "@recallnet/services/lib";
 
-import { config } from "@/config/private";
 import { base } from "@/rpc/context/base";
 import { authMiddleware } from "@/rpc/middleware/auth";
 
@@ -36,10 +35,8 @@ export const linkWallet = base
         updatedAt: now,
       });
 
-      // Grant initial boost if in stake mode
-      if (config.publicFlags.tge) {
-        await context.boostAwardService.initForStake(updatedUser.walletAddress);
-      }
+      // Grant initial boost
+      await context.boostAwardService.initForStake(updatedUser.walletAddress);
 
       return updatedUser;
     } catch (error) {
