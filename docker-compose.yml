@@ -6,12 +6,31 @@ networks:
     driver: bridge
 
 services:
+  anvil:
+    image: ghcr.io/foundry-rs/foundry:latest
+    container_name: recall-anvil
+    restart: always
+    networks:
+      - recall-network
+    ports:
+      - "8545:8545"
+    entrypoint:
+      ["anvil", "--host", "0.0.0.0", "--chain-id", "31337", "--block-time", "1"]
+    healthcheck:
+      test:
+        ["CMD", "cast", "block-number", "--rpc-url", "http://localhost:8545"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
   db:
     image: postgres:17-alpine
     container_name: recall-db
     restart: always
     networks:
       - recall-network
+    ports:
+      - "5432:5432"
     environment:
       POSTGRES_DB: postgres
       POSTGRES_USER: postgres

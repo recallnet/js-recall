@@ -28,10 +28,10 @@ RUN pnpm --filter=@recallnet/db build && \
     pnpm --filter=@recallnet/test-utils build && \
     pnpm --filter=api build
 
-FROM node:22-alpine
+FROM node:22-slim
 
 # Install postgresql-client for database checks and pnpm for migrations
-RUN apk add --no-cache postgresql-client
+RUN apt-get update && apt-get install -y --no-install-recommends postgresql-client && rm -rf /var/lib/apt/lists/*
 RUN npm install -g pnpm
 
 COPY --from=builder /workdir /workdir

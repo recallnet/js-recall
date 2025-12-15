@@ -1,5 +1,5 @@
 import type { Chain } from "viem";
-import { base, baseSepolia, hardhat } from "viem/chains";
+import { base, baseSepolia, foundry } from "viem/chains";
 
 /**
  * Supported networks for the staking contracts
@@ -8,6 +8,8 @@ export enum Network {
   BaseSepolia = "baseSepolia",
   Base = "base",
   Hardhat = "hardhat",
+  Anvil = "anvil",
+  Local = "local",
 }
 
 /**
@@ -20,7 +22,9 @@ export function getChainForNetwork(network: Network): Chain {
     case Network.Base:
       return base;
     case Network.Hardhat:
-      return hardhat;
+    case Network.Anvil:
+    case Network.Local:
+      return foundry;
     case Network.BaseSepolia:
     default:
       return baseSepolia;

@@ -11,6 +11,8 @@ COPY packages/fonts/package.json packages/fonts/
 COPY packages/ui2/package.json packages/ui2/
 COPY packages/db/package.json packages/db/
 COPY packages/conversions/package.json packages/conversions/
+COPY packages/staking-contracts/package.json packages/staking-contracts/
+COPY packages/rewards/package.json packages/rewards/
 COPY packages/services/package.json packages/services/
 COPY packages/test-utils/package.json packages/test-utils/
 COPY apps/comps/package.json apps/comps/
@@ -26,6 +28,8 @@ ARG NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID
 # Build the application
 RUN pnpm --filter=@recallnet/fonts build && \
     pnpm --filter=@recallnet/db build && \
+    pnpm --filter=@recallnet/staking-contracts build && \
+    pnpm --filter=@recallnet/rewards build && \
     pnpm --filter=@recallnet/conversions build && \
     pnpm --filter=@recallnet/services build && \
     pnpm --filter=@recallnet/test-utils build && \
