@@ -1,5 +1,5 @@
 #!/usr/bin/env tsx
-import { and, eq, gte, lte, sql, sum } from "drizzle-orm";
+import { and, eq, gte, lte, sql } from "drizzle-orm";
 import * as fs from "fs";
 import * as path from "path";
 import { parseArgs } from "util";
@@ -7,6 +7,7 @@ import { parseArgs } from "util";
 import { attoValueToStringValue } from "@recallnet/conversions/atto-conversions";
 import { seasons } from "@recallnet/db/schema/airdrop/defs";
 import {
+  agentBoostTotals,
   agentBoosts,
   boostBalances,
   boostChanges,
@@ -260,9 +261,17 @@ Examples:
     const userAgentBoosts = await db
       .select({
         address: users.walletAddress,
-        boostAmount: sum(boostChanges.deltaAmount),
+        competitionIds: sql<
+          string[]
+        >`array_agg(DISTINCT ${agentBoostTotals.competitionId})`.as(
+          "competitionIds",
+        ),
       })
       .from(agentBoosts)
+      .innerJoin(
+        agentBoostTotals,
+        eq(agentBoosts.agentBoostTotalId, agentBoostTotals.id),
+      )
       .innerJoin(boostChanges, eq(agentBoosts.changeId, boostChanges.id))
       .innerJoin(boostBalances, eq(boostChanges.balanceId, boostBalances.id))
       .innerJoin(users, eq(boostBalances.userId, users.id))
@@ -274,9 +283,9 @@ Examples:
       )
       .groupBy(users.walletAddress);
 
-    const userAgentBoostsMap = userAgentBoosts.reduce(
-      (acc, boost) => acc.set(boost.address, BigInt(boost.boostAmount || "0")),
-      new Map<string, bigint>(),
+    const userBoostedCompsMap = userAgentBoosts.reduce(
+      (acc, boost) => acc.set(boost.address, boost.competitionIds),
+      new Map<string, string[]>(),
     );
 
     // Step 7: Query for all users that had an agent compete in a competition during the season.
@@ -303,7 +312,7 @@ Examples:
       )
       .groupBy(users.walletAddress);
 
-    const userCompetitionsMap = userCompetitions.reduce(
+    const userCompetedCompsMap = userCompetitions.reduce(
       (acc, userCompetition) =>
         acc.set(userCompetition.address, userCompetition.competitionIds),
       new Map<string, string[]>(),
@@ -314,12 +323,32 @@ Examples:
       `${colors.blue}Step 8: Calculating individual rewards...${colors.reset}`,
     );
 
+    const allUserCompsMap = new Map<string, Set<string>>();
+
+    // Add boosted competitions
+    for (const [address, compIds] of userBoostedCompsMap) {
+      const set = allUserCompsMap.get(address) || new Set<string>();
+      for (const id of compIds) {
+        set.add(id);
+      }
+      allUserCompsMap.set(address, set);
+    }
+
+    // Add competed competitions
+    for (const [address, compIds] of userCompetedCompsMap) {
+      const set = allUserCompsMap.get(address) || new Set<string>();
+      for (const id of compIds) {
+        set.add(id);
+      }
+      allUserCompsMap.set(address, set);
+    }
+
     const eligibleAccounts: EligibleAccount[] = [];
 
     if (totalActiveStakes > 0n && availableRewards > 0n) {
       for (const [address, activeStake] of accountStakes.entries()) {
-        const isEligible =
-          userAgentBoostsMap.has(address) || userCompetitionsMap.has(address);
+        const numEligibilityComps = allUserCompsMap.get(address)?.size || 0;
+        const isEligible = numEligibilityComps >= 3;
 
         if (isEligible) {
           // Calculate proportional reward: (account_stake / total_stakes) * available_rewards
