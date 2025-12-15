@@ -54,7 +54,6 @@ export class RewardsRepository {
   ): Promise<SelectReward[]> {
     try {
       const executor = tx || this.#db;
-      // Ensure walletAddress is set from address if not provided
       return await executor.insert(rewards).values(rewardsToInsert).returning();
     } catch (error) {
       this.#logger.error({ error }, "Error in insertRewards");

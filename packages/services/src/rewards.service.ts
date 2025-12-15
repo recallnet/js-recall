@@ -201,7 +201,6 @@ export class RewardsService {
           userId: reward.owner,
           agentId: reward.competitor ?? null,
           competitionId: competitionId,
-          address: normalizedAddress,
           walletAddress: normalizedAddress,
           amount: reward.amount,
           leafHash: hexToBytes(
