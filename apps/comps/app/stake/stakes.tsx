@@ -9,7 +9,6 @@ import { ActiveStakes } from "@/components/staking/ActiveStakes";
 import { InactiveStakes } from "@/components/staking/InactiveStakes";
 import { StakeSummary } from "@/components/staking/StakeSummary";
 import { StakeSkeleton } from "@/components/staking/stake-skeleton";
-import { config } from "@/config/public";
 import { useUserStakes } from "@/hooks/staking";
 import { useRecall } from "@/hooks/useRecall";
 import { useSession } from "@/hooks/useSession";
@@ -42,9 +41,7 @@ export default function Stakes() {
     isUpdateBackendUserPending ||
     isLinkWalletToBackendPending;
 
-  if (!config.publicFlags.tge) {
-    return null;
-  } else if (pending) {
+  if (pending) {
     return <StakeSkeleton />;
   } else if (!isWalletConnected) {
     return <Landing />;

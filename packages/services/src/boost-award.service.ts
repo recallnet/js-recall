@@ -26,15 +26,8 @@ type InitForStakeResult = BoostDiffResult & {
   competitionId: string;
   stakeId: bigint;
 };
-type InitNoStakeResult = BoostDiffResult & { competitionId: string };
 
 const TEXT_ENCODER = new TextEncoder();
-
-export interface BoostAwardServiceConfig {
-  boost: {
-    noStakeBoostAmount?: bigint;
-  };
-}
 
 export class BoostAwardService {
   readonly #db: Database;
@@ -42,7 +35,6 @@ export class BoostAwardService {
   readonly #boostRepository: BoostRepository;
   readonly #stakesRepository: StakesRepository;
   readonly #userService: UserService;
-  readonly #noStakeBoostAmount?: bigint;
 
   constructor(
     database: Database,
@@ -50,14 +42,12 @@ export class BoostAwardService {
     boostRepository: BoostRepository,
     stakesRepository: StakesRepository,
     userService: UserService,
-    config: BoostAwardServiceConfig,
   ) {
     this.#db = database;
     this.#competitionRepo = competitionRepo;
     this.#boostRepository = boostRepository;
     this.#stakesRepository = stakesRepository;
     this.#userService = userService;
-    this.#noStakeBoostAmount = config.boost.noStakeBoostAmount;
   }
 
   awardAmountForStake(stake: StakePosition, competition: CompetitionPosition) {
@@ -250,42 +240,6 @@ export class BoostAwardService {
               stakeId: stake.id,
             };
           });
-        }),
-      );
-    });
-  }
-
-  async initNoStake(
-    userId: string,
-    wallet: string,
-    tx?: Transaction,
-  ): Promise<InitNoStakeResult[]> {
-    const executor = tx ?? this.#db;
-    return executor.transaction(async (tx) => {
-      const amount = this.#noStakeBoostAmount;
-      if (!amount) {
-        throw new Error("No-stake boost amount not configured");
-      }
-      const competitions = await this.#competitionRepo.findOpenForBoosting(tx);
-
-      if (competitions.length === 0) {
-        return [];
-      }
-
-      return Promise.all(
-        competitions.map(async (competition) => {
-          const awardRes = await this.awardNoStake(
-            competition.id,
-            userId,
-            wallet,
-            amount,
-            "initNoStake",
-            tx,
-          );
-          return {
-            ...awardRes,
-            competitionId: competition.id,
-          };
         }),
       );
     });

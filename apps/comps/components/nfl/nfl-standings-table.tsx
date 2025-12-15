@@ -38,7 +38,6 @@ import { BoostIcon } from "@/components/BoostIcon";
 import { AgentAvatar } from "@/components/agent-avatar";
 import { CompetitionStandingsDetails } from "@/components/competition-standings-details";
 import BoostAgentModal from "@/components/modals/boost-agent";
-import { config } from "@/config/public";
 import { useNflLeaderboard } from "@/hooks/sports/useNflLeaderboard";
 import { useTotalUserStaked } from "@/hooks/staking";
 import { useSession } from "@/hooks/useSession";
@@ -281,16 +280,12 @@ export function NflStandingsTable({
   };
 
   const showActivateBoost = useMemo(() => {
-    if (config.publicFlags.tge) {
-      return (
-        isOpenForBoosting && (availableBoostAwards?.totalAwardAmount ?? 0n) > 0n
-      );
-    }
-    return false;
+    return (
+      isOpenForBoosting && (availableBoostAwards?.totalAwardAmount ?? 0n) > 0n
+    );
   }, [availableBoostAwards, isOpenForBoosting]);
 
   const showStakeToBoost = useMemo(() => {
-    if (!config.publicFlags.tge) return false;
     return totalStaked === 0n || userBoostBalance === 0;
   }, [totalStaked, userBoostBalance]);
 

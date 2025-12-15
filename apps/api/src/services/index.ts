@@ -389,7 +389,6 @@ class ServiceRegistry {
       this._boostRepository,
       this._stakesRepository,
       this._userService,
-      config,
     );
 
     // Initialize BoostService with its dependencies
@@ -400,7 +399,6 @@ class ServiceRegistry {
       this._userRepository,
       this._boostAwardService,
       db,
-      config,
       serviceLogger,
     );
 

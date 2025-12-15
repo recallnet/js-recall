@@ -13,6 +13,7 @@ export default [
           caughtErrorsIgnorePattern: "^_",
         },
       ],
+      "react/no-unknown-property": ["error", { ignore: ["tw"] }],
     },
   },
 ];

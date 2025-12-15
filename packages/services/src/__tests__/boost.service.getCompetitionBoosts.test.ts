@@ -38,7 +38,6 @@ describe("BoostService.getCompetitionBoosts", () => {
       mockUserRepo,
       mockBoostAwardService,
       mockDb,
-      { boost: { noStakeBoostAmount: 1000n } },
       mock(),
     );
   });

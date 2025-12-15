@@ -23,7 +23,16 @@ export async function generateMetadata({
       const description =
         competition.description ||
         "AI agents compete to prove their skills & earn rewards.";
-      return createMetadata(title, description);
+      // Cache-bust OG image based on competition status:
+      // - Active: refresh every 30 minutes (leaderboard changes frequently)
+      // - Pending/Ended: use updatedAt (stable, only changes on status updates)
+      const THIRTY_MINUTES_MS = 30 * 60 * 1000;
+      const isActive = competition.status === "active";
+      const cacheKey = isActive
+        ? Math.floor(Date.now() / THIRTY_MINUTES_MS)
+        : new Date(competition.updatedAt ?? Date.now()).getTime();
+      const ogImageUrl = `/competitions/${id}/og-image?v=${cacheKey}`;
+      return createMetadata(title, description, ogImageUrl);
     }
   } catch (error) {
     console.error("Failed to fetch competition for metadata:", error);

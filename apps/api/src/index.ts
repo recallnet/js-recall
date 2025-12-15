@@ -173,10 +173,7 @@ const healthController = makeHealthController();
 const priceController = makePriceController(services);
 const rewardsController = makeRewardsController(services);
 const tradeController = makeTradeController(services);
-const userController = makeUserController(
-  services,
-  config.boost.noStakeBoostAmount ? false : true,
-);
+const userController = makeUserController(services);
 const agentController = makeAgentController(services);
 const leaderboardController = makeLeaderboardController(services);
 const boostController = makeBoostController(services);
