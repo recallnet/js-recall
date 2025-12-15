@@ -520,13 +520,17 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
   return (
     <SessionContext.Provider value={session}>
       {children}
-      {isWrongWalletModalOpen && session.isAuthenticated && (
-        <WrongWalletModal
-          isOpen
-          onClose={handleCloseWrongWalletModal}
-          expectedWalletAddress={backendUser?.walletAddress || ""}
-        />
-      )}
+      {isWrongWalletModalOpen &&
+        session.isAuthenticated &&
+        connectedExternalWallets[0]?.address &&
+        backendUser?.walletAddress && (
+          <WrongWalletModal
+            isOpen
+            onClose={handleCloseWrongWalletModal}
+            expectedWalletAddress={backendUser?.walletAddress}
+            currentWalletAddress={connectedExternalWallets[0]?.address}
+          />
+        )}
       {session.isAuthenticated &&
         isWalletConnected &&
         !isWrongWalletModalOpen &&
