@@ -54,11 +54,22 @@ export type ClaimData =
   | IneligibleClaim;
 
 /**
+ * Minimum number of distinct competitions required for eligibility
+ */
+export const MIN_COMPETITIONS_FOR_ELIGIBILITY = 3;
+
+/**
  * Eligibility reasons explaining why a user qualifies for conviction rewards
  */
 export interface EligibilityReasons {
   hasBoostedAgents: boolean;
   hasCompetedInCompetitions: boolean;
+  /** Competition IDs where the user boosted agents */
+  boostedCompetitionIds: string[];
+  /** Competition IDs where the user's agents competed */
+  competedCompetitionIds: string[];
+  /** Total count of unique competitions (boosted + competed combined) */
+  totalUniqueCompetitions: number;
 }
 
 /**
@@ -274,7 +285,7 @@ export class AirdropService {
    *
    * Calculates whether an address is eligible for conviction rewards based on:
    * - Having active stakes (conviction claims with duration > 0 extending past season end)
-   * - Either boosting agents OR having agents compete in competitions during the season
+   * - Participating in at least 3 distinct competitions (boosting OR competing combined)
    *
    * @param address - The wallet address to check
    * @param seasonNumber - Optional specific season to check, defaults to next season
@@ -344,10 +355,10 @@ export class AirdropService {
         currentSeason,
       );
 
-      // User is eligible if they have active stakes AND at least one eligibility reason
+      // User is eligible if they have active stakes AND participated in at least 3 competitions
       const hasActivityEligibility =
-        eligibilityReasons.hasBoostedAgents ||
-        eligibilityReasons.hasCompetedInCompetitions;
+        eligibilityReasons.totalUniqueCompetitions >=
+        MIN_COMPETITIONS_FOR_ELIGIBILITY;
       const isEligible = activeStake > 0n && hasActivityEligibility;
 
       // Calculate potential reward
@@ -385,6 +396,7 @@ export class AirdropService {
           season: targetSeasonNumber,
           activeStake: activeStake.toString(),
           potentialReward: potentialReward.toString(),
+          totalUniqueCompetitions: eligibilityReasons.totalUniqueCompetitions,
         },
         `Successfully calculated eligibility for address ${normalizedAddress}`,
       );
@@ -450,30 +462,41 @@ export class AirdropService {
     address: string,
     season: Season,
   ): Promise<EligibilityReasons> {
-    // Check if user has boosted agents during the season
-    let hasBoostedAgents = false;
+    // Get competition IDs where user boosted agents during the season
+    let boostedCompetitionIds: string[] = [];
     if (this.boostRepository) {
-      hasBoostedAgents = await this.boostRepository.hasUserBoostedDuringSeason(
-        address,
-        season.startDate,
-        season.endDate,
-      );
-    }
-
-    // Check if user's agents competed in competitions during the season
-    let hasCompetedInCompetitions = false;
-    if (this.competitionRepository) {
-      hasCompetedInCompetitions =
-        await this.competitionRepository.hasWalletCompetedDuringSeason(
+      boostedCompetitionIds =
+        await this.boostRepository.getCompetitionIdsBoostedDuringSeason(
           address,
           season.startDate,
           season.endDate,
         );
     }
 
+    // Get competition IDs where user's agents competed during the season
+    let competedCompetitionIds: string[] = [];
+    if (this.competitionRepository) {
+      competedCompetitionIds =
+        await this.competitionRepository.getCompetitionIdsCompetedDuringSeason(
+          address,
+          season.startDate,
+          season.endDate,
+        );
+    }
+
+    // Calculate total unique competitions (union of boosted and competed)
+    const allCompetitionIds = new Set([
+      ...boostedCompetitionIds,
+      ...competedCompetitionIds,
+    ]);
+    const totalUniqueCompetitions = allCompetitionIds.size;
+
     return {
-      hasBoostedAgents,
-      hasCompetedInCompetitions,
+      hasBoostedAgents: boostedCompetitionIds.length > 0,
+      hasCompetedInCompetitions: competedCompetitionIds.length > 0,
+      boostedCompetitionIds,
+      competedCompetitionIds,
+      totalUniqueCompetitions,
     };
   }
 }

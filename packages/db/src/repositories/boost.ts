@@ -1410,6 +1410,56 @@ class BoostRepository {
   }
 
   /**
+   * Get competition IDs where a wallet has boosted agents during a time period.
+   *
+   * @param walletAddress - The wallet address to check
+   * @param startDate - Start of the time period
+   * @param endDate - End of the time period
+   * @param tx - Optional transaction
+   * @returns Array of competition IDs where the wallet boosted agents
+   */
+  async getCompetitionIdsBoostedDuringSeason(
+    walletAddress: string,
+    startDate: Date,
+    endDate: Date,
+    tx?: Transaction,
+  ): Promise<string[]> {
+    const executor = tx || this.#db;
+    const normalizedAddress = walletAddress.toLowerCase();
+
+    const results = await executor
+      .selectDistinct({
+        competitionId: schema.agentBoostTotals.competitionId,
+      })
+      .from(schema.agentBoosts)
+      .innerJoin(
+        schema.agentBoostTotals,
+        eq(schema.agentBoosts.agentBoostTotalId, schema.agentBoostTotals.id),
+      )
+      .innerJoin(
+        schema.boostChanges,
+        eq(schema.agentBoosts.changeId, schema.boostChanges.id),
+      )
+      .innerJoin(
+        schema.boostBalances,
+        eq(schema.boostChanges.balanceId, schema.boostBalances.id),
+      )
+      .innerJoin(
+        coreSchema.users,
+        eq(schema.boostBalances.userId, coreSchema.users.id),
+      )
+      .where(
+        and(
+          eq(coreSchema.users.walletAddress, normalizedAddress),
+          gte(schema.agentBoosts.createdAt, startDate),
+          lte(schema.agentBoosts.createdAt, endDate),
+        ),
+      );
+
+    return results.map((r) => r.competitionId);
+  }
+
+  /**
    * Get total boost amount a wallet has contributed during a time period.
    *
    * @param walletAddress - The wallet address to check

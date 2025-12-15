@@ -25,6 +25,9 @@ export interface NextSeasonEligibilityResponse {
   eligibilityReasons: {
     hasBoostedAgents: boolean;
     hasCompetedInCompetitions: boolean;
+    boostedCompetitionIds: string[];
+    competedCompetitionIds: string[];
+    totalUniqueCompetitions: number;
   };
   poolStats: {
     totalActiveStakes: string;
@@ -32,6 +35,7 @@ export interface NextSeasonEligibilityResponse {
     totalForfeited: string;
     totalAlreadyClaimed: string;
   };
+  minCompetitionsRequired: number;
 }
 
 /**
@@ -55,6 +59,16 @@ export interface FormattedEligibilityData {
   hasBoostedOrCompeted: boolean;
   hasBoostedAgents: boolean;
   hasCompetedInCompetitions: boolean;
+  /** Competition IDs where the user boosted agents */
+  boostedCompetitionIds: string[];
+  /** Competition IDs where the user's agents competed */
+  competedCompetitionIds: string[];
+  /** Total count of unique competitions (boosted + competed combined) */
+  totalUniqueCompetitions: number;
+  /** Minimum number of competitions required for eligibility */
+  minCompetitionsRequired: number;
+  /** How many more competitions are needed to become eligible */
+  competitionsRemaining: number;
   totalActiveStakes: bigint;
   totalActiveStakesFormatted: string;
   availableRewardsPool: bigint;
@@ -134,10 +148,20 @@ export function useNextSeasonEligibility(): UseNextSeasonEligibilityResult {
       rawData.eligibilityReasons.hasBoostedAgents ||
       rawData.eligibilityReasons.hasCompetedInCompetitions;
 
-    // User is "almost eligible" if they have done one requirement but not both
+    const { totalUniqueCompetitions } = rawData.eligibilityReasons;
+    const { minCompetitionsRequired } = rawData;
+    const competitionsRemaining = Math.max(
+      0,
+      minCompetitionsRequired - totalUniqueCompetitions,
+    );
+
+    // User is "almost eligible" if they have staked but haven't met the competition requirement
+    // or if they have met the competition requirement but haven't staked
+    const hasMetCompetitionRequirement =
+      totalUniqueCompetitions >= minCompetitionsRequired;
     const isAlmostEligible =
-      (hasStaked && !hasBoostedOrCompeted) ||
-      (!hasStaked && hasBoostedOrCompeted);
+      (hasStaked && !hasMetCompetitionRequirement) ||
+      (!hasStaked && hasMetCompetitionRequirement);
 
     return {
       isEligible: rawData.isEligible,
@@ -157,6 +181,11 @@ export function useNextSeasonEligibility(): UseNextSeasonEligibilityResult {
       hasBoostedAgents: rawData.eligibilityReasons.hasBoostedAgents,
       hasCompetedInCompetitions:
         rawData.eligibilityReasons.hasCompetedInCompetitions,
+      boostedCompetitionIds: rawData.eligibilityReasons.boostedCompetitionIds,
+      competedCompetitionIds: rawData.eligibilityReasons.competedCompetitionIds,
+      totalUniqueCompetitions,
+      minCompetitionsRequired,
+      competitionsRemaining,
       totalActiveStakes,
       totalActiveStakesFormatted: formatBigintString(
         rawData.poolStats.totalActiveStakes,

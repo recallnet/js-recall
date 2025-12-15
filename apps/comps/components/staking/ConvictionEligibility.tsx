@@ -77,11 +77,6 @@ export const ConvictionEligibility: React.FunctionComponent = () => {
     return eligibility.seasonName;
   }, [eligibility]);
 
-  const activitySeasonDisplayName = useMemo(() => {
-    if (!eligibility) return "CURRENT SEASON";
-    return eligibility.activitySeasonName;
-  }, [eligibility]);
-
   // Determine the action button state
   const actionState = useMemo(() => {
     if (!eligibility) return { type: "none" as const };
@@ -100,10 +95,12 @@ export const ConvictionEligibility: React.FunctionComponent = () => {
       };
     }
 
-    if (!eligibility.hasBoostedOrCompeted) {
+    // Check if user needs more competitions (not meeting the minimum)
+    if (eligibility.competitionsRemaining > 0) {
       return {
         type: "boost" as const,
         days: eligibility.daysRemainingInActivitySeason,
+        competitionsRemaining: eligibility.competitionsRemaining,
       };
     }
 
@@ -184,8 +181,8 @@ export const ConvictionEligibility: React.FunctionComponent = () => {
                   text="Stake your Airdrop Rewards."
                 />
                 <RequirementItem
-                  isCompleted={eligibility.hasBoostedOrCompeted}
-                  text={`Boost any agent during ${activitySeasonDisplayName.charAt(0)}${activitySeasonDisplayName.slice(1).toLowerCase()}.`}
+                  isCompleted={eligibility.competitionsRemaining === 0}
+                  text={`Participate in ${eligibility.minCompetitionsRequired}+ competitions (${eligibility.totalUniqueCompetitions}/${eligibility.minCompetitionsRequired}).`}
                 />
               </div>
             </div>
@@ -242,7 +239,9 @@ export const ConvictionEligibility: React.FunctionComponent = () => {
                   <Link href="/competitions">BOOST</Link>
                 </Button>
                 <span className="text-sm text-[#FCD569]">
-                  {actionState.days} days to Boost
+                  {actionState.competitionsRemaining} more competition
+                  {actionState.competitionsRemaining === 1 ? "" : "s"} needed •{" "}
+                  {actionState.days} days left
                 </span>
               </>
             )}

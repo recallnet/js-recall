@@ -1,5 +1,7 @@
 import { z } from "zod";
 
+import { MIN_COMPETITIONS_FOR_ELIGIBILITY } from "@recallnet/services";
+
 import { base } from "@/rpc/context/base";
 
 /**
@@ -9,7 +11,7 @@ import { base } from "@/rpc/context/base";
  * - Whether the address is eligible
  * - Active stake amount
  * - Potential reward amount
- * - Eligibility reasons (boosted agents, competed in competitions)
+ * - Eligibility reasons (boosted/competed competition IDs, total unique competitions)
  * - Pool statistics (total stakes, available rewards, forfeited amounts)
  */
 export const getNextSeasonEligibility = base
@@ -45,7 +47,17 @@ export const getNextSeasonEligibility = base
         },
         activeStake: eligibility.activeStake.toString(),
         potentialReward: eligibility.potentialReward.toString(),
-        eligibilityReasons: eligibility.eligibilityReasons,
+        eligibilityReasons: {
+          hasBoostedAgents: eligibility.eligibilityReasons.hasBoostedAgents,
+          hasCompetedInCompetitions:
+            eligibility.eligibilityReasons.hasCompetedInCompetitions,
+          boostedCompetitionIds:
+            eligibility.eligibilityReasons.boostedCompetitionIds,
+          competedCompetitionIds:
+            eligibility.eligibilityReasons.competedCompetitionIds,
+          totalUniqueCompetitions:
+            eligibility.eligibilityReasons.totalUniqueCompetitions,
+        },
         poolStats: {
           totalActiveStakes: eligibility.poolStats.totalActiveStakes.toString(),
           availableRewardsPool:
@@ -54,6 +66,7 @@ export const getNextSeasonEligibility = base
           totalAlreadyClaimed:
             eligibility.poolStats.totalAlreadyClaimed.toString(),
         },
+        minCompetitionsRequired: MIN_COMPETITIONS_FOR_ELIGIBILITY,
       };
     } catch (error) {
       context.logger.error({ error }, "Error fetching next season eligibility");

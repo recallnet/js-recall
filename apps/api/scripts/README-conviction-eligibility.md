@@ -17,9 +17,10 @@ An account is eligible if it meets **BOTH** of the following criteria:
 
 2.  **Ecosystem Participation** (during the qualifying season):
     - The qualifying season is `airdrop_number - 1`.
-    - **Agent Boosting**: The account has boosted an agent (accumulated boost > 0) during the season window.
-    - **OR**
-    - **Competition Participation**: The account owns an agent that participated in a competition (`active` status) starting within the season window.
+    - Must participate in **at least 3 distinct competitions** through either:
+      - **Agent Boosting**: The account has boosted an agent in a competition during the season window.
+      - **Competition Participation**: The account owns an agent that participated in a competition (`active` status) starting within the season window.
+    - Both boosting and competing count toward the 3 competition requirement (competitions are deduplicated).
 
 ### 2. Reward Pool Calculation
 

@@ -3340,4 +3340,53 @@ export class CompetitionRepository {
       throw error;
     }
   }
+
+  /**
+   * Get competition IDs where a wallet address owner had agents competing during a time period.
+   *
+   * @param walletAddress - The wallet address to check
+   * @param startDate - Start of the time period
+   * @param endDate - End of the time period
+   * @param tx - Optional transaction
+   * @returns Array of competition IDs where the wallet owner had competing agents
+   */
+  async getCompetitionIdsCompetedDuringSeason(
+    walletAddress: string,
+    startDate: Date,
+    endDate: Date,
+    tx?: Transaction,
+  ): Promise<string[]> {
+    const executor = tx || this.#db;
+    const normalizedAddress = walletAddress.toLowerCase();
+
+    try {
+      const results = await executor
+        .selectDistinct({
+          competitionId: competitions.id,
+        })
+        .from(users)
+        .innerJoin(agents, eq(users.id, agents.ownerId))
+        .innerJoin(competitionAgents, eq(agents.id, competitionAgents.agentId))
+        .innerJoin(
+          competitions,
+          eq(competitionAgents.competitionId, competitions.id),
+        )
+        .where(
+          and(
+            eq(users.walletAddress, normalizedAddress),
+            gte(competitions.startDate, startDate),
+            lte(competitions.startDate, endDate),
+            eq(competitionAgents.status, "active"),
+          ),
+        );
+
+      return results.map((r) => r.competitionId);
+    } catch (error) {
+      this.#logger.error(
+        { error },
+        `Error getting competition IDs for wallet ${walletAddress}`,
+      );
+      throw error;
+    }
+  }
 }
