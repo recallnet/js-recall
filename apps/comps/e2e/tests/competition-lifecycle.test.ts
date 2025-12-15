@@ -19,12 +19,10 @@ import {
   ErrorResponse,
   GetCompetitionPartnersResponse,
   StartCompetitionResponse,
-  UpcomingCompetitionsResponse,
   UpdateCompetitionResponse,
 } from "@recallnet/test-utils";
 import { getBaseUrl } from "@recallnet/test-utils";
 import {
-  createPrivyAuthenticatedClient,
   createTestClient,
   createTestCompetition,
   getAdminApiKey,
@@ -36,6 +34,8 @@ import {
 } from "@recallnet/test-utils";
 
 import { db } from "@/lib/db";
+
+import { createTestRpcClient } from "../utils/rpc-client-helpers.js";
 
 describe("Competition API", () => {
   let adminApiKey: string;
@@ -492,7 +492,7 @@ describe("Competition API", () => {
       });
 
       // Test: Direct axios call without authentication
-      const response = await axios.get(`${getBaseUrl()}/api/competitions`);
+      const response = await axios.get(`${getBaseUrl()}/competitions`);
 
       expect(response.status).toBe(200);
       expect(response.data.success).toBe(true);
@@ -511,7 +511,7 @@ describe("Competition API", () => {
 
       // Test: Direct axios call without authentication
       const response = await axios.get(
-        `${getBaseUrl()}/api/competitions/${competition.id}`,
+        `${getBaseUrl()}/competitions/${competition.id}`,
       );
 
       expect(response.status).toBe(200);
@@ -541,7 +541,7 @@ describe("Competition API", () => {
 
       // Test: Direct axios call without authentication
       const response = await axios.get(
-        `${getBaseUrl()}/api/competitions/${competition.id}/agents`,
+        `${getBaseUrl()}/competitions/${competition.id}/agents`,
       );
 
       expect(response.status).toBe(200);
@@ -575,7 +575,7 @@ describe("Competition API", () => {
 
       // Test: Direct axios call without authentication
       const response = await axios.get(
-        `${getBaseUrl()}/api/competitions/${competition.id}/rules`,
+        `${getBaseUrl()}/competitions/${competition.id}/rules`,
       );
 
       expect(response.status).toBe(200);
@@ -700,7 +700,7 @@ describe("Competition API", () => {
       await adminClient.loginAsAdmin(adminApiKey);
 
       // Create a Privy authenticated client
-      const { client: userClient } = await createPrivyAuthenticatedClient({});
+      const userClient = await createTestRpcClient();
 
       // Create a pending competition with minTradesPerDay
       const competitionName = `Listed Competition ${Date.now()}`;
@@ -719,13 +719,9 @@ describe("Competition API", () => {
       });
 
       // Get competitions list as authenticated user
-      const listResponse = await userClient.getCompetitions("pending");
-      expect(listResponse.success).toBe(true);
-      expect("competitions" in listResponse).toBe(true);
-
-      // Find our competition
-      const competitions = (listResponse as UpcomingCompetitionsResponse)
-        .competitions;
+      const { competitions } = await userClient.competitions.list({
+        status: "pending",
+      });
       const ourCompetition = competitions.find(
         (c) => c.name === competitionName,
       );
@@ -783,19 +779,19 @@ describe("Competition API", () => {
 
       // Test all four public endpoints with non-existent ID
       await expect(
-        axios.get(`${getBaseUrl()}/api/competitions/${nonExistentId}`),
+        axios.get(`${getBaseUrl()}/competitions/${nonExistentId}`),
       ).rejects.toMatchObject({
         response: { status: 404 },
       });
 
       await expect(
-        axios.get(`${getBaseUrl()}/api/competitions/${nonExistentId}/agents`),
+        axios.get(`${getBaseUrl()}/competitions/${nonExistentId}/agents`),
       ).rejects.toMatchObject({
         response: { status: 404 },
       });
 
       await expect(
-        axios.get(`${getBaseUrl()}/api/competitions/${nonExistentId}/rules`),
+        axios.get(`${getBaseUrl()}/competitions/${nonExistentId}/rules`),
       ).rejects.toMatchObject({
         response: { status: 404 },
       });
@@ -850,7 +846,7 @@ describe("Competition API", () => {
       // Test: Join endpoint without authentication
       await expect(
         axios.post(
-          `${getBaseUrl()}/api/competitions/${competition.id}/agents/${agent.id}`,
+          `${getBaseUrl()}/competitions/${competition.id}/agents/${agent.id}`,
         ),
       ).rejects.toMatchObject({
         response: { status: 401 },
@@ -859,7 +855,7 @@ describe("Competition API", () => {
       // Test: Leave endpoint without authentication
       await expect(
         axios.delete(
-          `${getBaseUrl()}/api/competitions/${competition.id}/agents/${agent.id}`,
+          `${getBaseUrl()}/competitions/${competition.id}/agents/${agent.id}`,
         ),
       ).rejects.toMatchObject({
         response: { status: 401 },
@@ -1127,7 +1123,7 @@ describe("Competition API", () => {
 
       try {
         await axios.post(
-          `${getBaseUrl()}/api/admin/competition/create`,
+          `${getBaseUrl()}/admin/competition/create`,
           {
             name: competitionName,
             arenaId: "default-paper-arena",

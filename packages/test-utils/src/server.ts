@@ -16,7 +16,7 @@ const HOST = process.env.TEST_HOST || "localhost";
  */
 function getBaseUrlInternal(): string {
   const apiPrefix = process.env.API_PREFIX;
-  return `http://${HOST}:${PORT}${apiPrefix ? `/${apiPrefix}` : ""}`;
+  return `http://${HOST}:${PORT}${apiPrefix ? `/${apiPrefix}/api` : "/api"}`;
 }
 
 /**
@@ -113,7 +113,7 @@ async function waitForServerReady(
   interval = 500,
 ): Promise<void> {
   const baseUrl = getBaseUrlInternal();
-  const healthUrl = `${baseUrl}/api/health`;
+  const healthUrl = `${baseUrl}/health`;
   console.log(`⏳ Waiting for server to be ready at ${healthUrl}...`);
 
   let retries = 0;

@@ -21,13 +21,9 @@ export const configSchema = z
         .string()
         .default("0x6A3044c1Cf077F386c9345eF84f2518A2682Dfff"),
     }),
-    boost: z.object({
-      noStakeBoostAmount: z.coerce.bigint().default(0n),
-    }),
     publicFlags: z.object({
       enableSandbox: z.coerce.boolean().default(false),
       disableLeaderboard: z.coerce.boolean().default(false),
-      tge: z.coerce.boolean().default(false),
     }),
   })
   .transform((config, ctx) => {
@@ -63,13 +59,9 @@ export const rawConfig = {
       process.env.NEXT_PUBLIC_REWARD_ALLOCATION_CONTRACT_ADDRESS,
     airdropContractAddress: process.env.NEXT_PUBLIC_AIRDROP_CONTRACT_ADDRESS,
   },
-  boost: {
-    noStakeBoostAmount: process.env.NEXT_PUBLIC_NO_STAKE_BOOST_AMOUNT,
-  },
   publicFlags: {
     enableSandbox: process.env.NEXT_PUBLIC_SANDBOX_API_URL,
     disableLeaderboard: process.env.NEXT_PUBLIC_DISABLE_LEADERBOARD_TEMP,
-    tge: process.env.NEXT_PUBLIC_TGE,
   },
 };
 

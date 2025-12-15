@@ -117,6 +117,18 @@ export interface IRpcProvider {
   getTokenDecimals(tokenAddress: string, chain: SpecificChain): Promise<number>;
 
   /**
+   * Get token symbol from on-chain contract
+   * Used as fallback when price provider returns address as symbol
+   * @param tokenAddress Token contract address
+   * @param chain Chain where token is deployed
+   * @returns Token symbol string, or null if not retrievable
+   */
+  getTokenSymbol(
+    tokenAddress: string,
+    chain: SpecificChain,
+  ): Promise<string | null>;
+
+  /**
    * Get provider name for logging and debugging
    * @returns Provider name
    */

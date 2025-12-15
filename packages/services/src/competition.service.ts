@@ -35,6 +35,7 @@ import { AgentRankService } from "./agentrank.service.js";
 import { BalanceService } from "./balance.service.js";
 import { BoostBonusService } from "./boost-bonus.service.js";
 import { CompetitionRewardService } from "./competition-reward.service.js";
+import { EigenaiService } from "./eigenai.service.js";
 import { isCompatibleType } from "./lib/arena-validation.js";
 import { getDexProtocolConfig } from "./lib/dex-protocols.js";
 import {
@@ -254,7 +255,7 @@ interface ResolvedSpotLiveConfig {
 /**
  * Represents an entry in a competition leaderboard
  */
-interface LeaderboardEntry {
+export interface LeaderboardEntry {
   agentId: string;
   value: number; // Portfolio value in USD
   pnl: number; // Profit/Loss amount (0 if not calculated)
@@ -477,6 +478,7 @@ export class CompetitionService {
   private perpsDataProcessor: PerpsDataProcessor;
   private spotDataProcessor: SpotDataProcessor;
   private boostBonusService: BoostBonusService;
+  private eigenaiService: EigenaiService;
   private agentRepo: AgentRepository;
   private agentScoreRepo: AgentScoreRepository;
   private arenaRepo: ArenaRepository;
@@ -506,6 +508,7 @@ export class CompetitionService {
     perpsDataProcessor: PerpsDataProcessor,
     spotDataProcessor: SpotDataProcessor,
     boostBonusService: BoostBonusService,
+    eigenaiService: EigenaiService,
     agentRepo: AgentRepository,
     agentScoreRepo: AgentScoreRepository,
     arenaRepo: ArenaRepository,
@@ -534,6 +537,7 @@ export class CompetitionService {
     this.perpsDataProcessor = perpsDataProcessor;
     this.spotDataProcessor = spotDataProcessor;
     this.boostBonusService = boostBonusService;
+    this.eigenaiService = eigenaiService;
     this.agentRepo = agentRepo;
     this.agentScoreRepo = agentScoreRepo;
     this.arenaRepo = arenaRepo;
@@ -1480,23 +1484,27 @@ export class CompetitionService {
     });
 
     // Resolve protocols if being updated
+    // Protocols like "aerodrome" may have multiple routers (V2 + Slipstream)
     if (spotLiveConfig.allowedProtocols !== undefined) {
       for (const p of spotLiveConfig.allowedProtocols) {
-        const config = getDexProtocolConfig(p.protocol, p.chain);
-        if (!config) {
+        const configs = getDexProtocolConfig(p.protocol, p.chain);
+        if (!configs || configs.length === 0) {
           throw new ApiError(
             400,
             `Unknown protocol '${p.protocol}' on chain '${p.chain}'. Please use a known protocol from KNOWN_DEX_PROTOCOLS.`,
           );
         }
 
-        resolvedProtocols.push({
-          protocol: p.protocol,
-          specificChain: p.chain,
-          routerAddress: config.routerAddress,
-          swapEventSignature: config.swapEventSignature,
-          factoryAddress: config.factoryAddress,
-        });
+        // Add each router config as a separate entry
+        for (const config of configs) {
+          resolvedProtocols.push({
+            protocol: p.protocol,
+            specificChain: p.chain,
+            routerAddress: config.routerAddress,
+            swapEventSignature: config.swapEventSignature,
+            factoryAddress: config.factoryAddress,
+          });
+        }
       }
     }
 
@@ -1567,24 +1575,28 @@ export class CompetitionService {
       factoryAddress: string | null;
     }> = [];
 
+    // Protocols like "aerodrome" may have multiple routers (V2 + Slipstream)
     if (spotLiveConfig.allowedProtocols) {
       for (const p of spotLiveConfig.allowedProtocols) {
-        const config = getDexProtocolConfig(p.protocol, p.chain);
+        const configs = getDexProtocolConfig(p.protocol, p.chain);
 
-        if (!config) {
+        if (!configs || configs.length === 0) {
           throw new ApiError(
             400,
             `Unknown protocol '${p.protocol}' on chain '${p.chain}'. Please use a known protocol from KNOWN_DEX_PROTOCOLS.`,
           );
         }
 
-        resolvedProtocols.push({
-          protocol: p.protocol,
-          specificChain: p.chain,
-          routerAddress: config.routerAddress,
-          swapEventSignature: config.swapEventSignature,
-          factoryAddress: config.factoryAddress,
-        });
+        // Add each router config as a separate entry
+        for (const config of configs) {
+          resolvedProtocols.push({
+            protocol: p.protocol,
+            specificChain: p.chain,
+            routerAddress: config.routerAddress,
+            swapEventSignature: config.swapEventSignature,
+            factoryAddress: config.factoryAddress,
+          });
+        }
       }
     }
 
@@ -2234,6 +2246,25 @@ export class CompetitionService {
     } else {
       this.logger.warn(
         `[CompetitionService] Unknown competition type ${competition.type} - skipping final snapshot`,
+      );
+    }
+
+    // Freeze EigenAI badge status at competition end time
+    // This creates a snapshot of badge status based on submissions up to the end date
+    const badgeReferenceDate = competition.endDate ?? new Date();
+    try {
+      const badgesRefreshed = await this.eigenaiService.refreshBadgeStatuses(
+        competitionId,
+        badgeReferenceDate,
+      );
+      this.logger.debug(
+        `[CompetitionService] Froze EigenAI badge status for ${badgesRefreshed} agents at competition end`,
+      );
+    } catch (error) {
+      // Log but don't fail competition ending if badge refresh fails
+      this.logger.warn(
+        { error },
+        `[CompetitionService] Failed to freeze EigenAI badge status for competition ${competitionId}`,
       );
     }
 

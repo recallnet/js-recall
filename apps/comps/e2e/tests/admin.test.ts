@@ -945,7 +945,7 @@ describe("Admin API", () => {
     const searchParams = new URLSearchParams();
     searchParams.set("user.walletAddress", walletAddress);
     searchParams.set("agent.name", randomAgentName);
-    const baseUrl = `${getBaseUrl()}/api/admin/search?${searchParams.toString()}`;
+    const baseUrl = `${getBaseUrl()}/admin/search?${searchParams.toString()}`;
 
     // Case 1: no `join` param => returns all users and agents w/o `join`
     let url = `${baseUrl}`;
@@ -989,7 +989,7 @@ describe("Admin API", () => {
     const headers = {
       Authorization: `Bearer ${adminApiKey}`,
     };
-    const baseUrl = `${getBaseUrl()}/api/admin/search`;
+    const baseUrl = `${getBaseUrl()}/admin/search`;
 
     // Case 1: invalid `user` filter value
     let query = "user.status=invalid_status";
@@ -1102,7 +1102,7 @@ describe("Admin API", () => {
 
     // Now update the competition
     const updateResponse = await axios.put(
-      `${getBaseUrl()}/api/admin/competition/${competitionId}`,
+      `${getBaseUrl()}/admin/competition/${competitionId}`,
       {
         name: "Updated Test Competition",
         description: "Updated description",
@@ -1150,12 +1150,9 @@ describe("Admin API", () => {
 
     // Try to update without auth - should fail
     try {
-      await axios.put(
-        `${getBaseUrl()}/api/admin/competition/${competitionId}`,
-        {
-          name: "Should not work",
-        },
-      );
+      await axios.put(`${getBaseUrl()}/admin/competition/${competitionId}`, {
+        name: "Should not work",
+      });
       expect(true).toBe(false); // Should not reach here
     } catch (error) {
       if (axios.isAxiosError(error) && error.response) {
@@ -1174,7 +1171,7 @@ describe("Admin API", () => {
 
     try {
       await axios.put(
-        `${getBaseUrl()}/api/admin/competition/${nonExistentId}`,
+        `${getBaseUrl()}/admin/competition/${nonExistentId}`,
         {
           name: "This should fail",
         },
@@ -1212,7 +1209,7 @@ describe("Admin API", () => {
     // Try to update with invalid type
     try {
       await axios.put(
-        `${getBaseUrl()}/api/admin/competition/${competitionId}`,
+        `${getBaseUrl()}/admin/competition/${competitionId}`,
         {
           type: "invalid_type",
         },
@@ -1234,7 +1231,7 @@ describe("Admin API", () => {
     // Try to update status (should be rejected as restricted field)
     try {
       await axios.put(
-        `${getBaseUrl()}/api/admin/competition/${competitionId}`,
+        `${getBaseUrl()}/admin/competition/${competitionId}`,
         {
           status: "active",
         },
@@ -1674,7 +1671,7 @@ describe("Admin API", () => {
 
     // Now update the competition with rewards
     const updateResponse = await axios.put(
-      `${getBaseUrl()}/api/admin/competition/${competitionId}`,
+      `${getBaseUrl()}/admin/competition/${competitionId}`,
       {
         name: "Updated Competition with Rewards",
         description: "Updated with rewards",
@@ -2035,7 +2032,7 @@ describe("Admin API", () => {
 
     // Add initial rewards
     await axios.put(
-      `${getBaseUrl()}/api/admin/competition/${competitionId}`,
+      `${getBaseUrl()}/admin/competition/${competitionId}`,
       {
         rewards: {
           1: 100,
@@ -2060,7 +2057,7 @@ describe("Admin API", () => {
     // Try to update with invalid rewards structure that will fail validation
     try {
       await axios.put(
-        `${getBaseUrl()}/api/admin/competition/${competitionId}`,
+        `${getBaseUrl()}/admin/competition/${competitionId}`,
         {
           name: "This Should Not Be Saved",
           description: "This update should be rolled back",
@@ -2109,7 +2106,7 @@ describe("Admin API", () => {
 
     // Update with all components atomically
     const updateResponse = await axios.put(
-      `${getBaseUrl()}/api/admin/competition/${competitionId}`,
+      `${getBaseUrl()}/admin/competition/${competitionId}`,
       {
         name: "Updated with Constraints",
         rewards: {
@@ -2173,7 +2170,7 @@ describe("Admin API", () => {
     // Try to create a competition with invalid rewards that will fail validation
     try {
       await axios.post(
-        `${getBaseUrl()}/api/admin/competition/create`,
+        `${getBaseUrl()}/admin/competition/create`,
         {
           name: "Should Not Be Created",
           description: "This competition should be rolled back",
@@ -2730,7 +2727,7 @@ describe("Admin API", () => {
     // Use raw axios to bypass ApiClient defaults
     await expect(
       axios.post(
-        `${getBaseUrl()}/api/admin/competition/create`,
+        `${getBaseUrl()}/admin/competition/create`,
         {
           name: "Competition Missing Arena",
           description: "Test competition without arenaId",
@@ -2756,7 +2753,7 @@ describe("Admin API", () => {
 
     await expect(
       axios.post(
-        `${getBaseUrl()}/api/admin/competition/start`,
+        `${getBaseUrl()}/admin/competition/start`,
         {
           name: "Competition Start Missing Arena",
           description: "Test start competition without arenaId",

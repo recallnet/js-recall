@@ -3,6 +3,7 @@ import { Hex } from "viem";
 import { ConvictionClaimsRepository } from "@recallnet/db/repositories/conviction-claims";
 import { EventsRepository } from "@recallnet/db/repositories/indexing-events";
 import {
+  AdminService,
   AgentRankService,
   AgentService,
   AirdropService,
@@ -14,8 +15,10 @@ import {
   CalmarRatioService,
   CompetitionRewardService,
   CompetitionService,
+  EigenaiService,
   EmailService,
   LeaderboardService,
+  PartnerService,
   PerpsDataProcessor,
   PortfolioSnapshotterService,
   PriceTrackerService,
@@ -46,6 +49,7 @@ import {
 
 import { config } from "@/config/private";
 import {
+  adminRepository,
   agentNonceRepository,
   agentRepository,
   agentScoreRepository,
@@ -56,9 +60,11 @@ import {
   competitionRepository,
   competitionRewardsRepository,
   convictionClaimsRepository,
+  eigenaiRepository,
   leaderboardRepository,
   paperTradingConfigRepository,
   paperTradingInitialBalancesRepository,
+  partnerRepository,
   perpsRepository,
   rewardsRepository,
   spotLiveRepository,
@@ -136,7 +142,6 @@ export const boostAwardService = new BoostAwardService(
   boostRepository,
   stakesRepository,
   userService,
-  config,
 );
 
 export const boostService = new BoostService(
@@ -145,7 +150,6 @@ export const boostService = new BoostService(
   userRepository,
   boostAwardService,
   db,
-  config,
   createLogger("BoostService"),
 );
 
@@ -224,6 +228,19 @@ export const arenaService = new ArenaService(
   createLogger("ArenaService"),
 );
 
+export const partnerService = new PartnerService(
+  partnerRepository,
+  createLogger("PartnerService"),
+);
+
+export const adminService = new AdminService(
+  adminRepository,
+  userService,
+  agentService,
+  config,
+  createLogger("AdminService"),
+);
+
 export const leaderboardService = new LeaderboardService(
   leaderboardRepository,
   arenaRepository,
@@ -260,6 +277,12 @@ export const boostBonusService = new BoostBonusService(
   createLogger("BoostBonusService"),
 );
 
+export const eigenaiService = new EigenaiService(
+  eigenaiRepository,
+  { eigenai: {} },
+  createLogger("EigenaiService"),
+);
+
 export const competitionService = new CompetitionService(
   balanceService,
   tradeSimulatorService,
@@ -273,6 +296,7 @@ export const competitionService = new CompetitionService(
   perpsDataProcessor,
   spotDataProcessor,
   boostBonusService,
+  eigenaiService,
   agentRepository,
   agentScoreRepository,
   arenaRepository,

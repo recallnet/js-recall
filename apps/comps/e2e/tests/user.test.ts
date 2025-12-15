@@ -9,13 +9,11 @@ import {
   CROSS_CHAIN_TRADING_TYPE,
   CreateCompetitionResponse,
   StartCompetitionResponse,
-  UserCompetitionsResponse,
 } from "@recallnet/test-utils";
 import {
   createTestClient,
   createTestCompetition,
   generateRandomEthAddress,
-  generateTestCompetitions,
   getAdminApiKey,
   noTradingConstraints,
   startExistingTestCompetition,
@@ -408,6 +406,113 @@ describe("User API", () => {
     expect(persistedAgent.name).toBe("Final Agent Name");
     expect(persistedAgent.description).toBe("Final agent description");
     expect(persistedAgent.imageUrl).toBe("https://example.com/final-image.jpg");
+  });
+
+  describe("Agent handles", () => {
+    test("should reject duplicate handles or invalid format", async () => {
+      // Create a Privy-authenticated client
+      const { rpcClient } = await createPrivyAuthenticatedRpcClient({
+        userName: "Handle Test User",
+        userEmail: "handle-test@example.com",
+      });
+
+      // Test 1: Custom handle
+      const { agent: agent1 } = await rpcClient.user.createAgent({
+        name: "Another Agent",
+        handle: "custom_handle",
+        description: "Test agent with custom handle",
+      });
+
+      expect(agent1.name).toBe("Another Agent");
+      expect(agent1.handle).toBe("custom_handle");
+
+      // Test 2: Duplicate handle rejection
+      await expect(
+        rpcClient.user.createAgent({
+          name: "Third Agent",
+          handle: "custom_handle", // Same as agent 1
+          description: "Should fail with duplicate handle",
+        }),
+      ).rejects.toThrow(/An agent with handle 'custom_handle' already exists/);
+
+      // Test 3: Handle with special characters
+      await expect(
+        rpcClient.user.createAgent({
+          name: "Agent@123!",
+          handle: "agent@123!",
+          description: "Test handle generation from special chars",
+        }),
+      ).rejects.toThrow(/Input validation failed/);
+
+      // Test 4: Invalid handle format (uppercase)
+      await expect(
+        rpcClient.user.createAgent({
+          name: "Test Agent",
+          handle: "UPPERCASE_HANDLE", // Should fail - must be lowercase
+          description: "Should fail with invalid handle format",
+        }),
+      ).rejects.toThrow(/Input validation failed/);
+
+      // Test 5: Invalid handle format (too long)
+      await expect(
+        rpcClient.user.createAgent({
+          name: "Test Agent",
+          handle: "a".repeat(16), // Should fail - too long
+          description: "Should fail with invalid handle format",
+        }),
+      ).rejects.toThrow(/Input validation failed/);
+
+      // Test 6: Invalid handle format (too short)
+      await expect(
+        rpcClient.user.createAgent({
+          name: "Test Agent",
+          handle: "a", // Should fail - too short
+          description: "Should fail with invalid handle format",
+        }),
+      ).rejects.toThrow(/Input validation failed/);
+    });
+
+    test("should update agent handle", async () => {
+      // Create a Privy-authenticated client
+      const { rpcClient } = await createPrivyAuthenticatedRpcClient({
+        userName: "Handle Update Test User",
+        userEmail: "handle-update@example.com",
+      });
+
+      // Create an agent
+      const { agent } = await rpcClient.user.createAgent({
+        name: "Update Test Agent",
+        handle: "original_handle",
+        description: "Test agent for handle updates",
+      });
+
+      expect(agent.id).toBeDefined();
+
+      // Update the handle
+      const { agent: updatedAgent } = await rpcClient.user.updateAgentProfile({
+        agentId: agent.id,
+        handle: "updated_handle",
+      });
+
+      expect(updatedAgent.handle).toBe("updated_handle");
+
+      // Create another agent
+      const { agent: agent2 } = await rpcClient.user.createAgent({
+        name: "Second Update Test Agent",
+        handle: "second_handle",
+        description: "Second test agent",
+      });
+
+      expect(agent2.id).toBeDefined();
+
+      // Try to update agent2's handle to agent1's handle (should fail)
+      await expect(
+        rpcClient.user.updateAgentProfile({
+          agentId: agent2.id,
+          handle: "updated_handle", // Same as agent 1
+        }),
+      ).rejects.toThrow(/An agent with handle 'updated_handle' already exists/);
+    });
   });
 
   test("user cannot update an agent they don't own", async () => {
@@ -1063,53 +1168,70 @@ describe("User API", () => {
   });
 
   test("user can get competitions for their agents", async () => {
-    const { client1, user1 } = await generateTestCompetitions(adminApiKey);
-    // Test: User can get competitions for their agents
-    const competitionsResponse =
-      (await client1.getUserCompetitions()) as UserCompetitionsResponse;
+    // Create a user and agent
+    const { rpcClient, user, agent } =
+      await registerUserAndAgentAndGetRpcClient({
+        adminApiKey,
+        userName: "User for Competitions",
+        agentName: "Agent for Competitions",
+      });
 
-    expect(competitionsResponse.success).toBe(true);
+    // Create 20 competitions and join the agent to 15 of them
+    const competitions = [];
+    for (let i = 0; i < 20; i++) {
+      const result = await createTestCompetition({
+        adminClient,
+        name: `Competition ${i} ${Date.now()}`,
+      });
+
+      competitions.push(result);
+
+      // Join agent to first 15 competitions
+      if (i < 15) {
+        await rpcClient.competitions.join({
+          competitionId: result.competition.id,
+          agentId: agent.id,
+        });
+      }
+    }
+
+    // Test: User can get competitions for their agents
+    const competitionsResponse = await rpcClient.user.getCompetitions({});
+
     expect(competitionsResponse.competitions).toBeDefined();
     expect(Array.isArray(competitionsResponse.competitions)).toBe(true);
     expect(competitionsResponse.competitions.length).toBe(10);
     expect(competitionsResponse.pagination).toBeDefined();
-    expect(
-      (competitionsResponse as UserCompetitionsResponse).pagination.limit,
-    ).toBe(10);
-    expect(
-      (competitionsResponse as UserCompetitionsResponse).pagination.offset,
-    ).toBe(0);
-    expect(
-      (competitionsResponse as UserCompetitionsResponse).pagination.total,
-    ).toBe(15);
-    expect(
-      (competitionsResponse as UserCompetitionsResponse).pagination.hasMore,
-    ).toBe(true);
+    expect(competitionsResponse.pagination.limit).toBe(10);
+    expect(competitionsResponse.pagination.offset).toBe(0);
+    expect(competitionsResponse.pagination.total).toBe(15);
+    expect(competitionsResponse.pagination.hasMore).toBe(true);
 
     for (const comp of competitionsResponse.competitions) {
       expect(comp.agents).toBeDefined();
       expect(Array.isArray(comp.agents)).toBe(true);
-      expect(comp.agents.every((agent) => agent.ownerId === user1.id)).toBe(
-        true,
-      );
       expect(
         comp.agents.every(
-          (agent) => agent.rank === undefined || agent.rank >= 1,
+          (agent: { ownerId: string }) => agent.ownerId === user.id,
+        ),
+      ).toBe(true);
+      expect(
+        comp.agents.every(
+          (agent: { rank?: number }) =>
+            agent.rank === undefined || agent.rank >= 1,
         ),
       );
     }
 
     // Test with query parameters
-    const competitionsWithParamsResponse = (await client1.getUserCompetitions({
-      limit: 5,
-      offset: 0,
-    })) as UserCompetitionsResponse;
+    const competitionsWithParamsResponse = await rpcClient.user.getCompetitions(
+      {
+        limit: 5,
+        offset: 0,
+      },
+    );
 
-    expect(competitionsWithParamsResponse.success).toBe(true);
-    expect(
-      (competitionsWithParamsResponse as UserCompetitionsResponse).pagination
-        .limit,
-    ).toBe(5);
+    expect(competitionsWithParamsResponse.pagination.limit).toBe(5);
   });
 
   test("user can get competitions for their agents with correct rank", async () => {

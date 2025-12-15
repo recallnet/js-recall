@@ -46,12 +46,6 @@ export type CompetitionBoostsResult = {
   };
 };
 
-export interface BoostServiceConfig {
-  boost: {
-    noStakeBoostAmount?: bigint;
-  };
-}
-
 /**
  * Boost Service
  * Manages boost operations including validation and business logic
@@ -64,7 +58,6 @@ export class BoostService {
   private userRepository: UserRepository;
   private boostAwardService: BoostAwardService;
   private database: Database;
-  private noStakeBoostAmount: bigint;
   private logger: Logger;
 
   constructor(
@@ -73,7 +66,6 @@ export class BoostService {
     userRepository: UserRepository,
     boostAwardService: BoostAwardService,
     database: Database,
-    config: BoostServiceConfig,
     logger: Logger,
   ) {
     this.boostRepository = boostRepository;
@@ -81,31 +73,7 @@ export class BoostService {
     this.userRepository = userRepository;
     this.boostAwardService = boostAwardService;
     this.database = database;
-    this.noStakeBoostAmount =
-      config.boost.noStakeBoostAmount ?? 1000000000000000000000n;
     this.logger = logger;
-  }
-
-  claimBoost(userId: string, competitionId: string) {
-    return ResultAsync.fromPromise(
-      this.boostRepository.increase({
-        userId,
-        competitionId,
-        amount: this.noStakeBoostAmount,
-        idemKey: Buffer.from(`claim-${userId}-${competitionId}`),
-        meta: { description: "Claim non-stake boost" },
-      }),
-      (err) =>
-        ({
-          type: "RepositoryError",
-          message: errorToMessage(err),
-        }) as const,
-    ).andThen((result) => {
-      if (result.type === "noop") {
-        return errAsync({ type: "AlreadyClaimedBoost" } as const);
-      }
-      return ok(result);
-    });
   }
 
   claimStakedBoost(userId: string, wallet: string, competitionId: string) {

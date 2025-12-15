@@ -6,8 +6,11 @@ const pinoOptions = {
   serializers: { error: stdSerializers.err },
 };
 const logger =
-  process.env.NODE_ENV === "development"
-    ? pino(pinoOptions, pretty({ colorize: true, ignore: "pid,hostname" }))
+  process.env.NODE_ENV === "development" || process.env.NODE_ENV === "test"
+    ? pino(
+        pinoOptions,
+        pretty({ colorize: true, ignore: "pid,hostname", singleLine: true }),
+      )
     : pino(pinoOptions);
 
 // Create context-specific loggers for different parts of the application

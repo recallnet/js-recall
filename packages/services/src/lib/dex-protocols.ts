@@ -10,13 +10,16 @@ export interface DexProtocolConfig {
   swapEventSignature: string;
   /** Factory contract address (lowercase, optional) */
   factoryAddress: string | null;
+  /** Router type identifier (e.g., "v2", "slipstream") for disambiguation */
+  routerType?: string;
 }
 
 /**
  * Known DEX protocol configurations by protocol name and chain
  * Used for admin competition creation and protocol filtering
  *
- * Structure: { protocolName: { chain: config } }
+ * Structure: { protocolName: { chain: config | config[] } }
+ * When a protocol has multiple routers (e.g., V2 + Slipstream), an array is used.
  *
  * Sources verified via:
  * - BaseScan (https://basescan.org)
@@ -25,39 +28,56 @@ export interface DexProtocolConfig {
  */
 export const KNOWN_DEX_PROTOCOLS: Record<
   string,
-  Partial<Record<SpecificChain, DexProtocolConfig>>
+  Partial<Record<SpecificChain, DexProtocolConfig | DexProtocolConfig[]>>
 > = {
   /**
    * Aerodrome Finance - Base mainnet
-   * Velodrome V2 fork optimized for Base (Uniswap V2 architecture)
+   * Supports both V2 (classic AMM) and Slipstream (concentrated liquidity) routers
    *
-   * Verified addresses:
+   * V2 Router (Velodrome V2 fork, Uniswap V2 architecture):
    * - Router: https://basescan.org/address/0xcf77a3ba9a5ca399b7c97c74d54e5b1beb874e43
    * - Factory: https://basescan.org/address/0x420dd381b31aef6683db6b902084cb0ffece40da
    * - Event: Swap(address indexed sender, address indexed to, uint256 amount0In, uint256 amount1In, uint256 amount0Out, uint256 amount1Out)
-   * - Event emitted by: Pool contracts (not router)
-   * - Signature source: BaseScan log #768 from tx 0x978ca4290edb4c19ed880d2d0921561ecbbf39663e6293cf7b2f411a0d30a9e2
+   *
+   * Slipstream Router (concentrated liquidity, Uniswap V3 architecture):
+   * - Router: https://basescan.org/address/0xbe6d8f0d05cc4be24d5167a3ef062215be6d18a5
+   * - Factory: https://basescan.org/address/0x827922686190790b37229fd06084350e74485b72
+   * - Event: Swap(address indexed sender, address indexed recipient, int256 amount0, int256 amount1, uint160 sqrtPriceX96, uint128 liquidity, int24 tick)
    */
   aerodrome: {
-    base: {
-      routerAddress: "0xcf77a3ba9a5ca399b7c97c74d54e5b1beb874e43",
-      swapEventSignature:
-        "0xb3e2773606abfd36b5bd91394b3a54d1398336c65005baf7bf7a05efeffaf75b",
-      factoryAddress: "0x420dd381b31aef6683db6b902084cb0ffece40da",
-    },
+    base: [
+      // V2 Router - Classic AMM pools (e.g., AERO/USDC volatile/stable pairs)
+      {
+        routerAddress: "0xcf77a3ba9a5ca399b7c97c74d54e5b1beb874e43",
+        swapEventSignature:
+          "0xb3e2773606abfd36b5bd91394b3a54d1398336c65005baf7bf7a05efeffaf75b",
+        factoryAddress: "0x420dd381b31aef6683db6b902084cb0ffece40da",
+        routerType: "v2",
+      },
+      // Slipstream Router - Concentrated Liquidity pools (e.g., ETH/USDC, BTC/USDC)
+      {
+        routerAddress: "0xbe6d8f0d05cc4be24d5167a3ef062215be6d18a5",
+        swapEventSignature:
+          "0xc42079f94a6350d7e6235f29174924f928cc2ac818eb64fed8004e115fbcca67",
+        factoryAddress: "0x827922686190790b37229fd06084350e74485b72",
+        routerType: "slipstream",
+      },
+    ],
   },
 } as const;
 
 /**
- * Get protocol configuration for a specific protocol and chain
+ * Get protocol configurations for a specific protocol and chain
+ * Returns an array to support protocols with multiple routers (e.g., V2 + Slipstream)
+ *
  * @param protocol Protocol name (e.g., "aerodrome")
  * @param chain Specific chain (e.g., "base")
- * @returns Protocol configuration or null if not found
+ * @returns Array of protocol configurations, or null if protocol/chain not found
  */
 export function getDexProtocolConfig(
   protocol: string,
   chain: SpecificChain,
-): DexProtocolConfig | null {
+): DexProtocolConfig[] | null {
   const protocolConfigs = KNOWN_DEX_PROTOCOLS[protocol.toLowerCase()];
   if (!protocolConfigs) {
     return null;
@@ -68,7 +88,8 @@ export function getDexProtocolConfig(
     return null;
   }
 
-  return chainConfig;
+  // Normalize to array (supports both single config and array of configs)
+  return Array.isArray(chainConfig) ? chainConfig : [chainConfig];
 }
 
 /**

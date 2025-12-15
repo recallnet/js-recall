@@ -32,7 +32,7 @@ async function setupAdminAccount() {
     const baseUrl = getBaseUrl();
     console.log(`Using API at ${baseUrl} to create admin account...`);
 
-    const response = await axios.post(`${baseUrl}/api/admin/setup`, {
+    const response = await axios.post(`${baseUrl}/admin/setup`, {
       username: ADMIN_USERNAME,
       password: ADMIN_PASSWORD,
       email: ADMIN_EMAIL,

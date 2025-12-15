@@ -1,3 +1,4 @@
+import { AdminRepository } from "@recallnet/db/repositories/admin";
 import { AgentRepository } from "@recallnet/db/repositories/agent";
 import { AgentNonceRepository } from "@recallnet/db/repositories/agent-nonce";
 import { AgentScoreRepository } from "@recallnet/db/repositories/agent-score";
@@ -9,10 +10,12 @@ import { CompetitionRepository } from "@recallnet/db/repositories/competition";
 import { CompetitionGamesRepository } from "@recallnet/db/repositories/competition-games";
 import { CompetitionRewardsRepository } from "@recallnet/db/repositories/competition-rewards";
 import { ConvictionClaimsRepository } from "@recallnet/db/repositories/conviction-claims";
+import { EigenaiRepository } from "@recallnet/db/repositories/eigenai";
 import { GamesRepository } from "@recallnet/db/repositories/games";
 import { LeaderboardRepository } from "@recallnet/db/repositories/leaderboard";
 import { PaperTradingConfigRepository } from "@recallnet/db/repositories/paper-trading-config";
 import { PaperTradingInitialBalancesRepository } from "@recallnet/db/repositories/paper-trading-initial-balances";
+import { PartnerRepository } from "@recallnet/db/repositories/partner";
 import { PerpsRepository } from "@recallnet/db/repositories/perps";
 import { RewardsRepository } from "@recallnet/db/repositories/rewards";
 import { SpotLiveRepository } from "@recallnet/db/repositories/spot-live";
@@ -23,7 +26,7 @@ import { UserRepository } from "@recallnet/db/repositories/user";
 
 import { config } from "@/config/private";
 
-import { db } from "./db";
+import { db, dbReadReplica } from "./db";
 import { createLogger } from "./logger";
 
 export const competitionRewardsRepository = new CompetitionRewardsRepository(
@@ -113,6 +116,17 @@ export const rewardsRepository = new RewardsRepository(
   createLogger("RewardsRepository"),
 );
 
+export const adminRepository = new AdminRepository(
+  db,
+  createLogger("AdminRepository"),
+);
+
+export const partnerRepository = new PartnerRepository(
+  db,
+  dbReadReplica,
+  createLogger("PartnerRepository"),
+);
+
 export const gamesRepository = new GamesRepository(
   db,
   createLogger("GamesRepository"),
@@ -129,3 +143,9 @@ export const paperTradingConfigRepository = new PaperTradingConfigRepository(
 
 export const paperTradingInitialBalancesRepository =
   new PaperTradingInitialBalancesRepository(db);
+
+export const eigenaiRepository = new EigenaiRepository(
+  db,
+  db,
+  createLogger("EigenaiRepository"),
+);

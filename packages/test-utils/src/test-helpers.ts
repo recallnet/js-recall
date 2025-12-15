@@ -30,31 +30,6 @@ export const TEST_TOKEN_ADDRESS =
   "4k3Dyjzvzp8eMZWUXbBCjEvwSkkk59S5iCNLY3QrkX6R";
 
 /**
- * Create a test agent with automatic unique handle generation
- * This wrapper ensures all test agents have unique handles
- */
-export async function createTestAgent(
-  client: ApiClient,
-  name: string,
-  description?: string,
-  imageUrl?: string,
-  metadata?: Record<string, unknown>,
-  handle?: string,
-) {
-  // Generate a unique handle if not provided
-  const agentHandle =
-    handle ||
-    generateTestHandle(
-      name
-        .toLowerCase()
-        .replace(/[^a-z0-9]/g, "")
-        .slice(0, 8),
-    );
-
-  return client.createAgent(name, agentHandle, description, imageUrl, metadata);
-}
-
-/**
  * Generate a unique handle for testing
  * Ensures uniqueness by using timestamp and random suffix
  */
@@ -477,95 +452,6 @@ export function generateRandomEthAddress(): string {
 }
 
 /**
- * Create a Privy-authenticated client for testing user routes
- * This generates a unique test user and returns a client with an active Privy session
- */
-export async function createPrivyAuthenticatedClient({
-  userName,
-  userEmail,
-  walletAddress,
-  embeddedWalletAddress,
-  privyId,
-}: {
-  userName?: string;
-  userEmail?: string;
-  walletAddress?: string;
-  embeddedWalletAddress?: string;
-  privyId?: string;
-}) {
-  // Generate a unique wallet for this test
-  const testEmbeddedWallet =
-    embeddedWalletAddress || generateRandomEthAddress();
-
-  // Use unique names/emails for this test
-  const timestamp = Date.now();
-  const uniqueUserEmail = userEmail || `privy-user-${timestamp}@test.com`;
-
-  // Generate a unique privyId for the user
-  const uniquePrivyId = privyId || generateRandomPrivyId();
-
-  // Create a session client (without API key)
-  const privyUser = createTestPrivyUser({
-    privyId: uniquePrivyId, // Use the actual privyId from the registered user
-    name: userName ?? undefined,
-    email: uniqueUserEmail,
-    walletAddress: walletAddress || testEmbeddedWallet,
-    provider: "email",
-  });
-  const privyToken = await createMockPrivyToken(privyUser);
-  const sessionClient = new ApiClient(undefined, getBaseUrl());
-  sessionClient.setJwtToken(privyToken);
-
-  // Login will create (or backfill/update) a user with Privy-related information
-  const loginResponse = await sessionClient.login();
-  if (!loginResponse.success || !loginResponse.userId) {
-    throw new Error(
-      `Failed to login with Privy: ${(loginResponse as ErrorResponse).error}`,
-    );
-  }
-  const userResponse = await sessionClient.getUserProfile();
-  if (!userResponse.success) {
-    throw new Error(
-      `Failed to get user profile: ${(userResponse as ErrorResponse).error}`,
-    );
-  }
-  let { user } = userResponse;
-  // For convenience, we auto-update the user name. A "first time" login is
-  // unaware of the user's name and infers it based on Google, email, etc.,
-  // but we simulate a manual update to help with testing
-  if (userName) {
-    ({ user } = (await sessionClient.updateUserProfile({
-      name: userName,
-    })) as UserProfileResponse);
-  }
-
-  // Add a small delay to ensure session is properly saved
-  await new Promise((resolve) => setTimeout(resolve, 100));
-
-  return {
-    client: sessionClient,
-    user: {
-      id: user.id,
-      walletAddress: user.walletAddress || testEmbeddedWallet,
-      embeddedWalletAddress: user.embeddedWalletAddress || testEmbeddedWallet,
-      walletLastVerifiedAt: user.walletLastVerifiedAt || null,
-      privyId: user.privyId,
-      name: user.name || userName,
-      email: user.email || uniqueUserEmail,
-      imageUrl: user.imageUrl || null,
-      status: user.status || "active",
-      metadata: user.metadata || null,
-      createdAt: user.createdAt || new Date().toISOString(),
-      updatedAt: user.updatedAt || new Date().toISOString(),
-      lastLoginAt: user.lastLoginAt || new Date().toISOString(),
-    },
-    // Include wallet info for potential future use
-    wallet: user.walletAddress || testEmbeddedWallet,
-    loginData: loginResponse,
-  };
-}
-
-/**
  * Create verification message and signature for testing agent wallet verification
  * @param privateKey The private key to sign with
  * @param nonce The nonce for verification (required)
@@ -595,77 +481,6 @@ Nonce: ${nonce}`;
   return { message, signature };
 }
 
-/**
- * Create 3 users and agents, and 20 competitions
- * @param adminApiKey an admin api key to generate users, agents, and competitions
- * @returns Object with created users, agents, and competitions
- */
-export async function generateTestCompetitions(adminApiKey: string) {
-  const adminClient = createTestClient();
-  const loginSuccess = await adminClient.loginAsAdmin(adminApiKey);
-  if (!loginSuccess) {
-    throw new Error("Failed to login as admin");
-  }
-
-  // Create an agent and user
-  const {
-    user: user1,
-    agent: agent1,
-    client: client1,
-  } = await registerUserAndAgentAndGetClient({ adminApiKey });
-
-  // Create a second and third user and agent so we can test that
-  //  responses only include the correct agents
-  const {
-    user: user2,
-    agent: agent2,
-    client: client2,
-  } = await registerUserAndAgentAndGetClient({ adminApiKey });
-
-  const {
-    user: user3,
-    agent: agent3,
-    client: client3,
-  } = await registerUserAndAgentAndGetClient({ adminApiKey });
-
-  const comps = [];
-  for (let i = 0; i < 20; i++) {
-    const result = await createTestCompetition({
-      adminClient,
-      name: `Competition ${i} ${Date.now()}`,
-    });
-
-    comps.push(result);
-
-    // ensure there is a mix of agents and competitions to test against
-    if (i < 15) {
-      await client1.joinCompetition(result.competition.id, agent1.id);
-      if (i % 2) {
-        await client2.joinCompetition(result.competition.id, agent2.id);
-      }
-      if (!(i % 3)) {
-        await client3.joinCompetition(result.competition.id, agent3.id);
-      }
-    } else {
-      await client2.joinCompetition(result.competition.id, agent2.id);
-      await client3.joinCompetition(result.competition.id, agent3.id);
-    }
-  }
-
-  return {
-    competitions: comps,
-    agent1,
-    agent2,
-    agent3,
-    client1,
-    client2,
-    client3,
-    user1,
-    user2,
-    user3,
-  };
-}
-
 export async function getStartingValue(agentId: string, competitionId: string) {
   // Direct database lookup for oldest portfolio snapshot
   const oldestSnapshot = await db
@@ -693,7 +508,7 @@ export async function getAdminApiKey() {
   await ensureDefaultArenas();
 
   // Create admin account
-  const response = await axios.post(`${getBaseUrl()}/api/admin/setup`, {
+  const response = await axios.post(`${getBaseUrl()}/admin/setup`, {
     username: ADMIN_USERNAME,
     password: ADMIN_PASSWORD,
     email: ADMIN_EMAIL,

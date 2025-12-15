@@ -18,7 +18,6 @@ import { cn } from "@recallnet/ui2/lib/utils";
 
 import { ConnectWallet } from "@/components/connect-wallet";
 import { PrivyAuthButton } from "@/components/privy-auth-button";
-import { config } from "@/config/public";
 import { useSession } from "@/hooks";
 
 import { BonusBoosts } from "./BonusBoosts";
@@ -116,16 +115,14 @@ export const Navbar: React.FunctionComponent = () => {
           {isAuthenticated && isWalletConnected && (
             <div className="hidden h-full items-center gap-4 sm:flex">
               <div className="flex h-full items-center gap-3">
-                {config.publicFlags.tge && (
-                  <div
-                    className={cn(
-                      "flex h-full items-center",
-                      pathname === "/stake" ? "shadow-[0_2px_0_0_#eab308]" : "",
-                    )}
-                  >
-                    <RecallToken />
-                  </div>
-                )}
+                <div
+                  className={cn(
+                    "flex h-full items-center",
+                    pathname === "/stake" ? "shadow-[0_2px_0_0_#eab308]" : "",
+                  )}
+                >
+                  <RecallToken />
+                </div>
                 <BonusBoosts />
               </div>
             </div>

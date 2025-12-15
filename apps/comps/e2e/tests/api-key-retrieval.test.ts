@@ -19,7 +19,7 @@ describe("API Key Retrieval", () => {
   beforeEach(async () => {
     // Note: This test needs adminId which is not returned by getAdminApiKey helper
     // So we still need to make the direct call to get the admin ID
-    const response = await axios.post(`${getBaseUrl()}/api/admin/setup`, {
+    const response = await axios.post(`${getBaseUrl()}/admin/setup`, {
       username: ADMIN_USERNAME,
       password: ADMIN_PASSWORD,
       email: ADMIN_EMAIL,

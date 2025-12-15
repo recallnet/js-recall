@@ -11,6 +11,7 @@ import { BoostRepository } from "@recallnet/db/repositories/boost";
 import { CompetitionRepository } from "@recallnet/db/repositories/competition";
 import { CompetitionRewardsRepository } from "@recallnet/db/repositories/competition-rewards";
 import { ConvictionClaimsRepository } from "@recallnet/db/repositories/conviction-claims";
+import { EigenaiRepository } from "@recallnet/db/repositories/eigenai";
 import { EventsRepository } from "@recallnet/db/repositories/indexing-events";
 import { LeaderboardRepository } from "@recallnet/db/repositories/leaderboard";
 import { PaperTradingConfigRepository } from "@recallnet/db/repositories/paper-trading-config";
@@ -35,6 +36,7 @@ import {
   CalmarRatioService,
   CompetitionRewardService,
   CompetitionService,
+  EigenaiService,
   EmailService,
   LeaderboardService,
   PartnerService,
@@ -132,6 +134,8 @@ class ServiceRegistry {
   private readonly _rewardsAllocator: RewardsAllocator;
   private readonly _sportsService: SportsService;
   private readonly _sportsIngesterService: SportsIngesterService;
+  private readonly _eigenaiService: EigenaiService;
+  private readonly _eigenaiRepository: EigenaiRepository;
   private _eventIndexingService?: IndexingService;
   private _transactionIndexingService?: IndexingService;
   private _eventProcessor?: EventProcessor;
@@ -217,6 +221,18 @@ class ServiceRegistry {
       this._sportsService,
       serviceLogger,
       config,
+    );
+
+    // Initialize EigenAI Service (uses hardcoded defaults in service)
+    this._eigenaiRepository = new EigenaiRepository(
+      db,
+      dbRead,
+      repositoryLogger,
+    );
+    this._eigenaiService = new EigenaiService(
+      this._eigenaiRepository,
+      { eigenai: {} },
+      serviceLogger,
     );
 
     const walletWatchlist = new WalletWatchlist(config, serviceLogger);
@@ -373,7 +389,6 @@ class ServiceRegistry {
       this._boostRepository,
       this._stakesRepository,
       this._userService,
-      config,
     );
 
     // Initialize BoostService with its dependencies
@@ -384,7 +399,6 @@ class ServiceRegistry {
       this._userRepository,
       this._boostAwardService,
       db,
-      config,
       serviceLogger,
     );
 
@@ -421,6 +435,7 @@ class ServiceRegistry {
       this._perpsDataProcessor,
       this._spotDataProcessor,
       this._boostBonusService,
+      this._eigenaiService,
       this._agentRepository,
       agentScoreRepository,
       this._arenaRepository,
@@ -650,6 +665,14 @@ class ServiceRegistry {
     return this._sportsIngesterService;
   }
 
+  get eigenaiService(): EigenaiService {
+    return this._eigenaiService;
+  }
+
+  get eigenaiRepository(): EigenaiRepository {
+    return this._eigenaiRepository;
+  }
+
   get paperTradingConfigRepository(): PaperTradingConfigRepository {
     return this._paperTradingConfigRepository;
   }
@@ -716,6 +739,7 @@ export {
   BalanceService,
   CompetitionService,
   CompetitionRewardService,
+  EigenaiService,
   EmailService,
   LeaderboardService,
   PerpsDataProcessor,

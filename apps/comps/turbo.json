@@ -20,7 +20,8 @@
         "SENTRY_ORG",
         "SENTRY_PROJECT",
         "NEXT_RUNTIME",
-        "POSTGRES_URL",
+        "DATABASE_URL",
+        "DATABASE_READ_REPLICA_URL",
         "DATABASE_CA_CERT",
         "PRIVY_APP_SECRET",
         "PRIVY_APP_ID",
@@ -62,11 +63,12 @@
         "COINGECKO_API_KEY",
         "COINGECKO_MODE",
         "TEST_MODE",
+        "TEST_HOST",
+        "TEST_PORT",
         "METRICS_PORT",
         "CI",
         "CRON_SECRET",
         "VERCEL_GIT_COMMIT_SHA",
-
         "INDEXING_ENABLED",
         "INDEXING_CONVICTION_CLAIMS_CONTRACT",
         "INDEXING_DELAY",
@@ -76,9 +78,9 @@
         "INDEXING_REWARDS_CONTRACT",
         "INDEXING_STAKING_CONTRACT",
         "INDEXING_TRANSACTIONS_START_BLOCK",
-
         "SPORTSDATAIO_API_KEY",
         "SPORTSDATAIO_BASE_URL",
+        "USE_EXTERNAL_SERVER",
         "DISABLE_RATE_LIMITER"
       ]
     }

@@ -12,7 +12,6 @@ import { InactiveStakes } from "@/components/staking/InactiveStakes";
 import { Rewards } from "@/components/staking/Rewards";
 import { StakeSummary } from "@/components/staking/StakeSummary";
 import { StakeSkeleton } from "@/components/staking/stake-skeleton";
-import { config } from "@/config/public";
 import { useUserStakes } from "@/hooks/staking";
 import { useRecall } from "@/hooks/useRecall";
 import { useSession } from "@/hooks/useSession";
@@ -46,14 +45,9 @@ export default function Stakes() {
     isUpdateBackendUserPending ||
     isLinkWalletToBackendPending;
 
-  if (!config.publicFlags.tge) {
-    return null;
-  } else if (pending) {
+  if (pending) {
     return (
-      <StakeSkeleton
-        showConviction={isConvictionEligible}
-        showStakeToBoostCallout={hasBalanceNoStakes}
-      />
+      <StakeSkeleton showConviction={true} showStakeToBoostCallout={true} />
     );
   } else if (!isWalletConnected) {
     return <Landing />;
