@@ -2,6 +2,8 @@ import { and, eq } from "drizzle-orm";
 import { beforeEach, describe, expect, test } from "vitest";
 
 import { portfolioSnapshots } from "@recallnet/db/schema/trading/defs";
+import { SpotDataProcessor } from "@recallnet/services";
+import { MockAlchemyRpcProvider } from "@recallnet/services/lib";
 import {
   type AdminCompetitionTransferViolationsResponse,
   type AgentCompetitionsResponse,
@@ -25,15 +27,48 @@ import {
 } from "@recallnet/test-utils";
 import type { AdminAgentResponse } from "@recallnet/test-utils";
 
-import { db } from "@/database/db.js";
-import { ServiceRegistry } from "@/services/index.js";
+import { db } from "@/lib/db";
+import { createLogger } from "@/lib/logger";
+import {
+  agentRepository,
+  balanceRepository,
+  competitionRepository,
+  spotLiveRepository,
+  tradeRepository,
+} from "@/lib/repositories";
+import {
+  portfolioSnapshotterService,
+  priceTrackerService,
+} from "@/lib/services";
 
 describe("Spot Live Competition", () => {
   let adminApiKey: string;
 
+  // Create test-specific mock RPC provider for spot live tests
+  const mockRpcProvider = new MockAlchemyRpcProvider(
+    createLogger("MockAlchemyRpcProvider"),
+  );
+
+  // Create test-specific spotDataProcessor with controllable mock provider
+  const spotDataProcessor = new SpotDataProcessor(
+    agentRepository,
+    competitionRepository,
+    spotLiveRepository,
+    tradeRepository,
+    balanceRepository,
+    portfolioSnapshotterService,
+    priceTrackerService,
+    createLogger("SpotDataProcessor"),
+    mockRpcProvider,
+  );
+
   beforeEach(async () => {
     // Get admin API key for each test
     adminApiKey = await getAdminApiKey();
+
+    // Reset mock RPC provider state between tests
+    // This ensures tests get consistent mock data
+    mockRpcProvider.reset();
   });
 
   test("should initialize agent portfolio balances from blockchain on competition start", async () => {
@@ -113,8 +148,7 @@ describe("Spot Live Competition", () => {
     expect(agent2Entry?.portfolioValue).toBeCloseTo(3000, 0); // ~$3000 (USDC at $1, 0 decimals = ±1)
 
     // Now force a sync to process swaps that happened since competition start
-    const services = new ServiceRegistry();
-    await services.spotDataProcessor.processSpotLiveCompetition(competition.id);
+    await spotDataProcessor.processSpotLiveCompetition(competition.id);
     await wait(500);
 
     // Agent 1 checks updated balances after swap (100 USDC → 50 AERO)
@@ -285,10 +319,8 @@ describe("Spot Live Competition", () => {
     // Wait for competition to fully start
     await wait(1000);
 
-    const services = new ServiceRegistry();
-
     // First manual sync (simulates first cron job) - processes swap 1
-    await services.spotDataProcessor.processSpotLiveCompetition(competition.id);
+    await spotDataProcessor.processSpotLiveCompetition(competition.id);
     await wait(500);
 
     // Agent checks THEIR trade history after first sync
@@ -355,10 +387,8 @@ describe("Spot Live Competition", () => {
 
     await wait(1000);
 
-    const services = new ServiceRegistry();
-
     // First sync - processes block 2000000 (swap 1)
-    await services.spotDataProcessor.processSpotLiveCompetition(competition.id);
+    await spotDataProcessor.processSpotLiveCompetition(competition.id);
     await wait(500);
 
     // Agent checks trades after first sync
@@ -369,7 +399,7 @@ describe("Spot Live Competition", () => {
     expect(trades1[0]?.txHash).toBe("0xmock_swap_1");
 
     // Second sync - processes block 2000010 (swap 2)
-    await services.spotDataProcessor.processSpotLiveCompetition(competition.id);
+    await spotDataProcessor.processSpotLiveCompetition(competition.id);
     await wait(500);
 
     // Agent checks trades after second sync
@@ -384,7 +414,7 @@ describe("Spot Live Competition", () => {
     expect(secondSwap).toBeDefined();
 
     // Third sync - processes block 2000020 (swap 3)
-    await services.spotDataProcessor.processSpotLiveCompetition(competition.id);
+    await spotDataProcessor.processSpotLiveCompetition(competition.id);
     await wait(500);
 
     // Agent checks trades after third sync
@@ -439,8 +469,7 @@ describe("Spot Live Competition", () => {
     await wait(1000);
 
     // Trigger sync
-    const services = new ServiceRegistry();
-    await services.spotDataProcessor.processSpotLiveCompetition(competition.id);
+    await spotDataProcessor.processSpotLiveCompetition(competition.id);
     await wait(500);
 
     // Agent checks THEIR trades
@@ -546,8 +575,7 @@ describe("Spot Live Competition", () => {
     await wait(1000);
 
     // Trigger sync with monitoring enabled
-    const services = new ServiceRegistry();
-    await services.spotDataProcessor.processSpotLiveCompetition(competition.id);
+    await spotDataProcessor.processSpotLiveCompetition(competition.id);
     await wait(500);
 
     // Admin checks for self-funding alerts
@@ -605,8 +633,7 @@ describe("Spot Live Competition", () => {
     await wait(1000);
 
     // Trigger sync with monitoring
-    const services = new ServiceRegistry();
-    await services.spotDataProcessor.processSpotLiveCompetition(competition.id);
+    await spotDataProcessor.processSpotLiveCompetition(competition.id);
     await wait(500);
 
     // Admin checks for alerts
@@ -664,8 +691,7 @@ describe("Spot Live Competition", () => {
     await wait(1000);
 
     // Trigger sync to create alerts
-    const services = new ServiceRegistry();
-    await services.spotDataProcessor.processSpotLiveCompetition(competition.id);
+    await spotDataProcessor.processSpotLiveCompetition(competition.id);
     await wait(500);
 
     // Admin gets unreviewed alerts
@@ -752,8 +778,7 @@ describe("Spot Live Competition", () => {
     await wait(1000);
 
     // Trigger sync
-    const services = new ServiceRegistry();
-    await services.spotDataProcessor.processSpotLiveCompetition(competition.id);
+    await spotDataProcessor.processSpotLiveCompetition(competition.id);
     await wait(500);
 
     // Admin filters by deposit violations only
@@ -816,8 +841,7 @@ describe("Spot Live Competition", () => {
     await wait(1000);
 
     // Trigger sync
-    const services = new ServiceRegistry();
-    await services.spotDataProcessor.processSpotLiveCompetition(competition.id);
+    await spotDataProcessor.processSpotLiveCompetition(competition.id);
     await wait(500);
 
     // Admin checks leaderboard
@@ -872,8 +896,7 @@ describe("Spot Live Competition", () => {
     await wait(1000);
 
     // Trigger sync - should not error
-    const services = new ServiceRegistry();
-    await services.spotDataProcessor.processSpotLiveCompetition(competition.id);
+    await spotDataProcessor.processSpotLiveCompetition(competition.id);
     await wait(500);
 
     // Agent checks THEIR trades
@@ -1137,8 +1160,7 @@ describe("Spot Live Competition", () => {
     await wait(1000);
 
     // Trigger sync
-    const services = new ServiceRegistry();
-    await services.spotDataProcessor.processSpotLiveCompetition(competition.id);
+    await spotDataProcessor.processSpotLiveCompetition(competition.id);
     await wait(500);
 
     // Admin gets transfer violations
@@ -1257,8 +1279,7 @@ describe("Spot Live Competition", () => {
     await wait(1000);
 
     // Trigger sync
-    const services = new ServiceRegistry();
-    await services.spotDataProcessor.processSpotLiveCompetition(competition.id);
+    await spotDataProcessor.processSpotLiveCompetition(competition.id);
     await wait(500);
 
     // Get active leaderboard
@@ -1334,8 +1355,7 @@ describe("Spot Live Competition", () => {
     await wait(1000);
 
     // Trigger sync
-    const services = new ServiceRegistry();
-    await services.spotDataProcessor.processSpotLiveCompetition(competition.id);
+    await spotDataProcessor.processSpotLiveCompetition(competition.id);
     await wait(500);
 
     // Agent queries THEIR trades
@@ -1396,8 +1416,7 @@ describe("Spot Live Competition", () => {
     await wait(1000);
 
     // Trigger sync during competition
-    const services = new ServiceRegistry();
-    await services.spotDataProcessor.processSpotLiveCompetition(competition.id);
+    await spotDataProcessor.processSpotLiveCompetition(competition.id);
     await wait(500);
 
     // Get competition details before ending
@@ -1474,8 +1493,7 @@ describe("Spot Live Competition", () => {
     await wait(1000);
 
     // Trigger sync
-    const services = new ServiceRegistry();
-    await services.spotDataProcessor.processSpotLiveCompetition(competition.id);
+    await spotDataProcessor.processSpotLiveCompetition(competition.id);
     await wait(500);
 
     // Admin verifies leaderboard includes all agents
@@ -1551,8 +1569,7 @@ describe("Spot Live Competition", () => {
     await wait(1000);
 
     // Trigger sync - will process swap USDC → AERO
-    const services = new ServiceRegistry();
-    await services.spotDataProcessor.processSpotLiveCompetition(competition.id);
+    await spotDataProcessor.processSpotLiveCompetition(competition.id);
     await wait(500);
 
     // Agent checks trades - AERO swap should be rejected
@@ -1728,8 +1745,7 @@ describe("Spot Live Competition", () => {
     expect(snapshotsBefore.length).toBe(0);
 
     // Trigger sync - late enforcement runs for agent without prior snapshot
-    const services = new ServiceRegistry();
-    await services.spotDataProcessor.processSpotLiveCompetition(competition.id);
+    await spotDataProcessor.processSpotLiveCompetition(competition.id);
 
     await wait(2000);
 
@@ -1820,8 +1836,7 @@ describe("Spot Live Competition", () => {
       );
 
     // Trigger sync - late enforcement creates snapshot and checks threshold
-    const services = new ServiceRegistry();
-    await services.spotDataProcessor.processSpotLiveCompetition(competition.id);
+    await spotDataProcessor.processSpotLiveCompetition(competition.id);
 
     await wait(2000);
 
@@ -1988,8 +2003,7 @@ describe("Spot Live Competition", () => {
     await wait(2000);
 
     // Trigger sync to process trades and update portfolio snapshots
-    const services = new ServiceRegistry();
-    await services.spotDataProcessor.processSpotLiveCompetition(competition.id);
+    await spotDataProcessor.processSpotLiveCompetition(competition.id);
     await wait(500);
 
     // =====================================================================
@@ -2120,8 +2134,7 @@ describe("Spot Live Competition", () => {
     await wait(1000);
 
     // Trigger sync to process trades
-    const services = new ServiceRegistry();
-    await services.spotDataProcessor.processSpotLiveCompetition(competition.id);
+    await spotDataProcessor.processSpotLiveCompetition(competition.id);
     await wait(500);
 
     // Call getAgentCompetitions - this uses attachBulkCompetitionMetrics
@@ -2182,8 +2195,7 @@ describe("Spot Live Competition", () => {
     await wait(2000);
 
     // Trigger sync to process trades
-    const services = new ServiceRegistry();
-    await services.spotDataProcessor.processSpotLiveCompetition(competition.id);
+    await spotDataProcessor.processSpotLiveCompetition(competition.id);
     await wait(500);
 
     // CODE PATH 1: getCompetitionAgents (uses repository layer getSpotLiveROILeaderboard)
@@ -2267,8 +2279,7 @@ describe("Spot Live Competition", () => {
     await wait(2000);
 
     // Process first sync - should initialize native ETH balance
-    const services = new ServiceRegistry();
-    await services.spotDataProcessor.processSpotLiveCompetition(competition.id);
+    await spotDataProcessor.processSpotLiveCompetition(competition.id);
     await wait(500);
 
     // Verify agent has both native ETH and USDC balances
@@ -2290,7 +2301,7 @@ describe("Spot Live Competition", () => {
     expect(agentEntry?.portfolioValue).toBeGreaterThan(0);
 
     // Process second sync - should detect native ETH swap
-    await services.spotDataProcessor.processSpotLiveCompetition(competition.id);
+    await spotDataProcessor.processSpotLiveCompetition(competition.id);
     await wait(500);
 
     // Verify the swap was detected and balances updated
@@ -2380,8 +2391,7 @@ describe("Spot Live Competition", () => {
     await wait(2000);
 
     // Trigger sync
-    const services = new ServiceRegistry();
-    await services.spotDataProcessor.processSpotLiveCompetition(competition.id);
+    await spotDataProcessor.processSpotLiveCompetition(competition.id);
     await wait(500);
 
     // Check agent's balances - should include native ETH
@@ -2836,10 +2846,7 @@ describe("Spot Live Competition", () => {
       await wait(1000);
 
       // Trigger sync - should detect Slipstream swap
-      const services = new ServiceRegistry();
-      await services.spotDataProcessor.processSpotLiveCompetition(
-        competition.id,
-      );
+      await spotDataProcessor.processSpotLiveCompetition(competition.id);
       await wait(500);
 
       // Agent checks THEIR trade history
@@ -2932,18 +2939,12 @@ describe("Spot Live Competition", () => {
 
       await wait(1000);
 
-      const services = new ServiceRegistry();
-
       // First sync - should detect V2 swap (older, block 2005000)
-      await services.spotDataProcessor.processSpotLiveCompetition(
-        competition.id,
-      );
+      await spotDataProcessor.processSpotLiveCompetition(competition.id);
       await wait(500);
 
       // Second sync - should detect Slipstream swap (newer, block 2005010)
-      await services.spotDataProcessor.processSpotLiveCompetition(
-        competition.id,
-      );
+      await spotDataProcessor.processSpotLiveCompetition(competition.id);
       await wait(500);
 
       // Agent checks trade history - should have BOTH swaps

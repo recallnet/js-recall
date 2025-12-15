@@ -39,9 +39,13 @@ import {
   wait,
 } from "@recallnet/test-utils";
 
-import config from "@/config/index.js";
-import { db } from "@/database/db.js";
-import { ServiceRegistry } from "@/services/index.js";
+import { config } from "@/config/private";
+import { db } from "@/lib/db";
+import { perpsRepository } from "@/lib/repositories";
+import {
+  perpsDataProcessor,
+  portfolioSnapshotterService,
+} from "@/lib/services";
 
 describe("Perps Competition", () => {
   let adminApiKey: string;
@@ -285,8 +289,7 @@ describe("Perps Competition", () => {
     await wait(1000);
 
     // Trigger sync from Symphony (simulating what the cron job does)
-    const services = new ServiceRegistry();
-    await services.perpsDataProcessor.processPerpsCompetition(competition.id);
+    await perpsDataProcessor.processPerpsCompetition(competition.id);
 
     // Wait for sync to complete
     await wait(500);
@@ -615,8 +618,7 @@ describe("Perps Competition", () => {
     await wait(1000);
 
     // Trigger sync from Symphony (simulating what the cron job does)
-    const services = new ServiceRegistry();
-    await services.perpsDataProcessor.processPerpsCompetition(competition.id);
+    await perpsDataProcessor.processPerpsCompetition(competition.id);
 
     // Wait for sync to complete
     await wait(500);
@@ -670,8 +672,7 @@ describe("Perps Competition", () => {
     await wait(1000);
 
     // Trigger sync from Symphony (simulating what the cron job does)
-    const services = new ServiceRegistry();
-    await services.perpsDataProcessor.processPerpsCompetition(competition.id);
+    await perpsDataProcessor.processPerpsCompetition(competition.id);
 
     // Wait for sync to complete
     await wait(500);
@@ -894,8 +895,7 @@ describe("Perps Competition", () => {
     const competition = response.competition;
 
     // Trigger sync from Symphony (simulating what the cron job does)
-    const services = new ServiceRegistry();
-    await services.perpsDataProcessor.processPerpsCompetition(competition.id);
+    await perpsDataProcessor.processPerpsCompetition(competition.id);
 
     // Wait for sync to complete
     await new Promise((resolve) => setTimeout(resolve, 100));
@@ -1045,8 +1045,7 @@ describe("Perps Competition", () => {
     const competition = response.competition;
 
     // Trigger sync to populate positions
-    const services = new ServiceRegistry();
-    await services.perpsDataProcessor.processPerpsCompetition(competition.id);
+    await perpsDataProcessor.processPerpsCompetition(competition.id);
     await new Promise((resolve) => setTimeout(resolve, 100));
 
     // Test 1: Get all positions without pagination
@@ -1221,22 +1220,21 @@ describe("Perps Competition", () => {
     await wait(1000);
 
     // Trigger sync from Symphony (simulating what the cron job does)
-    const services = new ServiceRegistry();
 
     // First sync - creates initial snapshot at peak ($1700)
-    await services.perpsDataProcessor.processPerpsCompetition(competition.id);
+    await perpsDataProcessor.processPerpsCompetition(competition.id);
 
     // Wait a bit to ensure time passes between snapshots
     await wait(500);
 
     // Second sync - creates snapshot at trough ($1200)
-    await services.perpsDataProcessor.processPerpsCompetition(competition.id);
+    await perpsDataProcessor.processPerpsCompetition(competition.id);
 
     // Wait a bit more
     await wait(500);
 
     // Third sync - creates snapshot after partial recovery ($1550)
-    await services.perpsDataProcessor.processPerpsCompetition(competition.id);
+    await perpsDataProcessor.processPerpsCompetition(competition.id);
 
     // Wait for sync and calculations to complete
     // Need extra time for read replica to catch up with risk metrics writes
@@ -1316,16 +1314,15 @@ describe("Perps Competition", () => {
     await wait(1000);
 
     // Trigger sync
-    const services = new ServiceRegistry();
 
     // First sync - creates initial snapshot
-    await services.perpsDataProcessor.processPerpsCompetition(competition.id);
+    await perpsDataProcessor.processPerpsCompetition(competition.id);
 
     // Wait a bit to ensure time passes between snapshots
     await wait(100);
 
     // Second sync - creates second snapshot (needed for simple return calculation)
-    await services.perpsDataProcessor.processPerpsCompetition(competition.id);
+    await perpsDataProcessor.processPerpsCompetition(competition.id);
 
     await wait(500);
 
@@ -1384,8 +1381,7 @@ describe("Perps Competition", () => {
     const competition = response.competition;
 
     // Trigger sync
-    const services = new ServiceRegistry();
-    await services.perpsDataProcessor.processPerpsCompetition(competition.id);
+    await perpsDataProcessor.processPerpsCompetition(competition.id);
     await wait(500);
 
     // Get agent competitions - should include risk metrics
@@ -1438,8 +1434,7 @@ describe("Perps Competition", () => {
     const competition = response.competition;
 
     // Trigger sync
-    const services = new ServiceRegistry();
-    await services.perpsDataProcessor.processPerpsCompetition(competition.id);
+    await perpsDataProcessor.processPerpsCompetition(competition.id);
     await wait(500);
 
     // Get leaderboard
@@ -1499,8 +1494,7 @@ describe("Perps Competition", () => {
     await wait(1000);
 
     // Trigger sync to process transfers
-    const services = new ServiceRegistry();
-    await services.perpsDataProcessor.processPerpsCompetition(competition.id);
+    await perpsDataProcessor.processPerpsCompetition(competition.id);
 
     // Wait for processing to complete
     await wait(500);
@@ -1560,8 +1554,7 @@ describe("Perps Competition", () => {
     const competition = response.competition;
 
     // Trigger sync
-    const services = new ServiceRegistry();
-    await services.perpsDataProcessor.processPerpsCompetition(competition.id);
+    await perpsDataProcessor.processPerpsCompetition(competition.id);
     await wait(500);
 
     // Check for violations - should be empty
@@ -1660,10 +1653,7 @@ describe("Perps Competition", () => {
     const competition = response.competition;
 
     // Take initial snapshot to establish starting values
-    const services = new ServiceRegistry();
-    await services.portfolioSnapshotterService.takePortfolioSnapshots(
-      competition.id,
-    );
+    await portfolioSnapshotterService.takePortfolioSnapshots(competition.id);
     await wait(100);
 
     // Create snapshots AFTER competition starts with small time increments
@@ -1736,7 +1726,7 @@ describe("Perps Competition", () => {
     ]);
 
     // Process to calculate Calmar ratios with the historical data
-    await services.perpsDataProcessor.processPerpsCompetition(competition.id);
+    await perpsDataProcessor.processPerpsCompetition(competition.id);
     await wait(1000);
 
     // Get the leaderboard as admin (uses active competition)
@@ -1852,10 +1842,7 @@ describe("Perps Competition", () => {
     const competition = response.competition;
 
     // Take initial snapshot to establish starting values
-    const services = new ServiceRegistry();
-    await services.portfolioSnapshotterService.takePortfolioSnapshots(
-      competition.id,
-    );
+    await portfolioSnapshotterService.takePortfolioSnapshots(competition.id);
     await wait(100);
 
     // Create snapshots AFTER competition starts with small time increments
@@ -1927,7 +1914,7 @@ describe("Perps Competition", () => {
     ]);
 
     // Process to calculate Calmar ratios
-    await services.perpsDataProcessor.processPerpsCompetition(competition.id);
+    await perpsDataProcessor.processPerpsCompetition(competition.id);
     await wait(1000);
 
     // ============ STEP 1: Get data while competition is ACTIVE ============
@@ -2156,8 +2143,7 @@ describe("Perps Competition", () => {
     const competition = response.competition;
 
     // Trigger sync from Hyperliquid
-    const services = new ServiceRegistry();
-    await services.perpsDataProcessor.processPerpsCompetition(competition.id);
+    await perpsDataProcessor.processPerpsCompetition(competition.id);
 
     // Wait for sync to complete
     await wait(500);
@@ -2240,18 +2226,16 @@ describe("Perps Competition", () => {
 
     await wait(1000);
 
-    const services = new ServiceRegistry();
-
     // First sync - peak equity
-    await services.perpsDataProcessor.processPerpsCompetition(competition.id);
+    await perpsDataProcessor.processPerpsCompetition(competition.id);
     await wait(500);
 
     // Second sync - trough
-    await services.perpsDataProcessor.processPerpsCompetition(competition.id);
+    await perpsDataProcessor.processPerpsCompetition(competition.id);
     await wait(500);
 
     // Third sync - recovery
-    await services.perpsDataProcessor.processPerpsCompetition(competition.id);
+    await perpsDataProcessor.processPerpsCompetition(competition.id);
 
     // Wait for calculations
     await wait(1000);
@@ -2319,8 +2303,7 @@ describe("Perps Competition", () => {
     await wait(1000);
 
     // Process competition to detect transfers
-    const services = new ServiceRegistry();
-    await services.perpsDataProcessor.processPerpsCompetition(competition.id);
+    await perpsDataProcessor.processPerpsCompetition(competition.id);
     await wait(500);
 
     // Check for violations
@@ -2376,8 +2359,7 @@ describe("Perps Competition", () => {
     expect(response.success).toBe(true);
     const competition = response.competition;
 
-    const services = new ServiceRegistry();
-    await services.perpsDataProcessor.processPerpsCompetition(competition.id);
+    await perpsDataProcessor.processPerpsCompetition(competition.id);
     await wait(500);
 
     const multiPositions = await agentMultiClient.getPerpsPositions(
@@ -2447,10 +2429,7 @@ describe("Perps Competition", () => {
     expect(response.success).toBe(true);
     const competition = response.competition;
 
-    const services = new ServiceRegistry();
-    await services.portfolioSnapshotterService.takePortfolioSnapshots(
-      competition.id,
-    );
+    await portfolioSnapshotterService.takePortfolioSnapshots(competition.id);
     await wait(100);
 
     const now = new Date();
@@ -2502,7 +2481,7 @@ describe("Perps Competition", () => {
       },
     ]);
 
-    await services.perpsDataProcessor.processPerpsCompetition(competition.id);
+    await perpsDataProcessor.processPerpsCompetition(competition.id);
     await wait(1000);
 
     const leaderboardResponse = (await adminClient.getCompetitionAgents(
@@ -2575,8 +2554,7 @@ describe("Perps Competition", () => {
 
     await wait(1000);
 
-    const services = new ServiceRegistry();
-    await services.perpsDataProcessor.processPerpsCompetition(competition.id);
+    await perpsDataProcessor.processPerpsCompetition(competition.id);
     await wait(500);
 
     const competitionDetails = (await agent3Client.getCompetition(
@@ -2621,8 +2599,7 @@ describe("Perps Competition", () => {
     expect(response.success).toBe(true);
     const competition = response.competition;
 
-    const services = new ServiceRegistry();
-    await services.perpsDataProcessor.processPerpsCompetition(competition.id);
+    await perpsDataProcessor.processPerpsCompetition(competition.id);
     await wait(500);
 
     const allPositions = await adminClient.getCompetitionAllPerpsPositions(
@@ -2690,10 +2667,7 @@ describe("Perps Competition", () => {
     expect(response.success).toBe(true);
     const competition = response.competition;
 
-    const services = new ServiceRegistry();
-    await services.portfolioSnapshotterService.takePortfolioSnapshots(
-      competition.id,
-    );
+    await portfolioSnapshotterService.takePortfolioSnapshots(competition.id);
     await wait(100);
 
     const now = new Date();
@@ -2727,7 +2701,7 @@ describe("Perps Competition", () => {
       },
     ]);
 
-    await services.perpsDataProcessor.processPerpsCompetition(competition.id);
+    await perpsDataProcessor.processPerpsCompetition(competition.id);
     await wait(1000);
 
     const activeLeaderboardResponse = (await adminClient.getCompetitionAgents(
@@ -2820,8 +2794,7 @@ describe("Perps Competition", () => {
     expect(response.success).toBe(true);
     const competition = response.competition;
 
-    const services = new ServiceRegistry();
-    await services.perpsDataProcessor.processPerpsCompetition(competition.id);
+    await perpsDataProcessor.processPerpsCompetition(competition.id);
     await wait(500);
 
     const activeAccount = await agentActiveClient.getPerpsAccount(
@@ -2869,10 +2842,7 @@ describe("Perps Competition", () => {
     await wait(1000);
 
     // Create initial snapshot
-    const services = new ServiceRegistry();
-    await services.portfolioSnapshotterService.takePortfolioSnapshots(
-      competition.id,
-    );
+    await portfolioSnapshotterService.takePortfolioSnapshots(competition.id);
     await wait(100);
 
     // Insert historical snapshots to establish return pattern
@@ -2921,7 +2891,7 @@ describe("Perps Competition", () => {
     ]);
 
     // Process to calculate risk metrics including Sortino
-    await services.perpsDataProcessor.processPerpsCompetition(competition.id);
+    await perpsDataProcessor.processPerpsCompetition(competition.id);
 
     // Wait for calculations to complete and propagate to read replica
     await wait(1500);
@@ -2989,7 +2959,6 @@ describe("Perps Competition", () => {
     await wait(1000);
 
     // Create snapshots showing decline
-    const services = new ServiceRegistry();
     const now = new Date();
     const minutesAgo = (minutes: number) =>
       new Date(now.getTime() - minutes * 60 * 1000);
@@ -3022,7 +2991,7 @@ describe("Perps Competition", () => {
     ]);
 
     // Process to calculate risk metrics
-    await services.perpsDataProcessor.processPerpsCompetition(competition.id);
+    await perpsDataProcessor.processPerpsCompetition(competition.id);
     await wait(1500);
 
     // Get competition agents with risk metrics
@@ -3077,7 +3046,6 @@ describe("Perps Competition", () => {
     await wait(1000);
 
     // Create historical snapshots
-    const services = new ServiceRegistry();
     const now = new Date();
     const minutesAgo = (minutes: number) =>
       new Date(now.getTime() - minutes * 60 * 1000);
@@ -3105,13 +3073,11 @@ describe("Perps Competition", () => {
     ]);
 
     // Process competition - this should calculate and save risk metrics
-    await services.perpsDataProcessor.processPerpsCompetition(competition.id);
+    await perpsDataProcessor.processPerpsCompetition(competition.id);
     await wait(1500);
 
     // Query risk_metrics_snapshots table directly to verify time-series storage
-    // Note: Need to access the repository from ServiceRegistry properly
-    const perpsRepo = services.perpsRepository;
-    const riskSnapshots = await perpsRepo.getRiskMetricsTimeSeries(
+    const riskSnapshots = await perpsRepository.getRiskMetricsTimeSeries(
       competition.id,
       {
         limit: 10,
@@ -3340,9 +3306,8 @@ describe("Perps Competition", () => {
     await db.insert(riskMetricsSnapshots).values(riskSnapshots);
 
     // Get timeline data using the service directly
-    const services = new ServiceRegistry();
     const rawTimeline =
-      await services.portfolioSnapshotterService.getAgentPortfolioTimeline(
+      await portfolioSnapshotterService.getAgentPortfolioTimeline(
         competition.competition.id,
         30, // bucket size
         true, // includeRiskMetrics for perps competition
@@ -3416,9 +3381,8 @@ describe("Perps Competition", () => {
     await db.insert(portfolioSnapshots).values(snapshots);
 
     // Get timeline data for paper trading competition using service directly
-    const services = new ServiceRegistry();
     const rawTimeline =
-      await services.portfolioSnapshotterService.getAgentPortfolioTimeline(
+      await portfolioSnapshotterService.getAgentPortfolioTimeline(
         competition.competition.id,
         30, // bucket size
         false, // includeRiskMetrics should be false for paper trading
@@ -4199,26 +4163,25 @@ describe("Perps Competition", () => {
     // Process multiple times to create the equity progression snapshots
     // Agent 1 needs 3 snapshots (1000 → 1600 → 1200)
     // Agent 2 needs 6 snapshots (1000 → 1020 → 990 → 1010 → 980 → 1050)
-    const services = new ServiceRegistry();
 
     // Snapshot 1
-    await services.perpsDataProcessor.processPerpsCompetition(competitionId);
+    await perpsDataProcessor.processPerpsCompetition(competitionId);
     await wait(500);
 
     // Snapshot 2
-    await services.perpsDataProcessor.processPerpsCompetition(competitionId);
+    await perpsDataProcessor.processPerpsCompetition(competitionId);
     await wait(500);
 
     // Snapshot 3
-    await services.perpsDataProcessor.processPerpsCompetition(competitionId);
+    await perpsDataProcessor.processPerpsCompetition(competitionId);
     await wait(500);
 
     // Snapshot 4
-    await services.perpsDataProcessor.processPerpsCompetition(competitionId);
+    await perpsDataProcessor.processPerpsCompetition(competitionId);
     await wait(500);
 
     // Snapshot 5 (final for agent 2)
-    await services.perpsDataProcessor.processPerpsCompetition(competitionId);
+    await perpsDataProcessor.processPerpsCompetition(competitionId);
     await wait(1500);
 
     // Get leaderboard before ending - should be sorted by Sortino
@@ -4390,8 +4353,7 @@ describe("Perps Competition", () => {
     await wait(1000);
 
     // Process competition - this will calculate risk metrics for all agents
-    const services = new ServiceRegistry();
-    await services.perpsDataProcessor.processPerpsCompetition(
+    await perpsDataProcessor.processPerpsCompetition(
       competition.competition.id,
     );
     await wait(1500);
@@ -4555,8 +4517,7 @@ describe("Perps Competition", () => {
     await wait(1000);
 
     // Process to calculate metrics
-    const services = new ServiceRegistry();
-    await services.perpsDataProcessor.processPerpsCompetition(
+    await perpsDataProcessor.processPerpsCompetition(
       competition.competition.id,
     );
     await wait(1500);
@@ -4627,8 +4588,7 @@ describe("Perps Competition", () => {
     await wait(1000);
 
     // Process to calculate metrics
-    const services = new ServiceRegistry();
-    await services.perpsDataProcessor.processPerpsCompetition(
+    await perpsDataProcessor.processPerpsCompetition(
       competition.competition.id,
     );
     await wait(1500);

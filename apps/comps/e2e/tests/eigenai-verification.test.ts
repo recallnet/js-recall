@@ -17,8 +17,8 @@ import {
   wait,
 } from "@recallnet/test-utils";
 
-import { db } from "@/database/db.js";
-import { ServiceRegistry } from "@/services/index.js";
+import { db } from "@/lib/db";
+import { competitionService, eigenaiService } from "@/lib/services";
 
 // =============================================================================
 // STATIC TEST FIXTURES - Captured from live EigenAI API (2025-12-09)
@@ -800,8 +800,7 @@ describe("EigenAI Verification", () => {
     await wait(500);
 
     // Simulate the cron job by calling the service directly
-    const services = new ServiceRegistry();
-    const agentsUpdated = await services.eigenaiService.refreshBadgeStatuses(
+    const agentsUpdated = await eigenaiService.refreshBadgeStatuses(
       competition.id,
     );
 
@@ -869,8 +868,7 @@ describe("EigenAI Verification", () => {
     await wait(500);
 
     // Run cron refresh
-    const services = new ServiceRegistry();
-    await services.eigenaiService.refreshBadgeStatuses(competition.id);
+    await eigenaiService.refreshBadgeStatuses(competition.id);
 
     // Agent with submission should have active badge
     const badgeWithSub = await agentWithSubmissionClient.getEigenaiBadgeStatus(
@@ -953,8 +951,7 @@ describe("EigenAI Verification", () => {
     await wait(500);
 
     // Run cron refresh
-    const services = new ServiceRegistry();
-    await services.eigenaiService.refreshBadgeStatuses(competition.id);
+    await eigenaiService.refreshBadgeStatuses(competition.id);
 
     await wait(500);
 
@@ -1011,8 +1008,7 @@ describe("EigenAI Verification", () => {
     const submissionId = typedSubmitResponse.submissionId;
 
     // Verify badge is active after submission
-    const services = new ServiceRegistry();
-    await services.eigenaiService.refreshBadgeStatuses(competition.id);
+    await eigenaiService.refreshBadgeStatuses(competition.id);
 
     const activeBadgeResponse = await agentClient.getEigenaiBadgeStatus(
       competition.id,
@@ -1030,7 +1026,7 @@ describe("EigenAI Verification", () => {
       .where(eq(signatureSubmissions.id, submissionId));
 
     // Run cron refresh - badge should now be inactive
-    await services.eigenaiService.refreshBadgeStatuses(competition.id);
+    await eigenaiService.refreshBadgeStatuses(competition.id);
 
     // Verify badge is now inactive
     const expiredBadgeResponse = await agentClient.getEigenaiBadgeStatus(
@@ -1083,8 +1079,7 @@ describe("EigenAI Verification", () => {
     expect(submitResponse.success).toBe(true);
 
     // Verify badge is active after submission
-    const services = new ServiceRegistry();
-    await services.eigenaiService.refreshBadgeStatuses(competition.id);
+    await eigenaiService.refreshBadgeStatuses(competition.id);
 
     const activeBadgeResponse = await agentClient.getEigenaiBadgeStatus(
       competition.id,
@@ -1098,9 +1093,7 @@ describe("EigenAI Verification", () => {
     ).toBe(1);
 
     // End the competition - this should freeze badge status
-    const endResult = await services.competitionService.endCompetition(
-      competition.id,
-    );
+    const endResult = await competitionService.endCompetition(competition.id);
     expect(endResult.competition.status).toBe("ended");
 
     // Wait for any async operations to complete
@@ -1160,8 +1153,7 @@ describe("EigenAI Verification", () => {
     });
 
     // Initial refresh
-    const services = new ServiceRegistry();
-    await services.eigenaiService.refreshBadgeStatuses(competition.id);
+    await eigenaiService.refreshBadgeStatuses(competition.id);
 
     // Verify badge is active
     const activeBadgeResponse = await agentClient.getEigenaiBadgeStatus(
@@ -1172,7 +1164,7 @@ describe("EigenAI Verification", () => {
     ).toBe(true);
 
     // End the competition
-    await services.competitionService.endCompetition(competition.id);
+    await competitionService.endCompetition(competition.id);
 
     await wait(500);
 
