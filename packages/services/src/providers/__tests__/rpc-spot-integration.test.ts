@@ -1203,136 +1203,93 @@ describe("RpcSpotProvider - Integration Tests (Real Blockchain)", () => {
     },
   };
 
-  test("should retrieve PONKE token symbol from on-chain (CoinGecko returns address)", async () => {
-    if (!process.env.ALCHEMY_API_KEY) {
-      console.log("Skipping test - no ALCHEMY_API_KEY");
-      return;
-    }
-
-    console.log(`\n[TOKEN SYMBOL TEST] ${PONKE_TOKEN.description}`);
-    console.log(`  Token Address: ${PONKE_TOKEN.address}`);
-    console.log(`  Chain: ${PONKE_TOKEN.chain}`);
-
-    const symbol = await realRpcProvider.getTokenSymbol(
-      PONKE_TOKEN.address,
-      PONKE_TOKEN.chain,
-    );
-
-    console.log(`  On-chain symbol: "${symbol}"`);
-
-    expect(symbol).toBe(PONKE_TOKEN.expectedSymbol);
-    expect(symbol?.length).toBeLessThanOrEqual(20); // Must fit in varchar(20)
-    console.log(`✓ PONKE symbol correctly retrieved from on-chain`);
-    console.log(`✓ Symbol length (${symbol?.length}) fits in varchar(20)`);
-  }, 30000);
-
-  test("should retrieve symbols for known tokens (USDC, WETH, AERO)", async () => {
-    if (!process.env.ALCHEMY_API_KEY) {
-      console.log("Skipping test - no ALCHEMY_API_KEY");
-      return;
-    }
-
-    console.log(`\n[TOKEN SYMBOL TEST] Known tokens comparison`);
-
-    for (const [name, token] of Object.entries(KNOWN_TOKENS)) {
+  test.skipIf(!process.env.ALCHEMY_API_KEY)(
+    "should retrieve PONKE token symbol from on-chain (CoinGecko returns address)",
+    async () => {
       const symbol = await realRpcProvider.getTokenSymbol(
-        token.address,
-        token.chain,
+        PONKE_TOKEN.address,
+        PONKE_TOKEN.chain,
       );
 
-      console.log(
-        `  ${name}: "${symbol}" (expected: "${token.expectedSymbol}")`,
-      );
+      expect(symbol).toBe(PONKE_TOKEN.expectedSymbol);
+      expect(symbol?.length).toBeLessThanOrEqual(20); // Must fit in varchar(20)
+    },
+    30000,
+  );
 
-      expect(symbol).toBe(token.expectedSymbol);
-      expect(symbol?.length).toBeLessThanOrEqual(20);
-    }
+  test.skipIf(!process.env.ALCHEMY_API_KEY)(
+    "should retrieve symbols for known tokens (USDC, WETH, AERO)",
+    async () => {
+      for (const [, token] of Object.entries(KNOWN_TOKENS)) {
+        const symbol = await realRpcProvider.getTokenSymbol(
+          token.address,
+          token.chain,
+        );
 
-    console.log(`✓ All known token symbols correctly retrieved`);
-  }, 30000);
+        expect(symbol).toBe(token.expectedSymbol);
+        expect(symbol?.length).toBeLessThanOrEqual(20);
+      }
+    },
+    30000,
+  );
 
-  test("should retrieve correct decimals for PONKE token", async () => {
-    if (!process.env.ALCHEMY_API_KEY) {
-      console.log("Skipping test - no ALCHEMY_API_KEY");
-      return;
-    }
-
-    console.log(`\n[TOKEN DECIMALS TEST] PONKE token`);
-    console.log(`  Token Address: ${PONKE_TOKEN.address}`);
-
-    const decimals = await realRpcProvider.getTokenDecimals(
-      PONKE_TOKEN.address,
-      PONKE_TOKEN.chain,
-    );
-
-    console.log(`  On-chain decimals: ${decimals}`);
-
-    expect(decimals).toBe(PONKE_TOKEN.expectedDecimals);
-    console.log(`✓ PONKE decimals correctly retrieved`);
-  }, 30000);
-
-  test("should retrieve correct decimals for known tokens", async () => {
-    if (!process.env.ALCHEMY_API_KEY) {
-      console.log("Skipping test - no ALCHEMY_API_KEY");
-      return;
-    }
-
-    console.log(`\n[TOKEN DECIMALS TEST] Known tokens`);
-
-    for (const [name, token] of Object.entries(KNOWN_TOKENS)) {
+  test.skipIf(!process.env.ALCHEMY_API_KEY)(
+    "should retrieve correct decimals for PONKE token",
+    async () => {
       const decimals = await realRpcProvider.getTokenDecimals(
-        token.address,
-        token.chain,
+        PONKE_TOKEN.address,
+        PONKE_TOKEN.chain,
       );
 
-      console.log(
-        `  ${name}: ${decimals} decimals (expected: ${token.expectedDecimals})`,
+      expect(decimals).toBe(PONKE_TOKEN.expectedDecimals);
+    },
+    30000,
+  );
+
+  test.skipIf(!process.env.ALCHEMY_API_KEY)(
+    "should retrieve correct decimals for known tokens",
+    async () => {
+      for (const [, token] of Object.entries(KNOWN_TOKENS)) {
+        const decimals = await realRpcProvider.getTokenDecimals(
+          token.address,
+          token.chain,
+        );
+
+        expect(decimals).toBe(token.expectedDecimals);
+      }
+    },
+    30000,
+  );
+
+  test.skipIf(!process.env.ALCHEMY_API_KEY)(
+    "should return null for invalid token address symbol",
+    async () => {
+      // Use a non-contract address (EOA or zero address)
+      const invalidAddress = "0x0000000000000000000000000000000000000001";
+
+      const symbol = await realRpcProvider.getTokenSymbol(
+        invalidAddress,
+        "base",
       );
 
-      expect(decimals).toBe(token.expectedDecimals);
-    }
+      // Should return null for non-contract addresses
+      expect(symbol).toBeNull();
+    },
+    30000,
+  );
 
-    console.log(`✓ All token decimals correctly retrieved`);
-  }, 30000);
+  test.skipIf(!process.env.ALCHEMY_API_KEY)(
+    "RpcSpotProvider should delegate getTokenSymbol to AlchemyRpcProvider",
+    async () => {
+      provider = new RpcSpotProvider(realRpcProvider, [], mockLogger);
 
-  test("should return null for invalid token address symbol", async () => {
-    if (!process.env.ALCHEMY_API_KEY) {
-      console.log("Skipping test - no ALCHEMY_API_KEY");
-      return;
-    }
+      const symbol = await provider.getTokenSymbol(
+        PONKE_TOKEN.address,
+        PONKE_TOKEN.chain,
+      );
 
-    console.log(`\n[TOKEN SYMBOL TEST] Invalid address handling`);
-
-    // Use a non-contract address (EOA or zero address)
-    const invalidAddress = "0x0000000000000000000000000000000000000001";
-
-    const symbol = await realRpcProvider.getTokenSymbol(invalidAddress, "base");
-
-    console.log(`  Invalid address symbol: ${symbol}`);
-
-    // Should return null for non-contract addresses
-    expect(symbol).toBeNull();
-    console.log(`✓ Invalid address correctly returns null`);
-  }, 30000);
-
-  test("RpcSpotProvider should delegate getTokenSymbol to AlchemyRpcProvider", async () => {
-    if (!process.env.ALCHEMY_API_KEY) {
-      console.log("Skipping test - no ALCHEMY_API_KEY");
-      return;
-    }
-
-    provider = new RpcSpotProvider(realRpcProvider, [], mockLogger);
-
-    console.log(`\n[PROVIDER DELEGATION TEST] RpcSpotProvider.getTokenSymbol`);
-
-    const symbol = await provider.getTokenSymbol(
-      PONKE_TOKEN.address,
-      PONKE_TOKEN.chain,
-    );
-
-    console.log(`  Symbol via RpcSpotProvider: "${symbol}"`);
-
-    expect(symbol).toBe(PONKE_TOKEN.expectedSymbol);
-    console.log(`✓ RpcSpotProvider correctly delegates to AlchemyRpcProvider`);
-  }, 30000);
+      expect(symbol).toBe(PONKE_TOKEN.expectedSymbol);
+    },
+    30000,
+  );
 });
