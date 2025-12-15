@@ -20,12 +20,14 @@ interface WrongWalletModalProps {
   isOpen: boolean;
   onClose: (open: boolean) => void;
   expectedWalletAddress: string;
+  currentWalletAddress: string;
 }
 
 export const WrongWalletModal: React.FC<WrongWalletModalProps> = ({
   isOpen,
   onClose,
   expectedWalletAddress,
+  currentWalletAddress,
 }) => {
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
@@ -58,6 +60,18 @@ export const WrongWalletModal: React.FC<WrongWalletModalProps> = ({
                 </span>
               </span>
               <CopyButton textToCopy={expectedWalletAddress} />
+            </div>
+            <h4 className="mb-2 mt-4 text-sm font-medium text-gray-300">
+              Current Wallet Address:
+            </h4>
+            <div className="flex items-center justify-between">
+              <span className="font-mono text-sm text-white">
+                <span className="xs:hidden">
+                  {displayAddress(currentWalletAddress, { numChars: 8 })}
+                </span>
+                <span className="xs:inline hidden">{currentWalletAddress}</span>
+              </span>
+              <CopyButton textToCopy={currentWalletAddress} />
             </div>
           </div>
 
