@@ -1,7 +1,7 @@
 "use client";
 
-import { useMemo } from "react";
 import { Gift } from "lucide-react";
+import { useMemo } from "react";
 
 import {
   DropdownMenu,
@@ -24,25 +24,29 @@ import { formatBigintAmount } from "@/utils/format";
 export const BonusBoosts = () => {
   const { data: bonusBoosts, isLoading } = useUserBonusBoosts();
 
+  const aggregatedByExpiration = useMemo(() => {
+    if (!bonusBoosts?.length) {
+      return [];
+    }
+    const map = new Map<string, bigint>();
+    for (const boost of bonusBoosts) {
+      const key = boost.expiresAt;
+      const prev = map.get(key) ?? 0n;
+      map.set(key, prev + BigInt(boost.amount));
+    }
+    return Array.from(map.entries())
+      .map(([expiresAt, amount]) => ({ expiresAt, amount }))
+      .sort(
+        (a, b) =>
+          new Date(a.expiresAt).getTime() - new Date(b.expiresAt).getTime(),
+      );
+  }, [bonusBoosts]);
+
   if (!bonusBoosts?.length || isLoading) {
     return null;
   }
 
   const total = sumBonusBoosts(bonusBoosts);
-
-  // Aggregate boosts by expiration time and sum amounts
-  const aggregatedByExpiration = useMemo(() => {
-    const map = new Map<string, bigint>();
-    for (const boost of bonusBoosts) {
-      const key = boost.expiresAt; // ISO 8601 string
-      const prev = map.get(key) ?? 0n;
-      map.set(key, prev + BigInt(boost.amount));
-    }
-    // Return sorted array by expiration ascending
-    return Array.from(map.entries())
-      .map(([expiresAt, amount]) => ({ expiresAt, amount }))
-      .sort((a, b) => new Date(a.expiresAt).getTime() - new Date(b.expiresAt).getTime());
-  }, [bonusBoosts]);
 
   return (
     <DropdownMenu>
