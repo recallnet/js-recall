@@ -134,7 +134,7 @@ async function insertCompetitionAndRewards() {
       await db.insert(rewards).values({
         competitionId: competitionId,
         userId: reward.userId,
-        address: reward.address,
+        walletAddress: reward.address,
         amount: reward.amount,
         leafHash: hexToBytes(leafHash),
         claimed: false,
