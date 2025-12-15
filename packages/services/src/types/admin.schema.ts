@@ -5,6 +5,7 @@ import {
   displayState,
   engineType,
 } from "@recallnet/db/schema/core/defs";
+
 import {
   AgentHandleSchema,
   AgentMetadataSchema,
@@ -14,7 +15,7 @@ import {
   SpecificChainSchema,
   TradingConstraintsSchema,
   UuidSchema,
-} from "@recallnet/services/types";
+} from "./main.js";
 
 /**
  * Admin setup schema for initial admin account creation

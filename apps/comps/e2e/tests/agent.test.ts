@@ -804,7 +804,7 @@ describe("Agent API", () => {
     // Step 2: Try to have the agent update its email
     try {
       await axios.put(
-        `${getBaseUrl()}/api/agent/profile`,
+        `${getBaseUrl()}/agent/profile`,
         {
           email: "test@test.com",
         },
@@ -830,7 +830,7 @@ describe("Agent API", () => {
         test: "test",
       };
       await axios.put(
-        `${getBaseUrl()}/api/agent/profile`,
+        `${getBaseUrl()}/agent/profile`,
         {
           metadata: agentMetadata,
         },
@@ -851,7 +851,7 @@ describe("Agent API", () => {
     }
   });
 
-  test("GET /api/agents/:agentId retrieves agent details", async () => {
+  test("GET /agents/:agentId retrieves agent details", async () => {
     // Setup admin client and login
     const adminClient = createTestClient();
     const adminLoginSuccess = await adminClient.loginAsAdmin(adminApiKey);
@@ -892,7 +892,7 @@ describe("Agent API", () => {
     expect(agent.id).toBeDefined();
 
     // Make a GET request to fetch the agent details using the agent ID
-    const response = await axios.get(`${getBaseUrl()}/api/agents/${agent.id}`, {
+    const response = await axios.get(`${getBaseUrl()}/agents/${agent.id}`, {
       headers: {
         // Make sure that other agents/users can load details for a given agent id
         Authorization: `Bearer ${apiKey2}`,
@@ -964,7 +964,7 @@ describe("Agent API", () => {
     expect(agent?.id).toBeDefined();
 
     // Make a public GET request to fetch the agent details using the agent ID
-    const response = await axios.get(`${getBaseUrl()}/api/agents/${agent?.id}`);
+    const response = await axios.get(`${getBaseUrl()}/agents/${agent?.id}`);
 
     // Validate response
     expect(response.status).toBe(200);
@@ -975,7 +975,7 @@ describe("Agent API", () => {
     expect(agentData.agent.apiKey).not.toBeDefined();
   });
 
-  test("GET /api/agents/:agentId returns 400 with invalid agent id", async () => {
+  test("GET /agents/:agentId returns 400 with invalid agent id", async () => {
     // Setup admin client and login
     const adminClient = createTestClient();
     const adminLoginSuccess = await adminClient.loginAsAdmin(adminApiKey);
@@ -999,7 +999,7 @@ describe("Agent API", () => {
 
     try {
       // Make a GET request to fetch the agent details using the agent ID
-      await axios.get(`${getBaseUrl()}/api/agents/foo123`, {
+      await axios.get(`${getBaseUrl()}/agents/foo123`, {
         headers: {
           // Make sure that other agents/users can load details for a given agent id
           Authorization: `Bearer ${apiKey}`,
@@ -1017,7 +1017,7 @@ describe("Agent API", () => {
     }
   });
 
-  test("GET /api/agents/:agentId/competitions retrieves agent competitions", async () => {
+  test("GET /agents/:agentId/competitions retrieves agent competitions", async () => {
     // Setup admin client and login
     const adminClient = createTestClient();
     const adminLoginSuccess = await adminClient.loginAsAdmin(adminApiKey);

@@ -13,6 +13,10 @@ const configSchema = z.strictObject({
   server: z.object({
     nodeEnv: z.string().default("development"),
   }),
+  database: z.object({
+    mainUrl: z.string().optional(),
+    readReplicaUrl: z.string().optional(),
+  }),
   evmChains: z
     .array(SpecificChainSchema)
     .default([
@@ -118,6 +122,11 @@ const rawConfig = {
   server: z.object({
     nodeEnv: process.env.NODE_ENV,
   }),
+  database: {
+    mainUrl: process.env.DATABASE_URL,
+    readReplicaUrl:
+      process.env.DATABASE_READ_REPLICA_URL || process.env.DATABASE_URL,
+  },
   evmChains: parseEvmChains(),
   specificChainBalances: getSpecificChainBalances(),
   watchlist: { chainalysisApiKey: process.env.WATCHLIST_CHAINALYSIS_API_KEY },

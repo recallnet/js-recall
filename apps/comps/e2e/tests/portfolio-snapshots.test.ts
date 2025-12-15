@@ -58,7 +58,7 @@ describe("Portfolio Snapshots", () => {
     // Verify that a portfolio snapshot was taken for the agent
     const snapshotsResponse = await adminClient.request(
       "get",
-      `/api/admin/competition/${competitionId}/snapshots`,
+      `/admin/competition/${competitionId}/snapshots`,
     );
     const typedResponse = snapshotsResponse as SnapshotResponse;
     expect(typedResponse.success).toBe(true);
@@ -103,7 +103,7 @@ describe("Portfolio Snapshots", () => {
     // Initial snapshot count
     const initialSnapshotsResponse = (await adminClient.request(
       "get",
-      `/api/admin/competition/${competitionId}/snapshots`,
+      `/admin/competition/${competitionId}/snapshots`,
     )) as SnapshotResponse;
     const initialSnapshotCount = initialSnapshotsResponse.snapshots.length;
 
@@ -115,7 +115,7 @@ describe("Portfolio Snapshots", () => {
     // Get snapshots again
     const afterFirstSnapshotResponse = (await adminClient.request(
       "get",
-      `/api/admin/competition/${competitionId}/snapshots`,
+      `/admin/competition/${competitionId}/snapshots`,
     )) as SnapshotResponse;
     const afterFirstSnapshotCount = afterFirstSnapshotResponse.snapshots.length;
 
@@ -133,7 +133,7 @@ describe("Portfolio Snapshots", () => {
     // Get snapshots again
     const afterSecondSnapshotResponse = (await adminClient.request(
       "get",
-      `/api/admin/competition/${competitionId}/snapshots`,
+      `/admin/competition/${competitionId}/snapshots`,
     )) as SnapshotResponse;
     const afterSecondSnapshotCount =
       afterSecondSnapshotResponse.snapshots.length;
@@ -190,7 +190,7 @@ describe("Portfolio Snapshots", () => {
     // Get snapshot count before ending
     const beforeEndResponse = (await adminClient.request(
       "get",
-      `/api/admin/competition/${competitionId}/snapshots`,
+      `/admin/competition/${competitionId}/snapshots`,
     )) as SnapshotResponse;
     const beforeEndCount = beforeEndResponse.snapshots.length;
 
@@ -202,7 +202,7 @@ describe("Portfolio Snapshots", () => {
     // Get snapshots after ending
     const afterEndResponse = (await adminClient.request(
       "get",
-      `/api/admin/competition/${competitionId}/snapshots`,
+      `/admin/competition/${competitionId}/snapshots`,
     )) as SnapshotResponse;
     const afterEndCount = afterEndResponse.snapshots.length;
 
@@ -259,7 +259,7 @@ describe("Portfolio Snapshots", () => {
     // Get initial snapshot
     const initialSnapshotsResponse = (await adminClient.request(
       "get",
-      `/api/admin/competition/${competitionId}/snapshots`,
+      `/admin/competition/${competitionId}/snapshots`,
     )) as SnapshotResponse;
     const initialSnapshot = initialSnapshotsResponse.snapshots[0];
     expect(initialSnapshot).not.toBeUndefined();

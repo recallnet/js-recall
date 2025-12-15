@@ -15,7 +15,7 @@ import {
 import { config } from "@/config/index.js";
 
 describe("Trade Execution Validation", () => {
-  test("POST /api/trade/execute returns 400 when competitionId is missing", async () => {
+  test("POST /trade/execute returns 400 when competitionId is missing", async () => {
     const adminApiKey = await getAdminApiKey();
 
     const { client: agentClient } = await registerUserAndAgentAndGetClient({
@@ -26,7 +26,7 @@ describe("Trade Execution Validation", () => {
 
     // Use raw axios to bypass TypeScript type checking and test missing parameter
     try {
-      await agentClient["axiosInstance"].post("/api/trade/execute", {
+      await agentClient["axiosInstance"].post("/trade/execute", {
         fromToken: config.specificChainTokens.svm.usdc,
         toToken: config.specificChainTokens.svm.sol,
         amount: "100",
@@ -56,7 +56,7 @@ describe("Trade Execution Validation", () => {
     }
   });
 
-  test("POST /api/trade/execute returns 404 when competitionId references non-existent competition", async () => {
+  test("POST /trade/execute returns 404 when competitionId references non-existent competition", async () => {
     const adminApiKey = await getAdminApiKey();
 
     // Start a competition and register an agent
@@ -86,7 +86,7 @@ describe("Trade Execution Validation", () => {
     expect(tradeError.error.toLowerCase()).toMatch(/not found|does not exist/);
   });
 
-  test("POST /api/trade/execute returns 403 when agent not registered in competition", async () => {
+  test("POST /trade/execute returns 403 when agent not registered in competition", async () => {
     const adminApiKey = await getAdminApiKey();
     const adminClient = createTestClient();
     await adminClient.loginAsAdmin(adminApiKey);

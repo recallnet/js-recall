@@ -508,7 +508,7 @@ export async function getAdminApiKey() {
   await ensureDefaultArenas();
 
   // Create admin account
-  const response = await axios.post(`${getBaseUrl()}/api/admin/setup`, {
+  const response = await axios.post(`${getBaseUrl()}/admin/setup`, {
     username: ADMIN_USERNAME,
     password: ADMIN_PASSWORD,
     email: ADMIN_EMAIL,

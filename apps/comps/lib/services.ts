@@ -3,6 +3,7 @@ import { Hex } from "viem";
 import { ConvictionClaimsRepository } from "@recallnet/db/repositories/conviction-claims";
 import { EventsRepository } from "@recallnet/db/repositories/indexing-events";
 import {
+  AdminService,
   AgentRankService,
   AgentService,
   AirdropService,
@@ -17,6 +18,7 @@ import {
   EigenaiService,
   EmailService,
   LeaderboardService,
+  PartnerService,
   PerpsDataProcessor,
   PortfolioSnapshotterService,
   PriceTrackerService,
@@ -47,6 +49,7 @@ import {
 
 import { config } from "@/config/private";
 import {
+  adminRepository,
   agentNonceRepository,
   agentRepository,
   agentScoreRepository,
@@ -61,6 +64,7 @@ import {
   leaderboardRepository,
   paperTradingConfigRepository,
   paperTradingInitialBalancesRepository,
+  partnerRepository,
   perpsRepository,
   rewardsRepository,
   spotLiveRepository,
@@ -220,6 +224,19 @@ export const arenaService = new ArenaService(
   arenaRepository,
   competitionRepository,
   createLogger("ArenaService"),
+);
+
+export const partnerService = new PartnerService(
+  partnerRepository,
+  createLogger("PartnerService"),
+);
+
+export const adminService = new AdminService(
+  adminRepository,
+  userService,
+  agentService,
+  config,
+  createLogger("AdminService"),
 );
 
 export const leaderboardService = new LeaderboardService(

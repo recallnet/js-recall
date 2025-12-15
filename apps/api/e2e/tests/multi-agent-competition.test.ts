@@ -153,7 +153,7 @@ describe("Multi-Agent Competition", () => {
     try {
       // Try to get Agent 2's profile directly (would need to know endpoint structure)
       const response = await axios.get(
-        `${getBaseUrl()}/api/agent/profile?agentId=${agentClients[1]?.agent.id}`,
+        `${getBaseUrl()}/agent/profile?agentId=${agentClients[1]?.agent.id}`,
         {
           headers: {
             Authorization: `Bearer ${agent1ApiKey}`,
