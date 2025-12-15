@@ -876,6 +876,74 @@ export class AlchemyRpcProvider implements IRpcProvider {
   }
 
   /**
+   * Get token symbol from on-chain contract
+   * Used as fallback when price provider returns address as symbol
+   * @param tokenAddress Token contract address
+   * @param chain Chain where token is deployed
+   * @returns Token symbol string, or null if not retrievable
+   */
+  async getTokenSymbol(
+    tokenAddress: string,
+    chain: SpecificChain,
+  ): Promise<string | null> {
+    try {
+      const result = await this.circuitBreaker.execute(async () => {
+        return await withRetry(
+          async () => {
+            const provider = this.getProvider(chain);
+
+            // Call the symbol() function using its function selector
+            // 0x95d89b41 is the keccak256 hash of "symbol()"
+            const result = await provider.core.call({
+              to: tokenAddress,
+              data: "0x95d89b41",
+            });
+
+            // Parse the ABI-encoded string response
+            // Format: 32 bytes offset + 32 bytes length + N bytes string data
+            if (result && result !== "0x" && result.length > 130) {
+              // Remove 0x prefix, skip first 64 chars (offset), read length from next 64 chars
+              const hex = result.slice(2);
+              const lengthHex = hex.slice(64, 128);
+              const length = parseInt(lengthHex, 16);
+
+              if (length > 0 && length <= 32) {
+                // Read string data (starts at byte 64, which is char 128)
+                const stringHex = hex.slice(128, 128 + length * 2);
+                const symbol = Buffer.from(stringHex, "hex")
+                  .toString("utf8")
+                  .replace(/\0/g, "");
+
+                if (symbol && symbol.length > 0) {
+                  return symbol;
+                }
+              }
+            }
+
+            return null;
+          },
+          {
+            maxRetries: this.maxRetries,
+            initialDelay: this.retryDelayMs,
+          },
+        );
+      });
+
+      return result;
+    } catch (error) {
+      this.logger.warn(
+        `[AlchemyRpcProvider] Failed to fetch symbol for token ${tokenAddress} on ${chain}`,
+      );
+      if (error instanceof Error) {
+        this.logger.debug(
+          `[AlchemyRpcProvider] Symbol fetch error: ${error.message}`,
+        );
+      }
+      return null;
+    }
+  }
+
+  /**
    * Get transaction data (for router/to address check)
    */
   async getTransaction(

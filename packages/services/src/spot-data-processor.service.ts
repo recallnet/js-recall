@@ -121,6 +121,89 @@ export class SpotDataProcessor {
   }
 
   /**
+   * Maximum length for token symbols in database
+   * Must match varchar(20) constraint in trading_comps.balances and trades tables
+   */
+  private static readonly MAX_SYMBOL_LENGTH = 20;
+
+  /**
+   * Check if a symbol appears to be a contract address
+   * Some price providers return the contract address as the symbol for unknown tokens
+   * @param symbol The symbol to check
+   * @returns True if the symbol looks like a contract address
+   */
+  private isAddressLikeSymbol(symbol: string): boolean {
+    return (
+      symbol.startsWith("0x") &&
+      symbol.length === 42 &&
+      /^0x[a-fA-F0-9]{40}$/.test(symbol)
+    );
+  }
+
+  /**
+   * Sanitize a token symbol to ensure it fits in the database
+   * If the price provider returns an address as symbol, fetch the actual symbol from chain
+   * @param symbol The symbol from the price provider
+   * @param tokenAddress The token contract address
+   * @param chain The chain where the token exists
+   * @param provider The spot live data provider for on-chain lookups
+   * @returns A sanitized symbol that fits in varchar(20)
+   */
+  private async sanitizeTokenSymbol(
+    symbol: string,
+    tokenAddress: string,
+    chain: SpecificChain,
+    provider: ISpotLiveDataProvider,
+  ): Promise<string> {
+    // If symbol doesn't look like an address and fits in DB, use it as-is
+    if (
+      !this.isAddressLikeSymbol(symbol) &&
+      symbol.length <= SpotDataProcessor.MAX_SYMBOL_LENGTH
+    ) {
+      return symbol;
+    }
+
+    // Symbol looks like an address - try to fetch actual symbol from on-chain
+    if (this.isAddressLikeSymbol(symbol)) {
+      this.logger.debug(
+        `[SpotDataProcessor] Price provider returned address as symbol for ${tokenAddress}, fetching from chain`,
+      );
+
+      try {
+        const onChainSymbol = await provider.getTokenSymbol?.(
+          tokenAddress,
+          chain,
+        );
+        if (
+          onChainSymbol &&
+          onChainSymbol.length <= SpotDataProcessor.MAX_SYMBOL_LENGTH
+        ) {
+          this.logger.info(
+            `[SpotDataProcessor] Retrieved on-chain symbol "${onChainSymbol}" for token ${tokenAddress}`,
+          );
+          return onChainSymbol;
+        }
+      } catch (error) {
+        this.logger.warn(
+          { error, tokenAddress, chain },
+          `[SpotDataProcessor] Failed to fetch on-chain symbol, using fallback`,
+        );
+      }
+    }
+
+    // Fallback: truncate symbol to fit in database
+    if (symbol.length > SpotDataProcessor.MAX_SYMBOL_LENGTH) {
+      const truncated = symbol.slice(0, SpotDataProcessor.MAX_SYMBOL_LENGTH);
+      this.logger.warn(
+        `[SpotDataProcessor] Truncating symbol "${symbol}" to "${truncated}" for token ${tokenAddress}`,
+      );
+      return truncated;
+    }
+
+    return symbol;
+  }
+
+  /**
    * Transform on-chain trade to database insert format WITH price data
    */
   private transformTradeToDb(
@@ -315,7 +398,16 @@ export class SpotDataProcessor {
         const balanceNum = Number(BigInt(b.balance)) / decimalsPower;
 
         // Use native symbol (ETH, MATIC) for native tokens, otherwise use price symbol
-        const symbol = isNative ? getNativeTokenSymbol(b.chain) : price.symbol;
+        // Sanitize symbol to handle cases where price provider returns address as symbol
+        const rawSymbol = isNative
+          ? getNativeTokenSymbol(b.chain)
+          : price.symbol;
+        const symbol = await this.sanitizeTokenSymbol(
+          rawSymbol,
+          b.tokenAddress,
+          b.chain,
+          provider,
+        );
 
         balanceRecordsToInsert.push({
           tokenAddress: b.tokenAddress,
@@ -730,13 +822,37 @@ export class SpotDataProcessor {
               continue;
             }
 
+            // Sanitize symbols to handle cases where price provider returns address as symbol
+            const sanitizedFromSymbol = await this.sanitizeTokenSymbol(
+              fromPrice.symbol,
+              trade.fromToken,
+              trade.chain,
+              provider,
+            );
+            const sanitizedToSymbol = await this.sanitizeTokenSymbol(
+              toPrice.symbol,
+              trade.toToken,
+              trade.chain,
+              provider,
+            );
+
+            // Create price reports with sanitized symbols
+            const sanitizedFromPrice: PriceReport = {
+              ...fromPrice,
+              symbol: sanitizedFromSymbol,
+            };
+            const sanitizedToPrice: PriceReport = {
+              ...toPrice,
+              symbol: sanitizedToSymbol,
+            };
+
             priceableTrades.push(
               this.transformTradeToDb(
                 trade,
                 agentId,
                 competitionId,
-                fromPrice,
-                toPrice,
+                sanitizedFromPrice,
+                sanitizedToPrice,
               ),
             );
           }
