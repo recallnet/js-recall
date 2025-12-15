@@ -1,5 +1,6 @@
 "use client";
 
+import { useMemo } from "react";
 import { Gift } from "lucide-react";
 
 import {
@@ -29,6 +30,20 @@ export const BonusBoosts = () => {
 
   const total = sumBonusBoosts(bonusBoosts);
 
+  // Aggregate boosts by expiration time and sum amounts
+  const aggregatedByExpiration = useMemo(() => {
+    const map = new Map<string, bigint>();
+    for (const boost of bonusBoosts) {
+      const key = boost.expiresAt; // ISO 8601 string
+      const prev = map.get(key) ?? 0n;
+      map.set(key, prev + BigInt(boost.amount));
+    }
+    // Return sorted array by expiration ascending
+    return Array.from(map.entries())
+      .map(([expiresAt, amount]) => ({ expiresAt, amount }))
+      .sort((a, b) => new Date(a.expiresAt).getTime() - new Date(b.expiresAt).getTime());
+  }, [bonusBoosts]);
+
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
@@ -47,16 +62,16 @@ export const BonusBoosts = () => {
         <div className="space-y-3 p-3">
           <p className="text-base font-semibold">Bonus Boosts</p>
           <div className="space-y-2">
-            {bonusBoosts.map((boost) => (
+            {aggregatedByExpiration.map((entry) => (
               <div
-                key={boost.id}
-                className={getExpirationWarningClass(boost.expiresAt)}
+                key={entry.expiresAt}
+                className={getExpirationWarningClass(entry.expiresAt)}
               >
                 <p className="font-mono text-sm font-semibold">
-                  +{formatBigintAmount(BigInt(boost.amount), 18)}
+                  +{formatBigintAmount(entry.amount, 18)}
                 </p>
                 <p className="text-xs">
-                  ({formatTimeRemaining(boost.expiresAt)} left)
+                  ({formatTimeRemaining(entry.expiresAt)} left)
                 </p>
               </div>
             ))}
