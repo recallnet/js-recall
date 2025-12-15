@@ -527,8 +527,8 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
           <WrongWalletModal
             isOpen
             onClose={handleCloseWrongWalletModal}
-            expectedWalletAddress={backendUser?.walletAddress}
-            currentWalletAddress={connectedExternalWallets[0]?.address}
+            expectedWalletAddress={backendUser.walletAddress}
+            currentWalletAddress={connectedExternalWallets[0].address}
           />
         )}
       {session.isAuthenticated &&
