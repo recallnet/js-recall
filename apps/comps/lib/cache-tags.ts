@@ -73,6 +73,31 @@ export const CacheTags = {
    * @returns Cache tag string
    */
   arenaList: (): string => `arena-list`,
+
+  /**
+   * Cache tag for a public user profile
+   *
+   * @param userId - The user UUID
+   * @returns Cache tag string
+   */
+  publicUser: (userId: string): string => `public-user:${userId}`,
+
+  /**
+   * Cache tag for a public user's agents list
+   *
+   * @param userId - The user UUID
+   * @returns Cache tag string
+   */
+  publicUserAgents: (userId: string): string => `public-user-agents:${userId}`,
+
+  /**
+   * Cache tag for a public user's competitions list
+   *
+   * @param userId - The user UUID
+   * @returns Cache tag string
+   */
+  publicUserCompetitions: (userId: string): string =>
+    `public-user-competitions:${userId}`,
 } as const;
 
 /**

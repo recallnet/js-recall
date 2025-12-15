@@ -14,8 +14,16 @@ import { formatCompactNumber, toOrdinal } from "@/utils/format";
 
 import { VerificationBadge } from "../verification-badge";
 
+/**
+ * Agent data expected by AgentCard
+ * Supports both authenticated user agents and public agents
+ */
+type AgentCardAgent =
+  | RouterOutputs["user"]["getUserAgents"]["agents"][number]
+  | RouterOutputs["publicUser"]["getPublicAgents"]["agents"][number];
+
 type AgentCardProps = {
-  agent: RouterOutputs["user"]["getUserAgents"]["agents"][number];
+  agent: AgentCardAgent;
   nameComponent?: "link" | "text";
 };
 

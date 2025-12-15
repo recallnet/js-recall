@@ -36,7 +36,6 @@ export const PRIVY_ISSUER = "privy.io";
  */
 export type PrivyUserInfo = {
   privyId: string;
-  name: string;
   email: string;
   embeddedWallet: Omit<WalletWithMetadata, "type">;
   customWallets: WalletWithMetadata[];
@@ -148,19 +147,8 @@ export function extractPrivyUserInfo(privyUser: PrivyUser): PrivyUserInfo {
   const customWallets = getCustomLinkedWallets(privyUser);
   const privyId = privyUser.id;
 
-  // Check if Google or GitHub are provided, and if so, override the user's email-derived name
-  // For email providers, check `customMetadata` for a name (e.g., used in e2e tests)
-  const name =
-    privyUser.github?.name ??
-    privyUser.google?.name ??
-    (typeof privyUser.customMetadata?.name === "string"
-      ? privyUser.customMetadata.name
-      : null) ??
-    extractUsernameFromEmail(email);
-
   return {
     privyId,
-    name,
     email,
     embeddedWallet,
     customWallets,

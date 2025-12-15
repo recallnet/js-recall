@@ -2,6 +2,7 @@ import { ORPCError } from "@orpc/server";
 
 import { UpdateUserProfileBodySchema } from "@recallnet/services/types";
 
+import { CacheTags, invalidateCacheTags } from "@/lib/cache-tags";
 import { base } from "@/rpc/context/base";
 import { authMiddleware } from "@/rpc/middleware/auth";
 
@@ -22,6 +23,8 @@ export const updateProfile = base
         id: context.user.id,
         ...input,
       });
+
+      invalidateCacheTags([CacheTags.publicUser(context.user.id)]);
 
       return updatedUser;
     } catch (error) {
