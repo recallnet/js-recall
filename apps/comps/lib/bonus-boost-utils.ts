@@ -82,3 +82,49 @@ export const getExpirationWarningClass = (expiresAt: string): string => {
       return "";
   }
 };
+
+/**
+ * Aggregate bonus boosts by expiration date (ignoring time)
+ * Groups boosts that expire on the same calendar day and sums their amounts
+ * Uses the earliest expiration time for each date
+ * @param boosts - Array of bonus boosts
+ * @returns Array of aggregated boosts with unique expiration dates
+ */
+export const aggregateBonusBoostsByExpiration = <
+  T extends { amount: string; expiresAt: string },
+>(
+  boosts: T[],
+): Array<{ amount: string; expiresAt: string }> => {
+  const aggregated = new Map<
+    string,
+    { amount: bigint; earliestExpiration: string }
+  >();
+
+  for (const boost of boosts) {
+    // Get the date part only (YYYY-MM-DD) by using UTC to avoid timezone issues
+    const dateKey = new Date(boost.expiresAt).toISOString().split("T")[0];
+    if (!dateKey) continue;
+
+    const existing = aggregated.get(dateKey);
+    if (existing) {
+      // Sum the amount and keep the earliest expiration time
+      aggregated.set(dateKey, {
+        amount: existing.amount + BigInt(boost.amount),
+        earliestExpiration:
+          boost.expiresAt < existing.earliestExpiration
+            ? boost.expiresAt
+            : existing.earliestExpiration,
+      });
+    } else {
+      aggregated.set(dateKey, {
+        amount: BigInt(boost.amount),
+        earliestExpiration: boost.expiresAt,
+      });
+    }
+  }
+
+  return Array.from(aggregated.values()).map((entry) => ({
+    expiresAt: entry.earliestExpiration,
+    amount: entry.amount.toString(),
+  }));
+};

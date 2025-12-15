@@ -10,6 +10,7 @@ import {
 
 import { useUserBonusBoosts } from "@/hooks/useUserBonusBoosts";
 import {
+  aggregateBonusBoostsByExpiration,
   formatTimeRemaining,
   getExpirationWarningClass,
   sumBonusBoosts,
@@ -28,6 +29,7 @@ export const BonusBoosts = () => {
   }
 
   const total = sumBonusBoosts(bonusBoosts);
+  const aggregatedBoosts = aggregateBonusBoostsByExpiration(bonusBoosts);
 
   return (
     <DropdownMenu>
@@ -47,9 +49,9 @@ export const BonusBoosts = () => {
         <div className="space-y-3 p-3">
           <p className="text-base font-semibold">Bonus Boosts</p>
           <div className="space-y-2">
-            {bonusBoosts.map((boost) => (
+            {aggregatedBoosts.map((boost) => (
               <div
-                key={boost.id}
+                key={boost.expiresAt}
                 className={getExpirationWarningClass(boost.expiresAt)}
               >
                 <p className="font-mono text-sm font-semibold">
