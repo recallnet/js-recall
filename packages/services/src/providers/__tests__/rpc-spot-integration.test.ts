@@ -1162,4 +1162,134 @@ describe("RpcSpotProvider - Integration Tests (Real Blockchain)", () => {
     expect(v2Swap?.protocol).toBe("aerodrome");
     console.log(`✓ Combined filter test passed`);
   }, 30000);
+
+  // ===========================================================================
+  // TOKEN SYMBOL RETRIEVAL TESTS
+  // These tests verify on-chain symbol() retrieval works correctly
+  // Used as fallback when price providers return contract address as symbol
+  // ===========================================================================
+
+  // Test fixture: PONKE token on Base
+  // CoinGecko returns the contract address as symbol for this token
+  // On-chain symbol() call returns "PONKE"
+  const PONKE_TOKEN = {
+    address: "0x4a0c64af541439898448659aedcec8e8e819fc53",
+    expectedSymbol: "PONKE",
+    expectedDecimals: 18,
+    chain: "base" as const,
+    description:
+      "Token where CoinGecko returns address as symbol (discovered in production)",
+  };
+
+  // Known tokens with proper symbols for comparison
+  const KNOWN_TOKENS = {
+    USDC: {
+      address: "0x833589fcd6edb6e08f4c7c32d4f71b54bda02913",
+      expectedSymbol: "USDC",
+      expectedDecimals: 6,
+      chain: "base" as const,
+    },
+    WETH: {
+      address: "0x4200000000000000000000000000000000000006",
+      expectedSymbol: "WETH",
+      expectedDecimals: 18,
+      chain: "base" as const,
+    },
+    AERO: {
+      address: "0x940181a94a35a4569e4529a3cdfb74e38fd98631",
+      expectedSymbol: "AERO",
+      expectedDecimals: 18,
+      chain: "base" as const,
+    },
+  };
+
+  test.skipIf(!process.env.ALCHEMY_API_KEY)(
+    "should retrieve PONKE token symbol from on-chain (CoinGecko returns address)",
+    async () => {
+      const symbol = await realRpcProvider.getTokenSymbol(
+        PONKE_TOKEN.address,
+        PONKE_TOKEN.chain,
+      );
+
+      expect(symbol).toBe(PONKE_TOKEN.expectedSymbol);
+      expect(symbol?.length).toBeLessThanOrEqual(20); // Must fit in varchar(20)
+    },
+    30000,
+  );
+
+  test.skipIf(!process.env.ALCHEMY_API_KEY)(
+    "should retrieve symbols for known tokens (USDC, WETH, AERO)",
+    async () => {
+      for (const [, token] of Object.entries(KNOWN_TOKENS)) {
+        const symbol = await realRpcProvider.getTokenSymbol(
+          token.address,
+          token.chain,
+        );
+
+        expect(symbol).toBe(token.expectedSymbol);
+        expect(symbol?.length).toBeLessThanOrEqual(20);
+      }
+    },
+    30000,
+  );
+
+  test.skipIf(!process.env.ALCHEMY_API_KEY)(
+    "should retrieve correct decimals for PONKE token",
+    async () => {
+      const decimals = await realRpcProvider.getTokenDecimals(
+        PONKE_TOKEN.address,
+        PONKE_TOKEN.chain,
+      );
+
+      expect(decimals).toBe(PONKE_TOKEN.expectedDecimals);
+    },
+    30000,
+  );
+
+  test.skipIf(!process.env.ALCHEMY_API_KEY)(
+    "should retrieve correct decimals for known tokens",
+    async () => {
+      for (const [, token] of Object.entries(KNOWN_TOKENS)) {
+        const decimals = await realRpcProvider.getTokenDecimals(
+          token.address,
+          token.chain,
+        );
+
+        expect(decimals).toBe(token.expectedDecimals);
+      }
+    },
+    30000,
+  );
+
+  test.skipIf(!process.env.ALCHEMY_API_KEY)(
+    "should return null for invalid token address symbol",
+    async () => {
+      // Use a non-contract address (EOA or zero address)
+      const invalidAddress = "0x0000000000000000000000000000000000000001";
+
+      const symbol = await realRpcProvider.getTokenSymbol(
+        invalidAddress,
+        "base",
+      );
+
+      // Should return null for non-contract addresses
+      expect(symbol).toBeNull();
+    },
+    30000,
+  );
+
+  test.skipIf(!process.env.ALCHEMY_API_KEY)(
+    "RpcSpotProvider should delegate getTokenSymbol to AlchemyRpcProvider",
+    async () => {
+      provider = new RpcSpotProvider(realRpcProvider, [], mockLogger);
+
+      const symbol = await provider.getTokenSymbol(
+        PONKE_TOKEN.address,
+        PONKE_TOKEN.chain,
+      );
+
+      expect(symbol).toBe(PONKE_TOKEN.expectedSymbol);
+    },
+    30000,
+  );
 });

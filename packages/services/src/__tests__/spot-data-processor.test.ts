@@ -441,6 +441,78 @@ describe("SpotDataProcessor", () => {
       );
     });
 
+    it("should sanitize address-like symbols in transfers via on-chain lookup", async () => {
+      // Simulate CoinGecko returning contract address as symbol (PONKE case)
+      const ponkeTokenAddress = "0x4a0c64af541439898448659aedcec8e8e819fc53";
+      const ponkeTransfer: SpotTransfer = {
+        type: "deposit",
+        tokenAddress: ponkeTokenAddress,
+        amount: 1000,
+        from: "0xexternal",
+        to: "0xagent",
+        timestamp: new Date("2024-01-14"),
+        txHash: "0xponke456",
+        blockNumber: 1000001,
+        chain: "base",
+      };
+
+      // Price provider returns the contract address as the symbol (this is the bug)
+      const ponkePriceWithAddressSymbol: PriceReport = {
+        token: ponkeTokenAddress,
+        price: 0.5,
+        symbol: ponkeTokenAddress, // CoinGecko returns address as symbol
+        timestamp: new Date(),
+        chain: BlockchainType.EVM,
+        specificChain: "base",
+      };
+
+      // Mock bulk prices returning the address-like symbol
+      mockPriceTracker.getBulkPrices.mockResolvedValue(
+        new Map([
+          [
+            `${ponkeTokenAddress.toLowerCase()}:base`,
+            ponkePriceWithAddressSymbol,
+          ],
+        ]),
+      );
+
+      // Provider with getTokenSymbol that returns the actual on-chain symbol
+      const providerWithTokenSymbol = {
+        ...mockProvider,
+        getTransferHistory: vi.fn().mockResolvedValue([ponkeTransfer]),
+        getTradesSince: vi.fn().mockResolvedValue({ trades: [] }),
+        getTokenSymbol: vi.fn().mockResolvedValue("PONKE"), // On-chain symbol
+      };
+
+      await processor.processAgentData(
+        "agent-1",
+        "comp-1",
+        "0xagent123",
+        providerWithTokenSymbol,
+        new Map(),
+        false,
+        ["base"],
+        new Date("2024-01-01"),
+      );
+
+      // Verify the symbol was sanitized to "PONKE" (not the 42-char address)
+      expect(mockSpotLiveRepo.batchSaveSpotLiveTransfers).toHaveBeenCalledWith(
+        expect.arrayContaining([
+          expect.objectContaining({
+            tokenSymbol: "PONKE", // Sanitized via on-chain lookup
+            tokenAddress: ponkeTokenAddress,
+            amountUsd: expect.any(String),
+          }),
+        ]),
+      );
+
+      // Verify getTokenSymbol was called with the correct arguments
+      expect(providerWithTokenSymbol.getTokenSymbol).toHaveBeenCalledWith(
+        ponkeTokenAddress,
+        "base",
+      );
+    });
+
     it("should throw error if provider is null", async () => {
       await expect(
         processor.processAgentData(

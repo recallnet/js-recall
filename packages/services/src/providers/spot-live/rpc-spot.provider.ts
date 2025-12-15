@@ -218,6 +218,20 @@ export class RpcSpotProvider implements ISpotLiveDataProvider {
   }
 
   /**
+   * Get token symbol from on-chain contract
+   * Used as fallback when price provider returns address as symbol
+   * @param tokenAddress Token contract address
+   * @param chain Chain where token exists
+   * @returns Token symbol string, or null if not retrievable
+   */
+  async getTokenSymbol(
+    tokenAddress: string,
+    chain: SpecificChain,
+  ): Promise<string | null> {
+    return await this.rpcProvider.getTokenSymbol(tokenAddress, chain);
+  }
+
+  /**
    * Get all trades for a wallet since a given time
    * Detects swaps from transfer patterns and applies protocol filtering if configured
    * @param walletAddress Wallet address to monitor

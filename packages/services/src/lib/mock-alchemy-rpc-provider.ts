@@ -2649,6 +2649,30 @@ export class MockAlchemyRpcProvider implements IRpcProvider {
   }
 
   /**
+   * Get token symbol from on-chain contract
+   * Returns known symbols for common tokens, null for others
+   */
+  async getTokenSymbol(
+    tokenAddress: string,
+    chain: SpecificChain,
+  ): Promise<string | null> {
+    void chain; // Not used in mock
+    const address = tokenAddress.toLowerCase();
+
+    // Known token symbols
+    const knownSymbols: Record<string, string> = {
+      "0x833589fcd6edb6e08f4c7c32d4f71b54bda02913": "USDC",
+      "0x4200000000000000000000000000000000000006": "WETH",
+      "0x940181a94a35a4569e4529a3cdfb74e38fd98631": "AERO",
+      "0x4a0c64af541439898448659aedcec8e8e819fc53": "PONKE",
+      "0x6502f90d06be80fdb758d88ac00cb9ca6c808dc9": "WARMAX",
+      "0xe73cfcdb88b8334934280942c6fdd35171e3a157": "SANTA",
+    };
+
+    return knownSymbols[address] ?? null;
+  }
+
+  /**
    * Reset all mock data (called between tests)
    */
   public reset(): void {

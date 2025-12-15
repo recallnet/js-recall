@@ -139,6 +139,18 @@ export interface ISpotLiveDataProvider {
   ): Promise<number>;
 
   /**
+   * Get token symbol from on-chain contract
+   * Used as fallback when price provider returns address as symbol
+   * @param tokenAddress Token contract address
+   * @param chain Chain where token exists
+   * @returns Token symbol string, or null if not retrievable
+   */
+  getTokenSymbol?(
+    tokenAddress: string,
+    chain: SpecificChain,
+  ): Promise<string | null>;
+
+  /**
    * Get current block number for a chain
    * Used for sync state tracking when no trades found
    * @param chain Specific chain
