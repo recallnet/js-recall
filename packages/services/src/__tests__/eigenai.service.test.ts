@@ -122,7 +122,7 @@ describe("EigenaiService", () => {
         {
           eigenai: {
             chainId: EIGENAI_TEST_FIXTURE.chainId,
-            expectedSigner: EIGENAI_TEST_FIXTURE.expectedSigner,
+            expectedSigners: [EIGENAI_TEST_FIXTURE.expectedSigner],
             badgeActiveThreshold: 10,
           },
         },
@@ -168,7 +168,7 @@ describe("EigenaiService", () => {
         {
           eigenai: {
             chainId: EIGENAI_WRONG_SIGNER_FIXTURE.chainId,
-            expectedSigner: EIGENAI_WRONG_SIGNER_FIXTURE.expectedSigner, // 0x0000...0001
+            expectedSigners: [EIGENAI_WRONG_SIGNER_FIXTURE.expectedSigner], // 0x0000...0001
             badgeActiveThreshold: 10,
           },
         },
@@ -276,7 +276,7 @@ describe("EigenaiService", () => {
         {
           eigenai: {
             chainId: EIGENAI_TEST_FIXTURE.chainId,
-            expectedSigner: EIGENAI_TEST_FIXTURE.expectedSigner,
+            expectedSigners: [EIGENAI_TEST_FIXTURE.expectedSigner],
             badgeActiveThreshold: 10,
           },
         },
@@ -437,7 +437,7 @@ describe("EigenaiService", () => {
         {
           eigenai: {
             chainId: EIGENAI_TEST_FIXTURE.chainId,
-            expectedSigner: EIGENAI_TEST_FIXTURE.expectedSigner,
+            expectedSigners: [EIGENAI_TEST_FIXTURE.expectedSigner],
             badgeActiveThreshold: 10,
           },
         },
@@ -490,7 +490,7 @@ describe("EigenaiService", () => {
         {
           eigenai: {
             chainId: EIGENAI_TEST_FIXTURE.chainId,
-            expectedSigner: EIGENAI_TEST_FIXTURE.expectedSigner,
+            expectedSigners: [EIGENAI_TEST_FIXTURE.expectedSigner],
             badgeActiveThreshold: 10, // Need 10 signatures for active badge
           },
         },
@@ -626,7 +626,7 @@ describe("EigenaiService", () => {
         {
           eigenai: {
             chainId: EIGENAI_TEST_FIXTURE.chainId,
-            expectedSigner: EIGENAI_TEST_FIXTURE.expectedSigner,
+            expectedSigners: [EIGENAI_TEST_FIXTURE.expectedSigner],
             badgeActiveThreshold: 10,
           },
         },
@@ -686,7 +686,7 @@ describe("EigenaiService", () => {
         {
           eigenai: {
             chainId: EIGENAI_TEST_FIXTURE.chainId,
-            expectedSigner: EIGENAI_TEST_FIXTURE.expectedSigner,
+            expectedSigners: [EIGENAI_TEST_FIXTURE.expectedSigner],
             badgeActiveThreshold: 10,
           },
         },
@@ -751,7 +751,7 @@ describe("EigenaiService", () => {
         {
           eigenai: {
             chainId: EIGENAI_TEST_FIXTURE.chainId,
-            expectedSigner: EIGENAI_TEST_FIXTURE.expectedSigner,
+            expectedSigners: [EIGENAI_TEST_FIXTURE.expectedSigner],
             badgeActiveThreshold: 10,
           },
         },

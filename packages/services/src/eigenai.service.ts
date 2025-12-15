@@ -22,10 +22,13 @@ import { ApiError } from "./types/index.js";
 const EIGENAI_CHAIN_ID = "1";
 
 /**
- * Expected signer address for EigenAI signatures.
- * This is the dTERMinal API signer for mainnet.
+ * Expected signer addresses for EigenAI signatures.
+ * These are the dTERMinal API signers for different models.
  */
-const EIGENAI_EXPECTED_SIGNER = "0x7053bfb0433a16a2405de785d547b1b32cee0cf3";
+const EIGENAI_EXPECTED_SIGNERS = [
+  "0x7053bfb0433a16a2405de785d547b1b32cee0cf3", // gpt-oss
+  "0x1f58953bac51a3a3519ac24074fe325289727656", // qwen
+];
 
 /**
  * Minimum number of verified signatures in 24h to have an active badge.
@@ -101,7 +104,7 @@ export interface CompetitionEigenaiStats {
 export interface EigenaiServiceConfig {
   eigenai: {
     chainId?: string;
-    expectedSigner?: string;
+    expectedSigners?: string[];
     badgeActiveThreshold?: number;
   };
 }
@@ -123,7 +126,7 @@ export class EigenaiService {
   private eigenaiRepository: EigenaiRepository;
   private logger: Logger;
   private chainId: string;
-  private expectedSigner: string;
+  private expectedSigners: string[];
   private badgeActiveThreshold: number;
 
   constructor(
@@ -134,8 +137,8 @@ export class EigenaiService {
     this.eigenaiRepository = eigenaiRepository;
     this.logger = logger;
     this.chainId = config.eigenai.chainId ?? EIGENAI_CHAIN_ID;
-    this.expectedSigner =
-      config.eigenai.expectedSigner ?? EIGENAI_EXPECTED_SIGNER;
+    this.expectedSigners =
+      config.eigenai.expectedSigners ?? EIGENAI_EXPECTED_SIGNERS;
     this.badgeActiveThreshold =
       config.eigenai.badgeActiveThreshold ?? BADGE_ACTIVE_THRESHOLD;
   }
@@ -177,9 +180,11 @@ export class EigenaiService {
         signature: sigHex,
       });
 
-      // Check if recovered address matches expected signer
-      const isValid =
-        recoveredAddress.toLowerCase() === this.expectedSigner.toLowerCase();
+      // Check if recovered address matches any expected signer
+      const normalizedRecoveredAddress = recoveredAddress.toLowerCase();
+      const isValid = this.expectedSigners.some(
+        (signer) => signer.toLowerCase() === normalizedRecoveredAddress,
+      );
 
       return {
         isValid,
