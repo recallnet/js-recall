@@ -965,36 +965,47 @@ export class SpotDataProcessor {
             const transferPriceMap =
               await this.fetchPricesForTrades(transferTokensList);
 
-            // Enrich transfers with price data
+            // Enrich transfers with price data (async to support symbol sanitization)
             const enrichedTransferRecords: InsertSpotLiveTransferHistory[] =
-              allTransfers.map((t): InsertSpotLiveTransferHistory => {
-                // Key by address:chain for multi-chain support
-                const priceKey = `${t.tokenAddress.toLowerCase()}:${t.chain}`;
-                const price = transferPriceMap.get(priceKey);
-                // Use native token symbol for native tokens (zero address), not the price API's wrapped symbol
-                const tokenSymbol = isNativeToken(t.tokenAddress)
-                  ? getNativeTokenSymbol(t.chain)
-                  : (price?.symbol ?? "UNKNOWN");
-                const amountUsd = price
-                  ? (t.amount * price.price).toString()
-                  : null;
+              await Promise.all(
+                allTransfers.map(
+                  async (t): Promise<InsertSpotLiveTransferHistory> => {
+                    // Key by address:chain for multi-chain support
+                    const priceKey = `${t.tokenAddress.toLowerCase()}:${t.chain}`;
+                    const price = transferPriceMap.get(priceKey);
+                    // Use native token symbol for native tokens (zero address), not the price API's wrapped symbol
+                    const rawSymbol = isNativeToken(t.tokenAddress)
+                      ? getNativeTokenSymbol(t.chain)
+                      : (price?.symbol ?? "UNKNOWN");
+                    // Sanitize symbol to handle cases where price provider returns address as symbol
+                    const tokenSymbol = await this.sanitizeTokenSymbol(
+                      rawSymbol,
+                      t.tokenAddress,
+                      t.chain,
+                      provider,
+                    );
+                    const amountUsd = price
+                      ? (t.amount * price.price).toString()
+                      : null;
 
-                return {
-                  agentId,
-                  competitionId,
-                  type: t.type,
-                  specificChain: t.chain, // Already typed as SpecificChain from SpotTransfer
-                  tokenAddress: t.tokenAddress,
-                  tokenSymbol,
-                  amount: t.amount.toString(),
-                  amountUsd,
-                  fromAddress: t.from,
-                  toAddress: t.to,
-                  txHash: t.txHash,
-                  blockNumber: t.blockNumber,
-                  transferTimestamp: t.timestamp,
-                };
-              });
+                    return {
+                      agentId,
+                      competitionId,
+                      type: t.type,
+                      specificChain: t.chain, // Already typed as SpecificChain from SpotTransfer
+                      tokenAddress: t.tokenAddress,
+                      tokenSymbol,
+                      amount: t.amount.toString(),
+                      amountUsd,
+                      fromAddress: t.from,
+                      toAddress: t.to,
+                      txHash: t.txHash,
+                      blockNumber: t.blockNumber,
+                      transferTimestamp: t.timestamp,
+                    };
+                  },
+                ),
+              );
 
             const savedTransfers =
               await this.spotLiveRepo.batchSaveSpotLiveTransfers(
