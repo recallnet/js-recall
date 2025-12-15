@@ -376,7 +376,7 @@ describe("Rewards Service", () => {
         nonExistentAmount,
       ),
     ).rejects.toThrow(
-      `No proof found for reward (walletAddress: ${nonExistentAddress}, amount: ${nonExistentAmount}) in competition ${testCompetitionId}`,
+      `No proof found for reward (address: ${nonExistentAddress}, amount: ${nonExistentAmount}) in competition ${testCompetitionId}`,
     );
   });
 });
