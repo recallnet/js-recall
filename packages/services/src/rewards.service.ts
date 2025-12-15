@@ -201,7 +201,6 @@ export class RewardsService {
           userId: reward.owner,
           agentId: reward.competitor ?? null,
           competitionId: competitionId,
-          address: normalizedAddress,
           walletAddress: normalizedAddress,
           amount: reward.amount,
           leafHash: hexToBytes(
@@ -360,7 +359,7 @@ export class RewardsService {
    */
   public async retrieveProof(
     competitionId: string,
-    address: `0x${string}`,
+    address: Hex,
     amount: bigint,
   ): Promise<Uint8Array[]> {
     const leafHash = createLeafNode(address, amount);
@@ -445,7 +444,7 @@ export class RewardsService {
 
       const proof = await this.retrieveProof(
         reward.competitionId,
-        reward.address as `0x${string}`,
+        reward.walletAddress as Hex,
         reward.amount,
       );
 
@@ -522,14 +521,14 @@ export class RewardsService {
     const agentRewards = rewards
       .filter((r) => r.agentId !== null)
       .map((r) => ({
-        address: r.address,
+        address: r.walletAddress,
         amount: r.amount,
       }));
 
     const boosterRewards = rewards
       .filter((r) => r.agentId === null)
       .map((r) => ({
-        address: r.address,
+        address: r.walletAddress,
         amount: r.amount,
       }));
 

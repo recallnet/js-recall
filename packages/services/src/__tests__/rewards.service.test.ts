@@ -349,8 +349,6 @@ describe("RewardsService", () => {
           competitionId,
           userId: "user-1",
           agentId: "agent-1",
-          address:
-            "0x1111111111111111111111111111111111111111" as `0x${string}`,
           walletAddress: "0x1111111111111111111111111111111111111111",
           amount: 100n,
           leafHash: Buffer.from("hash1"),
@@ -515,8 +513,6 @@ describe("RewardsService", () => {
           competitionId,
           userId: "user-1",
           agentId: "agent-1",
-          address:
-            "0x1111111111111111111111111111111111111111" as `0x${string}`,
           walletAddress: "0x1111111111111111111111111111111111111111",
           amount: BigInt("1000000000000000000000000"), // 1M tokens
           leafHash: Buffer.from("hash1"),
@@ -580,8 +576,6 @@ describe("RewardsService", () => {
           competitionId,
           userId: "user-1",
           agentId: "agent-1",
-          address:
-            "0x1111111111111111111111111111111111111111" as `0x${string}`,
           walletAddress: "0x1111111111111111111111111111111111111111",
           amount: 100n,
           leafHash: Buffer.from("hash1"),
@@ -613,8 +607,6 @@ describe("RewardsService", () => {
           competitionId,
           userId: "user-1",
           agentId: "agent-1",
-          address:
-            "0x1111111111111111111111111111111111111111" as `0x${string}`,
           walletAddress: "0x1111111111111111111111111111111111111111",
           amount: 100n,
           leafHash: Buffer.from("hash1"),
@@ -627,8 +619,6 @@ describe("RewardsService", () => {
           competitionId,
           userId: "user-2",
           agentId: "agent-2",
-          address:
-            "0x2222222222222222222222222222222222222222" as `0x${string}`,
           walletAddress: "0x2222222222222222222222222222222222222222",
           amount: 200n,
           leafHash: Buffer.from("hash2"),
@@ -690,8 +680,6 @@ describe("RewardsService", () => {
           competitionId,
           userId: "user-1",
           agentId: "agent-1",
-          address:
-            "0x1111111111111111111111111111111111111111" as `0x${string}`,
           walletAddress: "0x1111111111111111111111111111111111111111",
           amount: 150n,
           leafHash: Buffer.from("hash1"),
@@ -704,8 +692,6 @@ describe("RewardsService", () => {
           competitionId,
           userId: "user-2",
           agentId: "agent-2",
-          address:
-            "0x2222222222222222222222222222222222222222" as `0x${string}`,
           walletAddress: "0x2222222222222222222222222222222222222222",
           amount: 350n,
           leafHash: Buffer.from("hash2"),
@@ -744,8 +730,6 @@ describe("RewardsService", () => {
           competitionId,
           userId: "user-1",
           agentId: "agent-1",
-          address:
-            "0x1111111111111111111111111111111111111111" as `0x${string}`,
           walletAddress: "0x1111111111111111111111111111111111111111",
           amount: 100n,
           leafHash: Buffer.from("hash1"),
@@ -787,8 +771,6 @@ describe("RewardsService", () => {
           competitionId,
           userId: "user-1",
           agentId: "agent-1",
-          address:
-            "0x1111111111111111111111111111111111111111" as `0x${string}`,
           walletAddress: "0x1111111111111111111111111111111111111111",
           amount: 100n,
           leafHash: Buffer.from("hash1"),
@@ -833,8 +815,6 @@ describe("RewardsService", () => {
           competitionId,
           userId: "user-1",
           agentId: "agent-1",
-          address:
-            "0x1111111111111111111111111111111111111111" as `0x${string}`,
           walletAddress: "0x1111111111111111111111111111111111111111",
           amount: 100n,
           leafHash: Buffer.from(
@@ -1078,8 +1058,6 @@ describe("RewardsService", () => {
           competitionId,
           userId: "user-1",
           agentId: "agent-1",
-          address:
-            "0x1111111111111111111111111111111111111111" as `0x${string}`,
           walletAddress: "0x1111111111111111111111111111111111111111",
           amount: largeAmount,
           leafHash: Buffer.from("hash1"),
@@ -1092,8 +1070,6 @@ describe("RewardsService", () => {
           competitionId,
           userId: "user-2",
           agentId: "agent-2",
-          address:
-            "0x2222222222222222222222222222222222222222" as `0x${string}`,
           walletAddress: "0x2222222222222222222222222222222222222222",
           amount: 1n,
           leafHash: Buffer.from("hash2"),
@@ -1136,8 +1112,6 @@ describe("RewardsService", () => {
           competitionId,
           userId: "user-1",
           agentId: "agent-1",
-          address:
-            "0x1111111111111111111111111111111111111111" as `0x${string}`,
           walletAddress: "0x1111111111111111111111111111111111111111",
           amount: 0n,
           leafHash: Buffer.from(
@@ -1187,7 +1161,6 @@ describe("RewardsService", () => {
           competitionId,
           userId: "user-1",
           agentId: "agent-1",
-          address: duplicateAddress,
           walletAddress: duplicateAddress.toLowerCase(),
           amount: 100n,
           leafHash: Buffer.from(
@@ -1203,7 +1176,6 @@ describe("RewardsService", () => {
           competitionId,
           userId: "user-2",
           agentId: "agent-2",
-          address: duplicateAddress,
           walletAddress: duplicateAddress.toLowerCase(),
           amount: 200n,
           leafHash: Buffer.from(
@@ -1287,8 +1259,6 @@ describe("RewardsService", () => {
           competitionId,
           userId: "user-1",
           agentId: "agent-1",
-          address:
-            "0x1111111111111111111111111111111111111111" as `0x${string}`,
           walletAddress: "0x1111111111111111111111111111111111111111",
           amount: 100n,
           leafHash: Buffer.from("hash1"),
@@ -1441,11 +1411,10 @@ describe("RewardsService", () => {
       // Each reward should have the required fields
       insertCall?.forEach((reward) => {
         expect(reward).toHaveProperty("competitionId", testCompetitionId);
-        expect(reward).toHaveProperty("address");
+        expect(reward).toHaveProperty("walletAddress");
         expect(reward).toHaveProperty("amount");
         expect(reward).toHaveProperty("leafHash");
         expect(reward).toHaveProperty("id");
-        expect(typeof reward.address).toBe("string");
         expect(typeof reward.amount).toBe("bigint");
         expect(reward.amount).toBeGreaterThan(0n);
       });
@@ -1599,11 +1568,10 @@ describe("RewardsService", () => {
       // Verify reward structure
       insertCall?.forEach((reward) => {
         expect(reward).toHaveProperty("competitionId", testCompetitionId);
-        expect(reward).toHaveProperty("address");
+        expect(reward).toHaveProperty("walletAddress");
         expect(reward).toHaveProperty("amount");
         expect(reward).toHaveProperty("leafHash");
         expect(reward).toHaveProperty("id");
-        expect(typeof reward.address).toBe("string");
         expect(typeof reward.amount).toBe("bigint");
         expect(reward.amount).toBeGreaterThan(0n);
       });
@@ -2227,7 +2195,6 @@ describe("RewardsService", () => {
           competitionId: "test-id",
           userId: "user-1",
           agentId: "agent-1",
-          address: "0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
           walletAddress: "0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
           amount: BigInt("100000000000000000000"),
           leafHash: new Uint8Array(32).fill(0x01),

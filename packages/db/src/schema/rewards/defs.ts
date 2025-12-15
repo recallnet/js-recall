@@ -11,12 +11,7 @@ import {
 } from "drizzle-orm/pg-core";
 
 import { agents, competitions, users } from "../core/defs.js";
-import {
-  blockchainAddress,
-  bytea,
-  ethAddress,
-  tokenAmount,
-} from "../custom-types.js";
+import { bytea, ethAddress, tokenAmount } from "../custom-types.js";
 
 export const epochs = pgTable("epochs", {
   id: uuid().primaryKey().notNull().defaultRandom(),
@@ -39,8 +34,7 @@ export const rewards = pgTable(
     agentId: uuid("agent_id").references(() => agents.id, {
       onDelete: "cascade",
     }),
-    address: blockchainAddress("address").notNull(),
-    walletAddress: ethAddress("wallet_address"),
+    walletAddress: ethAddress("wallet_address").notNull(),
     amount: tokenAmount("amount").notNull(),
     leafHash: bytea("leaf_hash").notNull(),
     claimed: boolean().default(false).notNull(),
@@ -55,7 +49,6 @@ export const rewards = pgTable(
     index("idx_rewards_competition_id").on(table.competitionId),
     index("idx_rewards_user_id").on(table.userId),
     index("idx_rewards_agent_id").on(table.agentId),
-    index("idx_rewards_address").on(table.address),
     index("idx_rewards_wallet_address").on(table.walletAddress),
     uniqueIndex("uq_rewards_competition_id_user_id_agent_id").on(
       table.competitionId,

@@ -114,17 +114,17 @@ describe("Rewards Service", () => {
       "0xbDA5747bFD65F08deb54cb465eB87D40e51B197E",
     ];
     for (let i = 0; i < 3; i++) {
-      const address = addresses[i] as `0x${string}`;
+      const walletAddress = addresses[i] as `0x${string}`;
       const amount = BigInt(i + 1);
 
       // Generate proper leaf hash using the standalone function
-      const leafHashBuffer = createLeafNode(address, amount);
+      const leafHashBuffer = createLeafNode(walletAddress, amount);
 
       testRewards.push({
         id: crypto.randomUUID(),
         competitionId: testCompetitionId,
         userId: testUserId,
-        address,
+        walletAddress,
         amount,
         leafHash: hexToBytes(leafHashBuffer), // Convert Buffer to Uint8Array
         claimed: false,
@@ -202,19 +202,19 @@ describe("Rewards Service", () => {
 
   test("allocate method handles single reward correctly", async () => {
     // Prepare single reward with deterministic address
-    const address =
+    const walletAddress =
       "0x6813Eb9362372EEF6200f3b1dbC3f819671cBA69" as `0x${string}`;
     const amount = BigInt("5");
 
     // Generate proper leaf hash using the standalone function
-    const leafHashBuffer = createLeafNode(address, amount);
+    const leafHashBuffer = createLeafNode(walletAddress, amount);
 
     const singleReward: InsertReward[] = [
       {
         id: crypto.randomUUID(),
         competitionId: testCompetitionId,
         userId: testUserId,
-        address,
+        walletAddress,
         amount,
         leafHash: hexToBytes(leafHashBuffer), // Convert Buffer to Uint8Array
         claimed: false,
@@ -250,28 +250,31 @@ describe("Rewards Service", () => {
     // Prepare multiple rewards with deterministic addresses
     const rewardData = [
       {
-        address: "0x71C7656EC7ab88b098defB751B7401B5f6d8976F" as `0x${string}`,
+        walletAddress:
+          "0x71C7656EC7ab88b098defB751B7401B5f6d8976F" as `0x${string}`,
         amount: BigInt("10"),
       },
       {
-        address: "0x2546BcD3c84621e976D8185a91A922aE77ECEc30" as `0x${string}`,
+        walletAddress:
+          "0x2546BcD3c84621e976D8185a91A922aE77ECEc30" as `0x${string}`,
         amount: BigInt("20"),
       },
       {
-        address: "0xbDA5747bFD65F08deb54cb465eB87D40e51B197E" as `0x${string}`,
+        walletAddress:
+          "0xbDA5747bFD65F08deb54cb465eB87D40e51B197E" as `0x${string}`,
         amount: BigInt("30"),
       },
     ];
 
     // Create rewards and their leaf hashes
     const testRewards: InsertReward[] = rewardData.map(
-      ({ address, amount }) => {
-        const leafHashBuffer = createLeafNode(address, amount);
+      ({ walletAddress, amount }) => {
+        const leafHashBuffer = createLeafNode(walletAddress, amount);
         return {
           id: crypto.randomUUID(),
           competitionId: testCompetitionId,
           userId: testUserId,
-          address,
+          walletAddress,
           amount,
           leafHash: hexToBytes(leafHashBuffer),
           claimed: false,
@@ -305,14 +308,14 @@ describe("Rewards Service", () => {
     });
 
     // Loop through each reward and verify its proof
-    for (const { address, amount } of rewardData) {
+    for (const { walletAddress, amount } of rewardData) {
       // Generate leaf hash for verification
-      const leafHashBuffer = createLeafNode(address, amount);
+      const leafHashBuffer = createLeafNode(walletAddress, amount);
 
       // Retrieve proof for the reward
       const proof = await rewardsService.retrieveProof(
         testCompetitionId,
-        address,
+        walletAddress,
         amount,
       );
 
@@ -352,7 +355,7 @@ describe("Rewards Service", () => {
         id: crypto.randomUUID(),
         competitionId: testCompetitionId,
         userId: testUserId,
-        address: existingAddress,
+        walletAddress: existingAddress,
         amount: existingAmount,
         leafHash: hexToBytes(leafHashBuffer),
         claimed: false,

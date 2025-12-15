@@ -5,7 +5,7 @@ import { blue, cyan, green, red, yellow } from "kleur/colors";
 import { MerkleTree } from "merkletreejs";
 import * as path from "path";
 import { parse } from "ts-command-line-args";
-import { hexToBytes, keccak256 } from "viem";
+import { Hex, hexToBytes, keccak256 } from "viem";
 
 import { competitions, users } from "@recallnet/db/schema/core/defs";
 import { rewards } from "@recallnet/db/schema/rewards/defs";
@@ -171,7 +171,7 @@ async function insertReward() {
     await db.insert(rewards).values({
       competitionId: competitionId,
       userId: args.userId,
-      address: walletAddress as `0x${string}`,
+      walletAddress,
       amount: amountBigInt,
       leafHash: hexToBytes(leafHash),
       claimed: false,
@@ -205,7 +205,7 @@ async function insertReward() {
 
     // Create leaf hashes for all rewards
     const leafHashes = allRewards.map((reward) =>
-      createLeafNode(reward.address as `0x${string}`, reward.amount),
+      createLeafNode(reward.walletAddress as Hex, reward.amount),
     );
 
     // Prepend faux leaf node

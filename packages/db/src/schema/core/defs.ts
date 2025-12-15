@@ -106,18 +106,15 @@ export const users = pgTable(
     walletLastVerifiedAt: timestamp("wallet_last_verified_at", {
       withTimezone: true,
     }),
-    // TODO: Privy data (email, privy ID, & embedded wallet address) are nullable since legacy
-    // users are not guaranteed to have these. In the future, we can choose to remove users who
-    // are missing these or have no "last login" data.
+    // TODO: Privy data (email, privy ID, & embedded wallet address) are nullable since the sandbox
+    // does not store this user information. Production users are guaranteed to have these.
     //
-    // Legacy users always have custom (non-embedded) linked wallets (e.g., metamask), but new
-    // users might not link one and rely on embedded wallets. So, we maintain the "existing"
-    // `walletAddress` column to track whether the user has connected a custom wallet, and we
-    // also add a new `embeddedWalletAddress` column for the Privy-generated wallet.
+    // We maintain the existing `walletAddress` column to track whether the user has connected a
+    // custom wallet, and we also have an `embeddedWalletAddress` column for the Privy-generated
+    // wallet. The `walletLastVerifiedAt` column tracks the custom wallet connection.
     //
     // For any new user, we initially set these as the same value—optionally, letting a user
-    // link a custom wallet. For any legacy user, we keep their `walletAddress` and prompt them
-    // to link their custom wallet to Privy account (within UI flows).
+    // link a custom wallet (this is when `walletLastVerifiedAt` gets written.)
     embeddedWalletAddress: ethAddress("embedded_wallet_address").unique(),
     privyId: text("privy_id").unique(),
     name: varchar({ length: 100 }),
@@ -145,45 +142,6 @@ export const users = pgTable(
     unique("users_wallet_address_key").on(table.walletAddress),
   ],
 );
-
-/**
- * User wallets are either embedded wallets via Privy or custom wallets linked by the user
- *
- * TODO: this table is not used yet, but will be used in the future to track user wallets.
- * For example, we need a way to distinguish between a linked browser wallet since a user
- * will likely want this as their "primary" and rewards-related address.
- */
-// export const userWallets = pgTable(
-//   "user_wallets",
-//   {
-//     id: uuid().primaryKey().notNull(),
-//     userId: uuid("user_id").notNull(),
-//     address: varchar("address", { length: 42 }).notNull(),
-//     isPrimary: boolean("is_primary").notNull().default(false),
-//     isEmbeddedWallet: boolean("is_embedded_wallet").notNull().default(false),
-//     clientType: varchar("client_type", { length: 100 }), // Free form via Privy API (e.g. "privy", "metamask", etc.)
-//     lastVerifiedAt: timestamp("last_verified_at", { withTimezone: true }),
-//     createdAt: timestamp("created_at", { withTimezone: true })
-//       .defaultNow()
-//       .notNull(),
-//     updatedAt: timestamp("updated_at", { withTimezone: true })
-//       .defaultNow()
-//       .notNull(),
-//   },
-//   (table) => [
-//     // One primary wallet per user (optional; partial unique)
-//     unique("wallets_one_primary_per_user").on(table.userId, table.isPrimary),
-//     // Fast lookups
-//     index("wallets_user_id").on(table.userId),
-//     index("wallets_user_id_primary").on(table.userId, table.isPrimary),
-//     foreignKey({
-//       columns: [table.userId],
-//       foreignColumns: [users.id],
-//       name: "user_wallets_user_id_fkey",
-//     }).onDelete("cascade"),
-//     unique("user_wallets_address_key").on(table.address),
-//   ],
-// );
 
 /**
  * Agents are AI entities owned by users that participate in competitions
