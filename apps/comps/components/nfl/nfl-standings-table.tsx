@@ -790,7 +790,7 @@ export function NflStandingsTable({
               name: selectedAgent.name,
               rank: selectedAgent.rank,
               handle: selectedAgent.name,
-              score: selectedAgent.score ?? null,
+              score: selectedAgent.score ?? 0,
               description: null,
               imageUrl: null,
               portfolioValue: 0,
@@ -804,6 +804,8 @@ export function NflStandingsTable({
               calmarRatio: null,
               maxDrawdown: null,
               hasRiskMetrics: false,
+              sortinoRatio: null,
+              downsideDeviation: null,
             } satisfies RouterOutputs["competitions"]["getAgents"]["agents"][number]
           }
           availableBoost={userBoostBalance || 0}

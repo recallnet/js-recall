@@ -41,6 +41,8 @@ import {
   priceTrackerService,
 } from "@/lib/services";
 
+import { createTestRpcClient } from "../utils/rpc-client-helpers.js";
+
 describe("Spot Live Competition", () => {
   let adminApiKey: string;
 
@@ -119,11 +121,11 @@ describe("Spot Live Competition", () => {
     expect(usdcBalance1?.amount).toBeCloseTo(2000, 1);
 
     // Agent 1 checks their portfolio balance (calculated USD value)
-    const leaderboard1 = await adminClient.getCompetitionAgents(competition.id);
-    expect(leaderboard1.success).toBe(true);
-    const agent1Entry = (leaderboard1 as CompetitionAgentsResponse).agents.find(
-      (a) => a.id === agent1.id,
-    );
+    const rpcClient = await createTestRpcClient();
+    const leaderboard1 = await rpcClient.competitions.getAgents({
+      competitionId: competition.id,
+    });
+    const agent1Entry = leaderboard1.agents.find((a) => a.id === agent1.id);
     expect(agent1Entry).toBeDefined();
     expect(agent1Entry?.portfolioValue).toBeCloseTo(2000, 0); // ~$2000 (USDC at $1, 0 decimals = ±1)
 
@@ -190,15 +192,12 @@ describe("Spot Live Competition", () => {
     expect(aero2?.amount).toBeCloseTo(100, 1); // 100 AERO received
 
     // Verify portfolio values updated (should reflect swap value with AERO price)
-    const leaderboard2 = await adminClient.getCompetitionAgents(competition.id);
-    expect(leaderboard2.success).toBe(true);
+    const leaderboard2 = await rpcClient.competitions.getAgents({
+      competitionId: competition.id,
+    });
 
-    const updatedAgent1 = (
-      leaderboard2 as CompetitionAgentsResponse
-    ).agents.find((a) => a.id === agent1.id);
-    const updatedAgent2 = (
-      leaderboard2 as CompetitionAgentsResponse
-    ).agents.find((a) => a.id === agent2.id);
+    const updatedAgent1 = leaderboard2.agents.find((a) => a.id === agent1.id);
+    const updatedAgent2 = leaderboard2.agents.find((a) => a.id === agent2.id);
 
     expect(updatedAgent1).toBeDefined();
     expect(updatedAgent2).toBeDefined();
@@ -254,17 +253,15 @@ describe("Spot Live Competition", () => {
     expect(response.success).toBe(true);
     const competition = response.competition;
 
-    // Get competition details
-    const detailResponse = await adminClient.getCompetition(competition.id);
-    expect(detailResponse.success).toBe(true);
-
-    // Type assertion since we've verified success
-    const typedDetailResponse = detailResponse as CompetitionDetailResponse;
-    expect(typedDetailResponse.competition).toBeDefined();
-    expect(typedDetailResponse.competition.type).toBe("spot_live_trading");
+    // Get competition details via RPC
+    const rpcClient = await createTestRpcClient();
+    const comp = await rpcClient.competitions.getById({
+      id: competition.id,
+    });
+    expect(comp).toBeDefined();
+    expect(comp.type).toBe("spot_live_trading");
 
     // Check for spot live stats
-    const comp = typedDetailResponse.competition as EnhancedCompetition;
     expect(comp.stats?.totalAgents).toBeDefined();
     expect(comp.stats?.totalTrades).toBeDefined();
 
@@ -497,7 +494,7 @@ describe("Spot Live Competition", () => {
     await adminClient.loginAsAdmin(adminApiKey);
 
     // Register agent and get client
-    const { agent, client: agentClient } =
+    const { agent, client: _agentClient } =
       await registerUserAndAgentAndGetClient({
         adminApiKey,
         agentName: "Spot Live List Agent",
@@ -516,21 +513,19 @@ describe("Spot Live Competition", () => {
     const competition = response.competition;
 
     // Agent views THEIR competitions
-    const competitionsResponse = await agentClient.getAgentCompetitions(
-      agent.id,
-    );
+    const rpcClient = await createTestRpcClient();
+    const competitionsResponse = await rpcClient.agent.getCompetitions({
+      agentId: agent.id,
+      filters: {},
+      paging: { limit: 50, offset: 0 },
+    });
 
-    expect(competitionsResponse.success).toBe(true);
-
-    // Type assertion since we've verified success
-    const typedCompetitionsResponse =
-      competitionsResponse as AgentCompetitionsResponse;
-    expect(typedCompetitionsResponse.competitions).toBeDefined();
-    expect(Array.isArray(typedCompetitionsResponse.competitions)).toBe(true);
+    expect(competitionsResponse.competitions).toBeDefined();
+    expect(Array.isArray(competitionsResponse.competitions)).toBe(true);
 
     // Find the spot live competition
-    const spotLiveComp = typedCompetitionsResponse.competitions.find(
-      (c: EnhancedCompetition) => c.id === competition.id,
+    const spotLiveComp = competitionsResponse.competitions.find(
+      (c) => c.id === competition.id,
     );
 
     expect(spotLiveComp).toBeDefined();
@@ -845,21 +840,20 @@ describe("Spot Live Competition", () => {
     await wait(500);
 
     // Admin checks leaderboard
-    const leaderboardResponse = await adminClient.getCompetitionAgents(
-      competition.id,
-      { sort: "rank" },
-    );
-    expect(leaderboardResponse.success).toBe(true);
+    const rpcClient = await createTestRpcClient();
+    const leaderboardResponse = await rpcClient.competitions.getAgents({
+      competitionId: competition.id,
+      sort: "rank",
+    });
 
-    const typedLeaderboard = leaderboardResponse as CompetitionAgentsResponse;
-    expect(typedLeaderboard.agents).toBeDefined();
-    expect(typedLeaderboard.agents.length).toBe(2);
+    expect(leaderboardResponse.agents).toBeDefined();
+    expect(leaderboardResponse.agents.length).toBe(2);
 
     // Active agent should rank higher (has positive ROI from trading)
-    const activeAgentEntry = typedLeaderboard.agents.find(
+    const activeAgentEntry = leaderboardResponse.agents.find(
       (a) => a.id === agentActive.id,
     );
-    const inactiveAgentEntry = typedLeaderboard.agents.find(
+    const inactiveAgentEntry = leaderboardResponse.agents.find(
       (a) => a.id === agentInactive.id,
     );
 
@@ -867,7 +861,7 @@ describe("Spot Live Competition", () => {
     expect(inactiveAgentEntry).toBeDefined();
 
     // Active agent should have better rank (lower rank number)
-    expect(activeAgentEntry?.rank).toBeLessThan(inactiveAgentEntry!.rank);
+    expect(activeAgentEntry?.rank).toBeLessThan(inactiveAgentEntry!.rank!);
   });
 
   test("should handle empty wallet with no activity", async () => {
@@ -908,13 +902,14 @@ describe("Spot Live Competition", () => {
     expect(typedTradesResponse.trades.length).toBe(0);
 
     // Agent should still appear in leaderboard
-    const leaderboardResponse = await adminClient.getCompetitionAgents(
-      competition.id,
-    );
-    expect(leaderboardResponse.success).toBe(true);
+    const rpcClient = await createTestRpcClient();
+    const leaderboardResponse = await rpcClient.competitions.getAgents({
+      competitionId: competition.id,
+    });
 
-    const typedLeaderboard = leaderboardResponse as CompetitionAgentsResponse;
-    const agentEntry = typedLeaderboard.agents.find((a) => a.id === agent.id);
+    const agentEntry = leaderboardResponse.agents.find(
+      (a) => a.id === agent.id,
+    );
     expect(agentEntry).toBeDefined();
   });
 
@@ -1283,19 +1278,18 @@ describe("Spot Live Competition", () => {
     await wait(500);
 
     // Get active leaderboard
-    const activeLeaderboard = await adminClient.getCompetitionAgents(
-      competition.id,
-      { sort: "rank" },
-    );
-    expect(activeLeaderboard.success).toBe(true);
-    const activeAgents = (activeLeaderboard as CompetitionAgentsResponse)
-      .agents;
+    const rpcClient = await createTestRpcClient();
+    const activeLeaderboard = await rpcClient.competitions.getAgents({
+      competitionId: competition.id,
+      sort: "rank",
+    });
+    const activeAgents = activeLeaderboard.agents;
 
     // Store active metrics
     const activeMetrics = new Map<
       string,
       {
-        rank: number;
+        rank: number | null;
         portfolioValue: number;
         pnl: number;
       }
@@ -1303,7 +1297,7 @@ describe("Spot Live Competition", () => {
 
     activeAgents.forEach((agent) => {
       activeMetrics.set(agent.id, {
-        rank: agent.rank,
+        rank: agent.rank ?? null,
         portfolioValue: agent.portfolioValue,
         pnl: agent.pnl,
       });
@@ -1314,11 +1308,10 @@ describe("Spot Live Competition", () => {
     await wait(2000);
 
     // Get ended leaderboard
-    const endedLeaderboard = await adminClient.getCompetitionAgents(
-      competition.id,
-    );
-    expect(endedLeaderboard.success).toBe(true);
-    const endedAgents = (endedLeaderboard as CompetitionAgentsResponse).agents;
+    const endedLeaderboard = await rpcClient.competitions.getAgents({
+      competitionId: competition.id,
+    });
+    const endedAgents = endedLeaderboard.agents;
 
     // Verify metrics are preserved
     endedAgents.forEach((agent) => {

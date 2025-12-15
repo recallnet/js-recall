@@ -540,6 +540,7 @@ export interface EnhancedCompetition {
   totalTrades?: number; // For paper trading competitions
   totalPositions?: number; // For perpetual futures competitions
   // Risk metrics (for perpetual futures competitions)
+  hasRiskMetrics: boolean;
   calmarRatio: number | null;
   simpleReturn: number | null;
   maxDrawdown: number | null;

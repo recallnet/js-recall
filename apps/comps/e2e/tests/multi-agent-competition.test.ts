@@ -21,6 +21,8 @@ import {
 
 import { config } from "@/config/private";
 
+import { createTestRpcClient } from "../utils/rpc-client-helpers.js";
+
 describe("Multi-Agent Competition", () => {
   let adminApiKey: string;
 
@@ -186,33 +188,27 @@ describe("Multi-Agent Competition", () => {
     expect(agent2ProfileResponse.success).toBe(true);
     expect(agent2ProfileResponse.agent.id).toBe(agentClients[1]?.agent.id);
 
-    // Step 6: Validate that all agents can see the competition and leaderboard
+    // Step 6: Validate competition leaderboard
+    const rpcClient = await createTestRpcClient();
+
+    // Check competition status
+    const competition = await rpcClient.competitions.getById({
+      id: competitionId,
+    });
+    expect(competition).toBeDefined();
+    expect(competition.id).toBe(competitionId);
+
+    // Check leaderboard
+    const leaderboardResponse = await rpcClient.competitions.getAgents({
+      competitionId,
+      sort: "rank",
+    });
+
+    expect(leaderboardResponse.agents).toBeDefined();
+    expect(leaderboardResponse.agents).toBeInstanceOf(Array);
+    expect(leaderboardResponse.agents.length).toBe(NUM_AGENTS);
+
     for (let i = 0; i < NUM_AGENTS; i++) {
-      const agentClient = agentClients[i]?.client;
-
-      // Check competition status
-      const competitionResponse =
-        await agentClient?.getCompetition(competitionId);
-      expect(competitionResponse).toBeDefined();
-      if (!competitionResponse?.success) {
-        throw new Error("Failed to get competition");
-      }
-      const competition = competitionResponse.competition;
-      expect(competition.id).toBe(competitionId);
-
-      // Check leaderboard
-      const leaderboardResponse = await agentClient?.getCompetitionAgents(
-        competitionId,
-        { sort: "rank" },
-      );
-      expect(leaderboardResponse?.success).toBe(true);
-      if (!leaderboardResponse?.success)
-        throw new Error("Failed to get agents");
-
-      expect(leaderboardResponse.agents).toBeDefined();
-      expect(leaderboardResponse.agents).toBeInstanceOf(Array);
-      expect(leaderboardResponse.agents.length).toBe(NUM_AGENTS);
-
       // Verify this agent is in the leaderboard
       const agentInLeaderboard = leaderboardResponse.agents.find(
         (entry) => entry.id === agentClients[i]?.agent.id,
