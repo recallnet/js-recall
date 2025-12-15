@@ -51,7 +51,7 @@ export const BonusBoosts = () => {
           <div className="space-y-2">
             {aggregatedBoosts.map((boost) => (
               <div
-                key={boost.expiresAt}
+                key={boost.dateKey}
                 className={getExpirationWarningClass(boost.expiresAt)}
               >
                 <p className="font-mono text-sm font-semibold">

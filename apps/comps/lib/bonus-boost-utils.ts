@@ -88,22 +88,28 @@ export const getExpirationWarningClass = (expiresAt: string): string => {
  * Groups boosts that expire on the same calendar day and sums their amounts
  * Uses the earliest expiration time for each date
  * @param boosts - Array of bonus boosts
- * @returns Array of aggregated boosts with unique expiration dates
+ * @returns Array of aggregated boosts with unique expiration dates, sorted by expiration
  */
 export const aggregateBonusBoostsByExpiration = <
   T extends { amount: string; expiresAt: string },
 >(
   boosts: T[],
-): Array<{ amount: string; expiresAt: string }> => {
+): Array<{ amount: string; expiresAt: string; dateKey: string }> => {
   const aggregated = new Map<
     string,
     { amount: bigint; earliestExpiration: string }
   >();
 
   for (const boost of boosts) {
+    const expirationDate = new Date(boost.expiresAt);
+
+    // Validate date is valid
+    if (isNaN(expirationDate.getTime())) {
+      continue;
+    }
+
     // Get the date part only (YYYY-MM-DD) by using UTC to avoid timezone issues
-    const dateKey = new Date(boost.expiresAt).toISOString().split("T")[0];
-    if (!dateKey) continue;
+    const dateKey = expirationDate.toISOString().split("T")[0]!;
 
     const existing = aggregated.get(dateKey);
     if (existing) {
@@ -123,8 +129,12 @@ export const aggregateBonusBoostsByExpiration = <
     }
   }
 
-  return Array.from(aggregated.values()).map((entry) => ({
-    expiresAt: entry.earliestExpiration,
-    amount: entry.amount.toString(),
-  }));
+  // Convert to array and sort by expiration date
+  return Array.from(aggregated.entries())
+    .map(([dateKey, entry]) => ({
+      dateKey,
+      expiresAt: entry.earliestExpiration,
+      amount: entry.amount.toString(),
+    }))
+    .sort((a, b) => a.expiresAt.localeCompare(b.expiresAt));
 };
