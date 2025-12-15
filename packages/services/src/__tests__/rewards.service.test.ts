@@ -1411,7 +1411,7 @@ describe("RewardsService", () => {
       // Each reward should have the required fields
       insertCall?.forEach((reward) => {
         expect(reward).toHaveProperty("competitionId", testCompetitionId);
-        expect(reward).toHaveProperty("address");
+        expect(reward).toHaveProperty("walletAddress");
         expect(reward).toHaveProperty("amount");
         expect(reward).toHaveProperty("leafHash");
         expect(reward).toHaveProperty("id");
@@ -1568,7 +1568,7 @@ describe("RewardsService", () => {
       // Verify reward structure
       insertCall?.forEach((reward) => {
         expect(reward).toHaveProperty("competitionId", testCompetitionId);
-        expect(reward).toHaveProperty("address");
+        expect(reward).toHaveProperty("walletAddress");
         expect(reward).toHaveProperty("amount");
         expect(reward).toHaveProperty("leafHash");
         expect(reward).toHaveProperty("id");
@@ -2195,7 +2195,6 @@ describe("RewardsService", () => {
           competitionId: "test-id",
           userId: "user-1",
           agentId: "agent-1",
-          address: "0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
           walletAddress: "0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
           amount: BigInt("100000000000000000000"),
           leafHash: new Uint8Array(32).fill(0x01),
