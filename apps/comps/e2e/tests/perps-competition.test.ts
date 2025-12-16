@@ -36,7 +36,6 @@ import {
   registerUserAndAgentAndGetClient,
   startPerpsTestCompetition,
   startTestCompetition,
-  wait,
 } from "@recallnet/test-utils";
 
 import { config } from "@/config/private";
@@ -286,13 +285,11 @@ describe("Perps Competition", () => {
     const competition = response.competition;
 
     // Wait for competition start to fully commit
-    await wait(1000);
 
     // Trigger sync from Symphony (simulating what the cron job does)
     await perpsDataProcessor.processPerpsCompetition(competition.id);
 
     // Wait for sync to complete
-    await wait(500);
 
     // Get perps account for the agent
     // Note: Using authenticated endpoint as the public endpoint isn't implemented yet
@@ -615,13 +612,11 @@ describe("Perps Competition", () => {
     const competition = competitionResponse.competition;
 
     // Wait for competition start to fully commit
-    await wait(1000);
 
     // Trigger sync from Symphony (simulating what the cron job does)
     await perpsDataProcessor.processPerpsCompetition(competition.id);
 
     // Wait for sync to complete
-    await wait(500);
 
     // Test getting account summary for the authenticated agent
     const accountResponse = await agentClient.getPerpsAccount(competition.id);
@@ -669,13 +664,11 @@ describe("Perps Competition", () => {
     const competition = competitionResponse.competition;
 
     // Wait for competition start to fully commit
-    await wait(1000);
 
     // Trigger sync from Symphony (simulating what the cron job does)
     await perpsDataProcessor.processPerpsCompetition(competition.id);
 
     // Wait for sync to complete
-    await wait(500);
 
     // Test getting positions via competition endpoint (requires auth)
     const positionsResponse =
@@ -1217,7 +1210,6 @@ describe("Perps Competition", () => {
     const competitionId = competition.id;
 
     // Wait to ensure competition is fully started
-    await wait(1000);
 
     // Trigger sync from Symphony (simulating what the cron job does)
 
@@ -1225,20 +1217,17 @@ describe("Perps Competition", () => {
     await perpsDataProcessor.processPerpsCompetition(competition.id);
 
     // Wait a bit to ensure time passes between snapshots
-    await wait(500);
 
     // Second sync - creates snapshot at trough ($1200)
     await perpsDataProcessor.processPerpsCompetition(competition.id);
 
     // Wait a bit more
-    await wait(500);
 
     // Third sync - creates snapshot after partial recovery ($1550)
     await perpsDataProcessor.processPerpsCompetition(competition.id);
 
     // Wait for sync and calculations to complete
     // Need extra time for read replica to catch up with risk metrics writes
-    await wait(1000);
 
     // Get competition leaderboard - should include risk metrics
     const leaderboardResponse = await agentClient.getCompetitionAgents(
@@ -1311,7 +1300,6 @@ describe("Perps Competition", () => {
     const competition = response.competition;
 
     // Wait to ensure transfers happen AFTER competition start
-    await wait(1000);
 
     // Trigger sync
 
@@ -1319,12 +1307,9 @@ describe("Perps Competition", () => {
     await perpsDataProcessor.processPerpsCompetition(competition.id);
 
     // Wait a bit to ensure time passes between snapshots
-    await wait(100);
 
     // Second sync - creates second snapshot (needed for simple return calculation)
     await perpsDataProcessor.processPerpsCompetition(competition.id);
-
-    await wait(500);
 
     // Get leaderboard
     const leaderboardResponse = await adminClient.getCompetitionAgents(
@@ -1382,7 +1367,6 @@ describe("Perps Competition", () => {
 
     // Trigger sync
     await perpsDataProcessor.processPerpsCompetition(competition.id);
-    await wait(500);
 
     // Get agent competitions - should include risk metrics
     const competitionsResponse = await agentClient.getAgentCompetitions(
@@ -1435,7 +1419,6 @@ describe("Perps Competition", () => {
 
     // Trigger sync
     await perpsDataProcessor.processPerpsCompetition(competition.id);
-    await wait(500);
 
     // Get leaderboard
     const leaderboardResponse = await agentClient.getCompetitionAgents(
@@ -1491,13 +1474,11 @@ describe("Perps Competition", () => {
     const competition = response.competition;
 
     // Wait to ensure competition is fully started
-    await wait(1000);
 
     // Trigger sync to process transfers
     await perpsDataProcessor.processPerpsCompetition(competition.id);
 
     // Wait for processing to complete
-    await wait(500);
 
     // Call the admin endpoint to check for transfer violations
     const violationsResponse =
@@ -1555,7 +1536,6 @@ describe("Perps Competition", () => {
 
     // Trigger sync
     await perpsDataProcessor.processPerpsCompetition(competition.id);
-    await wait(500);
 
     // Check for violations - should be empty
     const violationsResponse =
@@ -1654,7 +1634,6 @@ describe("Perps Competition", () => {
 
     // Take initial snapshot to establish starting values
     await portfolioSnapshotterService.takePortfolioSnapshots(competition.id);
-    await wait(100);
 
     // Create snapshots AFTER competition starts with small time increments
     const now = new Date();
@@ -1727,7 +1706,6 @@ describe("Perps Competition", () => {
 
     // Process to calculate Calmar ratios with the historical data
     await perpsDataProcessor.processPerpsCompetition(competition.id);
-    await wait(1000);
 
     // Get the leaderboard as admin (uses active competition)
     const leaderboardResponse = await adminClient.getCompetitionAgents(
@@ -1843,7 +1821,6 @@ describe("Perps Competition", () => {
 
     // Take initial snapshot to establish starting values
     await portfolioSnapshotterService.takePortfolioSnapshots(competition.id);
-    await wait(100);
 
     // Create snapshots AFTER competition starts with small time increments
     const now = new Date();
@@ -1915,7 +1892,6 @@ describe("Perps Competition", () => {
 
     // Process to calculate Calmar ratios
     await perpsDataProcessor.processPerpsCompetition(competition.id);
-    await wait(1000);
 
     // ============ STEP 1: Get data while competition is ACTIVE ============
 
@@ -1977,7 +1953,6 @@ describe("Perps Competition", () => {
     expect(endResponse.success).toBe(true);
 
     // Wait for any async operations to complete
-    await wait(2000);
 
     // ============ STEP 3: Get data after competition is ENDED ============
 
@@ -2146,7 +2121,6 @@ describe("Perps Competition", () => {
     await perpsDataProcessor.processPerpsCompetition(competition.id);
 
     // Wait for sync to complete
-    await wait(500);
 
     // Verify BTC agent's position
     const btcPositions = await agentBTCClient.getPerpsPositions(competition.id);
@@ -2224,21 +2198,16 @@ describe("Perps Competition", () => {
     expect(response.success).toBe(true);
     const competition = response.competition;
 
-    await wait(1000);
-
     // First sync - peak equity
     await perpsDataProcessor.processPerpsCompetition(competition.id);
-    await wait(500);
 
     // Second sync - trough
     await perpsDataProcessor.processPerpsCompetition(competition.id);
-    await wait(500);
 
     // Third sync - recovery
     await perpsDataProcessor.processPerpsCompetition(competition.id);
 
     // Wait for calculations
-    await wait(1000);
 
     // Get leaderboard with risk metrics
     const leaderboardResponse = (await agentClient.getCompetitionAgents(
@@ -2300,11 +2269,8 @@ describe("Perps Competition", () => {
     expect(response.success).toBe(true);
     const competition = response.competition;
 
-    await wait(1000);
-
     // Process competition to detect transfers
     await perpsDataProcessor.processPerpsCompetition(competition.id);
-    await wait(500);
 
     // Check for violations
     const violationsResponse =
@@ -2360,7 +2326,6 @@ describe("Perps Competition", () => {
     const competition = response.competition;
 
     await perpsDataProcessor.processPerpsCompetition(competition.id);
-    await wait(500);
 
     const multiPositions = await agentMultiClient.getPerpsPositions(
       competition.id,
@@ -2430,7 +2395,6 @@ describe("Perps Competition", () => {
     const competition = response.competition;
 
     await portfolioSnapshotterService.takePortfolioSnapshots(competition.id);
-    await wait(100);
 
     const now = new Date();
     const minutesAgo = (minutes: number) =>
@@ -2482,7 +2446,6 @@ describe("Perps Competition", () => {
     ]);
 
     await perpsDataProcessor.processPerpsCompetition(competition.id);
-    await wait(1000);
 
     const leaderboardResponse = (await adminClient.getCompetitionAgents(
       competition.id,
@@ -2552,10 +2515,7 @@ describe("Perps Competition", () => {
     expect(response.success).toBe(true);
     const competition = response.competition;
 
-    await wait(1000);
-
     await perpsDataProcessor.processPerpsCompetition(competition.id);
-    await wait(500);
 
     const competitionDetails = (await agent3Client.getCompetition(
       competition.id,
@@ -2600,7 +2560,6 @@ describe("Perps Competition", () => {
     const competition = response.competition;
 
     await perpsDataProcessor.processPerpsCompetition(competition.id);
-    await wait(500);
 
     const allPositions = await adminClient.getCompetitionAllPerpsPositions(
       competition.id,
@@ -2668,7 +2627,6 @@ describe("Perps Competition", () => {
     const competition = response.competition;
 
     await portfolioSnapshotterService.takePortfolioSnapshots(competition.id);
-    await wait(100);
 
     const now = new Date();
     const minutesAgo = (minutes: number) =>
@@ -2702,7 +2660,6 @@ describe("Perps Competition", () => {
     ]);
 
     await perpsDataProcessor.processPerpsCompetition(competition.id);
-    await wait(1000);
 
     const activeLeaderboardResponse = (await adminClient.getCompetitionAgents(
       competition.id,
@@ -2736,7 +2693,6 @@ describe("Perps Competition", () => {
 
     const endResponse = await adminClient.endCompetition(competition.id);
     expect(endResponse.success).toBe(true);
-    await wait(2000);
 
     const endedCompResponse = await adminClient.getCompetition(competition.id);
     expect(endedCompResponse.success).toBe(true);
@@ -2795,7 +2751,6 @@ describe("Perps Competition", () => {
     const competition = response.competition;
 
     await perpsDataProcessor.processPerpsCompetition(competition.id);
-    await wait(500);
 
     const activeAccount = await agentActiveClient.getPerpsAccount(
       competition.id,
@@ -2839,11 +2794,9 @@ describe("Perps Competition", () => {
     const competition = response.competition;
 
     // Wait for competition to be fully started
-    await wait(1000);
 
     // Create initial snapshot
     await portfolioSnapshotterService.takePortfolioSnapshots(competition.id);
-    await wait(100);
 
     // Insert historical snapshots to establish return pattern
     // Agent 0x3333 has $1100 current equity, let's simulate steady 10% growth
@@ -2894,7 +2847,6 @@ describe("Perps Competition", () => {
     await perpsDataProcessor.processPerpsCompetition(competition.id);
 
     // Wait for calculations to complete and propagate to read replica
-    await wait(1500);
 
     // Get competition agents with risk metrics
     const leaderboardResponse = await agentClient.getCompetitionAgents(
@@ -2956,8 +2908,6 @@ describe("Perps Competition", () => {
     expect(response.success).toBe(true);
     const competition = response.competition;
 
-    await wait(1000);
-
     // Create snapshots showing decline
     const now = new Date();
     const minutesAgo = (minutes: number) =>
@@ -2992,7 +2942,6 @@ describe("Perps Competition", () => {
 
     // Process to calculate risk metrics
     await perpsDataProcessor.processPerpsCompetition(competition.id);
-    await wait(1500);
 
     // Get competition agents with risk metrics
     const leaderboardResponse = await agentClient.getCompetitionAgents(
@@ -3043,8 +2992,6 @@ describe("Perps Competition", () => {
     expect(response.success).toBe(true);
     const competition = response.competition;
 
-    await wait(1000);
-
     // Create historical snapshots
     const now = new Date();
     const minutesAgo = (minutes: number) =>
@@ -3074,7 +3021,6 @@ describe("Perps Competition", () => {
 
     // Process competition - this should calculate and save risk metrics
     await perpsDataProcessor.processPerpsCompetition(competition.id);
-    await wait(1500);
 
     // Query risk_metrics_snapshots table directly to verify time-series storage
     const riskSnapshots = await perpsRepository.getRiskMetricsTimeSeries(
@@ -3695,7 +3641,6 @@ describe("Perps Competition", () => {
     const competition = response.competition;
 
     // Wait for the monitoring to complete
-    await wait(2000);
 
     // Get the updated competition agents list
     const agentsResponse = await adminClient.getCompetitionAgents(
@@ -3765,7 +3710,6 @@ describe("Perps Competition", () => {
     const competition = response.competition;
 
     // Wait for monitoring
-    await wait(2000);
 
     // Get updated agents list
     const agentsResponse = await adminClient.getCompetitionAgents(
@@ -3830,7 +3774,6 @@ describe("Perps Competition", () => {
     const competition = response.competition;
 
     // Wait for monitoring
-    await wait(2000);
 
     // Get agents list
     const agentsResponse = await adminClient.getCompetitionAgents(
@@ -3890,7 +3833,6 @@ describe("Perps Competition", () => {
     const competition = response.competition;
 
     // Wait for monitoring
-    await wait(2000);
 
     // Get agents list
     const agentsResponse = await adminClient.getCompetitionAgents(
@@ -4158,7 +4100,6 @@ describe("Perps Competition", () => {
     });
 
     const competitionId = competition.competition.id;
-    await wait(1000);
 
     // Process multiple times to create the equity progression snapshots
     // Agent 1 needs 3 snapshots (1000 → 1600 → 1200)
@@ -4166,23 +4107,18 @@ describe("Perps Competition", () => {
 
     // Snapshot 1
     await perpsDataProcessor.processPerpsCompetition(competitionId);
-    await wait(500);
 
     // Snapshot 2
     await perpsDataProcessor.processPerpsCompetition(competitionId);
-    await wait(500);
 
     // Snapshot 3
     await perpsDataProcessor.processPerpsCompetition(competitionId);
-    await wait(500);
 
     // Snapshot 4
     await perpsDataProcessor.processPerpsCompetition(competitionId);
-    await wait(500);
 
     // Snapshot 5 (final for agent 2)
     await perpsDataProcessor.processPerpsCompetition(competitionId);
-    await wait(1500);
 
     // Get leaderboard before ending - should be sorted by Sortino
     const activeLeaderboard = await adminClient.getCompetitionAgents(
@@ -4215,7 +4151,6 @@ describe("Perps Competition", () => {
 
     // End the competition - this triggers calculateAndPersistFinalLeaderboard
     await adminClient.endCompetition(competitionId);
-    await wait(2000);
 
     // Try to update the competition's evaluation metric AFTER it has ended
     await adminClient.updateCompetition(competitionId, {
@@ -4350,13 +4285,10 @@ describe("Perps Competition", () => {
       evaluationMetric: "calmar_ratio",
     });
 
-    await wait(1000);
-
     // Process competition - this will calculate risk metrics for all agents
     await perpsDataProcessor.processPerpsCompetition(
       competition.competition.id,
     );
-    await wait(1500);
 
     // Now manually DELETE risk metrics for the high equity agent to simulate mixed state
     await db
@@ -4514,13 +4446,10 @@ describe("Perps Competition", () => {
       evaluationMetric: "calmar_ratio",
     });
 
-    await wait(1000);
-
     // Process to calculate metrics
     await perpsDataProcessor.processPerpsCompetition(
       competition.competition.id,
     );
-    await wait(1500);
 
     // Get active leaderboard
     const activeLeaderboard = await adminClient.getCompetitionAgents(
@@ -4541,7 +4470,6 @@ describe("Perps Competition", () => {
 
     // End competition
     await adminClient.endCompetition(competition.competition.id);
-    await wait(2000);
 
     // Get ended leaderboard
     const endedLeaderboard = await adminClient.getCompetitionAgents(
@@ -4585,13 +4513,10 @@ describe("Perps Competition", () => {
       evaluationMetric: "simple_return",
     });
 
-    await wait(1000);
-
     // Process to calculate metrics
     await perpsDataProcessor.processPerpsCompetition(
       competition.competition.id,
     );
-    await wait(1500);
 
     // Get active leaderboard
     const activeLeaderboard = await adminClient.getCompetitionAgents(
@@ -4612,7 +4537,6 @@ describe("Perps Competition", () => {
 
     // End competition
     await adminClient.endCompetition(competition.competition.id);
-    await wait(2000);
 
     // Get ended leaderboard
     const endedLeaderboard = await adminClient.getCompetitionAgents(
@@ -4629,5 +4553,310 @@ describe("Perps Competition", () => {
     expect(agent2Ended?.rank).toBe(originalRank2);
     expect(agent1Ended?.simpleReturn).toBe(originalReturn1);
     expect(agent2Ended?.simpleReturn).toBe(originalReturn2);
+  });
+
+  test("should allow same position to exist in multiple sequential competitions", async () => {
+    // The same providerPositionId should be allowed in different competitions
+    // (unique constraint is now composite: providerPositionId + competitionId)
+
+    const adminClient = createTestClient(getBaseUrl());
+    await adminClient.loginAsAdmin(adminApiKey);
+
+    // Register agent with wallet that has BTC position configured in Hyperliquid mock
+    // This wallet returns consistent position data with deterministic providerPositionId
+    const { agent, client: agentClient } =
+      await registerUserAndAgentAndGetClient({
+        adminApiKey,
+        agentName: "Multi-Competition Position Agent",
+        agentWalletAddress: "0x5555555555555555555555555555555555555555", // BTC long position
+      });
+
+    // ===== COMPETITION 1 =====
+    const competition1 = await startPerpsTestCompetition({
+      adminClient,
+      name: `Position Constraint Test Comp 1 - ${Date.now()}`,
+      agentIds: [agent.id],
+      perpsProvider: {
+        provider: "hyperliquid",
+        apiUrl: "http://localhost:4568",
+      },
+    });
+
+    expect(competition1.success).toBe(true);
+    const comp1Id = competition1.competition.id;
+
+    // Sync positions for competition 1
+    await perpsDataProcessor.processPerpsCompetition(comp1Id);
+
+    // Verify position was stored for competition 1 via API
+    const comp1Positions = await agentClient.getPerpsPositions(comp1Id);
+    expect(comp1Positions.success).toBe(true);
+    const typedComp1Positions = comp1Positions as PerpsPositionsResponse;
+    expect(typedComp1Positions.positions).toHaveLength(1);
+
+    const btcPositionComp1 = typedComp1Positions.positions[0];
+    expect(btcPositionComp1?.marketSymbol).toBe("BTC");
+    expect(btcPositionComp1?.isLong).toBe(true);
+
+    // End competition 1
+    await adminClient.endCompetition(comp1Id);
+
+    // ===== COMPETITION 2 =====
+    // Start a NEW competition with the SAME agent (same wallet, same positions)
+    const competition2 = await startPerpsTestCompetition({
+      adminClient,
+      name: `Position Constraint Test Comp 2 - ${Date.now()}`,
+      agentIds: [agent.id],
+      perpsProvider: {
+        provider: "hyperliquid",
+        apiUrl: "http://localhost:4568",
+      },
+    });
+
+    expect(competition2.success).toBe(true);
+    const comp2Id = competition2.competition.id;
+
+    // Sync positions for competition 2
+    // Before the fix, this would FAIL with unique constraint violation
+    // because providerPositionId was globally unique
+    await perpsDataProcessor.processPerpsCompetition(comp2Id);
+
+    // Verify position was stored for competition 2 via API
+    const comp2Positions = await agentClient.getPerpsPositions(comp2Id);
+    expect(comp2Positions.success).toBe(true);
+    const typedComp2Positions = comp2Positions as PerpsPositionsResponse;
+    expect(typedComp2Positions.positions).toHaveLength(1);
+
+    const btcPositionComp2 = typedComp2Positions.positions[0];
+    expect(btcPositionComp2?.marketSymbol).toBe("BTC");
+    expect(btcPositionComp2?.isLong).toBe(true);
+
+    // Both competitions should have the same position data (same wallet, same asset)
+    expect(btcPositionComp1?.marketSymbol).toBe(btcPositionComp2?.marketSymbol);
+    expect(btcPositionComp1?.isLong).toBe(btcPositionComp2?.isLong);
+
+    // Clean up
+    await adminClient.endCompetition(comp2Id);
+  });
+
+  test("should allow same position in multiple sequential Symphony competitions", async () => {
+    // Same test as above but with Symphony provider to ensure fix works for both
+
+    const adminClient = createTestClient(getBaseUrl());
+    await adminClient.loginAsAdmin(adminApiKey);
+
+    // Register agent with wallet that has BTC/ETH positions configured in Symphony mock
+    const { agent, client: agentClient } =
+      await registerUserAndAgentAndGetClient({
+        adminApiKey,
+        agentName: "Symphony Multi-Competition Agent",
+        agentWalletAddress: "0x1111111111111111111111111111111111111111", // BTC/ETH positions
+      });
+
+    // ===== COMPETITION 1 =====
+    const competition1 = await startPerpsTestCompetition({
+      adminClient,
+      name: `Symphony Position Constraint Test Comp 1 - ${Date.now()}`,
+      agentIds: [agent.id],
+      perpsProvider: {
+        provider: "symphony",
+        initialCapital: 1000,
+        apiUrl: "http://localhost:4567",
+      },
+    });
+
+    expect(competition1.success).toBe(true);
+    const comp1Id = competition1.competition.id;
+
+    // Sync positions
+    await perpsDataProcessor.processPerpsCompetition(comp1Id);
+
+    // Verify positions stored via API
+    const comp1Positions = await agentClient.getPerpsPositions(comp1Id);
+    expect(comp1Positions.success).toBe(true);
+    const typedComp1Positions = comp1Positions as PerpsPositionsResponse;
+    expect(typedComp1Positions.positions).toHaveLength(2); // BTC and ETH
+
+    // End competition 1
+    await adminClient.endCompetition(comp1Id);
+
+    // ===== COMPETITION 2 =====
+    const competition2 = await startPerpsTestCompetition({
+      adminClient,
+      name: `Symphony Position Constraint Test Comp 2 - ${Date.now()}`,
+      agentIds: [agent.id],
+      perpsProvider: {
+        provider: "symphony",
+        initialCapital: 1000,
+        apiUrl: "http://localhost:4567",
+      },
+    });
+
+    expect(competition2.success).toBe(true);
+    const comp2Id = competition2.competition.id;
+
+    // Sync positions - this would fail before the fix
+    await perpsDataProcessor.processPerpsCompetition(comp2Id);
+
+    // Verify positions stored for competition 2 via API
+    const comp2Positions = await agentClient.getPerpsPositions(comp2Id);
+    expect(comp2Positions.success).toBe(true);
+    const typedComp2Positions = comp2Positions as PerpsPositionsResponse;
+    expect(typedComp2Positions.positions).toHaveLength(2); // BTC and ETH
+
+    // Verify both competitions have BTC positions with matching data
+    const btcComp1 = typedComp1Positions.positions.find(
+      (p) => p.marketSymbol === "BTC",
+    );
+    const btcComp2 = typedComp2Positions.positions.find(
+      (p) => p.marketSymbol === "BTC",
+    );
+
+    expect(btcComp1).toBeDefined();
+    expect(btcComp2).toBeDefined();
+    expect(btcComp1?.isLong).toBe(btcComp2?.isLong);
+    expect(btcComp1?.averagePrice).toBe(btcComp2?.averagePrice);
+
+    // Clean up
+    await adminClient.endCompetition(comp2Id);
+  });
+
+  test("should allow same position in multiple CONCURRENT competitions", async () => {
+    // This test verifies the fix works for concurrent competitions
+    // (both competitions active at the same time with the same agent)
+
+    const adminClient = createTestClient(getBaseUrl());
+    await adminClient.loginAsAdmin(adminApiKey);
+
+    // Register agent with wallet that has BTC position configured in Hyperliquid mock
+    const { agent, client: agentClient } =
+      await registerUserAndAgentAndGetClient({
+        adminApiKey,
+        agentName: "Concurrent Competition Agent",
+        agentWalletAddress: "0x5555555555555555555555555555555555555555", // BTC long position
+      });
+
+    // ===== START BOTH COMPETITIONS (CONCURRENT) =====
+    const competition1 = await startPerpsTestCompetition({
+      adminClient,
+      name: `Concurrent Position Test Comp 1 - ${Date.now()}`,
+      agentIds: [agent.id],
+      perpsProvider: {
+        provider: "hyperliquid",
+        apiUrl: "http://localhost:4568",
+      },
+    });
+
+    expect(competition1.success).toBe(true);
+    const comp1Id = competition1.competition.id;
+
+    // Start competition 2 WHILE competition 1 is still active
+    const competition2 = await startPerpsTestCompetition({
+      adminClient,
+      name: `Concurrent Position Test Comp 2 - ${Date.now()}`,
+      agentIds: [agent.id],
+      perpsProvider: {
+        provider: "hyperliquid",
+        apiUrl: "http://localhost:4568",
+      },
+    });
+
+    expect(competition2.success).toBe(true);
+    const comp2Id = competition2.competition.id;
+
+    // Both competitions are now active with the same agent
+
+    // ===== SYNC POSITIONS FOR COMPETITION 1 =====
+    await perpsDataProcessor.processPerpsCompetition(comp1Id);
+
+    // Verify competition 1 has exactly 1 position
+    const comp1PositionsInitial = await agentClient.getPerpsPositions(comp1Id);
+    expect(comp1PositionsInitial.success).toBe(true);
+    const typedComp1Initial = comp1PositionsInitial as PerpsPositionsResponse;
+    expect(typedComp1Initial.positions).toHaveLength(1);
+    expect(typedComp1Initial.positions[0]?.marketSymbol).toBe("BTC");
+
+    // Competition 2 may already have positions from startup sync
+    // (startPerpsTestCompetition calls startCompetition which syncs initial data)
+    const comp2PositionsBeforeSync =
+      await agentClient.getPerpsPositions(comp2Id);
+    expect(comp2PositionsBeforeSync.success).toBe(true);
+    const _typedComp2BeforeSync =
+      comp2PositionsBeforeSync as PerpsPositionsResponse;
+    // We don't assert on this because the startup sync behavior may vary
+
+    // ===== SYNC POSITIONS FOR COMPETITION 2 =====
+    // Before the fix, this would fail with unique constraint violation
+    await perpsDataProcessor.processPerpsCompetition(comp2Id);
+
+    // Verify competition 2 now has exactly 1 position
+    const comp2PositionsAfterSync =
+      await agentClient.getPerpsPositions(comp2Id);
+    expect(comp2PositionsAfterSync.success).toBe(true);
+    const typedComp2AfterSync =
+      comp2PositionsAfterSync as PerpsPositionsResponse;
+    expect(typedComp2AfterSync.positions).toHaveLength(1);
+    expect(typedComp2AfterSync.positions[0]?.marketSymbol).toBe("BTC");
+
+    // ===== VERIFY COMPETITION ISOLATION =====
+    // Re-fetch competition 1 positions - should still be exactly 1
+    const comp1PositionsAfterComp2Sync =
+      await agentClient.getPerpsPositions(comp1Id);
+    expect(comp1PositionsAfterComp2Sync.success).toBe(true);
+    const typedComp1AfterComp2Sync =
+      comp1PositionsAfterComp2Sync as PerpsPositionsResponse;
+    expect(typedComp1AfterComp2Sync.positions).toHaveLength(1);
+
+    // Both should have BTC positions with matching data (same underlying position)
+    const btcComp1 = typedComp1AfterComp2Sync.positions[0];
+    const btcComp2 = typedComp2AfterSync.positions[0];
+    expect(btcComp1?.marketSymbol).toBe("BTC");
+    expect(btcComp2?.marketSymbol).toBe("BTC");
+    expect(btcComp1?.isLong).toBe(btcComp2?.isLong);
+    expect(btcComp1?.isLong).toBe(true);
+
+    // ===== VERIFY MULTIPLE SYNCS DON'T CREATE DUPLICATES =====
+    // Sync both competitions again
+    await perpsDataProcessor.processPerpsCompetition(comp1Id);
+    await perpsDataProcessor.processPerpsCompetition(comp2Id);
+
+    // Position counts should remain exactly 1 for each competition
+    const comp1PositionsFinal = await agentClient.getPerpsPositions(comp1Id);
+    const comp2PositionsFinal = await agentClient.getPerpsPositions(comp2Id);
+
+    expect(comp1PositionsFinal.success).toBe(true);
+    expect(comp2PositionsFinal.success).toBe(true);
+
+    const typedComp1Final = comp1PositionsFinal as PerpsPositionsResponse;
+    const typedComp2Final = comp2PositionsFinal as PerpsPositionsResponse;
+
+    expect(typedComp1Final.positions).toHaveLength(1);
+    expect(typedComp2Final.positions).toHaveLength(1);
+
+    // ===== VERIFY VIA COMPETITION-WIDE ENDPOINT =====
+    // Use the competition-level endpoint to verify total position counts
+    const comp1AllPositions =
+      await adminClient.getCompetitionAllPerpsPositions(comp1Id);
+    const comp2AllPositions =
+      await adminClient.getCompetitionAllPerpsPositions(comp2Id);
+
+    expect(comp1AllPositions.success).toBe(true);
+    expect(comp2AllPositions.success).toBe(true);
+
+    const typedComp1All =
+      comp1AllPositions as CompetitionAllPerpsPositionsResponse;
+    const typedComp2All =
+      comp2AllPositions as CompetitionAllPerpsPositionsResponse;
+
+    expect(typedComp1All.positions).toHaveLength(1);
+    expect(typedComp2All.positions).toHaveLength(1);
+
+    // Verify positions belong to the correct competition via embedded data
+    expect(typedComp1All.positions[0]?.agent.id).toBe(agent.id);
+    expect(typedComp2All.positions[0]?.agent.id).toBe(agent.id);
+
+    // Clean up - end both competitions
+    await adminClient.endCompetition(comp1Id);
+    await adminClient.endCompetition(comp2Id);
   });
 });
