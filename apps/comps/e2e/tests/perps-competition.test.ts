@@ -4630,4 +4630,319 @@ describe("Perps Competition", () => {
     expect(agent1Ended?.simpleReturn).toBe(originalReturn1);
     expect(agent2Ended?.simpleReturn).toBe(originalReturn2);
   });
+
+  test("should allow same position to exist in multiple sequential competitions", async () => {
+    // This test verifies the fix for ENG-1014:
+    // The same providerPositionId should be allowed in different competitions
+    // (unique constraint is now composite: providerPositionId + competitionId)
+
+    const adminClient = createTestClient(getBaseUrl());
+    await adminClient.loginAsAdmin(adminApiKey);
+
+    // Register agent with wallet that has BTC position configured in Hyperliquid mock
+    // This wallet returns consistent position data with deterministic providerPositionId
+    const { agent, client: agentClient } =
+      await registerUserAndAgentAndGetClient({
+        adminApiKey,
+        agentName: "Multi-Competition Position Agent",
+        agentWalletAddress: "0x5555555555555555555555555555555555555555", // BTC long position
+      });
+
+    // ===== COMPETITION 1 =====
+    const competition1 = await startPerpsTestCompetition({
+      adminClient,
+      name: `Position Constraint Test Comp 1 - ${Date.now()}`,
+      agentIds: [agent.id],
+      perpsProvider: {
+        provider: "hyperliquid",
+        apiUrl: "http://localhost:4568",
+      },
+    });
+
+    expect(competition1.success).toBe(true);
+    const comp1Id = competition1.competition.id;
+
+    // Sync positions for competition 1
+    await perpsDataProcessor.processPerpsCompetition(comp1Id);
+    await wait(500);
+
+    // Verify position was stored for competition 1 via API
+    const comp1Positions = await agentClient.getPerpsPositions(comp1Id);
+    expect(comp1Positions.success).toBe(true);
+    const typedComp1Positions = comp1Positions as PerpsPositionsResponse;
+    expect(typedComp1Positions.positions).toHaveLength(1);
+
+    const btcPositionComp1 = typedComp1Positions.positions[0];
+    expect(btcPositionComp1?.marketSymbol).toBe("BTC");
+    expect(btcPositionComp1?.isLong).toBe(true);
+
+    // End competition 1
+    await adminClient.endCompetition(comp1Id);
+    await wait(1000);
+
+    // ===== COMPETITION 2 =====
+    // Start a NEW competition with the SAME agent (same wallet, same positions)
+    const competition2 = await startPerpsTestCompetition({
+      adminClient,
+      name: `Position Constraint Test Comp 2 - ${Date.now()}`,
+      agentIds: [agent.id],
+      perpsProvider: {
+        provider: "hyperliquid",
+        apiUrl: "http://localhost:4568",
+      },
+    });
+
+    expect(competition2.success).toBe(true);
+    const comp2Id = competition2.competition.id;
+
+    // Sync positions for competition 2
+    // Before the fix, this would FAIL with unique constraint violation
+    // because providerPositionId was globally unique
+    await perpsDataProcessor.processPerpsCompetition(comp2Id);
+    await wait(500);
+
+    // Verify position was stored for competition 2 via API
+    const comp2Positions = await agentClient.getPerpsPositions(comp2Id);
+    expect(comp2Positions.success).toBe(true);
+    const typedComp2Positions = comp2Positions as PerpsPositionsResponse;
+    expect(typedComp2Positions.positions).toHaveLength(1);
+
+    const btcPositionComp2 = typedComp2Positions.positions[0];
+    expect(btcPositionComp2?.marketSymbol).toBe("BTC");
+    expect(btcPositionComp2?.isLong).toBe(true);
+
+    // Both competitions should have the same position data (same wallet, same asset)
+    expect(btcPositionComp1?.marketSymbol).toBe(btcPositionComp2?.marketSymbol);
+    expect(btcPositionComp1?.isLong).toBe(btcPositionComp2?.isLong);
+
+    // Clean up
+    await adminClient.endCompetition(comp2Id);
+  });
+
+  test("should allow same position in multiple sequential Symphony competitions", async () => {
+    // Same test as above but with Symphony provider to ensure fix works for both
+
+    const adminClient = createTestClient(getBaseUrl());
+    await adminClient.loginAsAdmin(adminApiKey);
+
+    // Register agent with wallet that has BTC/ETH positions configured in Symphony mock
+    const { agent, client: agentClient } =
+      await registerUserAndAgentAndGetClient({
+        adminApiKey,
+        agentName: "Symphony Multi-Competition Agent",
+        agentWalletAddress: "0x1111111111111111111111111111111111111111", // BTC/ETH positions
+      });
+
+    // ===== COMPETITION 1 =====
+    const competition1 = await startPerpsTestCompetition({
+      adminClient,
+      name: `Symphony Position Constraint Test Comp 1 - ${Date.now()}`,
+      agentIds: [agent.id],
+      perpsProvider: {
+        provider: "symphony",
+        initialCapital: 1000,
+        apiUrl: "http://localhost:4567",
+      },
+    });
+
+    expect(competition1.success).toBe(true);
+    const comp1Id = competition1.competition.id;
+
+    // Sync positions
+    await perpsDataProcessor.processPerpsCompetition(comp1Id);
+    await wait(500);
+
+    // Verify positions stored via API
+    const comp1Positions = await agentClient.getPerpsPositions(comp1Id);
+    expect(comp1Positions.success).toBe(true);
+    const typedComp1Positions = comp1Positions as PerpsPositionsResponse;
+    expect(typedComp1Positions.positions).toHaveLength(2); // BTC and ETH
+
+    // End competition 1
+    await adminClient.endCompetition(comp1Id);
+    await wait(1000);
+
+    // ===== COMPETITION 2 =====
+    const competition2 = await startPerpsTestCompetition({
+      adminClient,
+      name: `Symphony Position Constraint Test Comp 2 - ${Date.now()}`,
+      agentIds: [agent.id],
+      perpsProvider: {
+        provider: "symphony",
+        initialCapital: 1000,
+        apiUrl: "http://localhost:4567",
+      },
+    });
+
+    expect(competition2.success).toBe(true);
+    const comp2Id = competition2.competition.id;
+
+    // Sync positions - this would fail before the fix
+    await perpsDataProcessor.processPerpsCompetition(comp2Id);
+    await wait(500);
+
+    // Verify positions stored for competition 2 via API
+    const comp2Positions = await agentClient.getPerpsPositions(comp2Id);
+    expect(comp2Positions.success).toBe(true);
+    const typedComp2Positions = comp2Positions as PerpsPositionsResponse;
+    expect(typedComp2Positions.positions).toHaveLength(2); // BTC and ETH
+
+    // Verify both competitions have BTC positions with matching data
+    const btcComp1 = typedComp1Positions.positions.find(
+      (p) => p.marketSymbol === "BTC",
+    );
+    const btcComp2 = typedComp2Positions.positions.find(
+      (p) => p.marketSymbol === "BTC",
+    );
+
+    expect(btcComp1).toBeDefined();
+    expect(btcComp2).toBeDefined();
+    expect(btcComp1?.isLong).toBe(btcComp2?.isLong);
+    expect(btcComp1?.averagePrice).toBe(btcComp2?.averagePrice);
+
+    // Clean up
+    await adminClient.endCompetition(comp2Id);
+  });
+
+  test("should allow same position in multiple CONCURRENT competitions", async () => {
+    // This test verifies the fix works for concurrent competitions
+    // (both competitions active at the same time with the same agent)
+
+    const adminClient = createTestClient(getBaseUrl());
+    await adminClient.loginAsAdmin(adminApiKey);
+
+    // Register agent with wallet that has BTC position configured in Hyperliquid mock
+    const { agent, client: agentClient } =
+      await registerUserAndAgentAndGetClient({
+        adminApiKey,
+        agentName: "Concurrent Competition Agent",
+        agentWalletAddress: "0x5555555555555555555555555555555555555555", // BTC long position
+      });
+
+    // ===== START BOTH COMPETITIONS (CONCURRENT) =====
+    const competition1 = await startPerpsTestCompetition({
+      adminClient,
+      name: `Concurrent Position Test Comp 1 - ${Date.now()}`,
+      agentIds: [agent.id],
+      perpsProvider: {
+        provider: "hyperliquid",
+        apiUrl: "http://localhost:4568",
+      },
+    });
+
+    expect(competition1.success).toBe(true);
+    const comp1Id = competition1.competition.id;
+
+    // Start competition 2 WHILE competition 1 is still active
+    const competition2 = await startPerpsTestCompetition({
+      adminClient,
+      name: `Concurrent Position Test Comp 2 - ${Date.now()}`,
+      agentIds: [agent.id],
+      perpsProvider: {
+        provider: "hyperliquid",
+        apiUrl: "http://localhost:4568",
+      },
+    });
+
+    expect(competition2.success).toBe(true);
+    const comp2Id = competition2.competition.id;
+
+    // Both competitions are now active with the same agent
+
+    // ===== SYNC POSITIONS FOR COMPETITION 1 =====
+    await perpsDataProcessor.processPerpsCompetition(comp1Id);
+    await wait(500);
+
+    // Verify competition 1 has exactly 1 position
+    const comp1PositionsInitial = await agentClient.getPerpsPositions(comp1Id);
+    expect(comp1PositionsInitial.success).toBe(true);
+    const typedComp1Initial = comp1PositionsInitial as PerpsPositionsResponse;
+    expect(typedComp1Initial.positions).toHaveLength(1);
+    expect(typedComp1Initial.positions[0]?.marketSymbol).toBe("BTC");
+
+    // Competition 2 may already have positions from startup sync
+    // (startPerpsTestCompetition calls startCompetition which syncs initial data)
+    const comp2PositionsBeforeSync =
+      await agentClient.getPerpsPositions(comp2Id);
+    expect(comp2PositionsBeforeSync.success).toBe(true);
+    const _typedComp2BeforeSync =
+      comp2PositionsBeforeSync as PerpsPositionsResponse;
+    // We don't assert on this because the startup sync behavior may vary
+
+    // ===== SYNC POSITIONS FOR COMPETITION 2 =====
+    // Before the fix, this would fail with unique constraint violation
+    await perpsDataProcessor.processPerpsCompetition(comp2Id);
+    await wait(500);
+
+    // Verify competition 2 now has exactly 1 position
+    const comp2PositionsAfterSync =
+      await agentClient.getPerpsPositions(comp2Id);
+    expect(comp2PositionsAfterSync.success).toBe(true);
+    const typedComp2AfterSync =
+      comp2PositionsAfterSync as PerpsPositionsResponse;
+    expect(typedComp2AfterSync.positions).toHaveLength(1);
+    expect(typedComp2AfterSync.positions[0]?.marketSymbol).toBe("BTC");
+
+    // ===== VERIFY COMPETITION ISOLATION =====
+    // Re-fetch competition 1 positions - should still be exactly 1
+    const comp1PositionsAfterComp2Sync =
+      await agentClient.getPerpsPositions(comp1Id);
+    expect(comp1PositionsAfterComp2Sync.success).toBe(true);
+    const typedComp1AfterComp2Sync =
+      comp1PositionsAfterComp2Sync as PerpsPositionsResponse;
+    expect(typedComp1AfterComp2Sync.positions).toHaveLength(1);
+
+    // Both should have BTC positions with matching data (same underlying position)
+    const btcComp1 = typedComp1AfterComp2Sync.positions[0];
+    const btcComp2 = typedComp2AfterSync.positions[0];
+    expect(btcComp1?.marketSymbol).toBe("BTC");
+    expect(btcComp2?.marketSymbol).toBe("BTC");
+    expect(btcComp1?.isLong).toBe(btcComp2?.isLong);
+    expect(btcComp1?.isLong).toBe(true);
+
+    // ===== VERIFY MULTIPLE SYNCS DON'T CREATE DUPLICATES =====
+    // Sync both competitions again
+    await perpsDataProcessor.processPerpsCompetition(comp1Id);
+    await perpsDataProcessor.processPerpsCompetition(comp2Id);
+    await wait(500);
+
+    // Position counts should remain exactly 1 for each competition
+    const comp1PositionsFinal = await agentClient.getPerpsPositions(comp1Id);
+    const comp2PositionsFinal = await agentClient.getPerpsPositions(comp2Id);
+
+    expect(comp1PositionsFinal.success).toBe(true);
+    expect(comp2PositionsFinal.success).toBe(true);
+
+    const typedComp1Final = comp1PositionsFinal as PerpsPositionsResponse;
+    const typedComp2Final = comp2PositionsFinal as PerpsPositionsResponse;
+
+    expect(typedComp1Final.positions).toHaveLength(1);
+    expect(typedComp2Final.positions).toHaveLength(1);
+
+    // ===== VERIFY VIA COMPETITION-WIDE ENDPOINT =====
+    // Use the competition-level endpoint to verify total position counts
+    const comp1AllPositions =
+      await adminClient.getCompetitionAllPerpsPositions(comp1Id);
+    const comp2AllPositions =
+      await adminClient.getCompetitionAllPerpsPositions(comp2Id);
+
+    expect(comp1AllPositions.success).toBe(true);
+    expect(comp2AllPositions.success).toBe(true);
+
+    const typedComp1All =
+      comp1AllPositions as CompetitionAllPerpsPositionsResponse;
+    const typedComp2All =
+      comp2AllPositions as CompetitionAllPerpsPositionsResponse;
+
+    expect(typedComp1All.positions).toHaveLength(1);
+    expect(typedComp2All.positions).toHaveLength(1);
+
+    // Verify positions belong to the correct competition via embedded data
+    expect(typedComp1All.positions[0]?.agent.id).toBe(agent.id);
+    expect(typedComp2All.positions[0]?.agent.id).toBe(agent.id);
+
+    // Clean up - end both competitions
+    await adminClient.endCompetition(comp1Id);
+    await adminClient.endCompetition(comp2Id);
+  });
 });

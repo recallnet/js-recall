@@ -262,7 +262,10 @@ export class PerpsRepository {
           })),
         )
         .onConflictDoUpdate({
-          target: perpetualPositions.providerPositionId,
+          target: [
+            perpetualPositions.providerPositionId,
+            perpetualPositions.competitionId,
+          ],
           set: {
             currentPrice: sql`excluded.current_price`,
             pnlUsdValue: sql`excluded.pnl_usd_value`,

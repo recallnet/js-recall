@@ -1,0 +1,3 @@
+ALTER TABLE "trading_comps"."perpetual_positions" DROP CONSTRAINT "perp_positions_provider_id";--> statement-breakpoint
+CREATE INDEX "idx_perp_positions_provider_id" ON "trading_comps"."perpetual_positions" USING btree ("provider_position_id");--> statement-breakpoint
+ALTER TABLE "trading_comps"."perpetual_positions" ADD CONSTRAINT "perp_positions_provider_comp_id" UNIQUE("provider_position_id","competition_id");

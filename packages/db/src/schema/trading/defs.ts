@@ -485,7 +485,13 @@ export const perpetualPositions = tradingComps.table(
     index("idx_perp_positions_comp").on(table.competitionId),
     index("idx_perp_positions_status").on(table.status),
     index("idx_perp_positions_created").on(table.createdAt.desc()),
-    unique("perp_positions_provider_id").on(table.providerPositionId),
+    // Composite unique constraint allows same position across different competitions
+    unique("perp_positions_provider_comp_id").on(
+      table.providerPositionId,
+      table.competitionId,
+    ),
+    // Index for provider position lookups (replaces previous unique constraint)
+    index("idx_perp_positions_provider_id").on(table.providerPositionId),
   ],
 );
 
