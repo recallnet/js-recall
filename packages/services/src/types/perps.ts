@@ -137,7 +137,7 @@ export interface PerpsPosition {
   collateralAmount?: number;
 
   // Prices
-  entryPrice: number;
+  entryPrice?: number;
   currentPrice?: number;
   liquidationPrice?: number;
 
@@ -166,6 +166,29 @@ export interface Transfer {
   timestamp: Date;
   txHash?: string;
   chainId?: number;
+}
+
+/**
+ * Closed position fill recovered from provider's fill history
+ * Contains data available from fills when a position closed between syncs
+ */
+export interface ClosedPositionFill {
+  /** Unique fill identifier from provider (e.g., hash + tid for Hyperliquid) */
+  providerFillId: string;
+  /** Asset symbol (e.g., "BTC", "ETH") */
+  symbol: string;
+  /** Position direction */
+  side: "long" | "short";
+  /** Position size in native units */
+  positionSize: number;
+  /** Close price (NOT entry price - fills only provide close price) */
+  closePrice: number;
+  /** Realized PnL in USD from the fill */
+  closedPnl: number;
+  /** Timestamp when the position was closed */
+  closedAt: Date;
+  /** Fee paid for this fill */
+  fee?: number;
 }
 
 /**
@@ -201,6 +224,20 @@ export interface IPerpsDataProvider {
    * @returns Array of USDC transfers
    */
   getTransferHistory?(walletAddress: string, since: Date): Promise<Transfer[]>;
+
+  /**
+   * Get closed position fills within a time range
+   * Used to recover positions that opened and closed between sync cycles
+   * @param walletAddress Wallet address to query
+   * @param since Start of time range (inclusive)
+   * @param until End of time range (inclusive)
+   * @returns Array of closed position fills (empty if provider doesn't support this)
+   */
+  getClosedPositionFills?(
+    walletAddress: string,
+    since: Date,
+    until: Date,
+  ): Promise<ClosedPositionFill[]>;
 
   /**
    * Get provider name for logging and debugging

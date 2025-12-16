@@ -540,6 +540,13 @@
       "when": 1765898950378,
       "tag": "0076_glorious_silverclaw",
       "breakpoints": true
+    },
+    {
+      "idx": 77,
+      "version": "7",
+      "when": 1765905628055,
+      "tag": "0077_supreme_human_cannonball",
+      "breakpoints": true
     }
   ]
 }

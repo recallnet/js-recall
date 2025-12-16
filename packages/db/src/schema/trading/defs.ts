@@ -459,10 +459,12 @@ export const perpetualPositions = tradingComps.table(
     isLong: boolean("is_long").notNull(),
     leverage: numeric("leverage"),
     positionSize: numeric("position_size").notNull(),
-    collateralAmount: numeric("collateral_amount").notNull(),
+    /** Null for positions recovered from fills (data unavailable from provider) */
+    collateralAmount: numeric("collateral_amount"),
 
     // Prices
-    entryPrice: numeric("entry_price").notNull(),
+    /** Null for positions recovered from fills (data unavailable from provider) */
+    entryPrice: numeric("entry_price"),
     currentPrice: numeric("current_price"),
     liquidationPrice: numeric("liquidation_price"),
 

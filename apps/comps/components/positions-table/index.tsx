@@ -86,11 +86,18 @@ export const PositionsTable: React.FC<PositionsTableProps> = ({
               {formatAmount(Number(row.original.positionSize))}{" "}
               {row.original.asset}
             </div>
-            <div className="text-secondary-foreground text-xs">
-              {row.original.leverage ? Number(row.original.leverage) : 0}x
-              leverage • {formatAmount(Number(row.original.collateralAmount))}{" "}
-              collateral
-            </div>
+            {(row.original.leverage !== null ||
+              row.original.collateralAmount !== null) && (
+              <div className="text-secondary-foreground text-xs">
+                {row.original.leverage !== null &&
+                  `${Number(row.original.leverage)}x leverage`}
+                {row.original.leverage !== null &&
+                  row.original.collateralAmount !== null &&
+                  " • "}
+                {row.original.collateralAmount !== null &&
+                  `${formatAmount(Number(row.original.collateralAmount))} collateral`}
+              </div>
+            )}
           </div>
         ),
         size: 300,
@@ -103,9 +110,11 @@ export const PositionsTable: React.FC<PositionsTableProps> = ({
         header: () => "Prices",
         cell: ({ row }) => (
           <div>
-            <div className="text-secondary-foreground text-xs">
-              Entry: ${formatAmount(Number(row.original.entryPrice))}
-            </div>
+            {row.original.entryPrice !== null && (
+              <div className="text-secondary-foreground text-xs">
+                Entry: ${formatAmount(Number(row.original.entryPrice))}
+              </div>
+            )}
             <div className="text-secondary-foreground text-xs">
               Mark: $
               {formatAmount(

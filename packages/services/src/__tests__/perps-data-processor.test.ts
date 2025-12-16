@@ -90,8 +90,15 @@ describe("PerpsDataProcessor", () => {
       isLong: pos.isLong as boolean,
       leverage: pos.leverage ? String(pos.leverage) : null,
       positionSize: String(pos.positionSize),
-      collateralAmount: String(pos.collateralAmount || "0"),
-      entryPrice: String(pos.entryPrice),
+      // collateralAmount and entryPrice can be null for positions recovered from fills
+      collateralAmount:
+        pos.collateralAmount !== undefined && pos.collateralAmount !== null
+          ? String(pos.collateralAmount)
+          : null,
+      entryPrice:
+        pos.entryPrice !== undefined && pos.entryPrice !== null
+          ? String(pos.entryPrice)
+          : null,
       currentPrice: pos.currentPrice ? String(pos.currentPrice) : null,
       liquidationPrice: pos.liquidationPrice
         ? String(pos.liquidationPrice)

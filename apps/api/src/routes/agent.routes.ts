@@ -494,7 +494,8 @@ export function configureAgentRoutes(agentController: AgentController): Router {
    *                         example: true
    *                       leverage:
    *                         type: number
-   *                         description: Position leverage
+   *                         nullable: true
+   *                         description: Position leverage (null for positions recovered from fills)
    *                         example: 10
    *                       size:
    *                         type: number
@@ -502,11 +503,13 @@ export function configureAgentRoutes(agentController: AgentController): Router {
    *                         example: 0.5
    *                       collateral:
    *                         type: number
-   *                         description: Collateral/margin amount
+   *                         nullable: true
+   *                         description: Collateral amount (null for positions recovered from fills)
    *                         example: 2250
    *                       averagePrice:
    *                         type: number
-   *                         description: Average entry price
+   *                         nullable: true
+   *                         description: Entry price (null for positions recovered from fills)
    *                         example: 45000
    *                       markPrice:
    *                         type: number

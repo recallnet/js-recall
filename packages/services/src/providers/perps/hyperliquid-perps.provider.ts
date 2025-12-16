@@ -10,6 +10,7 @@ import {
   createCircuitBreaker,
 } from "../../lib/circuit-breaker.js";
 import {
+  ClosedPositionFill,
   IPerpsDataProvider,
   PerpsAccountSummary,
   PerpsPosition,
@@ -936,6 +937,70 @@ export class HyperliquidPerpsProvider implements IPerpsDataProvider {
     }
 
     throw lastError || new Error("Request failed after retries");
+  }
+
+  /**
+   * Get closed position fills within a time range
+   * Fetches fills with non-zero closedPnl which represent position closures
+   * @param walletAddress Wallet address to query
+   * @param since Start of time range (inclusive)
+   * @param until End of time range (inclusive)
+   * @returns Array of closed position fills
+   */
+  async getClosedPositionFills(
+    walletAddress: string,
+    since: Date,
+    until: Date,
+  ): Promise<ClosedPositionFill[]> {
+    const maskedAddress = this.maskWalletAddress(walletAddress);
+    this.logger.debug(
+      `[HyperliquidProvider] Fetching closed fills for ${maskedAddress} from ${since.toISOString()} to ${until.toISOString()}`,
+    );
+
+    const startTime = since.getTime();
+    const endTime = until.getTime();
+
+    const response = await this.makeRequest<HyperliquidUserFill[]>({
+      type: "userFillsByTime",
+      user: walletAddress,
+      startTime,
+      endTime,
+    });
+
+    if (!response || response.length === 0) {
+      this.logger.debug(
+        `[HyperliquidProvider] No fills found for ${maskedAddress}`,
+      );
+      return [];
+    }
+
+    // Filter to fills with non-zero closedPnl (position closures)
+    const closedFills = response.filter((fill) => {
+      const closedPnl = parseFloat(fill.closedPnl);
+      return closedPnl !== 0;
+    });
+
+    this.logger.debug(
+      `[HyperliquidProvider] Found ${closedFills.length} closed fills out of ${response.length} total fills`,
+    );
+
+    // Transform to ClosedPositionFill format
+    return closedFills.map((fill): ClosedPositionFill => {
+      // Parse direction from fill.dir (e.g., "Close Short", "Close Long")
+      const isLong = fill.dir.toLowerCase().includes("long");
+      const side: "long" | "short" = isLong ? "long" : "short";
+
+      return {
+        providerFillId: `${fill.hash}-${fill.tid}`,
+        symbol: fill.coin,
+        side,
+        positionSize: new Decimal(fill.sz).abs().toNumber(),
+        closePrice: new Decimal(fill.px).toNumber(),
+        closedPnl: new Decimal(fill.closedPnl).toNumber(),
+        closedAt: new Date(fill.time),
+        fee: fill.fee ? new Decimal(fill.fee).toNumber() : undefined,
+      };
+    });
   }
 
   /**
