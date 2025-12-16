@@ -229,6 +229,29 @@ export class MockPrivyClient {
       );
     }
 
+    // Add any wallets that were dynamically linked via MockPrivyClient.linkWallet()
+    const dynamicallyLinkedWallets =
+      MockPrivyClient.linkedWallets.get(privyId) || [];
+    for (const linkedWalletAddr of dynamicallyLinkedWallets) {
+      const alreadyLinked = linkedAccounts.some(
+        (account) =>
+          account.type === "wallet" &&
+          account.address.toLowerCase() === linkedWalletAddr.toLowerCase(),
+      );
+      if (!alreadyLinked) {
+        linkedAccounts.push({
+          type: "wallet",
+          address: linkedWalletAddr.toLowerCase(),
+          walletClientType: "injected",
+          chainType: "ethereum",
+          chainId: "1",
+          verifiedAt: now,
+          firstVerifiedAt: now,
+          latestVerifiedAt: now,
+        });
+      }
+    }
+
     // Determine the most recent wallet address
     const wallets = linkedAccounts.filter(
       (account) =>

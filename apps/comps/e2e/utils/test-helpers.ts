@@ -4,6 +4,7 @@
  */
 import type { RouterClient } from "@orpc/server";
 
+import { MockPrivyClient } from "@recallnet/services/lib";
 import {
   registerUserAndAgentAndGetClient as baseRegisterUserAndAgentAndGetClient,
   createMockPrivyToken,
@@ -119,16 +120,24 @@ export async function createPrivyAuthenticatedRpcClient(params: {
   // Create RPC client with Privy auth
   const rpcClient = await createTestRpcClient(privyToken);
 
-  // Login to create/update user
+  // Login to create user
   let user = await rpcClient.user.login();
 
   // Update name if provided
   if (params.userName) {
-    user = await rpcClient.user.updateProfile({ name: params.userName });
+    user = await rpcClient.user.updateProfile({
+      name: params.userName,
+    });
   }
 
-  // Add a small delay to ensure session is properly saved
-  await new Promise((resolve) => setTimeout(resolve, 100));
+  // Link custom wallet if provided. Note: we call `linkWallet` for test convenience. In reality,
+  // creating a user and linking a wallet are two separate operations.
+  if (params.walletAddress && params.walletAddress !== testEmbeddedWallet) {
+    MockPrivyClient.linkWallet(uniquePrivyId, params.walletAddress);
+    user = await rpcClient.user.linkWallet({
+      walletAddress: params.walletAddress,
+    });
+  }
 
   return {
     rpcClient,

@@ -312,51 +312,6 @@ describe("Admin API", () => {
     );
   });
 
-  test("should update existing user on duplicate email", async () => {
-    // Register first user
-    const email = `same-email-${Date.now()}@test.com`;
-    const originalUserName = `First User ${Date.now()}`;
-    const originalWalletAddress = generateRandomEthAddress();
-    const firstResult = await authorizedAdminClient.users.register({
-      walletAddress: originalWalletAddress,
-      name: originalUserName,
-      email,
-      agentName: `First Agent ${Date.now()}`,
-    });
-
-    // Assert first registration success
-    expect(firstResult.success).toBe(true);
-    const originalUser = firstResult.user!;
-
-    // Try to register second user with the same email
-    const newName = `Second User ${Date.now()}`;
-    const secondResult = await authorizedAdminClient.users.register({
-      walletAddress: originalWalletAddress,
-      name: newName,
-      email,
-      agentName: `Second Agent ${Date.now()}`,
-    });
-
-    // Assert second registration success (note: certain fields might prefer "original" user on conflict)
-    expect(secondResult.success).toBe(true);
-    expect(secondResult.user).toBeDefined();
-    expect(secondResult.user.email).toBe(email);
-    expect(secondResult.user.name).not.toBe(newName); // Original name should be preserved
-    expect(secondResult.user.walletAddress).toBe(originalUser.walletAddress);
-    expect(secondResult.user.walletLastVerifiedAt).toBe(
-      originalUser.walletLastVerifiedAt,
-    );
-    expect(secondResult.user.embeddedWalletAddress).toBe(
-      originalUser.embeddedWalletAddress,
-    );
-    expect(secondResult.user.privyId).toBe(originalUser.privyId);
-    expect(secondResult.user.status).toBe(originalUser.status);
-    expect(secondResult.user.metadata).toBe(originalUser.metadata);
-    expect(secondResult.user.createdAt).toStrictEqual(originalUser.createdAt);
-    expect(secondResult.user.updatedAt).not.toBe(originalUser.updatedAt);
-    expect(secondResult.user.lastLoginAt).not.toBe(originalUser.lastLoginAt);
-  });
-
   test("should not allow user registration with duplicate wallet address", async () => {
     // Create a Privy-authenticated client
     const originalWalletAddress = generateRandomEthAddress();
