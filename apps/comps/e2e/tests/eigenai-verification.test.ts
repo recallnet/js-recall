@@ -5,7 +5,6 @@ import { signatureSubmissions } from "@recallnet/db/schema/eigenai/defs";
 import {
   ApiClient,
   type EigenaiBadgeStatusResponse,
-  type EigenaiCompetitionStatsResponse,
   type EigenaiSubmissionSummary,
   type EigenaiSubmissionsResponse,
   type EigenaiSubmitSignatureResponse,
@@ -19,6 +18,8 @@ import {
 
 import { db } from "@/lib/db";
 import { competitionService, eigenaiService } from "@/lib/services";
+
+import { createTestRpcClient } from "../utils/rpc-client-helpers.js";
 
 // =============================================================================
 // STATIC TEST FIXTURES - Captured from live EigenAI API (2025-12-09)
@@ -534,19 +535,15 @@ describe("EigenAI Verification", () => {
 
     await wait(500);
 
-    // Get competition stats (using an unauthenticated client for public endpoint)
-    const publicClient = new ApiClient();
-    const statsResponse = await publicClient.getEigenaiCompetitionStats(
-      competition.id,
-    );
+    // Get competition stats (using an unauthenticated RPC client for public endpoint)
+    const publicRpcClient = await createTestRpcClient();
+    const stats = await publicRpcClient.eigenai.getCompetitionStats({
+      competitionId: competition.id,
+    });
 
-    expect(statsResponse.success).toBe(true);
-    const typedStatsResponse = statsResponse as EigenaiCompetitionStatsResponse;
-
-    // Stats are flat (not nested under .stats)
-    expect(typedStatsResponse.competitionId).toBe(competition.id);
-    expect(typedStatsResponse.totalAgentsWithSubmissions).toBe(2);
-    expect(typedStatsResponse.totalVerifiedSignatures).toBe(1);
+    expect(stats.competitionId).toBe(competition.id);
+    expect(stats.totalAgentsWithSubmissions).toBe(2);
+    expect(stats.totalVerifiedSignatures).toBe(1);
   });
 
   test("should require authentication for signature submission", async () => {
@@ -956,13 +953,10 @@ describe("EigenAI Verification", () => {
     await wait(500);
 
     // Check competition stats
-    const publicClient = new ApiClient();
-    const statsResponse = await publicClient.getEigenaiCompetitionStats(
-      competition.id,
-    );
-
-    expect(statsResponse.success).toBe(true);
-    const stats = statsResponse as EigenaiCompetitionStatsResponse;
+    const publicRpcClient = await createTestRpcClient();
+    const stats = await publicRpcClient.eigenai.getCompetitionStats({
+      competitionId: competition.id,
+    });
 
     expect(stats.totalAgentsWithSubmissions).toBe(2); // agent1 and agent2 submitted
     expect(stats.agentsWithActiveBadge).toBe(1); // only agent1 has verified submission
@@ -1109,12 +1103,10 @@ describe("EigenAI Verification", () => {
     expect(frozenBadge.signaturesLast24h).toBe(1);
 
     // Verify competition stats are still accessible for ended competition
-    const publicClient = new ApiClient();
-    const statsResponse = await publicClient.getEigenaiCompetitionStats(
-      competition.id,
-    );
-    expect(statsResponse.success).toBe(true);
-    const stats = statsResponse as EigenaiCompetitionStatsResponse;
+    const publicRpcClient = await createTestRpcClient();
+    const stats = await publicRpcClient.eigenai.getCompetitionStats({
+      competitionId: competition.id,
+    });
     expect(stats.agentsWithActiveBadge).toBe(1);
     expect(stats.totalVerifiedSignatures).toBe(1);
   });

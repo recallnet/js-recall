@@ -38,10 +38,7 @@ import { CompetitionRewardService } from "./competition-reward.service.js";
 import { EigenaiService } from "./eigenai.service.js";
 import { isCompatibleType } from "./lib/arena-validation.js";
 import { getDexProtocolConfig } from "./lib/dex-protocols.js";
-import {
-  PaginationResponse,
-  buildPaginationResponse,
-} from "./lib/pagination-utils.js";
+import { buildPaginationResponse } from "./lib/pagination-utils.js";
 import { applySortingAndPagination, splitSortField } from "./lib/sort.js";
 import { PerpsDataProcessor } from "./perps-data-processor.service.js";
 import { PortfolioSnapshotterService } from "./portfolio-snapshotter.service.js";
@@ -198,7 +195,7 @@ export interface SpotLiveConfigUpdate {
  * Spot live configuration as returned in API responses
  * Fields are resolved with defaults applied
  */
-interface SpotLiveConfigResponse {
+export interface SpotLiveConfigResponse {
   dataSource: "rpc_direct" | "envio_indexing" | "hybrid";
   dataSourceConfig: Record<string, unknown>;
   selfFundingThresholdUsd: number;
@@ -294,75 +291,6 @@ type CompetitionRulesData = {
       minTradesPerDay: number | null;
     };
   };
-};
-
-/**
- * Competition details with enriched data
- */
-type CompetitionDetailsData = {
-  success: boolean;
-  competition: SelectCompetition & {
-    evaluationMetric?: EvaluationMetric; // For perps competitions
-    stats: {
-      totalAgents: number;
-      // Paper trading stats
-      totalTrades?: number;
-      totalVolume?: number;
-      uniqueTokens?: number;
-      // Perps stats
-      totalPositions?: number;
-      averageEquity?: number;
-    };
-    tradingConstraints: {
-      minimumPairAgeHours: number | null;
-      minimum24hVolumeUsd: number | null;
-      minimumLiquidityUsd: number | null;
-      minimumFdvUsd: number | null;
-      minTradesPerDay: number | null;
-    };
-    rewards: Array<{
-      rank: number;
-      reward: number;
-      agentId: string | null;
-    }>;
-    rewardsTge?: {
-      agentPool: string;
-      userPool: string;
-    };
-  };
-};
-
-/**
- * Competition agents data structure
- */
-type CompetitionAgentsData = {
-  success: boolean;
-  competitionId: string;
-  registeredParticipants: number;
-  maxParticipants: number | null;
-  agents: Array<{
-    id: string;
-    name: string;
-    handle: string;
-    description: string | null;
-    imageUrl: string | null;
-    portfolioValue: number;
-    active: boolean;
-    deactivationReason: string | null;
-    rank: number | null;
-    score: number | null;
-    // Performance metrics
-    pnl: number;
-    pnlPercent: number;
-    change24h: number;
-    change24hPercent: number;
-    // Perps competition risk metrics (null for spot trading competitions)
-    calmarRatio: number | null;
-    simpleReturn: number | null;
-    maxDrawdown: number | null;
-    hasRiskMetrics: boolean;
-  }>;
-  pagination: PaginationResponse;
 };
 
 /**
@@ -4812,9 +4740,7 @@ export class CompetitionService {
    * @param params Parameters for competition request
    * @returns Competition details with enriched data
    */
-  async getCompetitionById(params: {
-    competitionId: string;
-  }): Promise<CompetitionDetailsData> {
+  async getCompetitionById(params: { competitionId: string }) {
     try {
       // Fetch all data pieces first
       const [
@@ -4977,7 +4903,7 @@ export class CompetitionService {
   async getCompetitionAgents(params: {
     competitionId: string;
     queryParams: AgentQueryParams;
-  }): Promise<CompetitionAgentsData> {
+  }) {
     try {
       // Get competition
       const competition = await this.getCompetition(params.competitionId);
