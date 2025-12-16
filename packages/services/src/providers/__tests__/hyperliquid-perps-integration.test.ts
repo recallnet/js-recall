@@ -29,11 +29,12 @@ const TEST_WALLET = {
 
 // Known date range where this wallet has closed fills
 // Based on manual API testing performed during development
+// Using fixed dates for deterministic test results in CI
 const KNOWN_FILLS_PERIOD = {
   // Start: Dec 1, 2024
   start: new Date("2024-12-01T00:00:00Z"),
-  // End: Current date (or use a fixed date for deterministic tests)
-  end: new Date(),
+  // End: Oct 31, 2025 - fixed date where test wallet has verified fills
+  end: new Date("2025-10-31T23:59:59Z"),
   description: "Period with verified closed position fills",
 };
 

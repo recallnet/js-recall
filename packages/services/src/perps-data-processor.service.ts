@@ -415,9 +415,12 @@ export class PerpsDataProcessor {
           // 3. The Symphony provider has built-in retry logic (3 retries with exponential backoff)
           // 4. The outer Promise.allSettled provides per-agent resilience - if this agent fails,
           //    others will still be processed
-          // Check for initial capital for this agent
+
+          // Check for initial capital and last sync time for this agent
           let initialCapital: number | undefined;
+          let lastSyncTime: Date | undefined;
           try {
+            // Fetch initial capital from first snapshot
             const { first } =
               await this.competitionRepo.getFirstAndLastSnapshots(
                 competitionId,
@@ -436,10 +439,21 @@ export class PerpsDataProcessor {
                 // Leave initialCapital as undefined to use provider's default
               }
             }
+
+            // Fetch last sync time for closed fills optimization
+            // This prevents re-fetching all fills from competition start on every sync
+            const lastSummary =
+              await this.perpsRepo.getLatestPerpsAccountSummary(
+                agentId,
+                competitionId,
+              );
+            if (lastSummary?.timestamp) {
+              lastSyncTime = lastSummary.timestamp;
+            }
           } catch {
-            // Continue without initial capital
+            // Continue without initial capital or last sync time
             this.logger.debug(
-              `[PerpsDataProcessor] No initial capital found for agent ${agentId}`,
+              `[PerpsDataProcessor] No initial capital or last sync time found for agent ${agentId}`,
             );
           }
 
@@ -452,10 +466,21 @@ export class PerpsDataProcessor {
           // Fetch closed position fills if provider supports it and we have competition dates
           let closedFills: ClosedPositionFill[] = [];
           if (competitionStartDate && provider.getClosedPositionFills) {
+            // Use last sync time to avoid re-fetching all fills from competition start
+            // First sync: lastSyncTime is undefined, so we use competitionStartDate
+            // Subsequent syncs: use the later of lastSyncTime or competitionStartDate
+            const fillsStartDate = lastSyncTime
+              ? new Date(
+                  Math.max(
+                    lastSyncTime.getTime(),
+                    competitionStartDate.getTime(),
+                  ),
+                )
+              : competitionStartDate;
             const fillsEndDate = competitionEndDate || new Date();
             closedFills = await provider.getClosedPositionFills(
               walletAddress,
-              competitionStartDate,
+              fillsStartDate,
               fillsEndDate,
             );
 
