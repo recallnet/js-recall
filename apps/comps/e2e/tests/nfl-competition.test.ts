@@ -10,7 +10,6 @@ import {
 
 import { AgentScoreRepository } from "@recallnet/db/repositories/agent-score";
 import {
-  CompetitionDetailResponse,
   CreateCompetitionResponse,
   ErrorResponse,
   MockSportsDataIOServer,
@@ -22,6 +21,7 @@ import {
   registerUserAndAgentAndGetClient,
 } from "@recallnet/test-utils";
 
+import { registerUserAndAgentAndGetRpcClient } from "@/e2e/utils/test-helpers";
 import { db } from "@/lib/db";
 import { createLogger } from "@/lib/logger";
 import { sportsIngesterService, sportsService } from "@/lib/services";
@@ -1071,12 +1071,13 @@ describe("Sports Prediction Competitions", () => {
     const competition = (createResponse as CreateCompetitionResponse)
       .competition;
 
-    const { agent: agent1 } = await registerUserAndAgentAndGetClient({
-      adminApiKey,
-      userName: `User1 ${Date.now()}`,
-      userEmail: `user1-${Date.now()}@example.com`,
-      agentName: `Agent1 ${Date.now()}`,
-    });
+    const { agent: agent1, rpcClient } =
+      await registerUserAndAgentAndGetRpcClient({
+        adminApiKey,
+        userName: `User1 ${Date.now()}`,
+        userEmail: `user1-${Date.now()}@example.com`,
+        agentName: `Agent1 ${Date.now()}`,
+      });
     await adminClient.addAgentToCompetition(competition.id, agent1.id);
     await adminClient.startCompetition({ competitionId: competition.id });
 
@@ -1101,10 +1102,8 @@ describe("Sports Prediction Competitions", () => {
     expect(endResponse.success).toBe(true);
 
     // Verify competition status is ended
-    const getResponse = await adminClient.getCompetition(competition.id);
-    expect(getResponse.success).toBe(true);
-    expect((getResponse as CompetitionDetailResponse).competition.status).toBe(
-      "ended",
-    );
+    const comp = await rpcClient.competitions.getById({ id: competition.id });
+    expect(comp).toBeDefined();
+    expect(comp.status).toBe("ended");
   });
 });

@@ -11,22 +11,14 @@ import { ApiClient } from "@recallnet/test-utils";
 import {
   type AdminAgentResponse,
   type AdminCompetitionTransferViolationsResponse,
-  type AgentCompetitionsResponse,
   type AgentPerpsPositionsResponse,
-  type AgentProfileResponse,
   BlockchainType,
   type CompetitionAgent,
-  type CompetitionAgentsResponse,
   type CompetitionAllPerpsPositionsResponse,
-  type CompetitionDetailResponse,
-  type CompetitionTimelineResponse,
   type CreateCompetitionResponse,
-  type EnhancedCompetition,
   type ErrorResponse,
-  type GetUserAgentsResponse,
   type PerpsAccountResponse,
   type PerpsPositionsResponse,
-  type UpcomingCompetitionsResponse,
 } from "@recallnet/test-utils";
 import { getBaseUrl } from "@recallnet/test-utils";
 import {
@@ -39,6 +31,7 @@ import {
 } from "@recallnet/test-utils";
 
 import { config } from "@/config/private";
+import { registerUserAndAgentAndGetRpcClient } from "@/e2e/utils/test-helpers";
 import { db } from "@/lib/db";
 import { perpsRepository } from "@/lib/repositories";
 import {
@@ -93,10 +86,11 @@ describe("Perps Competition", () => {
     await adminClient.loginAsAdmin(adminApiKey);
 
     // Register agents for this test
-    const { agent: agent1 } = await registerUserAndAgentAndGetClient({
-      adminApiKey,
-      agentName: "Perps Detail Agent 1",
-    });
+    const { agent: agent1, rpcClient } =
+      await registerUserAndAgentAndGetRpcClient({
+        adminApiKey,
+        agentName: "Perps Detail Agent 1",
+      });
 
     // Start a perps competition
     const response = await startPerpsTestCompetition({
@@ -115,29 +109,22 @@ describe("Perps Competition", () => {
     const competition = response.competition;
 
     // Get competition details
-    const detailResponse = await adminClient.getCompetition(competition.id);
-    expect(detailResponse.success).toBe(true);
+    const comp = await rpcClient.competitions.getById({ id: competition.id });
+    expect(comp).toBeDefined();
+    expect(comp.type).toBe("perpetual_futures");
 
-    // Type assertion since we've verified success
-    const typedDetailResponse = detailResponse as CompetitionDetailResponse;
-    expect(typedDetailResponse.competition).toBeDefined();
-    expect(typedDetailResponse.competition.type).toBe("perpetual_futures");
-
-    // Check for perps-specific stats (perpsCompetitionConfig is available on enhanced competition response)
-    // The detail endpoint returns an enhanced competition with stats
-    const comp = typedDetailResponse.competition as EnhancedCompetition;
-
-    expect(comp?.stats?.totalPositions).toBeDefined();
+    // Check for perps-specific stats
+    expect(comp.stats?.totalPositions).toBeDefined();
     expect(comp.stats?.totalTrades).toBe(0);
 
     // Verify perps competitions include volume and average equity stats
-    expect(comp?.stats?.totalVolume).toBeDefined();
+    expect(comp.stats?.totalVolume).toBeDefined();
     // Note: totalVolume can be 0 for a new competition with no trades yet
-    expect(comp?.stats?.totalVolume).toBeGreaterThanOrEqual(0);
+    expect(comp.stats?.totalVolume).toBeGreaterThanOrEqual(0);
 
-    expect(comp?.stats?.averageEquity).toBeDefined();
+    expect(comp.stats?.averageEquity).toBeDefined();
     // Note: averageEquity can be 0 if no agents have joined yet
-    expect(comp?.stats?.averageEquity).toBeGreaterThanOrEqual(0);
+    expect(comp.stats?.averageEquity).toBeGreaterThanOrEqual(0);
   });
 
   test("should return evaluationMetric field for perps competitions", async () => {
@@ -146,10 +133,11 @@ describe("Perps Competition", () => {
     await adminClient.loginAsAdmin(adminApiKey);
 
     // Register agents for this test
-    const { agent: agent1 } = await registerUserAndAgentAndGetClient({
-      adminApiKey,
-      agentName: "Evaluation Metric Test Agent",
-    });
+    const { agent: agent1, rpcClient } =
+      await registerUserAndAgentAndGetRpcClient({
+        adminApiKey,
+        agentName: "Evaluation Metric Test Agent",
+      });
 
     // Start a perps competition with Sortino ratio as evaluation metric
     const response = await startPerpsTestCompetition({
@@ -168,25 +156,18 @@ describe("Perps Competition", () => {
     expect(response.success).toBe(true);
     const competition = response.competition;
 
-    // Get competition details via the detail endpoint
-    const detailResponse = await adminClient.getCompetition(competition.id);
-    expect(detailResponse.success).toBe(true);
-
-    // Type assertion and verify evaluationMetric is returned
-    const typedDetailResponse = detailResponse as CompetitionDetailResponse;
-    expect(typedDetailResponse.competition).toBeDefined();
-    expect(typedDetailResponse.competition.type).toBe("perpetual_futures");
-    expect(typedDetailResponse.competition.evaluationMetric).toBe(
-      "sortino_ratio",
-    );
+    // Get competition details
+    const comp = await rpcClient.competitions.getById({ id: competition.id });
+    expect(comp).toBeDefined();
+    expect(comp.type).toBe("perpetual_futures");
+    expect(comp.evaluationMetric).toBe("sortino_ratio");
 
     // Also test the list endpoint to verify evaluationMetric is included there
-    const listResponse = await adminClient.getCompetitions("active");
-    expect(listResponse.success).toBe(true);
-
-    // Type assertion since we've verified success
-    const typedListResponse = listResponse as UpcomingCompetitionsResponse;
-    const perpsCompetition = typedListResponse.competitions.find(
+    const listResult = await rpcClient.competitions.list({
+      status: "active",
+      paging: { limit: 50, offset: 0 },
+    });
+    const perpsCompetition = listResult.competitions.find(
       (c) => c.id === competition.id,
     );
     expect(perpsCompetition).toBeDefined();
@@ -199,10 +180,11 @@ describe("Perps Competition", () => {
     await adminClient.loginAsAdmin(adminApiKey);
 
     // Register an agent for this test
-    const { agent: agent1 } = await registerUserAndAgentAndGetClient({
-      adminApiKey,
-      agentName: "Paper Trading Test Agent",
-    });
+    const { agent: agent1, rpcClient } =
+      await registerUserAndAgentAndGetRpcClient({
+        adminApiKey,
+        agentName: "Paper Trading Test Agent",
+      });
 
     // Start a PAPER TRADING competition (not perps)
     const response = await startTestCompetition({
@@ -215,14 +197,10 @@ describe("Perps Competition", () => {
     const competition = response.competition;
 
     // Get competition details
-    const detailResponse = await adminClient.getCompetition(competition.id);
-    expect(detailResponse.success).toBe(true);
-
-    // Type assertion and verify evaluationMetric is NOT returned for paper trading
-    const typedDetailResponse = detailResponse as CompetitionDetailResponse;
-    expect(typedDetailResponse.competition).toBeDefined();
-    expect(typedDetailResponse.competition.type).toBe("trading");
-    expect(typedDetailResponse.competition.evaluationMetric).toBeUndefined();
+    const comp = await rpcClient.competitions.getById({ id: competition.id });
+    expect(comp).toBeDefined();
+    expect(comp.type).toBe("trading");
+    expect(comp.evaluationMetric).toBeUndefined();
   });
 
   test("should get perps positions for an agent", async () => {
@@ -314,12 +292,11 @@ describe("Perps Competition", () => {
     const adminClient = createTestClient(getBaseUrl());
     await adminClient.loginAsAdmin(adminApiKey);
 
-    // Register agent and get client for this test
-    const { agent, client: agentClient } =
-      await registerUserAndAgentAndGetClient({
-        adminApiKey,
-        agentName: "Perps List Agent",
-      });
+    // Register agent and get RPC client for this test
+    const { agent, rpcClient } = await registerUserAndAgentAndGetRpcClient({
+      adminApiKey,
+      agentName: "Perps List Agent",
+    });
 
     // Start a perps competition with this agent
     const competitionName = `Perps List Test ${Date.now()}`;
@@ -333,21 +310,19 @@ describe("Perps Competition", () => {
     const competition = response.competition;
 
     // Get agent's competitions
-    const competitionsResponse = await agentClient.getAgentCompetitions(
-      agent.id,
-    );
+    const competitionsResult = await rpcClient.agent.getCompetitions({
+      agentId: agent.id,
+      filters: {},
+      paging: { limit: 50, offset: 0 },
+    });
 
-    expect(competitionsResponse.success).toBe(true);
-
-    // Type assertion since we've verified success
-    const typedCompetitionsResponse =
-      competitionsResponse as AgentCompetitionsResponse;
-    expect(typedCompetitionsResponse.competitions).toBeDefined();
-    expect(Array.isArray(typedCompetitionsResponse.competitions)).toBe(true);
+    expect(competitionsResult).toBeDefined();
+    expect(competitionsResult.competitions).toBeDefined();
+    expect(Array.isArray(competitionsResult.competitions)).toBe(true);
 
     // Find the perps competition we just created
-    const perpsComp = typedCompetitionsResponse.competitions.find(
-      (c: EnhancedCompetition) => c.id === competition.id,
+    const perpsComp = competitionsResult.competitions.find(
+      (c) => c.id === competition.id,
     );
 
     expect(perpsComp).toBeDefined();
@@ -441,10 +416,11 @@ describe("Perps Competition", () => {
 
   test("should show user's agents with both paper trading and perps metrics", async () => {
     // Register a user with an agent
-    const { agent, client } = await registerUserAndAgentAndGetClient({
-      adminApiKey,
-      agentName: `User Agent ${Date.now()}`,
-    });
+    const { agent, client, rpcClient } =
+      await registerUserAndAgentAndGetRpcClient({
+        adminApiKey,
+        agentName: `User Agent ${Date.now()}`,
+      });
 
     // Create admin client for starting competitions
     const adminClient = createTestClient(getBaseUrl());
@@ -509,18 +485,18 @@ describe("Perps Competition", () => {
     await adminClient.endCompetition(perpsComp.competition.id);
 
     // NOW check the aggregated metrics across both completed competitions
-    const userAgentsResponse = await client.getUserAgents();
+    const userAgentsResult = await rpcClient.user.getUserAgents({
+      limit: 50,
+      offset: 0,
+    });
 
-    expect(userAgentsResponse.success).toBe(true);
-
-    // Type assertion since we've verified success
-    const typedResponse = userAgentsResponse as GetUserAgentsResponse;
-    expect(typedResponse.agents).toBeDefined();
-    expect(Array.isArray(typedResponse.agents)).toBe(true);
-    expect(typedResponse.agents.length).toBeGreaterThan(0);
+    expect(userAgentsResult).toBeDefined();
+    expect(userAgentsResult.agents).toBeDefined();
+    expect(Array.isArray(userAgentsResult.agents)).toBe(true);
+    expect(userAgentsResult.agents.length).toBeGreaterThan(0);
 
     // Find our agent with proper typing
-    const agentData = typedResponse.agents.find((a) => a.id === agent.id);
+    const agentData = userAgentsResult.agents.find((a) => a.id === agent.id);
 
     expect(agentData).toBeDefined();
     expect(agentData?.stats).toBeDefined();
@@ -530,16 +506,14 @@ describe("Perps Competition", () => {
     expect(agentData?.stats?.totalPositions).toBeDefined();
 
     // Also test the individual agent endpoint
-    const singleAgentResponse = await client.getUserAgent(agent.id);
+    const singleAgent = await rpcClient.user.getUserAgent({
+      agentId: agent.id,
+    });
 
-    expect(singleAgentResponse.success).toBe(true);
-
-    // Type assertion since we've verified success
-    const typedSingleResponse = singleAgentResponse as AgentProfileResponse;
-    expect(typedSingleResponse.agent).toBeDefined();
-    expect(typedSingleResponse.agent.stats).toBeDefined();
-    expect(typedSingleResponse.agent.stats?.totalTrades).toBe(3);
-    expect(typedSingleResponse.agent.stats?.totalPositions).toBeDefined();
+    expect(singleAgent).toBeDefined();
+    expect(singleAgent.stats).toBeDefined();
+    expect(singleAgent.stats?.totalTrades).toBe(3);
+    expect(singleAgent.stats?.totalPositions).toBeDefined();
   });
 
   test("should get perps positions for authenticated agent", async () => {
@@ -856,12 +830,15 @@ describe("Perps Competition", () => {
 
     // Register agents with pre-configured wallet addresses
     // These wallets have mock data pre-configured in MockSymphonyServer
-    const { agent: agent1, client: agent1Client } =
-      await registerUserAndAgentAndGetClient({
-        adminApiKey,
-        agentName: "Agent With BTC ETH Positions",
-        agentWalletAddress: "0x1111111111111111111111111111111111111111", // Pre-configured with BTC/ETH positions
-      });
+    const {
+      agent: agent1,
+      client: agent1Client,
+      rpcClient,
+    } = await registerUserAndAgentAndGetRpcClient({
+      adminApiKey,
+      agentName: "Agent With BTC ETH Positions",
+      agentWalletAddress: "0x1111111111111111111111111111111111111111", // Pre-configured with BTC/ETH positions
+    });
 
     const { agent: agent2, client: agent2Client } =
       await registerUserAndAgentAndGetClient({
@@ -980,16 +957,12 @@ describe("Perps Competition", () => {
     expect(typedAgent3Account.account.openPositions).toBe(0);
 
     // Verify competition details reflect all agents' data
-    const competitionDetails = await adminClient.getCompetition(competition.id);
-    expect(competitionDetails.success).toBe(true);
-
-    // Type assertion since we've verified success
-    if (competitionDetails.success && "competition" in competitionDetails) {
-      const stats = competitionDetails.competition.stats;
-      expect(stats?.totalAgents).toBe(3);
-      expect(stats?.totalPositions).toBe(3); // 2 for agent1 + 1 for agent2 + 0 for agent3
-      expect(stats?.totalVolume).toBe(40000); // 25000 + 5000 + 10000
-    }
+    const comp = await rpcClient.competitions.getById({ id: competition.id });
+    expect(comp).toBeDefined();
+    const stats = comp.stats;
+    expect(stats?.totalAgents).toBe(3);
+    expect(stats?.totalPositions).toBe(3); // 2 for agent1 + 1 for agent2 + 0 for agent3
+    expect(stats?.totalVolume).toBe(40000); // 25000 + 5000 + 10000
 
     // Verify agent-specific competition endpoint also works
     const agent1CompPositions =
@@ -1191,12 +1164,15 @@ describe("Perps Competition", () => {
     await adminClient.loginAsAdmin(adminApiKey);
 
     // Register agent with the 0x4444 wallet that demonstrates portfolio volatility
-    const { agent, client: agentClient } =
-      await registerUserAndAgentAndGetClient({
-        adminApiKey,
-        agentName: "Calmar Test Agent",
-        agentWalletAddress: "0x4444444444444444444444444444444444444444",
-      });
+    const {
+      agent,
+      client: _agentClient,
+      rpcClient,
+    } = await registerUserAndAgentAndGetRpcClient({
+      adminApiKey,
+      agentName: "Calmar Test Agent",
+      agentWalletAddress: "0x4444444444444444444444444444444444444444",
+    });
 
     // Start perps competition with this agent
     const response = await startPerpsTestCompetition({
@@ -1230,15 +1206,14 @@ describe("Perps Competition", () => {
     // Need extra time for read replica to catch up with risk metrics writes
 
     // Get competition leaderboard - should include risk metrics
-    const leaderboardResponse = await agentClient.getCompetitionAgents(
+    const leaderboardResult = await rpcClient.competitions.getAgents({
       competitionId,
-      { sort: "rank" },
-    );
-    expect(leaderboardResponse.success).toBe(true);
-    if (!leaderboardResponse.success) throw new Error("Failed to get agents");
+      sort: "rank",
+    });
+    expect(leaderboardResult).toBeDefined();
 
     // Find our agent in the leaderboard
-    const agentEntry = leaderboardResponse.agents.find(
+    const agentEntry = leaderboardResult.agents.find(
       (entry) => entry.id === agent.id,
     );
     expect(agentEntry).toBeDefined();
@@ -1271,11 +1246,12 @@ describe("Perps Competition", () => {
     await adminClient.loginAsAdmin(adminApiKey);
 
     // Register multiple agents with different portfolio performance
-    const { agent: agentVolatile } = await registerUserAndAgentAndGetClient({
-      adminApiKey,
-      agentName: "Agent With Volatility",
-      agentWalletAddress: "0x4444444444444444444444444444444444444444",
-    });
+    const { agent: agentVolatile, rpcClient } =
+      await registerUserAndAgentAndGetRpcClient({
+        adminApiKey,
+        agentName: "Agent With Volatility",
+        agentWalletAddress: "0x4444444444444444444444444444444444444444",
+      });
 
     const { agent: agentPositive } = await registerUserAndAgentAndGetClient({
       adminApiKey,
@@ -1312,24 +1288,22 @@ describe("Perps Competition", () => {
     await perpsDataProcessor.processPerpsCompetition(competition.id);
 
     // Get leaderboard
-    const leaderboardResponse = await adminClient.getCompetitionAgents(
-      competition.id,
-      { sort: "rank" },
-    );
-    expect(leaderboardResponse.success).toBe(true);
-
-    const typedLeaderboard = leaderboardResponse as CompetitionAgentsResponse;
+    const leaderboardResult = await rpcClient.competitions.getAgents({
+      competitionId: competition.id,
+      sort: "rank",
+    });
+    expect(leaderboardResult).toBeDefined();
 
     // Agent with worst Calmar ratio (volatility) should be ranked first
     // (negative Calmar due to losses and high drawdown)
-    const firstAgent = typedLeaderboard.agents[0];
+    const firstAgent = leaderboardResult.agents[0];
     expect(firstAgent?.id).toBe(agentVolatile.id);
     expect(firstAgent?.hasRiskMetrics).toBe(true);
     expect(firstAgent?.calmarRatio).not.toBeNull();
 
     // Other agents ranked by their Calmar ratios
-    const secondAgent = typedLeaderboard.agents[1];
-    const thirdAgent = typedLeaderboard.agents[2];
+    const secondAgent = leaderboardResult.agents[1];
+    const thirdAgent = leaderboardResult.agents[2];
 
     // 0x1111 has $1250 equity (positive PnL), 0x2222 has $950 equity (negative PnL)
     expect(secondAgent?.id).toBe(agentPositive.id);
@@ -1348,12 +1322,15 @@ describe("Perps Competition", () => {
     await adminClient.loginAsAdmin(adminApiKey);
 
     // Register agent with volatile portfolio for risk metrics testing
-    const { agent, client: agentClient } =
-      await registerUserAndAgentAndGetClient({
-        adminApiKey,
-        agentName: "Risk Metrics Test Agent",
-        agentWalletAddress: "0x4444444444444444444444444444444444444444",
-      });
+    const {
+      agent,
+      client: _agentClient,
+      rpcClient,
+    } = await registerUserAndAgentAndGetRpcClient({
+      adminApiKey,
+      agentName: "Risk Metrics Test Agent",
+      agentWalletAddress: "0x4444444444444444444444444444444444444444",
+    });
 
     // Start perps competition
     const response = await startPerpsTestCompetition({
@@ -1369,20 +1346,15 @@ describe("Perps Competition", () => {
     await perpsDataProcessor.processPerpsCompetition(competition.id);
 
     // Get agent competitions - should include risk metrics
-    const competitionsResponse = await agentClient.getAgentCompetitions(
-      agent.id,
-    );
-    expect(competitionsResponse.success).toBe(true);
-
-    // Type assertion
-    const typedResponse = competitionsResponse as {
-      success: true;
-      competitions: EnhancedCompetition[];
-      pagination: unknown;
-    };
+    const competitionsResult = await rpcClient.agent.getCompetitions({
+      agentId: agent.id,
+      filters: {},
+      paging: { limit: 50, offset: 0 },
+    });
+    expect(competitionsResult).toBeDefined();
 
     // Find our perps competition
-    const perpsComp = typedResponse.competitions.find(
+    const perpsComp = competitionsResult.competitions.find(
       (c) => c.id === competition.id,
     );
     expect(perpsComp).toBeDefined();
@@ -1400,12 +1372,15 @@ describe("Perps Competition", () => {
     await adminClient.loginAsAdmin(adminApiKey);
 
     // Register agent with flat performance (0x3333)
-    const { agent, client: agentClient } =
-      await registerUserAndAgentAndGetClient({
-        adminApiKey,
-        agentName: "Flat Performance Agent",
-        agentWalletAddress: "0x3333333333333333333333333333333333333333",
-      });
+    const {
+      agent,
+      client: _agentClient,
+      rpcClient,
+    } = await registerUserAndAgentAndGetRpcClient({
+      adminApiKey,
+      agentName: "Flat Performance Agent",
+      agentWalletAddress: "0x3333333333333333333333333333333333333333",
+    });
 
     // Start perps competition
     const response = await startPerpsTestCompetition({
@@ -1421,14 +1396,13 @@ describe("Perps Competition", () => {
     await perpsDataProcessor.processPerpsCompetition(competition.id);
 
     // Get leaderboard
-    const leaderboardResponse = await agentClient.getCompetitionAgents(
-      competition.id,
-      { sort: "rank" },
-    );
-    expect(leaderboardResponse.success).toBe(true);
-    if (!leaderboardResponse.success) throw new Error("Failed to get agents");
+    const leaderboardResult = await rpcClient.competitions.getAgents({
+      competitionId: competition.id,
+      sort: "rank",
+    });
+    expect(leaderboardResult).toBeDefined();
 
-    const agentEntry = leaderboardResponse.agents.find(
+    const agentEntry = leaderboardResult.agents.find(
       (entry) => entry.id === agent.id,
     );
 
@@ -1604,11 +1578,12 @@ describe("Perps Competition", () => {
     // Agent 1: Best Calmar (steady 20% growth, no drawdown)
     // Agent 2: Worst Calmar (negative return)
     // Agent 3: Middle Calmar (high return but with drawdown)
-    const { agent: agent1 } = await registerUserAndAgentAndGetClient({
-      adminApiKey,
-      agentName: "Best Calmar - Steady Growth",
-      agentWalletAddress: "0x3333333333333333333333333333333333333333", // Final: $1100
-    });
+    const { agent: agent1, rpcClient } =
+      await registerUserAndAgentAndGetRpcClient({
+        adminApiKey,
+        agentName: "Best Calmar - Steady Growth",
+        agentWalletAddress: "0x3333333333333333333333333333333333333333", // Final: $1100
+      });
 
     const { agent: agent2 } = await registerUserAndAgentAndGetClient({
       adminApiKey,
@@ -1707,22 +1682,27 @@ describe("Perps Competition", () => {
     // Process to calculate Calmar ratios with the historical data
     await perpsDataProcessor.processPerpsCompetition(competition.id);
 
-    // Get the leaderboard as admin (uses active competition)
-    const leaderboardResponse = await adminClient.getCompetitionAgents(
-      competition.id,
-      { sort: "rank" },
-    );
+    // Get the leaderboard
+    const leaderboardResult = await rpcClient.competitions.getAgents({
+      competitionId: competition.id,
+      sort: "rank",
+    });
 
-    expect(leaderboardResponse.success).toBe(true);
-    const typedResponse = leaderboardResponse as CompetitionAgentsResponse;
+    expect(leaderboardResult).toBeDefined();
 
     // Verify we have all agents
-    expect(typedResponse.agents).toHaveLength(3);
+    expect(leaderboardResult.agents).toHaveLength(3);
 
     // Find each agent in the leaderboard
-    const agent1Entry = typedResponse.agents.find((e) => e.id === agent1.id);
-    const agent2Entry = typedResponse.agents.find((e) => e.id === agent2.id);
-    const agent3Entry = typedResponse.agents.find((e) => e.id === agent3.id);
+    const agent1Entry = leaderboardResult.agents.find(
+      (e) => e.id === agent1.id,
+    );
+    const agent2Entry = leaderboardResult.agents.find(
+      (e) => e.id === agent2.id,
+    );
+    const agent3Entry = leaderboardResult.agents.find(
+      (e) => e.id === agent3.id,
+    );
 
     expect(agent1Entry).toBeDefined();
     expect(agent2Entry).toBeDefined();
@@ -1791,11 +1771,12 @@ describe("Perps Competition", () => {
     await adminClient.loginAsAdmin(adminApiKey);
 
     // Register three agents with different expected outcomes (same as ranking test)
-    const { agent: agent1 } = await registerUserAndAgentAndGetClient({
-      adminApiKey,
-      agentName: "Steady Growth - For Ended Test",
-      agentWalletAddress: "0x3333333333333333333333333333333333333333", // $1100
-    });
+    const { agent: agent1, rpcClient } =
+      await registerUserAndAgentAndGetRpcClient({
+        adminApiKey,
+        agentName: "Steady Growth - For Ended Test",
+        agentWalletAddress: "0x3333333333333333333333333333333333333333", // $1100
+      });
 
     const { agent: agent2 } = await registerUserAndAgentAndGetClient({
       adminApiKey,
@@ -1895,19 +1876,19 @@ describe("Perps Competition", () => {
 
     // ============ STEP 1: Get data while competition is ACTIVE ============
 
-    // Get leaderboard via the admin endpoint (active competition)
-    const activeLeaderboardResponse = await adminClient.getCompetitionAgents(
-      competition.id,
-      { sort: "rank" },
-    );
-    expect(activeLeaderboardResponse.success).toBe(true);
-    const activeLeaderboard = (
-      activeLeaderboardResponse as CompetitionAgentsResponse
-    ).agents;
+    // Get leaderboard (active competition)
+    const activeLeaderboardResult = await rpcClient.competitions.getAgents({
+      competitionId: competition.id,
+      sort: "rank",
+    });
+    expect(activeLeaderboardResult).toBeDefined();
+    const activeLeaderboard = activeLeaderboardResult.agents;
 
-    // Get competition details with agents (uses getCompetitionAgents)
-    const activeCompResponse = await adminClient.getCompetition(competition.id);
-    expect(activeCompResponse.success).toBe(true);
+    // Get competition details
+    const activeComp = await rpcClient.competitions.getById({
+      id: competition.id,
+    });
+    expect(activeComp).toBeDefined();
 
     // Store active metrics for each agent
     const activeMetrics = new Map<
@@ -1957,21 +1938,20 @@ describe("Perps Competition", () => {
     // ============ STEP 3: Get data after competition is ENDED ============
 
     // Get competition details (should return saved data for ended competition)
-    const endedCompResponse = await adminClient.getCompetition(competition.id);
-    expect(endedCompResponse.success).toBe(true);
-    const endedCompetition = (endedCompResponse as CompetitionDetailResponse)
-      .competition;
+    const endedComp = await rpcClient.competitions.getById({
+      id: competition.id,
+    });
+    expect(endedComp).toBeDefined();
 
     // Verify competition is ended
-    expect(endedCompetition.status).toBe("ended");
+    expect(endedComp.status).toBe("ended");
 
-    // Get leaderboard via the specific competition endpoint
-    const endedLeaderboardResponse = await adminClient.getCompetitionAgents(
-      competition.id,
-    );
-    expect(endedLeaderboardResponse.success).toBe(true);
-    const endedAgents = (endedLeaderboardResponse as CompetitionAgentsResponse)
-      .agents;
+    // Get leaderboard
+    const endedLeaderboardResult = await rpcClient.competitions.getAgents({
+      competitionId: competition.id,
+    });
+    expect(endedLeaderboardResult).toBeDefined();
+    const endedAgents = endedLeaderboardResult.agents;
 
     // ============ STEP 4: Verify ALL metrics are PRESERVED ============
 
@@ -2021,12 +2001,11 @@ describe("Perps Competition", () => {
     // ============ STEP 6: Verify data persists across multiple fetches ============
 
     // Fetch again to ensure data is consistently retrieved from DB
-    const refetchResponse = await adminClient.getCompetitionAgents(
-      competition.id,
-    );
-    expect(refetchResponse.success).toBe(true);
-    const refetchedAgents = (refetchResponse as CompetitionAgentsResponse)
-      .agents;
+    const refetchResult = await rpcClient.competitions.getAgents({
+      competitionId: competition.id,
+    });
+    expect(refetchResult).toBeDefined();
+    const refetchedAgents = refetchResult.agents;
 
     // Should still have same metrics
     refetchedAgents.forEach((agent: CompetitionAgent) => {
@@ -2177,12 +2156,15 @@ describe("Perps Competition", () => {
     await adminClient.loginAsAdmin(adminApiKey);
 
     // Register agent with volatile portfolio wallet
-    const { agent, client: agentClient } =
-      await registerUserAndAgentAndGetClient({
-        adminApiKey,
-        agentName: "Hyperliquid Calmar Test Agent",
-        agentWalletAddress: "0x8888888888888888888888888888888888888888", // Pre-configured for volatility testing
-      });
+    const {
+      agent,
+      client: _agentClient,
+      rpcClient,
+    } = await registerUserAndAgentAndGetRpcClient({
+      adminApiKey,
+      agentName: "Hyperliquid Calmar Test Agent",
+      agentWalletAddress: "0x8888888888888888888888888888888888888888", // Pre-configured for volatility testing
+    });
 
     // Start Hyperliquid perps competition
     const response = await startPerpsTestCompetition({
@@ -2210,13 +2192,13 @@ describe("Perps Competition", () => {
     // Wait for calculations
 
     // Get leaderboard with risk metrics
-    const leaderboardResponse = (await agentClient.getCompetitionAgents(
-      competition.id,
-      { sort: "rank" },
-    )) as CompetitionAgentsResponse;
-    expect(leaderboardResponse.success).toBe(true);
+    const leaderboardResult = await rpcClient.competitions.getAgents({
+      competitionId: competition.id,
+      sort: "rank",
+    });
+    expect(leaderboardResult).toBeDefined();
 
-    const agentEntry = leaderboardResponse.agents.find(
+    const agentEntry = leaderboardResult.agents.find(
       (entry) => entry.id === agent.id,
     );
 
@@ -2363,11 +2345,12 @@ describe("Perps Competition", () => {
     const adminClient = createTestClient(getBaseUrl());
     await adminClient.loginAsAdmin(adminApiKey);
 
-    const { agent: agentSteady } = await registerUserAndAgentAndGetClient({
-      adminApiKey,
-      agentName: "Hyperliquid Steady Growth",
-      agentWalletAddress: "0x7777777777777777777777777777777777777777",
-    });
+    const { agent: agentSteady, rpcClient } =
+      await registerUserAndAgentAndGetRpcClient({
+        adminApiKey,
+        agentName: "Hyperliquid Steady Growth",
+        agentWalletAddress: "0x7777777777777777777777777777777777777777",
+      });
 
     const { agent: agentVolatile } = await registerUserAndAgentAndGetClient({
       adminApiKey,
@@ -2447,21 +2430,21 @@ describe("Perps Competition", () => {
 
     await perpsDataProcessor.processPerpsCompetition(competition.id);
 
-    const leaderboardResponse = (await adminClient.getCompetitionAgents(
-      competition.id,
-      { sort: "rank" },
-    )) as CompetitionAgentsResponse;
-    expect(leaderboardResponse.success).toBe(true);
+    const leaderboardResult = await rpcClient.competitions.getAgents({
+      competitionId: competition.id,
+      sort: "rank",
+    });
+    expect(leaderboardResult).toBeDefined();
 
-    expect(leaderboardResponse.agents).toHaveLength(3);
+    expect(leaderboardResult.agents).toHaveLength(3);
 
-    const steadyEntry = leaderboardResponse.agents.find(
+    const steadyEntry = leaderboardResult.agents.find(
       (e) => e.id === agentSteady.id,
     );
-    const volatileEntry = leaderboardResponse.agents.find(
+    const volatileEntry = leaderboardResult.agents.find(
       (e) => e.id === agentVolatile.id,
     );
-    const negativeEntry = leaderboardResponse.agents.find(
+    const negativeEntry = leaderboardResult.agents.find(
       (e) => e.id === agentNegative.id,
     );
 
@@ -2495,12 +2478,15 @@ describe("Perps Competition", () => {
       agentWalletAddress: "0x6666666666666666666666666666666666666666",
     });
 
-    const { agent: agent3, client: agent3Client } =
-      await registerUserAndAgentAndGetClient({
-        adminApiKey,
-        agentName: "Hyperliquid Summary Agent 3",
-        agentWalletAddress: "0x7777777777777777777777777777777777777777",
-      });
+    const {
+      agent: agent3,
+      client: _agent3Client,
+      rpcClient,
+    } = await registerUserAndAgentAndGetRpcClient({
+      adminApiKey,
+      agentName: "Hyperliquid Summary Agent 3",
+      agentWalletAddress: "0x7777777777777777777777777777777777777777",
+    });
 
     const response = await startPerpsTestCompetition({
       adminClient,
@@ -2517,14 +2503,11 @@ describe("Perps Competition", () => {
 
     await perpsDataProcessor.processPerpsCompetition(competition.id);
 
-    const competitionDetails = (await agent3Client.getCompetition(
-      competition.id,
-    )) as CompetitionDetailResponse;
+    const comp = await rpcClient.competitions.getById({ id: competition.id });
 
-    expect(competitionDetails.success).toBe(true);
-    expect(competitionDetails.competition).toBeDefined();
-    const stats = competitionDetails.competition.stats;
-    expect(competitionDetails.competition.id).toBe(competition.id);
+    expect(comp).toBeDefined();
+    const stats = comp.stats;
+    expect(comp.id).toBe(competition.id);
     expect(stats?.totalAgents).toBe(3);
     expect(stats?.totalPositions).toBe(2);
     expect(stats?.totalVolume).toBeGreaterThanOrEqual(30000);
@@ -2601,11 +2584,12 @@ describe("Perps Competition", () => {
     const adminClient = createTestClient(getBaseUrl());
     await adminClient.loginAsAdmin(adminApiKey);
 
-    const { agent: agent1 } = await registerUserAndAgentAndGetClient({
-      adminApiKey,
-      agentName: "Hyperliquid End Test Agent 1",
-      agentWalletAddress: "0x5555555555555555555555555555555555555555",
-    });
+    const { agent: agent1, rpcClient } =
+      await registerUserAndAgentAndGetRpcClient({
+        adminApiKey,
+        agentName: "Hyperliquid End Test Agent 1",
+        agentWalletAddress: "0x5555555555555555555555555555555555555555",
+      });
 
     const { agent: agent2 } = await registerUserAndAgentAndGetClient({
       adminApiKey,
@@ -2661,12 +2645,12 @@ describe("Perps Competition", () => {
 
     await perpsDataProcessor.processPerpsCompetition(competition.id);
 
-    const activeLeaderboardResponse = (await adminClient.getCompetitionAgents(
-      competition.id,
-      { sort: "rank" },
-    )) as CompetitionAgentsResponse;
-    expect(activeLeaderboardResponse.success).toBe(true);
-    const activeLeaderboard = activeLeaderboardResponse.agents;
+    const activeLeaderboardResult = await rpcClient.competitions.getAgents({
+      competitionId: competition.id,
+      sort: "rank",
+    });
+    expect(activeLeaderboardResult).toBeDefined();
+    const activeLeaderboard = activeLeaderboardResult.agents;
 
     const activeMetrics = new Map<
       string,
@@ -2694,18 +2678,17 @@ describe("Perps Competition", () => {
     const endResponse = await adminClient.endCompetition(competition.id);
     expect(endResponse.success).toBe(true);
 
-    const endedCompResponse = await adminClient.getCompetition(competition.id);
-    expect(endedCompResponse.success).toBe(true);
-    const endedCompetition = (endedCompResponse as CompetitionDetailResponse)
-      .competition;
-    expect(endedCompetition.status).toBe("ended");
+    const endedComp = await rpcClient.competitions.getById({
+      id: competition.id,
+    });
+    expect(endedComp).toBeDefined();
+    expect(endedComp.status).toBe("ended");
 
-    const endedLeaderboardResponse = await adminClient.getCompetitionAgents(
-      competition.id,
-    );
-    expect(endedLeaderboardResponse.success).toBe(true);
-    const endedAgents = (endedLeaderboardResponse as CompetitionAgentsResponse)
-      .agents;
+    const endedLeaderboardResult = await rpcClient.competitions.getAgents({
+      competitionId: competition.id,
+    });
+    expect(endedLeaderboardResult).toBeDefined();
+    const endedAgents = endedLeaderboardResult.agents;
 
     endedAgents.forEach((agent: CompetitionAgent) => {
       const activeData = activeMetrics.get(agent.id);
@@ -2724,12 +2707,15 @@ describe("Perps Competition", () => {
     const adminClient = createTestClient(getBaseUrl());
     await adminClient.loginAsAdmin(adminApiKey);
 
-    const { agent: agentActive, client: agentActiveClient } =
-      await registerUserAndAgentAndGetClient({
-        adminApiKey,
-        agentName: "Hyperliquid Active Trader",
-        agentWalletAddress: "0x9999999999999999999999999999999999999999",
-      });
+    const {
+      agent: agentActive,
+      client: agentActiveClient,
+      rpcClient,
+    } = await registerUserAndAgentAndGetRpcClient({
+      adminApiKey,
+      agentName: "Hyperliquid Active Trader",
+      agentWalletAddress: "0x9999999999999999999999999999999999999999",
+    });
 
     const { agent: agentMinimal } = await registerUserAndAgentAndGetClient({
       adminApiKey,
@@ -2759,12 +2745,9 @@ describe("Perps Competition", () => {
     const typedActiveAccount = activeAccount as PerpsAccountResponse;
     expect(typedActiveAccount.account.totalVolume).toBe("66700"); // Realistic volume from 6 fills
 
-    const competitionDetails = (await adminClient.getCompetition(
-      competition.id,
-    )) as CompetitionDetailResponse;
-    expect(competitionDetails.success).toBe(true);
-    expect(competitionDetails.competition).toBeDefined();
-    const stats = competitionDetails.competition.stats;
+    const comp = await rpcClient.competitions.getById({ id: competition.id });
+    expect(comp).toBeDefined();
+    const stats = comp.stats;
     expect(stats?.totalVolume).toBeGreaterThanOrEqual(75000);
   });
 
@@ -2775,12 +2758,15 @@ describe("Perps Competition", () => {
     await adminClient.loginAsAdmin(adminApiKey);
 
     // Register agent with known wallet for risk metrics testing
-    const { agent, client: agentClient } =
-      await registerUserAndAgentAndGetClient({
-        adminApiKey,
-        agentName: "Sortino Ratio Test Agent",
-        agentWalletAddress: "0x3333333333333333333333333333333333333333", // Steady growth wallet
-      });
+    const {
+      agent,
+      client: _agentClient,
+      rpcClient,
+    } = await registerUserAndAgentAndGetRpcClient({
+      adminApiKey,
+      agentName: "Sortino Ratio Test Agent",
+      agentWalletAddress: "0x3333333333333333333333333333333333333333", // Steady growth wallet
+    });
 
     // Start perps competition
     const response = await startPerpsTestCompetition({
@@ -2849,15 +2835,14 @@ describe("Perps Competition", () => {
     // Wait for calculations to complete and propagate to read replica
 
     // Get competition agents with risk metrics
-    const leaderboardResponse = await agentClient.getCompetitionAgents(
-      competition.id,
-      { sort: "rank" },
-    );
+    const leaderboardResult = await rpcClient.competitions.getAgents({
+      competitionId: competition.id,
+      sort: "rank",
+    });
 
-    expect(leaderboardResponse.success).toBe(true);
-    const typedResponse = leaderboardResponse as CompetitionAgentsResponse;
+    expect(leaderboardResult).toBeDefined();
 
-    const agentEntry = typedResponse.agents.find(
+    const agentEntry = leaderboardResult.agents.find(
       (entry) => entry.id === agent.id,
     );
 
@@ -2891,12 +2876,15 @@ describe("Perps Competition", () => {
     await adminClient.loginAsAdmin(adminApiKey);
 
     // Use wallet with negative PnL
-    const { agent, client: agentClient } =
-      await registerUserAndAgentAndGetClient({
-        adminApiKey,
-        agentName: "Negative Sortino Test Agent",
-        agentWalletAddress: "0x2222222222222222222222222222222222222222", // $950 equity
-      });
+    const {
+      agent,
+      client: _agentClient,
+      rpcClient,
+    } = await registerUserAndAgentAndGetRpcClient({
+      adminApiKey,
+      agentName: "Negative Sortino Test Agent",
+      agentWalletAddress: "0x2222222222222222222222222222222222222222", // $950 equity
+    });
 
     // Start perps competition
     const response = await startPerpsTestCompetition({
@@ -2944,15 +2932,14 @@ describe("Perps Competition", () => {
     await perpsDataProcessor.processPerpsCompetition(competition.id);
 
     // Get competition agents with risk metrics
-    const leaderboardResponse = await agentClient.getCompetitionAgents(
-      competition.id,
-      { sort: "rank" },
-    );
+    const leaderboardResult = await rpcClient.competitions.getAgents({
+      competitionId: competition.id,
+      sort: "rank",
+    });
 
-    expect(leaderboardResponse.success).toBe(true);
-    const typedResponse = leaderboardResponse as CompetitionAgentsResponse;
+    expect(leaderboardResult).toBeDefined();
 
-    const agentEntry = typedResponse.agents.find(
+    const agentEntry = leaderboardResult.agents.find(
       (entry) => entry.id === agent.id,
     );
 
@@ -3061,11 +3048,12 @@ describe("Perps Competition", () => {
     await adminClient.loginAsAdmin(adminApiKey);
 
     // Create agents with different returns
-    const { agent: agent1 } = await registerUserAndAgentAndGetClient({
-      adminApiKey,
-      agentName: "Simple Return Agent 1",
-      agentWalletAddress: "0x1111111111111111111111111111111111111111",
-    });
+    const { agent: agent1, rpcClient } =
+      await registerUserAndAgentAndGetRpcClient({
+        adminApiKey,
+        agentName: "Simple Return Agent 1",
+        agentWalletAddress: "0x1111111111111111111111111111111111111111",
+      });
 
     const { agent: agent2 } = await registerUserAndAgentAndGetClient({
       adminApiKey,
@@ -3110,24 +3098,23 @@ describe("Perps Competition", () => {
     ]);
 
     // Get the leaderboard
-    const leaderboardResponse = await adminClient.getCompetitionAgents(
-      competition.competition.id,
-      { sort: "rank" },
-    );
+    const leaderboardResult = await rpcClient.competitions.getAgents({
+      competitionId: competition.competition.id,
+      sort: "rank",
+    });
 
-    expect(leaderboardResponse.success).toBe(true);
-    const leaderboard = leaderboardResponse as CompetitionAgentsResponse;
+    expect(leaderboardResult).toBeDefined();
 
     // Verify leaderboard is sorted by simple_return (not Calmar)
-    expect(leaderboard.agents).toHaveLength(2);
-    expect(leaderboard.agents[0]?.id).toBe(agent1.id); // Agent 1 should be first (20% return)
-    expect(leaderboard.agents[1]?.id).toBe(agent2.id); // Agent 2 should be second (10% return)
+    expect(leaderboardResult.agents).toHaveLength(2);
+    expect(leaderboardResult.agents[0]?.id).toBe(agent1.id); // Agent 1 should be first (20% return)
+    expect(leaderboardResult.agents[1]?.id).toBe(agent2.id); // Agent 2 should be second (10% return)
 
     // Verify the metrics are included
-    expect(leaderboard.agents[0]?.simpleReturn).toBe(0.2);
-    expect(leaderboard.agents[0]?.calmarRatio).toBe(0.5);
-    expect(leaderboard.agents[1]?.simpleReturn).toBe(0.1);
-    expect(leaderboard.agents[1]?.calmarRatio).toBe(2);
+    expect(leaderboardResult.agents[0]?.simpleReturn).toBe(0.2);
+    expect(leaderboardResult.agents[0]?.calmarRatio).toBe(0.5);
+    expect(leaderboardResult.agents[1]?.simpleReturn).toBe(0.1);
+    expect(leaderboardResult.agents[1]?.calmarRatio).toBe(2);
   });
 
   test("should sort leaderboard by sortino_ratio when configured", async () => {
@@ -3135,11 +3122,12 @@ describe("Perps Competition", () => {
     await adminClient.loginAsAdmin(adminApiKey);
 
     // Create agents
-    const { agent: agent1 } = await registerUserAndAgentAndGetClient({
-      adminApiKey,
-      agentName: "Sortino Agent 1",
-      agentWalletAddress: "0x3333333333333333333333333333333333333333",
-    });
+    const { agent: agent1, rpcClient } =
+      await registerUserAndAgentAndGetRpcClient({
+        adminApiKey,
+        agentName: "Sortino Agent 1",
+        agentWalletAddress: "0x3333333333333333333333333333333333333333",
+      });
 
     const { agent: agent2 } = await registerUserAndAgentAndGetClient({
       adminApiKey,
@@ -3184,24 +3172,23 @@ describe("Perps Competition", () => {
     ]);
 
     // Get the leaderboard
-    const leaderboardResponse = await adminClient.getCompetitionAgents(
-      competition.competition.id,
-      { sort: "rank" },
-    );
+    const leaderboardResult = await rpcClient.competitions.getAgents({
+      competitionId: competition.competition.id,
+      sort: "rank",
+    });
 
-    expect(leaderboardResponse.success).toBe(true);
-    const leaderboard = leaderboardResponse as CompetitionAgentsResponse;
+    expect(leaderboardResult).toBeDefined();
 
     // Verify leaderboard is sorted by sortino_ratio
-    expect(leaderboard.agents).toHaveLength(2);
-    expect(leaderboard.agents[0]?.id).toBe(agent2.id); // Agent 2 should be first (1.5 Sortino)
-    expect(leaderboard.agents[1]?.id).toBe(agent1.id); // Agent 1 should be second (0.8 Sortino)
+    expect(leaderboardResult.agents).toHaveLength(2);
+    expect(leaderboardResult.agents[0]?.id).toBe(agent2.id); // Agent 2 should be first (1.5 Sortino)
+    expect(leaderboardResult.agents[1]?.id).toBe(agent1.id); // Agent 1 should be second (0.8 Sortino)
 
     // Verify the metrics
-    expect(leaderboard.agents[0]?.sortinoRatio).toBe(1.5);
-    expect(leaderboard.agents[0]?.calmarRatio).toBe(1);
-    expect(leaderboard.agents[1]?.sortinoRatio).toBe(0.8);
-    expect(leaderboard.agents[1]?.calmarRatio).toBe(2);
+    expect(leaderboardResult.agents[0]?.sortinoRatio).toBe(1.5);
+    expect(leaderboardResult.agents[0]?.calmarRatio).toBe(1);
+    expect(leaderboardResult.agents[1]?.sortinoRatio).toBe(0.8);
+    expect(leaderboardResult.agents[1]?.calmarRatio).toBe(2);
   });
 
   test("should include risk metrics in timeline for perps competition", async () => {
@@ -3606,11 +3593,12 @@ describe("Perps Competition", () => {
     await adminClient.loginAsAdmin(adminApiKey);
 
     // Register agents with specific wallet addresses that have known equity values
-    const { agent: agentAbove } = await registerUserAndAgentAndGetClient({
-      adminApiKey,
-      agentName: "Agent Above Threshold",
-      agentWalletAddress: "0xcccc111111111111111111111111111111111111", // $500
-    });
+    const { agent: agentAbove, rpcClient } =
+      await registerUserAndAgentAndGetRpcClient({
+        adminApiKey,
+        agentName: "Agent Above Threshold",
+        agentWalletAddress: "0xcccc111111111111111111111111111111111111", // $500
+      });
 
     const { agent: agentBelow } = await registerUserAndAgentAndGetClient({
       adminApiKey,
@@ -3643,26 +3631,25 @@ describe("Perps Competition", () => {
     // Wait for the monitoring to complete
 
     // Get the updated competition agents list
-    const agentsResponse = await adminClient.getCompetitionAgents(
-      competition.id,
-    );
-    expect(agentsResponse.success).toBe(true);
-    const typedResponse = agentsResponse as CompetitionAgentsResponse;
+    const agentsResult = await rpcClient.competitions.getAgents({
+      competitionId: competition.id,
+    });
+    expect(agentsResult).toBeDefined();
 
     // Agent above threshold should remain
-    const remainingAbove = typedResponse.agents.find(
+    const remainingAbove = agentsResult.agents.find(
       (a) => a.id === agentAbove.id,
     );
     expect(remainingAbove).toBeDefined();
 
     // Agent below threshold should be removed
-    const remainingBelow = typedResponse.agents.find(
+    const remainingBelow = agentsResult.agents.find(
       (a) => a.id === agentBelow.id,
     );
     expect(remainingBelow).toBeUndefined();
 
     // Agent exactly at threshold should remain (not < threshold)
-    const remainingExact = typedResponse.agents.find(
+    const remainingExact = agentsResult.agents.find(
       (a) => a.id === agentExact.id,
     );
     expect(remainingExact).toBeDefined();
@@ -3676,11 +3663,12 @@ describe("Perps Competition", () => {
     await adminClient.loginAsAdmin(adminApiKey);
 
     // Register agents with specific Hyperliquid wallet addresses
-    const { agent: agentAbove } = await registerUserAndAgentAndGetClient({
-      adminApiKey,
-      agentName: "Hyperliquid Agent Above",
-      agentWalletAddress: "0xcccc222222222222222222222222222222222222", // $500
-    });
+    const { agent: agentAbove, rpcClient } =
+      await registerUserAndAgentAndGetRpcClient({
+        adminApiKey,
+        agentName: "Hyperliquid Agent Above",
+        agentWalletAddress: "0xcccc222222222222222222222222222222222222", // $500
+      });
 
     const { agent: agentBelow } = await registerUserAndAgentAndGetClient({
       adminApiKey,
@@ -3712,26 +3700,25 @@ describe("Perps Competition", () => {
     // Wait for monitoring
 
     // Get updated agents list
-    const agentsResponse = await adminClient.getCompetitionAgents(
-      competition.id,
-    );
-    expect(agentsResponse.success).toBe(true);
-    const typedResponse = agentsResponse as CompetitionAgentsResponse;
+    const agentsResult = await rpcClient.competitions.getAgents({
+      competitionId: competition.id,
+    });
+    expect(agentsResult).toBeDefined();
 
     // Agent above should remain
-    const remainingAbove = typedResponse.agents.find(
+    const remainingAbove = agentsResult.agents.find(
       (a) => a.id === agentAbove.id,
     );
     expect(remainingAbove).toBeDefined();
 
     // Agent below should be removed
-    const remainingBelow = typedResponse.agents.find(
+    const remainingBelow = agentsResult.agents.find(
       (a) => a.id === agentBelow.id,
     );
     expect(remainingBelow).toBeUndefined();
 
     // Agent just below ($249.99) should be removed
-    const remainingJustBelow = typedResponse.agents.find(
+    const remainingJustBelow = agentsResult.agents.find(
       (a) => a.id === agentJustBelow.id,
     );
     expect(remainingJustBelow).toBeUndefined();
@@ -3745,11 +3732,12 @@ describe("Perps Competition", () => {
     await adminClient.loginAsAdmin(adminApiKey);
 
     // Register agents with low balances
-    const { agent: agentLow1 } = await registerUserAndAgentAndGetClient({
-      adminApiKey,
-      agentName: "Low Balance Agent 1",
-      agentWalletAddress: "0xbbbb111111111111111111111111111111111111", // $100
-    });
+    const { agent: agentLow1, rpcClient } =
+      await registerUserAndAgentAndGetRpcClient({
+        adminApiKey,
+        agentName: "Low Balance Agent 1",
+        agentWalletAddress: "0xbbbb111111111111111111111111111111111111", // $100
+      });
 
     const { agent: agentLow2 } = await registerUserAndAgentAndGetClient({
       adminApiKey,
@@ -3776,21 +3764,20 @@ describe("Perps Competition", () => {
     // Wait for monitoring
 
     // Get agents list
-    const agentsResponse = await adminClient.getCompetitionAgents(
-      competition.id,
-    );
-    expect(agentsResponse.success).toBe(true);
-    const typedResponse = agentsResponse as CompetitionAgentsResponse;
+    const agentsResult = await rpcClient.competitions.getAgents({
+      competitionId: competition.id,
+    });
+    expect(agentsResult).toBeDefined();
 
     // Both agents should remain (no threshold enforcement)
-    expect(typedResponse.agents).toHaveLength(2);
+    expect(agentsResult.agents).toHaveLength(2);
 
-    const agent1Present = typedResponse.agents.find(
+    const agent1Present = agentsResult.agents.find(
       (a) => a.id === agentLow1.id,
     );
     expect(agent1Present).toBeDefined();
 
-    const agent2Present = typedResponse.agents.find(
+    const agent2Present = agentsResult.agents.find(
       (a) => a.id === agentLow2.id,
     );
     expect(agent2Present).toBeDefined();
@@ -3804,11 +3791,12 @@ describe("Perps Competition", () => {
     await adminClient.loginAsAdmin(adminApiKey);
 
     // Register agent with known wallet
-    const { agent: agentWithData } = await registerUserAndAgentAndGetClient({
-      adminApiKey,
-      agentName: "Agent With Data",
-      agentWalletAddress: "0xcccc111111111111111111111111111111111111", // $500
-    });
+    const { agent: agentWithData, rpcClient } =
+      await registerUserAndAgentAndGetRpcClient({
+        adminApiKey,
+        agentName: "Agent With Data",
+        agentWalletAddress: "0xcccc111111111111111111111111111111111111", // $500
+      });
 
     // Register agent with a wallet that has no mock data (will fail to sync)
     const { agent: agentNoData } = await registerUserAndAgentAndGetClient({
@@ -3835,20 +3823,19 @@ describe("Perps Competition", () => {
     // Wait for monitoring
 
     // Get agents list
-    const agentsResponse = await adminClient.getCompetitionAgents(
-      competition.id,
-    );
-    expect(agentsResponse.success).toBe(true);
-    const typedResponse = agentsResponse as CompetitionAgentsResponse;
+    const agentsResult = await rpcClient.competitions.getAgents({
+      competitionId: competition.id,
+    });
+    expect(agentsResult).toBeDefined();
 
     // Agent with data above threshold should remain
-    const agentWithDataPresent = typedResponse.agents.find(
+    const agentWithDataPresent = agentsResult.agents.find(
       (a) => a.id === agentWithData.id,
     );
     expect(agentWithDataPresent).toBeDefined();
 
     // Agent without sync data should remain (no snapshot = not checked)
-    const agentNoDataPresent = typedResponse.agents.find(
+    const agentNoDataPresent = agentsResult.agents.find(
       (a) => a.id === agentNoData.id,
     );
     expect(agentNoDataPresent).toBeDefined();
@@ -3862,11 +3849,12 @@ describe("Perps Competition", () => {
     await adminClient.loginAsAdmin(adminApiKey);
 
     // Register multiple agents
-    const { agent: agent500 } = await registerUserAndAgentAndGetClient({
-      adminApiKey,
-      agentName: "Agent 500",
-      agentWalletAddress: "0xcccc111111111111111111111111111111111111", // $500
-    });
+    const { agent: agent500, rpcClient } =
+      await registerUserAndAgentAndGetRpcClient({
+        adminApiKey,
+        agentName: "Agent 500",
+        agentWalletAddress: "0xcccc111111111111111111111111111111111111", // $500
+      });
 
     const { agent: agent100 } = await registerUserAndAgentAndGetClient({
       adminApiKey,
@@ -3904,23 +3892,21 @@ describe("Perps Competition", () => {
     expect(competition.agentIds).not.toContain(agent100.id); // $100 - below threshold, should be removed
 
     // Get competition details to verify stats
-    const detailsResponse = await adminClient.getCompetition(competition.id);
-    expect(detailsResponse.success).toBe(true);
-    const typedDetails = detailsResponse as CompetitionDetailResponse;
+    const comp = await rpcClient.competitions.getById({ id: competition.id });
+    expect(comp).toBeDefined();
 
     // Stats should show only 2 agents
-    expect(typedDetails.competition.stats?.totalAgents).toBe(2);
+    expect(comp.stats?.totalAgents).toBe(2);
 
     // Verify through agents endpoint as well
-    const agentsResponse = await adminClient.getCompetitionAgents(
-      competition.id,
-    );
-    expect(agentsResponse.success).toBe(true);
-    const typedAgents = agentsResponse as CompetitionAgentsResponse;
-    expect(typedAgents.agents).toHaveLength(2);
+    const agentsResult = await rpcClient.competitions.getAgents({
+      competitionId: competition.id,
+    });
+    expect(agentsResult).toBeDefined();
+    expect(agentsResult.agents).toHaveLength(2);
 
     // Verify the correct agents remain
-    const agentIds = typedAgents.agents.map((a) => a.id);
+    const agentIds = agentsResult.agents.map((a) => a.id);
     expect(agentIds).toContain(agent500.id);
     expect(agentIds).toContain(agent250.id);
     expect(agentIds).not.toContain(agent100.id);
@@ -3934,7 +3920,7 @@ describe("Perps Competition", () => {
     await adminClient.loginAsAdmin(adminApiKey);
 
     // Create and start a perps competition
-    const { agent } = await registerUserAndAgentAndGetClient({
+    const { agent, rpcClient } = await registerUserAndAgentAndGetRpcClient({
       adminApiKey,
       agentName: "Timeline HTTP Test Agent",
       agentWalletAddress: "0x5555555555555555555555555555555555555555",
@@ -3975,17 +3961,16 @@ describe("Perps Competition", () => {
 
     await db.insert(riskMetricsSnapshots).values(riskSnapshots);
 
-    // Call the HTTP API endpoint
-    const timelineResponse = await adminClient.getCompetitionTimeline(
-      competition.competition.id,
-      30, // bucket size
-    );
+    // Call the RPC endpoint
+    const timeline = await rpcClient.competitions.getTimeline({
+      competitionId: competition.competition.id,
+      bucket: 30, // bucket size
+    });
 
-    expect(timelineResponse.success).toBe(true);
-    const typedResponse = timelineResponse as CompetitionTimelineResponse;
+    expect(timeline).toBeDefined();
 
     // Find our specific agent's timeline
-    const agentTimelineData = typedResponse.timeline.find(
+    const agentTimelineData = timeline.find(
       (agentData) => agentData.agentId === agent.id,
     );
 
@@ -3999,7 +3984,7 @@ describe("Perps Competition", () => {
       expect(entry.timestamp).toBeDefined();
       expect(entry.totalValue).toBeDefined();
 
-      // Risk metrics should be included via HTTP endpoint for perps
+      // Risk metrics should be included for perps
       expect(entry.calmarRatio).toBeDefined();
       expect(entry.sortinoRatio).toBeDefined();
       expect(entry.simpleReturn).toBeDefined();
@@ -4014,7 +3999,7 @@ describe("Perps Competition", () => {
     await adminClient.loginAsAdmin(adminApiKey);
 
     // Create and start a paper trading competition
-    const { agent } = await registerUserAndAgentAndGetClient({
+    const { agent, rpcClient } = await registerUserAndAgentAndGetRpcClient({
       adminApiKey,
       agentName: "Paper Trading Timeline HTTP Agent",
     });
@@ -4039,17 +4024,16 @@ describe("Perps Competition", () => {
 
     await db.insert(portfolioSnapshots).values(snapshots);
 
-    // Call the HTTP API endpoint
-    const timelineResponse = await adminClient.getCompetitionTimeline(
-      competition.competition.id,
-      30,
-    );
+    // Call the RPC endpoint
+    const timeline = await rpcClient.competitions.getTimeline({
+      competitionId: competition.competition.id,
+      bucket: 30,
+    });
 
-    expect(timelineResponse.success).toBe(true);
-    const typedResponse = timelineResponse as CompetitionTimelineResponse;
+    expect(timeline).toBeDefined();
 
     // Find our specific agent's timeline
-    const agentTimelineData = typedResponse.timeline.find(
+    const agentTimelineData = timeline.find(
       (agentData) => agentData.agentId === agent.id,
     );
 
@@ -4062,7 +4046,7 @@ describe("Perps Competition", () => {
       expect(entry.timestamp).toBeDefined();
       expect(entry.totalValue).toBeDefined();
 
-      // Risk metrics should NOT be included via HTTP endpoint for paper trading
+      // Risk metrics should NOT be included for paper trading
       expect(entry.calmarRatio).toBeUndefined();
       expect(entry.sortinoRatio).toBeUndefined();
       expect(entry.simpleReturn).toBeUndefined();
@@ -4078,11 +4062,12 @@ describe("Perps Competition", () => {
 
     // Use new wallets with equity progressions that produce different Sortino vs Calmar rankings
     // Agent 1: Good Sortino, Poor Calmar (progression: 1000 → 1600 → 1200)
-    const { agent: agent1 } = await registerUserAndAgentAndGetClient({
-      adminApiKey,
-      agentName: "Good Sortino Agent",
-      agentWalletAddress: "0xeeee111111111111111111111111111111111111",
-    });
+    const { agent: agent1, rpcClient } =
+      await registerUserAndAgentAndGetRpcClient({
+        adminApiKey,
+        agentName: "Good Sortino Agent",
+        agentWalletAddress: "0xeeee111111111111111111111111111111111111",
+      });
 
     // Agent 2: Poor Sortino, Good Calmar (progression: 1000 → 1020 → 990 → 1010 → 980 → 1050)
     const { agent: agent2 } = await registerUserAndAgentAndGetClient({
@@ -4121,13 +4106,12 @@ describe("Perps Competition", () => {
     await perpsDataProcessor.processPerpsCompetition(competitionId);
 
     // Get leaderboard before ending - should be sorted by Sortino
-    const activeLeaderboard = await adminClient.getCompetitionAgents(
+    const activeLeaderboardResult = await rpcClient.competitions.getAgents({
       competitionId,
-      { sort: "rank" },
-    );
-    expect(activeLeaderboard.success).toBe(true);
-    const activeAgents = (activeLeaderboard as CompetitionAgentsResponse)
-      .agents;
+      sort: "rank",
+    });
+    expect(activeLeaderboardResult).toBeDefined();
+    const activeAgents = activeLeaderboardResult.agents;
 
     // Store original rankings and metrics
     const agent1Active = activeAgents.find((a) => a.id === agent1.id);
@@ -4158,10 +4142,11 @@ describe("Perps Competition", () => {
     });
 
     // Get leaderboard after the update attempt
-    const endedLeaderboard =
-      await adminClient.getCompetitionAgents(competitionId);
-    expect(endedLeaderboard.success).toBe(true);
-    const endedAgents = (endedLeaderboard as CompetitionAgentsResponse).agents;
+    const endedLeaderboardResult = await rpcClient.competitions.getAgents({
+      competitionId,
+    });
+    expect(endedLeaderboardResult).toBeDefined();
+    const endedAgents = endedLeaderboardResult.agents;
 
     // Rankings should be PRESERVED (still using Sortino-based rankings from when it ended)
     const agent1Ended = endedAgents.find((a) => a.id === agent1.id);
@@ -4182,7 +4167,7 @@ describe("Perps Competition", () => {
     await adminClient.loginAsAdmin(adminApiKey);
 
     // Create and start a perps competition
-    const { agent } = await registerUserAndAgentAndGetClient({
+    const { agent, rpcClient } = await registerUserAndAgentAndGetRpcClient({
       adminApiKey,
       agentName: "Bucket Size Test Agent",
       agentWalletAddress: "0x1111111111111111111111111111111111111111",
@@ -4209,37 +4194,34 @@ describe("Perps Competition", () => {
     await db.insert(portfolioSnapshots).values(snapshots);
 
     // Test 1: Small bucket (10 minutes) - should return more data points
-    const timeline10min = await adminClient.getCompetitionTimeline(
-      competition.competition.id,
-      10,
-    );
-    expect(timeline10min.success).toBe(true);
-    const typed10min = timeline10min as CompetitionTimelineResponse;
-    const agentData10min = typed10min.timeline.find(
+    const timeline10minResult = await rpcClient.competitions.getTimeline({
+      competitionId: competition.competition.id,
+      bucket: 10,
+    });
+    expect(timeline10minResult).toBeDefined();
+    const agentData10min = timeline10minResult.find(
       (agentData) => agentData.agentId === agent.id,
     );
     const count10min = agentData10min?.timeline.length || 0;
 
     // Test 2: Larger bucket (30 minutes) - should return fewer data points
-    const timeline30min = await adminClient.getCompetitionTimeline(
-      competition.competition.id,
-      30,
-    );
-    expect(timeline30min.success).toBe(true);
-    const typed30min = timeline30min as CompetitionTimelineResponse;
-    const agentData30min = typed30min.timeline.find(
+    const timeline30minResult = await rpcClient.competitions.getTimeline({
+      competitionId: competition.competition.id,
+      bucket: 30,
+    });
+    expect(timeline30minResult).toBeDefined();
+    const agentData30min = timeline30minResult.find(
       (agentData) => agentData.agentId === agent.id,
     );
     const count30min = agentData30min?.timeline.length || 0;
 
     // Test 3: Very large bucket (60 minutes) - should return even fewer
-    const timeline60min = await adminClient.getCompetitionTimeline(
-      competition.competition.id,
-      60,
-    );
-    expect(timeline60min.success).toBe(true);
-    const typed60min = timeline60min as CompetitionTimelineResponse;
-    const agentData60min = typed60min.timeline.find(
+    const timeline60minResult = await rpcClient.competitions.getTimeline({
+      competitionId: competition.competition.id,
+      bucket: 60,
+    });
+    expect(timeline60minResult).toBeDefined();
+    const agentData60min = timeline60minResult.find(
       (agentData) => agentData.agentId === agent.id,
     );
     const count60min = agentData60min?.timeline.length || 0;
@@ -4254,11 +4236,12 @@ describe("Perps Competition", () => {
     await adminClient.loginAsAdmin(adminApiKey);
 
     // Create 3 agents
-    const { agent: agentGoodMetrics } = await registerUserAndAgentAndGetClient({
-      adminApiKey,
-      agentName: "Agent With Good Metrics",
-      agentWalletAddress: "0x3333333333333333333333333333333333333333", // $1100 equity
-    });
+    const { agent: agentGoodMetrics, rpcClient } =
+      await registerUserAndAgentAndGetRpcClient({
+        adminApiKey,
+        agentName: "Agent With Good Metrics",
+        agentWalletAddress: "0x3333333333333333333333333333333333333333", // $1100 equity
+      });
 
     const { agent: agentPoorMetrics } = await registerUserAndAgentAndGetClient({
       adminApiKey,
@@ -4301,23 +4284,22 @@ describe("Perps Competition", () => {
       );
 
     // Get leaderboard
-    const leaderboardResponse = await adminClient.getCompetitionAgents(
-      competition.competition.id,
-      { sort: "rank" },
-    );
+    const leaderboardResult = await rpcClient.competitions.getAgents({
+      competitionId: competition.competition.id,
+      sort: "rank",
+    });
 
-    expect(leaderboardResponse.success).toBe(true);
-    const typedResponse = leaderboardResponse as CompetitionAgentsResponse;
-    expect(typedResponse.agents).toHaveLength(3);
+    expect(leaderboardResult).toBeDefined();
+    expect(leaderboardResult.agents).toHaveLength(3);
 
     // Find each agent
-    const goodMetrics = typedResponse.agents.find(
+    const goodMetrics = leaderboardResult.agents.find(
       (a) => a.id === agentGoodMetrics.id,
     );
-    const poorMetrics = typedResponse.agents.find(
+    const poorMetrics = leaderboardResult.agents.find(
       (a) => a.id === agentPoorMetrics.id,
     );
-    const noMetrics = typedResponse.agents.find(
+    const noMetrics = leaderboardResult.agents.find(
       (a) => a.id === agentHighEquityNoMetrics.id,
     );
 
@@ -4381,7 +4363,7 @@ describe("Perps Competition", () => {
     await adminClient.loginAsAdmin(adminApiKey);
 
     // Register agent
-    const { agent } = await registerUserAndAgentAndGetClient({
+    const { agent, rpcClient } = await registerUserAndAgentAndGetRpcClient({
       adminApiKey,
       agentName: "No Snapshots Timeline Agent",
     });
@@ -4406,19 +4388,18 @@ describe("Perps Competition", () => {
     await adminClient.addAgentToCompetition(competitionId, agent.id);
 
     // Try to get timeline - should return empty or minimal data
-    const timelineResponse = await adminClient.getCompetitionTimeline(
+    const timeline = await rpcClient.competitions.getTimeline({
       competitionId,
-      30,
-    );
+      bucket: 30,
+    });
 
-    expect(timelineResponse.success).toBe(true);
-    const typedResponse = timelineResponse as CompetitionTimelineResponse;
+    expect(timeline).toBeDefined();
 
     // Timeline should be empty or have no data
-    expect(typedResponse.timeline).toBeDefined();
-    expect(Array.isArray(typedResponse.timeline)).toBe(true);
+    expect(timeline).toBeDefined();
+    expect(Array.isArray(timeline)).toBe(true);
     // Should be empty since competition hasn't started and has no snapshots
-    expect(typedResponse.timeline.length).toBe(0);
+    expect(timeline.length).toBe(0);
   });
 
   test("should preserve calmar_ratio rankings when competition with calmar evaluation ends", async () => {
@@ -4426,11 +4407,12 @@ describe("Perps Competition", () => {
     await adminClient.loginAsAdmin(adminApiKey);
 
     // Use existing wallets with known performance
-    const { agent: agent1 } = await registerUserAndAgentAndGetClient({
-      adminApiKey,
-      agentName: "Calmar Preservation Agent 1",
-      agentWalletAddress: "0x3333333333333333333333333333333333333333", // $1100, steady growth
-    });
+    const { agent: agent1, rpcClient } =
+      await registerUserAndAgentAndGetRpcClient({
+        adminApiKey,
+        agentName: "Calmar Preservation Agent 1",
+        agentWalletAddress: "0x3333333333333333333333333333333333333333", // $1100, steady growth
+      });
 
     const { agent: agent2 } = await registerUserAndAgentAndGetClient({
       adminApiKey,
@@ -4452,13 +4434,12 @@ describe("Perps Competition", () => {
     );
 
     // Get active leaderboard
-    const activeLeaderboard = await adminClient.getCompetitionAgents(
-      competition.competition.id,
-      { sort: "rank" },
-    );
-    expect(activeLeaderboard.success).toBe(true);
-    const activeAgents = (activeLeaderboard as CompetitionAgentsResponse)
-      .agents;
+    const activeLeaderboardResult = await rpcClient.competitions.getAgents({
+      competitionId: competition.competition.id,
+      sort: "rank",
+    });
+    expect(activeLeaderboardResult).toBeDefined();
+    const activeAgents = activeLeaderboardResult.agents;
 
     const agent1Active = activeAgents.find((a) => a.id === agent1.id);
     const agent2Active = activeAgents.find((a) => a.id === agent2.id);
@@ -4472,11 +4453,11 @@ describe("Perps Competition", () => {
     await adminClient.endCompetition(competition.competition.id);
 
     // Get ended leaderboard
-    const endedLeaderboard = await adminClient.getCompetitionAgents(
-      competition.competition.id,
-    );
-    expect(endedLeaderboard.success).toBe(true);
-    const endedAgents = (endedLeaderboard as CompetitionAgentsResponse).agents;
+    const endedLeaderboardResult = await rpcClient.competitions.getAgents({
+      competitionId: competition.competition.id,
+    });
+    expect(endedLeaderboardResult).toBeDefined();
+    const endedAgents = endedLeaderboardResult.agents;
 
     const agent1Ended = endedAgents.find((a) => a.id === agent1.id);
     const agent2Ended = endedAgents.find((a) => a.id === agent2.id);
@@ -4493,11 +4474,12 @@ describe("Perps Competition", () => {
     await adminClient.loginAsAdmin(adminApiKey);
 
     // Use wallets with different returns
-    const { agent: agent1 } = await registerUserAndAgentAndGetClient({
-      adminApiKey,
-      agentName: "Simple Return Preservation Agent 1",
-      agentWalletAddress: "0x1111111111111111111111111111111111111111", // $1250, good return
-    });
+    const { agent: agent1, rpcClient } =
+      await registerUserAndAgentAndGetRpcClient({
+        adminApiKey,
+        agentName: "Simple Return Preservation Agent 1",
+        agentWalletAddress: "0x1111111111111111111111111111111111111111", // $1250, good return
+      });
 
     const { agent: agent2 } = await registerUserAndAgentAndGetClient({
       adminApiKey,
@@ -4519,13 +4501,12 @@ describe("Perps Competition", () => {
     );
 
     // Get active leaderboard
-    const activeLeaderboard = await adminClient.getCompetitionAgents(
-      competition.competition.id,
-      { sort: "rank" },
-    );
-    expect(activeLeaderboard.success).toBe(true);
-    const activeAgents = (activeLeaderboard as CompetitionAgentsResponse)
-      .agents;
+    const activeLeaderboardResult = await rpcClient.competitions.getAgents({
+      competitionId: competition.competition.id,
+      sort: "rank",
+    });
+    expect(activeLeaderboardResult).toBeDefined();
+    const activeAgents = activeLeaderboardResult.agents;
 
     const agent1Active = activeAgents.find((a) => a.id === agent1.id);
     const agent2Active = activeAgents.find((a) => a.id === agent2.id);
@@ -4539,11 +4520,11 @@ describe("Perps Competition", () => {
     await adminClient.endCompetition(competition.competition.id);
 
     // Get ended leaderboard
-    const endedLeaderboard = await adminClient.getCompetitionAgents(
-      competition.competition.id,
-    );
-    expect(endedLeaderboard.success).toBe(true);
-    const endedAgents = (endedLeaderboard as CompetitionAgentsResponse).agents;
+    const endedLeaderboardResult = await rpcClient.competitions.getAgents({
+      competitionId: competition.competition.id,
+    });
+    expect(endedLeaderboardResult).toBeDefined();
+    const endedAgents = endedLeaderboardResult.agents;
 
     const agent1Ended = endedAgents.find((a) => a.id === agent1.id);
     const agent2Ended = endedAgents.find((a) => a.id === agent2.id);
