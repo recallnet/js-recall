@@ -190,7 +190,7 @@ describe("User API", () => {
     expect(foundUser?.imageUrl).toBe(newImageUrl);
   });
 
-  test("creating a new user with duplicate email fails to update on conflict", async () => {
+  test("creating a new user with duplicate email fails", async () => {
     const originalWalletAddress = generateRandomEthAddress();
     const originalUserEmail = `email@example.com`;
     await createPrivyAuthenticatedRpcClient({
@@ -200,7 +200,7 @@ describe("User API", () => {
       walletAddress: originalWalletAddress,
     });
 
-    // Try to create a user with the same email - should fail
+    // Try to create a user with the same email - should fail with user-friendly message
     const newName = "Another Privy Test User";
     const newWalletAddress = generateRandomEthAddress();
     await expect(
@@ -209,7 +209,7 @@ describe("User API", () => {
         userEmail: originalUserEmail,
         walletAddress: newWalletAddress,
       }),
-    ).rejects.toThrow();
+    ).rejects.toThrow(/A user with this email already exists/);
   });
 
   test("linking a wallet already owned by another user fails", async () => {
@@ -237,10 +237,10 @@ describe("User API", () => {
     // First simulate the wallet being linked in Privy for user B
     MockPrivyClient.linkWallet(userB.privyId!, sharedWalletAddress);
 
-    // Attempt to link should fail due to unique constraint
+    // Attempt to link should fail message
     await expect(
       userBClient.user.linkWallet({ walletAddress: sharedWalletAddress }),
-    ).rejects.toThrow();
+    ).rejects.toThrow(/A user with this walletAddress already exists/);
   });
 
   test("creating a new user with duplicate privyId is idempotent on login", async () => {
