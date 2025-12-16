@@ -36,7 +36,6 @@ import {
   registerUserAndAgentAndGetClient,
   startPerpsTestCompetition,
   startTestCompetition,
-  wait,
 } from "@recallnet/test-utils";
 
 import { config } from "@/config/private";
@@ -286,13 +285,11 @@ describe("Perps Competition", () => {
     const competition = response.competition;
 
     // Wait for competition start to fully commit
-    await wait(1000);
 
     // Trigger sync from Symphony (simulating what the cron job does)
     await perpsDataProcessor.processPerpsCompetition(competition.id);
 
     // Wait for sync to complete
-    await wait(500);
 
     // Get perps account for the agent
     // Note: Using authenticated endpoint as the public endpoint isn't implemented yet
@@ -615,13 +612,11 @@ describe("Perps Competition", () => {
     const competition = competitionResponse.competition;
 
     // Wait for competition start to fully commit
-    await wait(1000);
 
     // Trigger sync from Symphony (simulating what the cron job does)
     await perpsDataProcessor.processPerpsCompetition(competition.id);
 
     // Wait for sync to complete
-    await wait(500);
 
     // Test getting account summary for the authenticated agent
     const accountResponse = await agentClient.getPerpsAccount(competition.id);
@@ -669,13 +664,11 @@ describe("Perps Competition", () => {
     const competition = competitionResponse.competition;
 
     // Wait for competition start to fully commit
-    await wait(1000);
 
     // Trigger sync from Symphony (simulating what the cron job does)
     await perpsDataProcessor.processPerpsCompetition(competition.id);
 
     // Wait for sync to complete
-    await wait(500);
 
     // Test getting positions via competition endpoint (requires auth)
     const positionsResponse =
@@ -1217,7 +1210,6 @@ describe("Perps Competition", () => {
     const competitionId = competition.id;
 
     // Wait to ensure competition is fully started
-    await wait(1000);
 
     // Trigger sync from Symphony (simulating what the cron job does)
 
@@ -1225,20 +1217,17 @@ describe("Perps Competition", () => {
     await perpsDataProcessor.processPerpsCompetition(competition.id);
 
     // Wait a bit to ensure time passes between snapshots
-    await wait(500);
 
     // Second sync - creates snapshot at trough ($1200)
     await perpsDataProcessor.processPerpsCompetition(competition.id);
 
     // Wait a bit more
-    await wait(500);
 
     // Third sync - creates snapshot after partial recovery ($1550)
     await perpsDataProcessor.processPerpsCompetition(competition.id);
 
     // Wait for sync and calculations to complete
     // Need extra time for read replica to catch up with risk metrics writes
-    await wait(1000);
 
     // Get competition leaderboard - should include risk metrics
     const leaderboardResponse = await agentClient.getCompetitionAgents(
@@ -1311,7 +1300,6 @@ describe("Perps Competition", () => {
     const competition = response.competition;
 
     // Wait to ensure transfers happen AFTER competition start
-    await wait(1000);
 
     // Trigger sync
 
@@ -1319,12 +1307,9 @@ describe("Perps Competition", () => {
     await perpsDataProcessor.processPerpsCompetition(competition.id);
 
     // Wait a bit to ensure time passes between snapshots
-    await wait(100);
 
     // Second sync - creates second snapshot (needed for simple return calculation)
     await perpsDataProcessor.processPerpsCompetition(competition.id);
-
-    await wait(500);
 
     // Get leaderboard
     const leaderboardResponse = await adminClient.getCompetitionAgents(
@@ -1382,7 +1367,6 @@ describe("Perps Competition", () => {
 
     // Trigger sync
     await perpsDataProcessor.processPerpsCompetition(competition.id);
-    await wait(500);
 
     // Get agent competitions - should include risk metrics
     const competitionsResponse = await agentClient.getAgentCompetitions(
@@ -1435,7 +1419,6 @@ describe("Perps Competition", () => {
 
     // Trigger sync
     await perpsDataProcessor.processPerpsCompetition(competition.id);
-    await wait(500);
 
     // Get leaderboard
     const leaderboardResponse = await agentClient.getCompetitionAgents(
@@ -1491,13 +1474,11 @@ describe("Perps Competition", () => {
     const competition = response.competition;
 
     // Wait to ensure competition is fully started
-    await wait(1000);
 
     // Trigger sync to process transfers
     await perpsDataProcessor.processPerpsCompetition(competition.id);
 
     // Wait for processing to complete
-    await wait(500);
 
     // Call the admin endpoint to check for transfer violations
     const violationsResponse =
@@ -1555,7 +1536,6 @@ describe("Perps Competition", () => {
 
     // Trigger sync
     await perpsDataProcessor.processPerpsCompetition(competition.id);
-    await wait(500);
 
     // Check for violations - should be empty
     const violationsResponse =
@@ -1654,7 +1634,6 @@ describe("Perps Competition", () => {
 
     // Take initial snapshot to establish starting values
     await portfolioSnapshotterService.takePortfolioSnapshots(competition.id);
-    await wait(100);
 
     // Create snapshots AFTER competition starts with small time increments
     const now = new Date();
@@ -1727,7 +1706,6 @@ describe("Perps Competition", () => {
 
     // Process to calculate Calmar ratios with the historical data
     await perpsDataProcessor.processPerpsCompetition(competition.id);
-    await wait(1000);
 
     // Get the leaderboard as admin (uses active competition)
     const leaderboardResponse = await adminClient.getCompetitionAgents(
@@ -1843,7 +1821,6 @@ describe("Perps Competition", () => {
 
     // Take initial snapshot to establish starting values
     await portfolioSnapshotterService.takePortfolioSnapshots(competition.id);
-    await wait(100);
 
     // Create snapshots AFTER competition starts with small time increments
     const now = new Date();
@@ -1915,7 +1892,6 @@ describe("Perps Competition", () => {
 
     // Process to calculate Calmar ratios
     await perpsDataProcessor.processPerpsCompetition(competition.id);
-    await wait(1000);
 
     // ============ STEP 1: Get data while competition is ACTIVE ============
 
@@ -1977,7 +1953,6 @@ describe("Perps Competition", () => {
     expect(endResponse.success).toBe(true);
 
     // Wait for any async operations to complete
-    await wait(2000);
 
     // ============ STEP 3: Get data after competition is ENDED ============
 
@@ -2146,7 +2121,6 @@ describe("Perps Competition", () => {
     await perpsDataProcessor.processPerpsCompetition(competition.id);
 
     // Wait for sync to complete
-    await wait(500);
 
     // Verify BTC agent's position
     const btcPositions = await agentBTCClient.getPerpsPositions(competition.id);
@@ -2224,21 +2198,16 @@ describe("Perps Competition", () => {
     expect(response.success).toBe(true);
     const competition = response.competition;
 
-    await wait(1000);
-
     // First sync - peak equity
     await perpsDataProcessor.processPerpsCompetition(competition.id);
-    await wait(500);
 
     // Second sync - trough
     await perpsDataProcessor.processPerpsCompetition(competition.id);
-    await wait(500);
 
     // Third sync - recovery
     await perpsDataProcessor.processPerpsCompetition(competition.id);
 
     // Wait for calculations
-    await wait(1000);
 
     // Get leaderboard with risk metrics
     const leaderboardResponse = (await agentClient.getCompetitionAgents(
@@ -2300,11 +2269,8 @@ describe("Perps Competition", () => {
     expect(response.success).toBe(true);
     const competition = response.competition;
 
-    await wait(1000);
-
     // Process competition to detect transfers
     await perpsDataProcessor.processPerpsCompetition(competition.id);
-    await wait(500);
 
     // Check for violations
     const violationsResponse =
@@ -2360,7 +2326,6 @@ describe("Perps Competition", () => {
     const competition = response.competition;
 
     await perpsDataProcessor.processPerpsCompetition(competition.id);
-    await wait(500);
 
     const multiPositions = await agentMultiClient.getPerpsPositions(
       competition.id,
@@ -2430,7 +2395,6 @@ describe("Perps Competition", () => {
     const competition = response.competition;
 
     await portfolioSnapshotterService.takePortfolioSnapshots(competition.id);
-    await wait(100);
 
     const now = new Date();
     const minutesAgo = (minutes: number) =>
@@ -2482,7 +2446,6 @@ describe("Perps Competition", () => {
     ]);
 
     await perpsDataProcessor.processPerpsCompetition(competition.id);
-    await wait(1000);
 
     const leaderboardResponse = (await adminClient.getCompetitionAgents(
       competition.id,
@@ -2552,10 +2515,7 @@ describe("Perps Competition", () => {
     expect(response.success).toBe(true);
     const competition = response.competition;
 
-    await wait(1000);
-
     await perpsDataProcessor.processPerpsCompetition(competition.id);
-    await wait(500);
 
     const competitionDetails = (await agent3Client.getCompetition(
       competition.id,
@@ -2600,7 +2560,6 @@ describe("Perps Competition", () => {
     const competition = response.competition;
 
     await perpsDataProcessor.processPerpsCompetition(competition.id);
-    await wait(500);
 
     const allPositions = await adminClient.getCompetitionAllPerpsPositions(
       competition.id,
@@ -2668,7 +2627,6 @@ describe("Perps Competition", () => {
     const competition = response.competition;
 
     await portfolioSnapshotterService.takePortfolioSnapshots(competition.id);
-    await wait(100);
 
     const now = new Date();
     const minutesAgo = (minutes: number) =>
@@ -2702,7 +2660,6 @@ describe("Perps Competition", () => {
     ]);
 
     await perpsDataProcessor.processPerpsCompetition(competition.id);
-    await wait(1000);
 
     const activeLeaderboardResponse = (await adminClient.getCompetitionAgents(
       competition.id,
@@ -2736,7 +2693,6 @@ describe("Perps Competition", () => {
 
     const endResponse = await adminClient.endCompetition(competition.id);
     expect(endResponse.success).toBe(true);
-    await wait(2000);
 
     const endedCompResponse = await adminClient.getCompetition(competition.id);
     expect(endedCompResponse.success).toBe(true);
@@ -2795,7 +2751,6 @@ describe("Perps Competition", () => {
     const competition = response.competition;
 
     await perpsDataProcessor.processPerpsCompetition(competition.id);
-    await wait(500);
 
     const activeAccount = await agentActiveClient.getPerpsAccount(
       competition.id,
@@ -2839,11 +2794,9 @@ describe("Perps Competition", () => {
     const competition = response.competition;
 
     // Wait for competition to be fully started
-    await wait(1000);
 
     // Create initial snapshot
     await portfolioSnapshotterService.takePortfolioSnapshots(competition.id);
-    await wait(100);
 
     // Insert historical snapshots to establish return pattern
     // Agent 0x3333 has $1100 current equity, let's simulate steady 10% growth
@@ -2894,7 +2847,6 @@ describe("Perps Competition", () => {
     await perpsDataProcessor.processPerpsCompetition(competition.id);
 
     // Wait for calculations to complete and propagate to read replica
-    await wait(1500);
 
     // Get competition agents with risk metrics
     const leaderboardResponse = await agentClient.getCompetitionAgents(
@@ -2956,8 +2908,6 @@ describe("Perps Competition", () => {
     expect(response.success).toBe(true);
     const competition = response.competition;
 
-    await wait(1000);
-
     // Create snapshots showing decline
     const now = new Date();
     const minutesAgo = (minutes: number) =>
@@ -2992,7 +2942,6 @@ describe("Perps Competition", () => {
 
     // Process to calculate risk metrics
     await perpsDataProcessor.processPerpsCompetition(competition.id);
-    await wait(1500);
 
     // Get competition agents with risk metrics
     const leaderboardResponse = await agentClient.getCompetitionAgents(
@@ -3043,8 +2992,6 @@ describe("Perps Competition", () => {
     expect(response.success).toBe(true);
     const competition = response.competition;
 
-    await wait(1000);
-
     // Create historical snapshots
     const now = new Date();
     const minutesAgo = (minutes: number) =>
@@ -3074,7 +3021,6 @@ describe("Perps Competition", () => {
 
     // Process competition - this should calculate and save risk metrics
     await perpsDataProcessor.processPerpsCompetition(competition.id);
-    await wait(1500);
 
     // Query risk_metrics_snapshots table directly to verify time-series storage
     const riskSnapshots = await perpsRepository.getRiskMetricsTimeSeries(
@@ -3695,7 +3641,6 @@ describe("Perps Competition", () => {
     const competition = response.competition;
 
     // Wait for the monitoring to complete
-    await wait(2000);
 
     // Get the updated competition agents list
     const agentsResponse = await adminClient.getCompetitionAgents(
@@ -3765,7 +3710,6 @@ describe("Perps Competition", () => {
     const competition = response.competition;
 
     // Wait for monitoring
-    await wait(2000);
 
     // Get updated agents list
     const agentsResponse = await adminClient.getCompetitionAgents(
@@ -3830,7 +3774,6 @@ describe("Perps Competition", () => {
     const competition = response.competition;
 
     // Wait for monitoring
-    await wait(2000);
 
     // Get agents list
     const agentsResponse = await adminClient.getCompetitionAgents(
@@ -3890,7 +3833,6 @@ describe("Perps Competition", () => {
     const competition = response.competition;
 
     // Wait for monitoring
-    await wait(2000);
 
     // Get agents list
     const agentsResponse = await adminClient.getCompetitionAgents(
@@ -4158,7 +4100,6 @@ describe("Perps Competition", () => {
     });
 
     const competitionId = competition.competition.id;
-    await wait(1000);
 
     // Process multiple times to create the equity progression snapshots
     // Agent 1 needs 3 snapshots (1000 → 1600 → 1200)
@@ -4166,23 +4107,18 @@ describe("Perps Competition", () => {
 
     // Snapshot 1
     await perpsDataProcessor.processPerpsCompetition(competitionId);
-    await wait(500);
 
     // Snapshot 2
     await perpsDataProcessor.processPerpsCompetition(competitionId);
-    await wait(500);
 
     // Snapshot 3
     await perpsDataProcessor.processPerpsCompetition(competitionId);
-    await wait(500);
 
     // Snapshot 4
     await perpsDataProcessor.processPerpsCompetition(competitionId);
-    await wait(500);
 
     // Snapshot 5 (final for agent 2)
     await perpsDataProcessor.processPerpsCompetition(competitionId);
-    await wait(1500);
 
     // Get leaderboard before ending - should be sorted by Sortino
     const activeLeaderboard = await adminClient.getCompetitionAgents(
@@ -4215,7 +4151,6 @@ describe("Perps Competition", () => {
 
     // End the competition - this triggers calculateAndPersistFinalLeaderboard
     await adminClient.endCompetition(competitionId);
-    await wait(2000);
 
     // Try to update the competition's evaluation metric AFTER it has ended
     await adminClient.updateCompetition(competitionId, {
@@ -4350,13 +4285,10 @@ describe("Perps Competition", () => {
       evaluationMetric: "calmar_ratio",
     });
 
-    await wait(1000);
-
     // Process competition - this will calculate risk metrics for all agents
     await perpsDataProcessor.processPerpsCompetition(
       competition.competition.id,
     );
-    await wait(1500);
 
     // Now manually DELETE risk metrics for the high equity agent to simulate mixed state
     await db
@@ -4514,13 +4446,10 @@ describe("Perps Competition", () => {
       evaluationMetric: "calmar_ratio",
     });
 
-    await wait(1000);
-
     // Process to calculate metrics
     await perpsDataProcessor.processPerpsCompetition(
       competition.competition.id,
     );
-    await wait(1500);
 
     // Get active leaderboard
     const activeLeaderboard = await adminClient.getCompetitionAgents(
@@ -4541,7 +4470,6 @@ describe("Perps Competition", () => {
 
     // End competition
     await adminClient.endCompetition(competition.competition.id);
-    await wait(2000);
 
     // Get ended leaderboard
     const endedLeaderboard = await adminClient.getCompetitionAgents(
@@ -4585,13 +4513,10 @@ describe("Perps Competition", () => {
       evaluationMetric: "simple_return",
     });
 
-    await wait(1000);
-
     // Process to calculate metrics
     await perpsDataProcessor.processPerpsCompetition(
       competition.competition.id,
     );
-    await wait(1500);
 
     // Get active leaderboard
     const activeLeaderboard = await adminClient.getCompetitionAgents(
@@ -4612,7 +4537,6 @@ describe("Perps Competition", () => {
 
     // End competition
     await adminClient.endCompetition(competition.competition.id);
-    await wait(2000);
 
     // Get ended leaderboard
     const endedLeaderboard = await adminClient.getCompetitionAgents(
