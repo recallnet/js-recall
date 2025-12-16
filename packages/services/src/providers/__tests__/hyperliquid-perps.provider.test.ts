@@ -1195,11 +1195,12 @@ describe("HyperliquidPerpsProvider", () => {
       expect(result).toHaveLength(2);
 
       // Verify first fill (BTC Close Long)
+      // positionSizeUsd = 0.1 BTC * $46000 = $4600
       expect(result[0]).toEqual({
         providerFillId: "0xclosed1-10570200",
         symbol: "BTC",
         side: "long",
-        positionSize: 0.1,
+        positionSizeUsd: 4600,
         closePrice: 46000,
         closedPnl: 50,
         closedAt: new Date(1759757700000),
@@ -1207,11 +1208,12 @@ describe("HyperliquidPerpsProvider", () => {
       });
 
       // Verify second fill (ETH Close Short)
+      // positionSizeUsd = 2 ETH * $2800 = $5600
       expect(result[1]).toEqual({
         providerFillId: "0xclosed2-10570201",
         symbol: "ETH",
         side: "short",
-        positionSize: 2,
+        positionSizeUsd: 5600,
         closePrice: 2800,
         closedPnl: -100,
         closedAt: new Date(1759757600000),

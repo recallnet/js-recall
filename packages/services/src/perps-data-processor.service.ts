@@ -119,7 +119,7 @@ export class PerpsDataProcessor {
       asset: fill.symbol,
       isLong: fill.side === "long",
       leverage: null, // Not available from fills
-      positionSize: this.numberToString(fill.positionSize) || "0",
+      positionSize: this.numberToString(fill.positionSizeUsd) || "0",
       collateralAmount: null, // Not available from fills
       entryPrice: null, // Not available from fills (only close price)
       currentPrice: this.numberToString(fill.closePrice),

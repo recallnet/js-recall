@@ -120,7 +120,7 @@ describe("HyperliquidPerpsProvider - Integration Tests (Real API)", () => {
     console.log(`    Provider Fill ID: ${firstFill.providerFillId}`);
     console.log(`    Symbol: ${firstFill.symbol}`);
     console.log(`    Side: ${firstFill.side}`);
-    console.log(`    Position Size: ${firstFill.positionSize}`);
+    console.log(`    Position Size: $${firstFill.positionSizeUsd.toFixed(2)}`);
     console.log(`    Close Price: $${firstFill.closePrice.toFixed(4)}`);
     console.log(`    Closed PnL: $${firstFill.closedPnl.toFixed(4)}`);
     console.log(`    Closed At: ${firstFill.closedAt.toISOString()}`);
@@ -133,8 +133,8 @@ describe("HyperliquidPerpsProvider - Integration Tests (Real API)", () => {
     expect(firstFill.providerFillId.length).toBeGreaterThan(0);
     expect(firstFill.symbol).toBeDefined();
     expect(firstFill.side).toMatch(/^(long|short)$/);
-    expect(typeof firstFill.positionSize).toBe("number");
-    expect(firstFill.positionSize).toBeGreaterThan(0);
+    expect(typeof firstFill.positionSizeUsd).toBe("number");
+    expect(firstFill.positionSizeUsd).toBeGreaterThan(0);
     expect(typeof firstFill.closePrice).toBe("number");
     expect(firstFill.closePrice).toBeGreaterThan(0);
     expect(typeof firstFill.closedPnl).toBe("number");

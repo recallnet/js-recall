@@ -990,12 +990,17 @@ export class HyperliquidPerpsProvider implements IPerpsDataProvider {
       const isLong = fill.dir.toLowerCase().includes("long");
       const side: "long" | "short" = isLong ? "long" : "short";
 
+      // Calculate USD value: native size * close price
+      const nativeSize = new Decimal(fill.sz).abs();
+      const closePrice = new Decimal(fill.px);
+      const positionSizeUsd = nativeSize.times(closePrice).toNumber();
+
       return {
         providerFillId: `${fill.hash}-${fill.tid}`,
         symbol: fill.coin,
         side,
-        positionSize: new Decimal(fill.sz).abs().toNumber(),
-        closePrice: new Decimal(fill.px).toNumber(),
+        positionSizeUsd,
+        closePrice: closePrice.toNumber(),
         closedPnl: new Decimal(fill.closedPnl).toNumber(),
         closedAt: new Date(fill.time),
         fee: fill.fee ? new Decimal(fill.fee).toNumber() : undefined,

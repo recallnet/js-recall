@@ -179,8 +179,8 @@ export interface ClosedPositionFill {
   symbol: string;
   /** Position direction */
   side: "long" | "short";
-  /** Position size in native units */
-  positionSize: number;
+  /** Position size in USD (native size * close price) */
+  positionSizeUsd: number;
   /** Close price (NOT entry price - fills only provide close price) */
   closePrice: number;
   /** Realized PnL in USD from the fill */
