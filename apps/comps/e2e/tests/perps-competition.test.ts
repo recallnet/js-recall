@@ -4632,7 +4632,6 @@ describe("Perps Competition", () => {
   });
 
   test("should allow same position to exist in multiple sequential competitions", async () => {
-    // This test verifies the fix for ENG-1014:
     // The same providerPositionId should be allowed in different competitions
     // (unique constraint is now composite: providerPositionId + competitionId)
 
