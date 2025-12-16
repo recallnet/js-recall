@@ -4663,7 +4663,6 @@ describe("Perps Competition", () => {
 
     // Sync positions for competition 1
     await perpsDataProcessor.processPerpsCompetition(comp1Id);
-    await wait(500);
 
     // Verify position was stored for competition 1 via API
     const comp1Positions = await agentClient.getPerpsPositions(comp1Id);
@@ -4677,7 +4676,6 @@ describe("Perps Competition", () => {
 
     // End competition 1
     await adminClient.endCompetition(comp1Id);
-    await wait(1000);
 
     // ===== COMPETITION 2 =====
     // Start a NEW competition with the SAME agent (same wallet, same positions)
@@ -4698,7 +4696,6 @@ describe("Perps Competition", () => {
     // Before the fix, this would FAIL with unique constraint violation
     // because providerPositionId was globally unique
     await perpsDataProcessor.processPerpsCompetition(comp2Id);
-    await wait(500);
 
     // Verify position was stored for competition 2 via API
     const comp2Positions = await agentClient.getPerpsPositions(comp2Id);
@@ -4749,7 +4746,6 @@ describe("Perps Competition", () => {
 
     // Sync positions
     await perpsDataProcessor.processPerpsCompetition(comp1Id);
-    await wait(500);
 
     // Verify positions stored via API
     const comp1Positions = await agentClient.getPerpsPositions(comp1Id);
@@ -4759,7 +4755,6 @@ describe("Perps Competition", () => {
 
     // End competition 1
     await adminClient.endCompetition(comp1Id);
-    await wait(1000);
 
     // ===== COMPETITION 2 =====
     const competition2 = await startPerpsTestCompetition({
@@ -4778,7 +4773,6 @@ describe("Perps Competition", () => {
 
     // Sync positions - this would fail before the fix
     await perpsDataProcessor.processPerpsCompetition(comp2Id);
-    await wait(500);
 
     // Verify positions stored for competition 2 via API
     const comp2Positions = await agentClient.getPerpsPositions(comp2Id);
@@ -4850,7 +4844,6 @@ describe("Perps Competition", () => {
 
     // ===== SYNC POSITIONS FOR COMPETITION 1 =====
     await perpsDataProcessor.processPerpsCompetition(comp1Id);
-    await wait(500);
 
     // Verify competition 1 has exactly 1 position
     const comp1PositionsInitial = await agentClient.getPerpsPositions(comp1Id);
@@ -4871,7 +4864,6 @@ describe("Perps Competition", () => {
     // ===== SYNC POSITIONS FOR COMPETITION 2 =====
     // Before the fix, this would fail with unique constraint violation
     await perpsDataProcessor.processPerpsCompetition(comp2Id);
-    await wait(500);
 
     // Verify competition 2 now has exactly 1 position
     const comp2PositionsAfterSync =
@@ -4903,7 +4895,6 @@ describe("Perps Competition", () => {
     // Sync both competitions again
     await perpsDataProcessor.processPerpsCompetition(comp1Id);
     await perpsDataProcessor.processPerpsCompetition(comp2Id);
-    await wait(500);
 
     // Position counts should remain exactly 1 for each competition
     const comp1PositionsFinal = await agentClient.getPerpsPositions(comp1Id);
