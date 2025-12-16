@@ -100,26 +100,6 @@ export function getEmbeddedLinkedWallet(
 }
 
 /**
- * Extract username portion from email address.
- *
- * @param email - The email address to extract the username from.
- * @returns The username portion of the email address.
- */
-export function extractUsernameFromEmail(email: string): string {
-  const username = email.split("@")[0];
-  if (!username || username.length === 0) {
-    throw new Error(`Invalid email address: ${email}`);
-  }
-  // Replace periods or underscores with spaces, then remove all other special characters, and
-  // trim and condense multiple spaces into a single space.
-  return username
-    .replace(/[._]/g, " ")
-    .replace(/[^a-zA-Z0-9\s]/g, "")
-    .trim()
-    .replace(/\s+/g, " ");
-}
-
-/**
  * Extract comprehensive profile data from Privy user object. Per our Privy configuration, we can
  * guarantee an email and embedded wallet address, and (potentially) a linked wallet.
  *
