@@ -547,6 +547,13 @@
       "when": 1765918815937,
       "tag": "0077_futuristic_champions",
       "breakpoints": true
+    },
+    {
+      "idx": 78,
+      "version": "7",
+      "when": 1765922654555,
+      "tag": "0078_majestic_random",
+      "breakpoints": true
     }
   ]
 }
