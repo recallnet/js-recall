@@ -413,8 +413,7 @@ describe("UserManager", () => {
       );
     });
 
-    it("should throw 409 error on unique constraint violation", async () => {
-      // Mock verifyAndGetPrivyUserInfo
+    it("should throw 409 error with 'email' message on email constraint violation", async () => {
       vi.mocked(verifyAndGetPrivyUserInfo).mockResolvedValue({
         privyId: testPrivyId,
         email: testEmail,
@@ -433,8 +432,6 @@ describe("UserManager", () => {
       mockUserRepo.findByPrivyId = vi.fn().mockResolvedValue(null);
       mockUserRepo.findByEmail = vi.fn().mockResolvedValue(null);
 
-      // Mock create to throw unique constraint violation
-      // The error needs 'code' and 'constraint' properties (not 'constraint_name')
       const uniqueConstraintError = new Error(
         "duplicate key value",
       ) as Error & {
@@ -448,6 +445,74 @@ describe("UserManager", () => {
       await expect(
         userManager.loginWithPrivyToken("mock-identity-token", mockPrivyClient),
       ).rejects.toThrow("A user with this email already exists");
+    });
+
+    it("should throw 409 error on wallet constraint violation", async () => {
+      vi.mocked(verifyAndGetPrivyUserInfo).mockResolvedValue({
+        privyId: testPrivyId,
+        email: testEmail,
+        embeddedWallet: {
+          address: testEmbeddedWalletAddress,
+          chainType: "ethereum",
+          walletClientType: "privy",
+          connectorType: "embedded",
+          verifiedAt: new Date(),
+          firstVerifiedAt: new Date(),
+          latestVerifiedAt: new Date(),
+        },
+        customWallets: [],
+      });
+
+      mockUserRepo.findByPrivyId = vi.fn().mockResolvedValue(null);
+      mockUserRepo.findByEmail = vi.fn().mockResolvedValue(null);
+
+      const uniqueConstraintError = new Error(
+        "duplicate key value",
+      ) as Error & {
+        code: string;
+        constraint: string;
+      };
+      uniqueConstraintError.code = "23505";
+      uniqueConstraintError.constraint = "users_wallet_address_key";
+      mockUserRepo.create = vi.fn().mockRejectedValue(uniqueConstraintError);
+
+      await expect(
+        userManager.loginWithPrivyToken("mock-identity-token", mockPrivyClient),
+      ).rejects.toThrow("A user with this walletAddress already exists");
+    });
+
+    it("should throw 409 error on privyId constraint violation", async () => {
+      vi.mocked(verifyAndGetPrivyUserInfo).mockResolvedValue({
+        privyId: testPrivyId,
+        email: testEmail,
+        embeddedWallet: {
+          address: testEmbeddedWalletAddress,
+          chainType: "ethereum",
+          walletClientType: "privy",
+          connectorType: "embedded",
+          verifiedAt: new Date(),
+          firstVerifiedAt: new Date(),
+          latestVerifiedAt: new Date(),
+        },
+        customWallets: [],
+      });
+
+      mockUserRepo.findByPrivyId = vi.fn().mockResolvedValue(null);
+      mockUserRepo.findByEmail = vi.fn().mockResolvedValue(null);
+
+      const uniqueConstraintError = new Error(
+        "duplicate key value",
+      ) as Error & {
+        code: string;
+        constraint: string;
+      };
+      uniqueConstraintError.code = "23505";
+      uniqueConstraintError.constraint = "users_privy_id_key";
+      mockUserRepo.create = vi.fn().mockRejectedValue(uniqueConstraintError);
+
+      await expect(
+        userManager.loginWithPrivyToken("mock-identity-token", mockPrivyClient),
+      ).rejects.toThrow("A user with this privyId already exists");
     });
   });
 });
