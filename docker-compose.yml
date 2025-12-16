@@ -13,7 +13,7 @@ services:
     networks:
       - recall-network
     ports:
-      - "8545:8545"
+      - "${ANVIL_PORT:-8546}:8545"
     entrypoint:
       ["anvil", "--host", "0.0.0.0", "--chain-id", "31337", "--block-time", "1"]
     healthcheck:
@@ -23,6 +23,21 @@ services:
       timeout: 5s
       retries: 5
 
+  deployer:
+    image: node:22-alpine
+    container_name: recall-deployer
+    networks:
+      - recall-network
+    volumes:
+      - .:/workspace
+    working_dir: /workspace/packages/staking-contracts/contracts
+    command: sh -c "pnpm install && npx hardhat deploy --network docker"
+    depends_on:
+      anvil:
+        condition: service_healthy
+    environment:
+      ANVIL_URL: http://anvil:8545
+
   db:
     image: postgres:17-alpine
     container_name: recall-db
@@ -30,7 +45,7 @@ services:
     networks:
       - recall-network
     ports:
-      - "5432:5432"
+      - "${POSTGRES_PORT:-5433}:5432"
     environment:
       POSTGRES_DB: postgres
       POSTGRES_USER: postgres
@@ -57,7 +72,7 @@ services:
       - "${METRICS_PORT:-3003}:${METRICS_PORT:-3003}"
     environment:
       DATABASE_URL: postgresql://postgres:postgres@db/postgres
-      API_PREFIX: ${API_PREFIX:-}
+      API_PREFIX: ${API_PREFIX:-"backend-api"}
       PORT: ${API_PORT:-3000}
       METRICS_PORT: ${METRICS_PORT:-3003}
     depends_on:
