@@ -334,55 +334,6 @@ describe("Admin API", () => {
     expect(result.success).toBe(false);
   });
 
-  test("should update existing user on duplicate email", async () => {
-    // Setup admin client with the API key
-    const adminClient = createTestClient();
-    await adminClient.loginAsAdmin(adminApiKey);
-
-    // Register first user
-    const email = `same-email-${Date.now()}@test.com`;
-    const originalUserName = `First User ${Date.now()}`;
-    const originalWalletAddress = generateRandomEthAddress();
-    const firstResult = (await adminClient.registerUser({
-      walletAddress: originalWalletAddress,
-      name: originalUserName,
-      email,
-      agentName: `First Agent ${Date.now()}`,
-    })) as UserRegistrationResponse;
-
-    // Assert first registration success
-    expect(firstResult.success).toBe(true);
-    const originalUser = firstResult.user!;
-
-    // Try to register second user with the same email
-    const newName = `Second User ${Date.now()}`;
-    const secondResult = (await adminClient.registerUser({
-      walletAddress: originalWalletAddress,
-      name: newName,
-      email,
-      agentName: `Second Agent ${Date.now()}`,
-    })) as UserRegistrationResponse;
-
-    // Assert second registration success (note: certain fields might prefer "original" user on conflict)
-    expect(secondResult.success).toBe(true);
-    expect(secondResult.user).toBeDefined();
-    expect(secondResult.user.email).toBe(email);
-    expect(secondResult.user.name).not.toBe(newName); // Original name should be preserved
-    expect(secondResult.user.walletAddress).toBe(originalUser.walletAddress);
-    expect(secondResult.user.walletLastVerifiedAt).toBe(
-      originalUser.walletLastVerifiedAt,
-    );
-    expect(secondResult.user.embeddedWalletAddress).toBe(
-      originalUser.embeddedWalletAddress,
-    );
-    expect(secondResult.user.privyId).toBe(originalUser.privyId);
-    expect(secondResult.user.status).toBe(originalUser.status);
-    expect(secondResult.user.metadata).toBe(originalUser.metadata);
-    expect(secondResult.user.createdAt).toBe(originalUser.createdAt);
-    expect(secondResult.user.updatedAt).not.toBe(originalUser.updatedAt);
-    expect(secondResult.user.lastLoginAt).not.toBe(originalUser.lastLoginAt);
-  });
-
   test("should not allow user registration with duplicate wallet address", async () => {
     // Setup admin client with the API key
     const adminClient = createTestClient();

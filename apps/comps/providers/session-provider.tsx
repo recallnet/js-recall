@@ -243,7 +243,7 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
       onSuccess: () => {
         refetchBackendUser();
 
-        // Invalidate boost-related queries (mergeBoost happens during wallet link)
+        // Invalidate boost-related queries
         queryClient.invalidateQueries({
           queryKey: tanstackClient.boost.balance.key(),
         });

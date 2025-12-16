@@ -6,7 +6,6 @@ import {
   ilike,
   inArray,
   ne,
-  sql,
 } from "drizzle-orm";
 import { Logger } from "pino";
 
@@ -49,36 +48,11 @@ export class UserRepository {
         updatedAt: user.updatedAt || now,
         lastLoginAt: user.lastLoginAt || now,
       };
-      // Idempotent create: on email conflict, update existing record with new data
-      const [row] = await this.#db
-        .insert(users)
-        .values(data)
-        .onConflictDoUpdate({
-          target: users.email,
-          set: {
-            // Backfill fields if they don't exist, but preserve existing values when present
-            walletAddress: sql`COALESCE(${users.walletAddress}, EXCLUDED.wallet_address)`,
-            walletLastVerifiedAt: sql`COALESCE(${users.walletLastVerifiedAt}, EXCLUDED.wallet_last_verified_at )`,
-            embeddedWalletAddress: sql`COALESCE(${users.embeddedWalletAddress}, EXCLUDED.embedded_wallet_address)`,
-            privyId: sql`COALESCE(${users.privyId}, EXCLUDED.privy_id)`,
-            name: sql`COALESCE(${users.name}, EXCLUDED.name)`,
-            imageUrl: sql`COALESCE(${users.imageUrl}, EXCLUDED.image_url)`,
-            metadata: sql`COALESCE(${users.metadata}, EXCLUDED.metadata)`,
-            isSubscribed: sql`COALESCE(EXCLUDED.is_subscribed, ${users.isSubscribed})`,
-
-            // Prefer new values for timestamp fields
-            updatedAt: sql`GREATEST(${users.updatedAt}, EXCLUDED.updated_at)`,
-            lastLoginAt: sql`GREATEST(${users.lastLoginAt}, EXCLUDED.last_login_at)`,
-          },
-        })
-        .returning();
-
-      if (!row) {
-        throw new Error(
-          "Failed to create or retrieve existing user after conflict",
-        );
+      const [result] = await this.#db.insert(users).values(data).returning();
+      if (!result) {
+        throw new Error("Failed to create user - no result returned");
       }
-      return row;
+      return result;
     } catch (error) {
       this.#logger.error({ error }, "[UserRepository] Error in create");
       throw error;
