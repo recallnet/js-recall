@@ -4,7 +4,6 @@ import type {
 } from "@privy-io/server-auth";
 import { type JWTPayload, exportJWK, importSPKI, jwtVerify } from "jose";
 import type { Logger } from "pino";
-import { type Hex, checksumAddress } from "viem";
 
 import {
   PRIVY_ISSUER,
@@ -140,10 +139,8 @@ export async function verifyPrivyUserHasLinkedWallet(
     idToken,
     privyClient,
   );
-  const checksummedWalletAddress = checksumAddress(walletAddress as Hex);
   const customWallet = customWallets.find(
-    (wallet) =>
-      checksumAddress(wallet.address as Hex) === checksummedWalletAddress,
+    (wallet) => wallet.address.toLowerCase() === walletAddress.toLowerCase(),
   );
   if (!customWallet) {
     return false;
