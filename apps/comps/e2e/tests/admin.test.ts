@@ -369,7 +369,7 @@ describe("Admin API", () => {
 
     // Try to create a user with the same wallet address - should fail
     const user2Email = `user2@example.com`;
-    assertRpcError(
+    await assertRpcError(
       authorizedAdminClient.users.register({
         walletAddress: originalWalletAddress,
         name: "Second User",
@@ -395,7 +395,7 @@ describe("Admin API", () => {
 
     // Try to create a user with the same privyId - should fail
     const user2Email = `user2@example.com`;
-    assertRpcError(
+    await assertRpcError(
       authorizedAdminClient.users.register({
         walletAddress: generateRandomEthAddress(),
         privyId: originalPrivyId,
