@@ -1,4 +1,4 @@
-import { and, desc, eq, inArray } from "drizzle-orm";
+import { and, desc, eq, gte, inArray, lte, sql, sum } from "drizzle-orm";
 import { Logger } from "pino";
 
 import { TxHashCoder } from "../coders/index.js";
@@ -409,5 +409,201 @@ export class ConvictionClaimsRepository {
       .limit(1);
 
     return row?.maxBlock ?? 0n;
+  }
+
+  /**
+   * Get all accounts with active stakes for a given season.
+   *
+   * Active stakes are conviction claims where:
+   * - duration >= 1 (actual stakes, not just claims)
+   * - blockTimestamp <= seasonEndDate (claimed before season end)
+   * - stake duration extends past the season end date
+   *
+   * @param seasonEndDate - The end date of the season
+   * @param tx - Optional transaction
+   * @returns Map of account addresses to their total active stake amounts
+   */
+  async getActiveStakesForSeason(
+    seasonEndDate: Date,
+    tx?: Transaction,
+  ): Promise<Map<string, bigint>> {
+    const executor = tx || this.#db;
+
+    try {
+      const results = await executor
+        .select({
+          account: convictionClaims.account,
+          claimedAmount: convictionClaims.claimedAmount,
+        })
+        .from(convictionClaims)
+        .where(
+          and(
+            gte(convictionClaims.duration, 1n),
+            lte(convictionClaims.blockTimestamp, seasonEndDate),
+            sql`${convictionClaims.blockTimestamp} + (${convictionClaims.duration} * interval '1 second') > ${seasonEndDate}`,
+          ),
+        );
+
+      const accountStakes = new Map<string, bigint>();
+      for (const stake of results) {
+        const current = accountStakes.get(stake.account) || 0n;
+        accountStakes.set(stake.account, current + stake.claimedAmount);
+      }
+
+      return accountStakes;
+    } catch (error) {
+      this.#logger.error({ error }, "Error fetching active stakes for season");
+      throw error;
+    }
+  }
+
+  /**
+   * Get active stake amount for a specific account in a season.
+   *
+   * @param account - The account address to query
+   * @param seasonEndDate - The end date of the season
+   * @param tx - Optional transaction
+   * @returns The total active stake amount for the account
+   */
+  async getActiveStakeForAccount(
+    account: string,
+    seasonEndDate: Date,
+    tx?: Transaction,
+  ): Promise<bigint> {
+    const executor = tx || this.#db;
+    const normalizedAccount = account.toLowerCase();
+
+    try {
+      const results = await executor
+        .select({
+          claimedAmount: convictionClaims.claimedAmount,
+        })
+        .from(convictionClaims)
+        .where(
+          and(
+            eq(convictionClaims.account, normalizedAccount),
+            gte(convictionClaims.duration, 1n),
+            lte(convictionClaims.blockTimestamp, seasonEndDate),
+            sql`${convictionClaims.blockTimestamp} + (${convictionClaims.duration} * interval '1 second') > ${seasonEndDate}`,
+          ),
+        );
+
+      return results.reduce((total, stake) => total + stake.claimedAmount, 0n);
+    } catch (error) {
+      this.#logger.error(
+        { error },
+        `Error fetching active stake for account ${account}`,
+      );
+      throw error;
+    }
+  }
+
+  /**
+   * Calculate total forfeited amount from all claims up to a given date.
+   *
+   * Forfeited amount = eligibleAmount - claimedAmount for each claim.
+   *
+   * @param endDate - Calculate forfeitures from claims up to this date
+   * @param tx - Optional transaction
+   * @returns Total forfeited amount
+   */
+  async getTotalForfeitedUpToDate(
+    endDate: Date,
+    tx?: Transaction,
+  ): Promise<bigint> {
+    const executor = tx || this.#db;
+
+    try {
+      const results = await executor
+        .select({
+          eligibleAmount: convictionClaims.eligibleAmount,
+          claimedAmount: convictionClaims.claimedAmount,
+        })
+        .from(convictionClaims)
+        .where(lte(convictionClaims.blockTimestamp, endDate));
+
+      return results.reduce(
+        (total, claim) => total + (claim.eligibleAmount - claim.claimedAmount),
+        0n,
+      );
+    } catch (error) {
+      this.#logger.error({ error }, "Error calculating total forfeited amount");
+      throw error;
+    }
+  }
+
+  /**
+   * Get total conviction rewards claimed across seasons.
+   *
+   * @param fromSeason - Start season (inclusive)
+   * @param toSeason - End season (inclusive)
+   * @param tx - Optional transaction
+   * @returns Total claimed amount from conviction reward seasons
+   */
+  async getTotalConvictionRewardsClaimedBySeason(
+    fromSeason: number,
+    toSeason: number,
+    tx?: Transaction,
+  ): Promise<bigint> {
+    const executor = tx || this.#db;
+
+    try {
+      const [result] = await executor
+        .select({
+          totalClaimed: sum(convictionClaims.claimedAmount),
+        })
+        .from(convictionClaims)
+        .where(
+          and(
+            gte(convictionClaims.season, fromSeason),
+            lte(convictionClaims.season, toSeason),
+          ),
+        );
+
+      return BigInt(result?.totalClaimed || "0");
+    } catch (error) {
+      this.#logger.error(
+        { error },
+        `Error getting total conviction rewards claimed for seasons ${fromSeason}-${toSeason}`,
+      );
+      throw error;
+    }
+  }
+
+  /**
+   * Get total active stakes across all accounts for a season.
+   *
+   * @param seasonEndDate - The end date of the season
+   * @param tx - Optional transaction
+   * @returns Total active stakes amount
+   */
+  async getTotalActiveStakesForSeason(
+    seasonEndDate: Date,
+    tx?: Transaction,
+  ): Promise<bigint> {
+    const executor = tx || this.#db;
+
+    try {
+      const [result] = await executor
+        .select({
+          totalStakes: sum(convictionClaims.claimedAmount),
+        })
+        .from(convictionClaims)
+        .where(
+          and(
+            gte(convictionClaims.duration, 1n),
+            lte(convictionClaims.blockTimestamp, seasonEndDate),
+            sql`${convictionClaims.blockTimestamp} + (${convictionClaims.duration} * interval '1 second') > ${seasonEndDate}`,
+          ),
+        );
+
+      return BigInt(result?.totalStakes || "0");
+    } catch (error) {
+      this.#logger.error(
+        { error },
+        "Error fetching total active stakes for season",
+      );
+      throw error;
+    }
   }
 }

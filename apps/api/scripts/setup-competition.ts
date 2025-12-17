@@ -315,6 +315,13 @@ async function setupCompetition() {
       name,
       description,
       arenaId: "default-paper-arena",
+      paperTradingInitialBalances: [
+        {
+          specificChain: "base",
+          tokenSymbol: "USDC",
+          amount: 1000000,
+        },
+      ],
     });
 
     console.log(

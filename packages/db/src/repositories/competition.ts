@@ -3241,4 +3241,152 @@ export class CompetitionRepository {
       throw error;
     }
   }
+
+  /**
+   * Check if a user had agents competing in competitions during a time period.
+   *
+   * @param userId - The user ID to check
+   * @param startDate - Start of the time period
+   * @param endDate - End of the time period
+   * @param tx - Optional transaction
+   * @returns True if the user had agents competing during the period
+   */
+  async hasUserCompetedDuringSeason(
+    userId: string,
+    startDate: Date,
+    endDate: Date,
+    tx?: Transaction,
+  ): Promise<boolean> {
+    const executor = tx || this.#db;
+
+    try {
+      const [result] = await executor
+        .select({
+          count: sql<number>`count(*)::int`.as("count"),
+        })
+        .from(users)
+        .innerJoin(agents, eq(users.id, agents.ownerId))
+        .innerJoin(competitionAgents, eq(agents.id, competitionAgents.agentId))
+        .innerJoin(
+          competitions,
+          eq(competitionAgents.competitionId, competitions.id),
+        )
+        .where(
+          and(
+            eq(users.id, userId),
+            gte(competitions.startDate, startDate),
+            lte(competitions.startDate, endDate),
+            eq(competitionAgents.status, "active"),
+          ),
+        )
+        .limit(1);
+
+      return (result?.count ?? 0) > 0;
+    } catch (error) {
+      this.#logger.error(
+        { error },
+        `Error checking if user ${userId} competed during season`,
+      );
+      throw error;
+    }
+  }
+
+  /**
+   * Check if a wallet address owner had agents competing in competitions during a time period.
+   *
+   * @param walletAddress - The wallet address to check
+   * @param startDate - Start of the time period
+   * @param endDate - End of the time period
+   * @param tx - Optional transaction
+   * @returns True if the wallet owner had agents competing during the period
+   */
+  async hasWalletCompetedDuringSeason(
+    walletAddress: string,
+    startDate: Date,
+    endDate: Date,
+    tx?: Transaction,
+  ): Promise<boolean> {
+    const executor = tx || this.#db;
+    const normalizedAddress = walletAddress.toLowerCase();
+
+    try {
+      const [result] = await executor
+        .select({
+          count: sql<number>`count(*)::int`.as("count"),
+        })
+        .from(users)
+        .innerJoin(agents, eq(users.id, agents.ownerId))
+        .innerJoin(competitionAgents, eq(agents.id, competitionAgents.agentId))
+        .innerJoin(
+          competitions,
+          eq(competitionAgents.competitionId, competitions.id),
+        )
+        .where(
+          and(
+            eq(users.walletAddress, normalizedAddress),
+            gte(competitions.startDate, startDate),
+            lte(competitions.startDate, endDate),
+            eq(competitionAgents.status, "active"),
+          ),
+        )
+        .limit(1);
+
+      return (result?.count ?? 0) > 0;
+    } catch (error) {
+      this.#logger.error(
+        { error },
+        `Error checking if wallet ${walletAddress} competed during season`,
+      );
+      throw error;
+    }
+  }
+
+  /**
+   * Get competition IDs where a wallet address owner had agents competing during a time period.
+   *
+   * @param walletAddress - The wallet address to check
+   * @param startDate - Start of the time period
+   * @param endDate - End of the time period
+   * @param tx - Optional transaction
+   * @returns Array of competition IDs where the wallet owner had competing agents
+   */
+  async getCompetitionIdsCompetedDuringSeason(
+    walletAddress: string,
+    startDate: Date,
+    endDate: Date,
+    tx?: Transaction,
+  ): Promise<string[]> {
+    const executor = tx || this.#db;
+    const normalizedAddress = walletAddress.toLowerCase();
+
+    try {
+      const results = await executor
+        .selectDistinct({
+          competitionId: competitions.id,
+        })
+        .from(users)
+        .innerJoin(agents, eq(users.id, agents.ownerId))
+        .innerJoin(competitionAgents, eq(agents.id, competitionAgents.agentId))
+        .innerJoin(
+          competitions,
+          eq(competitionAgents.competitionId, competitions.id),
+        )
+        .where(
+          and(
+            eq(users.walletAddress, normalizedAddress),
+            gte(competitions.startDate, startDate),
+            lte(competitions.startDate, endDate),
+            eq(competitionAgents.status, "active"),
+          ),
+        );
+
+      return results.map((r) => r.competitionId);
+    } catch (error) {
+      this.#logger.error(
+        { error },
+        `Error getting competition IDs for wallet ${walletAddress}`,
+      );
+      throw error;
+    }
+  }
 }

@@ -425,13 +425,22 @@ export class RewardsService {
   /**
    * Get rewards with proofs for a specific address
    * @param address The wallet address to get rewards with proofs for
-   * @returns Array of rewards with merkle root and proof information
+   * @returns Array of rewards with merkle root and proof information, including agent and competition data
    */
   public async getRewardsWithProofs(address: string): Promise<
     Array<{
       merkleRoot: string;
       amount: string;
       proof: string[];
+      agent: {
+        id: string;
+        name: string;
+        imageUrl: string | null;
+      } | null;
+      competition: {
+        id: string;
+        name: string;
+      };
     }>
   > {
     const rewardsWithRoots =
@@ -439,7 +448,7 @@ export class RewardsService {
 
     const results = [];
 
-    for (const { reward, rootHash } of rewardsWithRoots) {
+    for (const { reward, rootHash, agent, competition } of rewardsWithRoots) {
       const merkleRoot = `0x${Buffer.from(rootHash).toString("hex")}`;
 
       const proof = await this.retrieveProof(
@@ -454,6 +463,8 @@ export class RewardsService {
         merkleRoot,
         amount: reward.amount.toString(),
         proof: proofHex,
+        agent,
+        competition,
       });
     }
 

@@ -3,7 +3,6 @@ import { ArrowLeft, Ban, Check, Lock, X } from "lucide-react";
 import React, { useEffect, useState } from "react";
 import { useAccount, useChainId } from "wagmi";
 
-import { Button } from "@recallnet/ui2/components/button";
 import {
   Collapsible,
   CollapsibleContent,
@@ -12,8 +11,6 @@ import {
 import {
   Dialog,
   DialogContent,
-  DialogFooter,
-  DialogHeader,
   DialogTitle,
 } from "@recallnet/ui2/components/dialog";
 import { Slider } from "@recallnet/ui2/components/slider";
@@ -24,6 +21,7 @@ import {
 } from "@recallnet/ui2/components/toggle-group";
 
 import { Recall } from "@/components/Recall";
+import { Button } from "@/components/staking/Button";
 import { useRelock } from "@/hooks/staking";
 import { handleStakeTransactionError } from "@/lib/error-handling";
 import { formatBigintAmount, shouldShowCompact } from "@/utils/format";
@@ -267,26 +265,24 @@ export const RelockRecallModal: React.FC<RelockRecallModalProps> = ({
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="min-w-xs">
+      <DialogContent className="bg-gray-2 border-gray-4 min-w-[500px] max-w-lg gap-0 overflow-hidden rounded-xl p-0 text-white">
         {/* Header */}
-        <DialogHeader>
-          <div className="flex items-center justify-between">
-            <DialogTitle className="text-primary-foreground flex items-center justify-start gap-2 text-xl font-bold">
-              <Lock className="text-secondary-foreground size-6" />
-              {step === "relock" && "Relock RECALL"}
-              {step === "review" && "Review Relock"}
-              {step === "signing" && "Sign Transaction"}
-              {step === "confirming" && "Confirming Transaction"}
-              {step === "success" && "Successful Relock"}
-              {step === "error" && "Relock Failed"}
-            </DialogTitle>
-          </div>
-        </DialogHeader>
+        <div className="border-gray-4 flex items-center justify-between border-b px-6 py-4">
+          <DialogTitle className="flex items-center gap-2 text-xl font-semibold">
+            <Lock className="text-secondary-foreground size-5" />
+            {step === "relock" && "Relock RECALL"}
+            {step === "review" && "Review Relock"}
+            {step === "signing" && "Sign Transaction"}
+            {step === "confirming" && "Confirming Transaction"}
+            {step === "success" && "Successful Relock"}
+            {step === "error" && "Relock Failed"}
+          </DialogTitle>
+        </div>
 
         {/* Step 1: Relock Amount Selection */}
         {step === "relock" && (
           <>
-            <div className="space-y-6">
+            <div className="space-y-6 px-6 py-4">
               {/* Amount Input */}
               <div className="space-y-4">
                 <div className="flex justify-between">
@@ -351,7 +347,7 @@ export const RelockRecallModal: React.FC<RelockRecallModalProps> = ({
               </div>
             </div>
 
-            <DialogFooter>
+            <div className="border-gray-4 border-t px-6 py-4">
               <Button
                 onClick={handleReview}
                 disabled={relockAmountRaw === 0n}
@@ -359,14 +355,14 @@ export const RelockRecallModal: React.FC<RelockRecallModalProps> = ({
               >
                 CONTINUE
               </Button>
-            </DialogFooter>
+            </div>
           </>
         )}
 
         {/* Step 2: Review Relock */}
         {step === "review" && (
           <>
-            <div className="space-y-6">
+            <div className="space-y-6 px-6 py-4">
               {/* Relock Summary */}
               <div className="space-y-4">
                 <div className="flex items-baseline justify-center gap-4 text-center">
@@ -427,7 +423,7 @@ export const RelockRecallModal: React.FC<RelockRecallModalProps> = ({
                       <CollapsibleTrigger className="w-fit" />
                     </div>
 
-                    <CollapsibleContent className="rounded-2xl border p-0">
+                    <CollapsibleContent className="border-gray-4 rounded-2xl border p-0">
                       <div className="text-secondary-foreground flex items-center gap-2 px-4 py-3 text-sm">
                         <Lock className="size-4 flex-shrink-0" />
                         <div className="text-primary-foreground">
@@ -439,7 +435,7 @@ export const RelockRecallModal: React.FC<RelockRecallModalProps> = ({
                         </div>
                       </div>
 
-                      <div className="border-t"></div>
+                      <div className="border-gray-4 border-t"></div>
 
                       <div className="text-secondary-foreground flex items-center gap-2 px-4 py-3 text-sm">
                         <Ban className="size-4 flex-shrink-0" />
@@ -457,7 +453,7 @@ export const RelockRecallModal: React.FC<RelockRecallModalProps> = ({
               </div>
             </div>
 
-            <DialogFooter className="gap-2 sm:flex-col">
+            <div className="border-gray-4 flex flex-col gap-2 border-t px-6 py-4">
               <Button
                 onClick={handleRelock}
                 disabled={!termsAccepted || isSigning}
@@ -466,50 +462,50 @@ export const RelockRecallModal: React.FC<RelockRecallModalProps> = ({
                 {isSigning ? "SIGNING..." : "RELOCK"}
               </Button>
               <Button
-                variant="outline"
+                variant="secondary"
                 onClick={handleBack}
                 className="flex w-full items-center justify-center gap-2"
               >
                 <ArrowLeft className="h-4 w-4" />
                 CHOOSE RELOCK AMOUNT
               </Button>
-            </DialogFooter>
+            </div>
           </>
         )}
 
         {/* Step 3: Signing Transaction */}
         {step === "signing" && (
           <>
-            <div className="flex flex-col items-center justify-center space-y-6 py-8">
-              <div className="h-12 w-12 animate-spin rounded-full border-4 border-gray-300 border-t-blue-500"></div>
+            <div className="flex flex-col items-center justify-center space-y-6 p-8">
+              <div className="border-gray-4 h-12 w-12 animate-spin rounded-full border-4 border-t-blue-500"></div>
               <div className="text-center">
                 <div className="text-lg font-semibold">
-                  Please sign the transaction in your wallet...
+                  Waiting for signature...
                 </div>
-                <div className="text-sm text-gray-400">
-                  Confirm the transaction to relock your tokens
+                <div className="mt-2 text-sm text-gray-400">
+                  Please sign the transaction in your wallet
                 </div>
               </div>
             </div>
 
-            <DialogFooter>
+            <div className="border-gray-4 border-t px-6 py-4">
               <Button disabled className="w-full">
                 {isSigning ? "SIGNING..." : "WAITING FOR SIGNATURE"}
               </Button>
-            </DialogFooter>
+            </div>
           </>
         )}
 
         {/* Step 4: Confirming Transaction */}
         {step === "confirming" && (
           <>
-            <div className="flex flex-col items-center justify-center space-y-6 py-8">
-              <div className="h-12 w-12 animate-spin rounded-full border-4 border-gray-300 border-t-green-500"></div>
+            <div className="flex flex-col items-center justify-center space-y-6 p-8">
+              <div className="border-gray-4 h-12 w-12 animate-spin rounded-full border-4 border-t-green-500"></div>
               <div className="text-center">
                 <div className="text-lg font-semibold">
                   Transaction submitted!
                 </div>
-                <div className="text-sm text-gray-400">
+                <div className="mt-2 text-sm text-gray-400">
                   Waiting for network confirmation...
                 </div>
                 {transactionHash && (
@@ -521,85 +517,81 @@ export const RelockRecallModal: React.FC<RelockRecallModalProps> = ({
               </div>
             </div>
 
-            <DialogFooter>
+            <div className="border-gray-4 border-t px-6 py-4">
               <Button disabled={isConfirming} className="w-full">
                 {isConfirming ? "CONFIRMING..." : "CONFIRMED"}
               </Button>
-            </DialogFooter>
+            </div>
           </>
         )}
 
         {/* Step 5: Success */}
         {step === "success" && (
           <>
-            <div className="flex flex-col items-center justify-center space-y-6 py-8">
-              <div className="flex h-16 w-16 items-center justify-center rounded-full bg-green-500">
-                <Check className="h-8 w-8 text-white" />
+            <div className="flex flex-col items-center justify-center space-y-6 p-8">
+              <div className="flex h-16 w-16 items-center justify-center rounded-full bg-green-500/20">
+                <Check className="h-8 w-8 text-green-500" />
               </div>
-              <div className="text-center">
-                <div className="text-lg font-semibold">
+              <div className="space-y-2 text-center">
+                <div className="text-xl font-bold">Success!</div>
+                <div className="text-gray-400">
                   You have successfully relocked your RECALL tokens.
                 </div>
 
-                <div className="mt-10">
-                  <div className="flex items-baseline justify-center gap-4 text-center">
-                    <div className="flex flex-col items-center justify-center gap-2">
-                      <span className="text-secondary-foreground text-center text-sm font-bold uppercase">
-                        You relocked
-                      </span>
-                      <div className="flex items-center gap-2">
-                        <span className="text-4xl font-bold">
-                          {formattedRelockAmount}
-                        </span>
-                        <Recall size="md" />
-                      </div>
-                    </div>
+                <div className="pt-4">
+                  <div className="text-xs font-bold uppercase text-gray-500">
+                    You Relocked
                   </div>
+                  <div className="mt-1 flex items-center justify-center gap-1 text-xl font-bold">
+                    {formattedRelockAmount} <Recall size="sm" />
+                  </div>
+                </div>
 
-                  {/* Unlock Date */}
-                  <div className="mt-6 space-y-2 text-center">
-                    <div className="text-secondary-foreground text-sm font-bold">
-                      NEW UNLOCK DATE
-                    </div>
-                    <div className="font-bold">
-                      {formatUnlockDate(unlockDate)} UTC
-                    </div>
+                {/* Unlock Date */}
+                <div className="pt-4">
+                  <div className="text-xs font-bold uppercase text-gray-500">
+                    NEW UNLOCK DATE
+                  </div>
+                  <div className="mt-1 font-bold">
+                    {formatUnlockDate(unlockDate)} UTC
                   </div>
                 </div>
               </div>
             </div>
 
-            <DialogFooter className="gap-2 sm:flex-col">
+            <div className="border-gray-4 border-t px-6 py-4">
               <Button onClick={handleClose} className="w-full">
                 BACK TO STAKING
               </Button>
-            </DialogFooter>
+            </div>
           </>
         )}
 
         {/* Step 6: Error */}
         {step === "error" && (
           <>
-            <div className="flex flex-col items-center justify-center space-y-6 py-8">
-              <div className="flex h-16 w-16 items-center justify-center rounded-full bg-red-500">
-                <X className="h-8 w-8 text-white" />
+            <div className="flex flex-col items-center justify-center space-y-6 p-8">
+              <div className="flex h-16 w-16 items-center justify-center rounded-full bg-red-500/20">
+                <X className="h-8 w-8 text-red-500" />
               </div>
               <div className="text-center">
-                <div className="text-lg font-bold text-red-400">
-                  Relock Failed
-                </div>
-                <div className="mt-2 text-sm text-gray-400">{error}</div>
+                <div className="text-xl font-bold text-red-500">Failed</div>
+                <div className="mt-2 text-gray-400">{error}</div>
               </div>
             </div>
 
-            <DialogFooter className="flex w-full gap-2">
-              <Button variant="outline" onClick={handleBack} className="flex-1">
+            <div className="border-gray-4 flex gap-4 border-t px-6 py-4">
+              <Button
+                variant="secondary"
+                onClick={handleBack}
+                className="flex-1"
+              >
                 TRY AGAIN
               </Button>
               <Button onClick={handleClose} className="flex-1">
                 CLOSE
               </Button>
-            </DialogFooter>
+            </div>
           </>
         )}
       </DialogContent>

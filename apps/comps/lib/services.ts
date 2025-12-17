@@ -91,6 +91,8 @@ export const airdropService = new AirdropService(
   airdropRepository,
   createLogger("AirdropService"),
   convictionClaimsRepository,
+  boostRepository,
+  competitionRepository,
 );
 
 export const balanceService = new BalanceService(

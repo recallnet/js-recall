@@ -1,6 +1,7 @@
 import { and, eq, isNotNull, sum } from "drizzle-orm";
 import { Logger } from "pino";
 
+import { agents, competitions } from "../schema/core/defs.js";
 import { rewards, rewardsRoots, rewardsTree } from "../schema/rewards/defs.js";
 import {
   InsertReward,
@@ -248,12 +249,21 @@ export class RewardsRepository {
   /**
    * Get rewards with their corresponding merkle roots for a specific address
    * @param address The wallet address to get rewards for
-   * @returns Array of rewards with merkle root information
+   * @returns Array of rewards with merkle root information, including agent and competition data
    */
   async getRewardsWithRootsByAddress(address: string): Promise<
     Array<{
       reward: SelectReward;
       rootHash: Uint8Array;
+      agent: {
+        id: string;
+        name: string;
+        imageUrl: string | null;
+      } | null;
+      competition: {
+        id: string;
+        name: string;
+      };
     }>
   > {
     try {
@@ -262,12 +272,23 @@ export class RewardsRepository {
         .select({
           reward: rewards,
           rootHash: rewardsRoots.rootHash,
+          agent: {
+            id: agents.id,
+            name: agents.name,
+            imageUrl: agents.imageUrl,
+          },
+          competition: {
+            id: competitions.id,
+            name: competitions.name,
+          },
         })
         .from(rewards)
         .innerJoin(
           rewardsRoots,
           eq(rewards.competitionId, rewardsRoots.competitionId),
         )
+        .innerJoin(competitions, eq(rewards.competitionId, competitions.id))
+        .leftJoin(agents, eq(rewards.agentId, agents.id))
         .where(
           and(
             eq(rewards.walletAddress, normalizedAddress),

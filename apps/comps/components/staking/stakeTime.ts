@@ -39,7 +39,7 @@ export function calculateTimeProgress(
   const elapsedDays = Math.max(0, Math.floor(elapsedSeconds / (24 * 60 * 60)));
   const progressText = isComplete
     ? completedText
-    : `${elapsedDays}/${totalDays} days (${Math.round(progress)}%)`;
+    : `${elapsedDays}/${totalDays} days`;
 
   return {
     progress,
