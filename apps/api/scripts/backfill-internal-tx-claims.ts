@@ -411,6 +411,7 @@ async function findMissingClaims() {
 
         return {
           account: claim.account.toLowerCase(),
+          walletAddress: claim.account.toLowerCase(),
           eligibleAmount: claim.amount,
           claimedAmount: claim.claimedAmount,
           season: claim.season,
