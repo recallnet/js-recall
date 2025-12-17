@@ -13,10 +13,9 @@
 import fs from "fs";
 import path from "path";
 import client from "prom-client";
-import { afterAll, afterEach, beforeAll, beforeEach, vi } from "vitest";
+import { afterAll, afterEach, beforeEach, vi } from "vitest";
 
-import { MockPrivyClient } from "@recallnet/services/lib";
-import { dbManager, setupPrivyTestEnvironment } from "@recallnet/test-utils";
+import { dbManager } from "@recallnet/test-utils";
 
 import { mockHyperliquidServer, mockSymphonyServer } from "../setup.js";
 
@@ -40,11 +39,6 @@ process.env.TEST_MODE = "true";
 if (!process.env.METRICS_PORT) {
   process.env.METRICS_PORT = "3003";
 }
-
-// Setup Privy test environment and mocks before all tests
-beforeAll(async () => {
-  setupPrivyTestEnvironment();
-});
 
 // After all tests finish for each file, i.e. this is run once for each file
 afterAll(async () => {
@@ -128,6 +122,4 @@ beforeEach(async function () {
 afterEach(async function () {
   // Clean up database state
   await dbManager.resetDatabase();
-  // Clear linked Privy wallets
-  MockPrivyClient.clearLinkedWallets();
 });

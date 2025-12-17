@@ -88,12 +88,6 @@ For convenience, we provide an API client that handles authentication automatica
           scheme: "bearer",
           description: "Agent API key provided as Bearer token",
         },
-        PrivyCookie: {
-          type: "apiKey",
-          in: "cookie",
-          name: "privy-id-token",
-          description: "Privy ID token for authentication",
-        },
       },
       schemas: {
         Error: {

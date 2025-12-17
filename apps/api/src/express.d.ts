@@ -10,7 +10,6 @@ declare global {
         id: string;
         name: string;
       };
-      privyToken?: string;
       traceId?: string;
     }
   }

@@ -1,4 +1,3 @@
-import { PrivyClient } from "@privy-io/server-auth";
 import { Hex } from "viem";
 
 import { AdminRepository } from "@recallnet/db/repositories/admin";
@@ -59,10 +58,7 @@ import {
   IndexingService,
   TransactionProcessor,
 } from "@recallnet/services/indexing";
-import {
-  MockAlchemyRpcProvider,
-  MockPrivyClient,
-} from "@recallnet/services/lib";
+import { MockAlchemyRpcProvider } from "@recallnet/services/lib";
 import { WalletWatchlist } from "@recallnet/services/lib";
 import {
   DexScreenerProvider,
@@ -128,7 +124,6 @@ class ServiceRegistry {
   private readonly _eventsRepository: EventsRepository;
   private readonly _convictionClaimsRepository: ConvictionClaimsRepository;
   private readonly _boostAwardService: BoostAwardService;
-  private readonly _privyClient: PrivyClient;
   private _rewardsService: RewardsService;
   private readonly _rewardsRepository: RewardsRepository;
   private readonly _rewardsAllocator: RewardsAllocator;
@@ -142,18 +137,6 @@ class ServiceRegistry {
   private _transactionProcessor?: TransactionProcessor;
 
   constructor() {
-    // Initialize Privy client (use MockPrivyClient in test mode to avoid real API calls)
-    if (config.server.nodeEnv === "test") {
-      this._privyClient = new MockPrivyClient(
-        config.privy.appId,
-        config.privy.appSecret,
-      ) as unknown as PrivyClient;
-    } else {
-      this._privyClient = new PrivyClient(
-        config.privy.appId,
-        config.privy.appSecret,
-      );
-    }
     this._stakesRepository = new StakesRepository(db);
     this._eventsRepository = new EventsRepository(db);
     this._boostRepository = new BoostRepository(db);
@@ -604,10 +587,6 @@ class ServiceRegistry {
 
   get boostBonusService(): BoostBonusService {
     return this._boostBonusService;
-  }
-
-  get privyClient(): PrivyClient {
-    return this._privyClient;
   }
 
   get eventProcessor(): EventProcessor {

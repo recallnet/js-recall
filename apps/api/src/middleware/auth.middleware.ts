@@ -1,91 +1,30 @@
 import { NextFunction, Request, Response } from "express";
 
-import { AdminService, AgentService, UserService } from "@recallnet/services";
-import {
-  extractPrivyIdentityToken,
-  verifyPrivyIdentityToken,
-} from "@recallnet/services/lib";
+import { AdminService, AgentService } from "@recallnet/services";
 import { ApiError } from "@recallnet/services/types";
 
-import { config } from "@/config/index.js";
 import { authLogger } from "@/lib/logger.js";
-import { extractApiKey, isLoginEndpoint } from "@/middleware/auth-helpers.js";
+import { extractApiKey } from "@/middleware/auth-helpers.js";
 
 /**
- * Unified Authentication Middleware
+ * Authentication Middleware
  *
- * This middleware attempts to authenticate a request using four methods, in order:
- * 1. Privy JWT Token: If session authentication is not successful, it attempts to authenticate
- *    using a Privy JWT token provided in the 'privy-id-token' value in `headers.cookie`.
- * 2. Agent API Key: If Privy JWT token authentication fails, it attempts to authenticate
- *    using an agent API key provided in the 'Authorization: Bearer <API_KEY>' header.
- * 3. Admin API Key: If agent API key authentication fails, it attempts admin API key authentication.
+ * This middleware authenticates requests using API keys for agents and admins:
+ * 1. Agent API Key: Attempts to authenticate using an agent API key provided in the
+ *    'Authorization: Bearer <API_KEY>' header. If successful, sets req.agentId and
+ *    req.userId (from agent's owner).
+ * 2. Admin API Key: If agent API key authentication fails, attempts admin API key
+ *    authentication. If successful, sets req.adminId and req.isAdmin.
  *
- * If none of these methods successfully authenticate the request, an `ApiError` (401) is thrown.
- *
- * Note: relies on `siweSessionMiddleware` having run first to populate `req.session`.
+ * If neither authentication method succeeds, an `ApiError` (401) is thrown.
  */
 export const authMiddleware = (
   agentService: AgentService,
-  userService: UserService,
   adminService: AdminService,
 ) => {
   return async (req: Request, _: Response, next: NextFunction) => {
     try {
       authLogger.debug(`Received request to ${req.method} ${req.originalUrl}`);
-
-      /**
-       * Privy Identity Token Authentication
-       *
-       * This section attempts to authenticate the request using a Privy identity token.
-       * Tokens can be provided via privy-id-token cookie or header.
-       */
-      const identityToken = extractPrivyIdentityToken(req);
-      if (identityToken) {
-        authLogger.debug(
-          "[AuthMiddleware] Attempting Privy identity token authentication...",
-        );
-        try {
-          const { privyId } = await verifyPrivyIdentityToken(
-            identityToken,
-            config.privy.jwksPublicKey,
-            config.privy.appId,
-            authLogger,
-          );
-          const path = new URL(
-            `${req.protocol}://${req.get("host")}${req.originalUrl}`,
-          ).pathname;
-
-          req.privyToken = identityToken;
-          authLogger.debug(
-            `[AuthMiddleware] Privy authentication successful for user ID: ${privyId}`,
-          );
-          const user = await userService.getUserByPrivyId(privyId);
-          if (!user) {
-            // Note: we allow the `/auth/login` endpoint to be accessed if a user without Privy
-            // related data exists. This is part of a backwards compatibility measure. A user will
-            // either be queried by legacy data (wallet address or email), else, created.
-            if (isLoginEndpoint(path)) {
-              return next();
-            }
-            throw new ApiError(
-              401,
-              "[AuthMiddleware] Authentication failed. User not found.",
-            );
-          }
-
-          req.userId = user.id;
-          return next();
-        } catch (error) {
-          authLogger.error(
-            `[AuthMiddleware] Privy authentication failed: ${error}`,
-          );
-        }
-      } else {
-        authLogger.debug(
-          "[AuthMiddleware] No Privy identity token found. Proceeding to API key auth.",
-        );
-      }
 
       /**
        * API Key Authentication for Agents and Admins.
@@ -100,7 +39,7 @@ export const authMiddleware = (
       if (!apiKey) {
         throw new ApiError(
           401,
-          "[AuthMiddleware] Authentication required. Invalid Privy token or no API key provided. Use Authorization: Bearer YOUR_API_KEY",
+          "[AuthMiddleware] Authentication required. No API key provided. Use Authorization: Bearer YOUR_API_KEY",
         );
       }
 

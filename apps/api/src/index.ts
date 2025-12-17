@@ -139,7 +139,6 @@ const agentApiKeyRoutes = [
 
 const authMiddlewareInstance = authMiddleware(
   services.agentService,
-  services.userService,
   services.adminService,
 );
 
@@ -153,7 +152,6 @@ app.use(rateLimiterMiddleware);
 const adminMiddleware = adminAuthMiddleware(services.adminService);
 const optionalAuth = optionalAuthMiddleware(
   services.agentService,
-  services.userService,
   services.adminService,
 );
 
