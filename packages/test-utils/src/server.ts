@@ -2,6 +2,10 @@ import axios from "axios";
 import { ChildProcess, spawn } from "child_process";
 import kill from "tree-kill";
 
+import { createLogger } from "./logger.js";
+
+const logger = createLogger("TestServer");
+
 // Reference to the server process
 let serverProcess: ChildProcess | null = null;
 
@@ -31,7 +35,7 @@ export async function startServer(): Promise<void> {
 
   const testHost = process.env.TEST_HOST || "0.0.0.0"; // Bind to all interfaces in Docker
 
-  console.log(`Starting test server on ${testHost}:${PORT}...`);
+  logger.debug(`Starting test server on ${testHost}:${PORT}...`);
 
   // Find the workspace root and API directory
   const currentDir = process.cwd();
@@ -40,7 +44,7 @@ export async function startServer(): Promise<void> {
     : currentDir;
   const apiDir = `${workspaceRoot}/apps/api`;
 
-  console.log(
+  logger.debug(
     `Starting API server from: ${apiDir}/src/index.ts (cwd: ${apiDir})`,
   );
 
@@ -72,7 +76,7 @@ export async function startServer(): Promise<void> {
     // Wait for the server to be ready
     await waitForServerReady(30, 500); // 30 retries, 500ms interval = 15 seconds max
   } catch (error) {
-    console.error("Cannot start server:", error);
+    logger.error({ error }, "Cannot start server:");
     stopServer();
   }
 }
@@ -81,7 +85,7 @@ export function stopServer() {
   // Kill the server process if it exists
   if (serverProcess && serverProcess.pid) {
     try {
-      console.log(`Killing server process with PID: ${serverProcess.pid}`);
+      logger.debug(`Killing server process with PID: ${serverProcess.pid}`);
       // Negative PID to kill process group, i.e all child processes
       kill(serverProcess.pid);
       serverProcess = null;
@@ -98,7 +102,7 @@ export function stopServer() {
         )
       ) {
         // If there is some other error, we can log it and throw.
-        console.error("Error killing server process:", error);
+        logger.error({ error }, "Error killing server process:");
         throw error;
       }
     }
@@ -114,7 +118,7 @@ async function waitForServerReady(
 ): Promise<void> {
   const baseUrl = getBaseUrlInternal();
   const healthUrl = `${baseUrl}/health`;
-  console.log(`⏳ Waiting for server to be ready at ${healthUrl}...`);
+  logger.debug(`⏳ Waiting for server to be ready at ${healthUrl}...`);
 
   let retries = 0;
   while (retries < maxRetries) {
@@ -122,13 +126,13 @@ async function waitForServerReady(
       // Try to reach the health endpoint
       const response = await axios.get(healthUrl);
       if (response.status === 200) {
-        console.log("✅ Server is ready");
+        logger.debug("✅ Server is ready");
 
         // Verify metrics server is available (always on localhost for security)
         const metricsPort = process.env.METRICS_PORT || "3003";
         const metricsUrl = `http://127.0.0.1:${metricsPort}`;
         const metricsHealthResponse = await axios.get(`${metricsUrl}/health`);
-        console.log(
+        logger.debug(
           `Metrics server health check: ${metricsHealthResponse.status === 200 ? "OK" : "Failed"}`,
         );
 
@@ -137,13 +141,13 @@ async function waitForServerReady(
     } catch (error) {
       // @ts-expect-error - error is unknown type from catch block
       if (error?.code !== "ECONNREFUSED") {
-        console.log("Test Server start failure:");
+        logger.error("Test Server start failure:");
         throw error;
       }
       // Server not ready yet, retry after interval
       retries++;
       if (retries % 5 === 0) {
-        console.log(`Still waiting for server... (${retries}/${maxRetries})`);
+        logger.debug(`Still waiting for server... (${retries}/${maxRetries})`);
       }
       await new Promise((resolve) => setTimeout(resolve, interval));
     }
