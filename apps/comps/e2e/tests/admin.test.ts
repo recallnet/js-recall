@@ -914,7 +914,7 @@ describe("Admin API", () => {
   });
 
   test("should fail to search for users and agents with invalid query params", async () => {
-    async function assertInvalidSearch(query: {}) {
+    async function assertInvalidSearch(query: Record<string, unknown>) {
       await assertRpcError(authorizedAdminClient.search(query), "BAD_REQUEST");
     }
 
@@ -1413,11 +1413,10 @@ describe("Admin API", () => {
 
   test("per-competition status is independent of global status", async () => {
     // Register agent for testing
-    const { adminRpcClient: agentClient, agent } =
-      await registerUserAndAgentAndGetClient({
-        adminRpcClient: authorizedAdminClient,
-        agentName: "Agent - Status Independence Test",
-      });
+    const { agent } = await registerUserAndAgentAndGetClient({
+      adminRpcClient: authorizedAdminClient,
+      agentName: "Agent - Status Independence Test",
+    });
 
     // Start competition with the agent
     const competitionName = `Status Independence Test ${Date.now()}`;
