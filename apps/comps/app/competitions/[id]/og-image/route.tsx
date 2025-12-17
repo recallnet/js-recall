@@ -1,4 +1,5 @@
-import { toSvg } from "jdenticon";
+import { identicon } from "@dicebear/collection";
+import { createAvatar } from "@dicebear/core";
 import { ImageResponse } from "next/og";
 import { readFile } from "node:fs/promises";
 import { extname, join } from "node:path";
@@ -224,6 +225,26 @@ async function loadAssets(): Promise<CachedAssets> {
 // HELPERS
 // =============================================================================
 
+// Brand colors for DiceBear (without # prefix - lowercase hex)
+const BRAND_COLORS = {
+  primary: ["0064c7", "38a430", "e5342a", "f9b700"], // Blue, Green, Red, Yellow
+};
+
+// Gradient: very sparse at top, medium toward bottom
+type RowPattern =
+  | "oxxxo"
+  | "xxxxx"
+  | "xxoxx"
+  | "xooox"
+  | "xoxox"
+  | "oxoxo"
+  | "ooxoo";
+const ROW1: RowPattern[] = ["ooxoo"]; // 1 cell
+const ROW2: RowPattern[] = ["ooxoo"]; // 1 cell
+const ROW3: RowPattern[] = ["ooxoo", "xooox"]; // 1-2 cells
+const ROW4: RowPattern[] = ["xooox", "ooxoo"]; // 1-2 cells
+const ROW5: RowPattern[] = ["xooox", "oxoxo"]; // 2 cells
+
 /**
  * Generates an identicon SVG as a data URL for agents without profile images.
  * @param agentId - The unique identifier for the agent.
@@ -231,13 +252,18 @@ async function loadAssets(): Promise<CachedAssets> {
  * @returns A base64-encoded SVG data URL.
  */
 function generateIdenticonDataUrl(agentId: string, size: number = 32): string {
-  const svg = toSvg(agentId, size, {
-    padding: 0.1,
-    hues: [227],
-    lightness: { color: [0.74, 1.0], grayscale: [0.63, 0.82] },
-    saturation: { color: 0.51, grayscale: 0.67 },
-    backColor: COLORS.avatarBg,
+  const avatar = createAvatar(identicon, {
+    seed: agentId,
+    size: size,
+    backgroundColor: ["transparent"],
+    rowColor: BRAND_COLORS.primary,
+    row1: ROW1,
+    row2: ROW2,
+    row3: ROW3,
+    row4: ROW4,
+    row5: ROW5,
   });
+  const svg = avatar.toString();
   return `data:image/svg+xml;base64,${Buffer.from(svg).toString("base64")}`;
 }
 

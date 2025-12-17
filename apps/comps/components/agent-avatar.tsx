@@ -44,7 +44,7 @@ export function AgentAvatar({
   const commonClasses = cn(
     "group relative h-8 w-8 transition-transform duration-200",
     showHover && "hover:z-10 hover:scale-110",
-    (showRank || showBorder) && "h-9 w-9 rounded-full border-2 bg-gray-700",
+    (showRank || showBorder) && "h-9 w-9 rounded-full border-2",
     showRank &&
       rank && {
         "border-trophy-first": rank === 1,
