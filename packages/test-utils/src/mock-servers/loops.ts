@@ -1,5 +1,9 @@
 import http from "http";
 
+import { createLogger } from "../logger.js";
+
+const logger = createLogger("LoopsMockServer");
+
 let server: http.Server | null = null;
 
 export async function startLoopsMockServer(
@@ -39,7 +43,7 @@ export async function startLoopsMockServer(
     server!.listen(port, hostname, () => resolve());
   });
 
-  console.log(`[LoopsMock] Listening on ${baseUrl}`);
+  logger.debug(`[LoopsMock] Listening on ${baseUrl}`);
 }
 
 export async function stopLoopsMockServer(): Promise<void> {

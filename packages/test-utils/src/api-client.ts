@@ -1319,16 +1319,7 @@ export class ApiClient {
   async executeTrade(
     params: TradeExecutionParams,
   ): Promise<TradeResponse | ErrorResponse> {
-    console.log(
-      `[ApiClient] executeTrade called with params: ${JSON.stringify(params, null, 2)}`,
-    );
-
     try {
-      // Debug log
-      console.log(
-        `[ApiClient] About to execute trade with: ${JSON.stringify(params, null, 2)}`,
-      );
-
       // Make the API call with the exact parameters
       const response = await this.axiosInstance.post("/trade/execute", params);
 

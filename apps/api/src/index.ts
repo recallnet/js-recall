@@ -273,15 +273,15 @@ const gracefulShutdown = async (signal: string) => {
 
   // Close both servers
   mainServer.close(async () => {
-    apiLogger.info("[Shutdown] Main server closed");
+    apiLogger.debug("[Shutdown] Main server closed");
 
     metricsServer.close(async () => {
-      apiLogger.info("[Shutdown] Metrics server closed");
+      apiLogger.debug("[Shutdown] Metrics server closed");
 
       // Close database connections
       try {
         await closeDb();
-        apiLogger.info("[Shutdown] Database connections closed");
+        apiLogger.debug("[Shutdown] Database connections closed");
       } catch (error) {
         apiLogger.error(
           { error },
