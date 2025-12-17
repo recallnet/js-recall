@@ -174,11 +174,6 @@ export interface UserRegistrationResponse extends ApiResponse {
   agent?: AgentResponse;
 }
 
-// User profile response
-export interface UserProfileResponse extends ApiResponse {
-  user: User;
-}
-
 // Agent profile response
 export interface AgentProfileResponse extends ApiResponse {
   agent: AgentResponse;
@@ -188,13 +183,6 @@ export interface AgentProfileResponse extends ApiResponse {
     email?: string;
     walletAddress: string;
   };
-}
-
-// Get user agents response
-export interface GetUserAgentsResponse extends ApiResponse {
-  success: true;
-  userId: string;
-  agents: AgentResponse[];
 }
 
 // Admin user response
@@ -229,14 +217,6 @@ export interface AgentApiKeyResponse extends ApiResponse {
     name: string;
     apiKey: string;
   };
-}
-
-// User agent API key response (user endpoint)
-export interface UserAgentApiKeyResponse extends ApiResponse {
-  success: true;
-  agentId: string;
-  agentName: string;
-  apiKey: string;
 }
 
 /**
@@ -679,18 +659,6 @@ export interface UpcomingCompetitionsResponse extends ApiResponse {
   };
 }
 
-// User competitions response
-export interface UserCompetitionsResponse extends ApiResponse {
-  success: true;
-  competitions: CompetitionWithAgents[];
-  pagination: {
-    total: number;
-    limit: number;
-    offset: number;
-    hasMore: boolean;
-  };
-}
-
 export interface CompetitionWithAgents extends Competition {
   agents: (AgentResponse & { rank: number })[];
 }
@@ -1115,14 +1083,6 @@ export interface AdminAddAgentToCompetitionResponse extends ApiResponse {
 }
 
 /**
- * Response type for linking a wallet to a user
- */
-export interface LinkUserWalletResponse extends ApiResponse {
-  success: true;
-  user: User;
-}
-
-/**
  * Admin response for competition transfer violations
  */
 export interface AdminCompetitionTransferViolationsResponse
@@ -1283,22 +1243,6 @@ export interface AgentPerpsPositionsResponse extends ApiResponse {
   positions: PerpsPosition[];
 }
 
-/*
- * Response type for getting user subscription status
- */
-export interface UserSubscriptionResponse extends ApiResponse {
-  success: true;
-  userId: string;
-  isSubscribed: boolean;
-}
-
-// Rewards API response types
-export interface RewardsTotalResponse {
-  success: true;
-  address: string;
-  totalClaimableRewards: string;
-}
-
 export interface RewardProof {
   merkleRoot: string;
   amount: string;
@@ -1312,12 +1256,6 @@ export interface RewardProof {
     id: string;
     name: string;
   };
-}
-
-export interface RewardsProofsResponse {
-  success: true;
-  address: string;
-  rewards: RewardProof[];
 }
 
 // Bonus Boost API response types

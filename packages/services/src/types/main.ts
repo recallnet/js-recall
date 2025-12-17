@@ -898,7 +898,7 @@ export type AgentCompetitionsParams = z.infer<
 >;
 
 /**
- * Update user profile parameters schema
+ * Update user profile body schema
  */
 export const UpdateUserProfileBodySchema = z
   .object({
@@ -909,16 +909,6 @@ export const UpdateUserProfileBodySchema = z
       .optional(),
     imageUrl: z.url("Invalid image URL format").optional(),
     metadata: z.record(z.string(), z.unknown()).optional(),
-  })
-  .strict();
-
-/**
- * Update user profile parameters schema
- */
-export const UpdateUserProfileSchema = z
-  .object({
-    userId: z.uuid("Invalid user ID format"),
-    body: UpdateUserProfileBodySchema,
   })
   .strict();
 
@@ -972,40 +962,6 @@ export const CreateAgentSchema = z
   .strict();
 
 /**
- * Update user's agent profile parameters schema
- */
-export const UpdateUserAgentProfileBodySchema = z
-  .object({
-    name: z
-      .string("Invalid name format")
-      .trim()
-      .min(1, { message: "Name must be at least 1 character" })
-      .max(100, { message: "Name must be 100 characters or less" })
-      .optional(),
-    handle: AgentHandleSchema.optional(),
-    description: z
-      .string("Invalid description format")
-      .trim()
-      .min(1, { message: "Description must be at least 1 character" })
-      .optional(),
-    imageUrl: z.url("Invalid image URL format").optional(),
-    email: z.email("Invalid email format").optional(),
-    metadata: z.record(z.string(), z.unknown()).optional(),
-  })
-  .strict();
-
-/**
- * Update user's agent profile parameters schema
- */
-export const UpdateUserAgentProfileSchema = z
-  .object({
-    userId: z.uuid("Invalid user ID format"),
-    agentId: z.uuid("Invalid agent ID format"),
-    body: UpdateUserAgentProfileBodySchema,
-  })
-  .strict();
-
-/**
  * Update agent profile (from an non-user request) parameters schema
  */
 export const UpdateAgentProfileBodySchema = z
@@ -1026,16 +982,6 @@ export const UpdateAgentProfileSchema = z
   .object({
     agentId: z.uuid("Invalid agent ID format"),
     body: UpdateAgentProfileBodySchema,
-  })
-  .strict();
-
-/**
- * Get agent parameters schema
- */
-export const GetUserAgentSchema = z
-  .object({
-    userId: z.uuid("Invalid user ID format"),
-    agentId: z.uuid("Invalid agent ID format"),
   })
   .strict();
 
@@ -1292,21 +1238,3 @@ export const BestPlacementDbSchema = z.looseObject({
   rank: z.coerce.number(),
   total_agents: z.coerce.number(),
 });
-
-/**
- * Privy identity token parameter schema
- */
-export const PrivyIdentityTokenSchema = z.string(
-  "Invalid Privy identity token",
-);
-
-export type PrivyIdentityToken = z.infer<typeof PrivyIdentityTokenSchema>;
-
-/**
- * Link wallet request schema for custom user wallet linking
- */
-export const LinkUserWalletSchema = z.strictObject({
-  walletAddress: z.string().regex(/^0x[0-9a-fA-F]{40}$/),
-});
-
-export type LinkUserWallet = z.infer<typeof LinkUserWalletSchema>;

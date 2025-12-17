@@ -15,9 +15,7 @@ import { makeEigenaiController } from "@/controllers/eigenai.controller.js";
 import { makeHealthController } from "@/controllers/health.controller.js";
 import { makeLeaderboardController } from "@/controllers/leaderboard.controller.js";
 import { makePriceController } from "@/controllers/price.controller.js";
-import { makeRewardsController } from "@/controllers/rewards.controller.js";
 import { makeTradeController } from "@/controllers/trade.controller.js";
-import { makeUserController } from "@/controllers/user.controller.js";
 import { closeDb, migrateDb } from "@/database/db.js";
 import { apiLogger } from "@/lib/logger.js";
 import { initSentry } from "@/lib/sentry.js";
@@ -40,7 +38,6 @@ import { configureHealthRoutes } from "@/routes/health.routes.js";
 import { configureNflRoutes } from "@/routes/nfl.routes.js";
 import { configurePriceRoutes } from "@/routes/price.routes.js";
 import { configureTradeRoutes } from "@/routes/trade.routes.js";
-import { configureUserRoutes } from "@/routes/user.routes.js";
 import { startMetricsServer } from "@/servers/metrics.server.js";
 import { ServiceRegistry } from "@/services/index.js";
 
@@ -140,7 +137,6 @@ const agentApiKeyRoutes = [
   `${apiBasePath}/api/nfl`,
 ];
 
-const userSessionRoutes = [`${apiBasePath}/api/user`];
 const authMiddlewareInstance = authMiddleware(
   services.agentService,
   services.userService,
@@ -149,9 +145,6 @@ const authMiddlewareInstance = authMiddleware(
 
 // Apply agent API key authentication to agent routes
 app.use(agentApiKeyRoutes, authMiddlewareInstance);
-
-// Apply session authentication to user routes
-app.use(userSessionRoutes, authMiddlewareInstance);
 
 // Apply rate limiting middleware AFTER authentication
 // This ensures we can properly rate limit by agent/user ID
@@ -171,9 +164,7 @@ const competitionController = makeCompetitionController(services);
 const docsController = makeDocsController();
 const healthController = makeHealthController();
 const priceController = makePriceController(services);
-const rewardsController = makeRewardsController(services);
 const tradeController = makeTradeController(services);
-const userController = makeUserController(services);
 const agentController = makeAgentController(services);
 const leaderboardController = makeLeaderboardController(services);
 const boostController = makeBoostController(services);
@@ -193,7 +184,6 @@ const docsRoutes = configureDocsRoutes(docsController);
 const healthRoutes = configureHealthRoutes(healthController);
 const priceRoutes = configurePriceRoutes(priceController);
 const tradeRoutes = configureTradeRoutes(tradeController);
-const userRoutes = configureUserRoutes(userController, rewardsController);
 const agentRoutes = configureAgentRoutes(agentController);
 const agentsRoutes = configureAgentsRoutes(agentController);
 const leaderboardRoutes = configureLeaderboardRoutes(leaderboardController);
@@ -216,7 +206,6 @@ apiRouter.use("/admin/setup", adminSetupRoutes);
 apiRouter.use("/admin", adminRoutes);
 apiRouter.use("/health", healthRoutes);
 apiRouter.use("/docs", docsRoutes);
-apiRouter.use("/user", userRoutes);
 apiRouter.use("/agent", agentRoutes);
 apiRouter.use("/agents", agentsRoutes);
 apiRouter.use("/arenas", arenaRoutes);

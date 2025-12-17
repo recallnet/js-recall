@@ -23,7 +23,6 @@ import {
   ensureAgentId,
   ensureCompetitionUpdate,
   ensurePaging,
-  ensurePrivyIdentityToken,
   ensureUserId,
   ensureUuid,
   parseAdminSearchQuery,
@@ -57,21 +56,6 @@ describe("Request Helpers", () => {
       const agentId = randomUUID();
       const req = { agentId } as AuthenticatedRequest;
       expect(ensureAgentId(req)).toBe(agentId);
-    });
-  });
-
-  describe("ensurePrivyIdentityToken", () => {
-    it("should throw an error if the Privy identity token is not provided", () => {
-      const req = {} as Request;
-      expect(() => ensurePrivyIdentityToken(req)).toThrow(
-        "Invalid authentication: Privy identity token",
-      );
-    });
-
-    it("should return the Privy identity token if it is provided", () => {
-      const privyToken = "ey1234567890";
-      const req = { privyToken } as AuthenticatedRequest;
-      expect(ensurePrivyIdentityToken(req)).toBe(privyToken);
     });
   });
 
