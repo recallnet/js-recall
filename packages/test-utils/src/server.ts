@@ -60,7 +60,7 @@ export async function startServer(): Promise<void> {
       METRICS_PORT: process.env.METRICS_PORT || "3003",
       METRICS_HOST: "127.0.0.1", // Secure binding for tests
       TEST_MODE: "true",
-      LOG_LEVEL: process.env.LOG_LEVEL || "debug",
+      LOG_LEVEL: process.env.LOG_LEVEL || "info",
       // Privy test configuration
       PRIVY_APP_ID: process.env.PRIVY_APP_ID || "test-app-id",
       PRIVY_APP_SECRET: process.env.PRIVY_APP_SECRET || "test-app-secret",
