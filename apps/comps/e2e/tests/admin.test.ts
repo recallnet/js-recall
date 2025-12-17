@@ -32,12 +32,14 @@ import {
 
 import { db } from "@/lib/db";
 import { router as adminRouter } from "@/rpc/router/admin/index.js";
+import { router } from "@/rpc/router/index.js";
 
 import {
   assertRpcError,
   createPerpsTestCompetition,
   createTestAdminRpcClient,
   createTestCompetition,
+  createTestRpcClient,
   defaultPaperTradingInitialBalances,
   registerUserAndAgentAndGetClient,
   startPerpsTestCompetition,
@@ -47,9 +49,11 @@ import {
 describe("Admin API", () => {
   let notAuthenticatedAdminRpcClient: RouterClient<typeof adminRouter>;
   let authenticatedAdminRpcClient: RouterClient<typeof adminRouter>;
+  let notAuthenticatedRpcClient: RouterClient<typeof router>;
 
   // Clean up test state before each test
   beforeEach(async () => {
+    notAuthenticatedRpcClient = await createTestRpcClient();
     // Store the admin API key for authentication
     notAuthenticatedAdminRpcClient = await createTestAdminRpcClient();
     const result = await notAuthenticatedAdminRpcClient.setup({
@@ -144,17 +148,14 @@ describe("Admin API", () => {
     expect(registrationResponse.agent!.apiKey).toBeDefined();
     expect(registrationResponse.user.metadata).toEqual(userMetadata);
 
-    // TODO: implement getAgentProfile
     // Now get the agent's profile to verify the metadata was saved
-    // const agentClient = adminClient.createAgentClient(
-    //   registrationResponse.agent!.apiKey!,
-    // );
-    // const profileResponse = await agentClient.getAgentProfile();
+    const profileResponse = await notAuthenticatedRpcClient.agent.getAgent({
+      agentId: registrationResponse.agent!.id,
+    });
 
-    // // Safely check profile properties with type assertion
-    // const agentProfile = profileResponse as AgentProfileResponse;
-    // expect(agentProfile.success).toBe(true);
-    // expect(agentProfile.agent.metadata).toEqual(agentMetadata);
+    // Safely check profile properties with type assertion
+    const agentProfile = profileResponse;
+    expect(agentProfile.agent.metadata).toEqual(agentMetadata);
   });
 
   test("should register an agent separately from a user", async () => {
@@ -1138,17 +1139,15 @@ describe("Admin API", () => {
     });
     const competition = startResponse.competition;
 
-    // TODO: implement this non-admin endpoint: getCompetitionAgents
     // Verify both agents are initially in the competition
-    const initialLeaderboard = await adminClient.getCompetitionAgents(
-      competition.id,
-      { sort: "rank" },
-    );
+    const initialLeaderboard =
+      await notAuthenticatedRpcClient.competitions.getAgents({
+        competitionId: competition.id,
+        sort: "rank",
+      });
     expect(initialLeaderboard.success).toBe(true);
 
-    const initialAgentIds = (
-      initialLeaderboard as CompetitionAgentsResponse
-    ).agents.map((entry) => entry.id);
+    const initialAgentIds = initialLeaderboard.agents.map((entry) => entry.id);
     expect(initialAgentIds).toContain(agent1.id);
     expect(initialAgentIds).toContain(agent2.id);
 
@@ -1168,10 +1167,12 @@ describe("Admin API", () => {
     expect(removeResponse.agent.id).toBe(agent1.id);
 
     // Verify agent1 is no longer in active leaderboard
-    const updatedLeaderboard = (await adminClient.getCompetitionAgents(
-      competition.id,
-      { sort: "rank", includeInactive: true },
-    )) as CompetitionAgentsResponse;
+    const updatedLeaderboard =
+      await notAuthenticatedRpcClient.competitions.getAgents({
+        competitionId: competition.id,
+        sort: "rank",
+        includeInactive: true,
+      });
     expect(updatedLeaderboard.success).toBe(true);
 
     const activeAgents = updatedLeaderboard.agents.filter((a) => a.active);
@@ -1219,10 +1220,11 @@ describe("Admin API", () => {
     expect(removeResponse.success).toBe(true);
 
     // Verify agent is not in active leaderboard
-    const leaderboardAfterRemoval = (await adminClient.getCompetitionAgents(
-      competition.id,
-      { sort: "rank" },
-    )) as CompetitionAgentsResponse;
+    const leaderboardAfterRemoval =
+      await notAuthenticatedRpcClient.competitions.getAgents({
+        competitionId: competition.id,
+        sort: "rank",
+      });
     expect(leaderboardAfterRemoval.success).toBe(true);
 
     const activeAgentsAfterRemoval = leaderboardAfterRemoval.agents.filter(
@@ -1246,9 +1248,10 @@ describe("Admin API", () => {
 
     // Verify agent is back in active leaderboard
     const leaderboardAfterReactivation =
-      (await adminClient.getCompetitionAgents(competition.id, {
+      await notAuthenticatedRpcClient.competitions.getAgents({
+        competitionId: competition.id,
         sort: "rank",
-      })) as CompetitionAgentsResponse;
+      });
     expect(leaderboardAfterReactivation.success).toBe(true);
 
     const activeAgentsAfterReactivation =
@@ -1432,8 +1435,7 @@ describe("Admin API", () => {
     const competition = startResponse.competition;
 
     // Verify agent can access API initially
-    const initialProfile = await agentClient.getAgentProfile();
-    expect(initialProfile.success).toBe(true);
+    await notAuthenticatedRpcClient.agent.getAgent({ agentId: agent.id });
 
     // Remove agent from competition (per-competition deactivation)
     const removeResponse =
@@ -1445,8 +1447,7 @@ describe("Admin API", () => {
     expect(removeResponse.success).toBe(true);
 
     // Agent should still be able to access API (global status unchanged)
-    const profileAfterRemoval = await agentClient.getAgentProfile();
-    expect(profileAfterRemoval.success).toBe(true);
+    await notAuthenticatedRpcClient.agent.getAgent({ agentId: agent.id });
 
     // Now globally deactivate the agent
     const globalDeactivateResponse =
@@ -1458,7 +1459,7 @@ describe("Admin API", () => {
 
     // Agent should now be blocked from API access
     try {
-      await agentClient.getAgentProfile();
+      await notAuthenticatedRpcClient.agent.getAgent({ agentId: agent.id });
       expect(false).toBe(true); // Should not reach here
     } catch (error) {
       expect(error).toBeDefined();
@@ -1474,7 +1475,7 @@ describe("Admin API", () => {
 
     // Agent should still be blocked from API access (global status still inactive)
     try {
-      await agentClient.getAgentProfile();
+      await notAuthenticatedRpcClient.agent.getAgent({ agentId: agent.id });
       expect(false).toBe(true); // Should not reach here
     } catch (error) {
       expect(error).toBeDefined();
@@ -1491,8 +1492,7 @@ describe("Admin API", () => {
     await wait(100);
 
     // Agent should now be able to access API again
-    const finalProfile = await agentClient.getAgentProfile();
-    expect(finalProfile.success).toBe(true);
+    await notAuthenticatedRpcClient.agent.getAgent({ agentId: agent.id });
   });
 
   test("should update a competition with rewards and tradingConstraints", async () => {
@@ -1710,17 +1710,15 @@ describe("Admin API", () => {
 
     // Verify the minFundingThreshold was saved by checking the competition details
     const competitionId = response.competition.id;
-    const detailsResponse = await client.getCompetition(competitionId);
-    expect(detailsResponse.success).toBe(true);
+    const detailsResponse =
+      await notAuthenticatedRpcClient.competitions.getById({
+        id: competitionId,
+      });
 
     // Note: The perpsConfig details are NOT returned in the public API,
     // so we'll verify the competition was created successfully
-    expect((detailsResponse as CompetitionDetailResponse).competition.id).toBe(
-      competitionId,
-    );
-    expect(
-      (detailsResponse as CompetitionDetailResponse).competition.type,
-    ).toBe("perpetual_futures");
+    expect(detailsResponse.id).toBe(competitionId);
+    expect(detailsResponse.type).toBe("perpetual_futures");
 
     // Verify the minFundingThreshold was saved in the database
     const perpsConfig = await db
@@ -2055,11 +2053,11 @@ describe("Admin API", () => {
     const competitionId = createResponse.competition.id;
 
     // Verify it's a trading competition
-    const detailsBeforeUpdate = await adminClient.getCompetition(competitionId);
-    expect(detailsBeforeUpdate.success).toBe(true);
-    expect(
-      (detailsBeforeUpdate as CompetitionDetailResponse).competition.type,
-    ).toBe("trading");
+    const detailsBeforeUpdate =
+      await notAuthenticatedRpcClient.competitions.getById({
+        id: competitionId,
+      });
+    expect(detailsBeforeUpdate.type).toBe("trading");
 
     // Convert to perps type
     const updateResponse =
@@ -2079,11 +2077,11 @@ describe("Admin API", () => {
     expect(updateResponse.competition.type).toBe("perpetual_futures");
 
     // Verify the type has changed
-    const detailsAfterUpdate = await adminClient.getCompetition(competitionId);
-    expect(detailsAfterUpdate.success).toBe(true);
-    expect(
-      (detailsAfterUpdate as CompetitionDetailResponse).competition.type,
-    ).toBe("perpetual_futures");
+    const detailsAfterUpdate =
+      await notAuthenticatedRpcClient.competitions.getById({
+        id: competitionId,
+      });
+    expect(detailsAfterUpdate.type).toBe("perpetual_futures");
   });
 
   test("should convert pending competition from perps to spot trading", async () => {
@@ -2097,11 +2095,11 @@ describe("Admin API", () => {
     const competitionId = createResponse.competition.id;
 
     // Verify it's a perps competition
-    const detailsBeforeUpdate = await adminClient.getCompetition(competitionId);
-    expect(detailsBeforeUpdate.success).toBe(true);
-    expect(
-      (detailsBeforeUpdate as CompetitionDetailResponse).competition.type,
-    ).toBe("perpetual_futures");
+    const detailsBeforeUpdate =
+      await notAuthenticatedRpcClient.competitions.getById({
+        id: competitionId,
+      });
+    expect(detailsBeforeUpdate.type).toBe("perpetual_futures");
 
     // Convert to spot trading type and move to paper arena
     const updateResponse =
@@ -2115,11 +2113,11 @@ describe("Admin API", () => {
     expect(updateResponse.competition.type).toBe("trading");
 
     // Verify the type has changed
-    const detailsAfterUpdate = await adminClient.getCompetition(competitionId);
-    expect(detailsAfterUpdate.success).toBe(true);
-    expect(
-      (detailsAfterUpdate as CompetitionDetailResponse).competition.type,
-    ).toBe("trading");
+    const detailsAfterUpdate =
+      await notAuthenticatedRpcClient.competitions.getById({
+        id: competitionId,
+      });
+    expect(detailsAfterUpdate.type).toBe("trading");
   });
 
   test("should not allow converting active competition type", async () => {
@@ -2221,11 +2219,9 @@ describe("Admin API", () => {
 
     // Verify agents are registered
     const agentsResponse =
-      await adminClient.getCompetitionAgents(competitionId);
+      await notAuthenticatedRpcClient.competitions.getAgents({ competitionId });
     expect(agentsResponse.success).toBe(true);
-    expect((agentsResponse as CompetitionAgentsResponse).agents).toHaveLength(
-      2,
-    );
+    expect(agentsResponse.agents).toHaveLength(2);
 
     // Convert to perps type and move to perps arena (should succeed even with registered agents)
     const updateResponse =
@@ -2246,11 +2242,9 @@ describe("Admin API", () => {
 
     // Verify agents are still registered
     const agentsAfterConversion =
-      await adminClient.getCompetitionAgents(competitionId);
+      await notAuthenticatedRpcClient.competitions.getAgents({ competitionId });
     expect(agentsAfterConversion.success).toBe(true);
-    expect(
-      (agentsAfterConversion as CompetitionAgentsResponse).agents,
-    ).toHaveLength(2);
+    expect(agentsAfterConversion.agents).toHaveLength(2);
   });
 
   // ===== Prize Pool Tests =====
@@ -2395,6 +2389,7 @@ describe("Admin API", () => {
         type: "trading",
         minimumStake: 1000, // 1000 tokens minimum stake
         arenaId: "default-paper-arena",
+        paperTradingInitialBalances: defaultPaperTradingInitialBalances(),
       });
 
     expect(createResponse.success).toBe(true);
@@ -2412,13 +2407,15 @@ describe("Admin API", () => {
     const competitionId = createResult.competition.id;
 
     // Get the competition details to verify minimum stake
-    const detailsResponse = await adminClient.getCompetition(competitionId);
-    expect(detailsResponse.success).toBe(true);
+    const detailsResponse =
+      await notAuthenticatedRpcClient.competitions.getById({
+        id: competitionId,
+      });
 
-    const competitionDetails = detailsResponse as CompetitionDetailResponse;
-    expect(competitionDetails.competition).toBeDefined();
-    expect(competitionDetails.competition.minimumStake).toBeDefined();
-    expect(competitionDetails.competition.minimumStake).toBe(1000);
+    const competitionDetails = detailsResponse;
+    expect(competitionDetails).toBeDefined();
+    expect(competitionDetails.minimumStake).toBeDefined();
+    expect(competitionDetails.minimumStake).toBe(1000);
   });
 
   test("should update a competition with minimum stake", async () => {
@@ -2435,13 +2432,13 @@ describe("Admin API", () => {
 
     // Verify initial state has no minimum stake using API call
     const initialDetailsResponse =
-      await adminClient.getCompetition(competitionId);
-    expect(initialDetailsResponse.success).toBe(true);
+      await notAuthenticatedRpcClient.competitions.getById({
+        id: competitionId,
+      });
 
-    const initialCompetitionDetails =
-      initialDetailsResponse as CompetitionDetailResponse;
-    expect(initialCompetitionDetails.competition).toBeDefined();
-    expect(initialCompetitionDetails.competition.minimumStake).toBeNull();
+    const initialCompetitionDetails = initialDetailsResponse;
+    expect(initialCompetitionDetails).toBeDefined();
+    expect(initialCompetitionDetails.minimumStake).toBeNull();
 
     // Now update the competition with minimum stake
     const updateResponse =
@@ -2464,14 +2461,14 @@ describe("Admin API", () => {
 
     // Verify minimum stake was updated correctly using API call
     const updatedDetailsResponse =
-      await adminClient.getCompetition(competitionId);
-    expect(updatedDetailsResponse.success).toBe(true);
+      await notAuthenticatedRpcClient.competitions.getById({
+        id: competitionId,
+      });
 
-    const updatedCompetitionDetails =
-      updatedDetailsResponse as CompetitionDetailResponse;
-    expect(updatedCompetitionDetails.competition).toBeDefined();
-    expect(updatedCompetitionDetails.competition.minimumStake).toBeDefined();
-    expect(updatedCompetitionDetails.competition.minimumStake).toBe(2500);
+    const updatedCompetitionDetails = updatedDetailsResponse;
+    expect(updatedCompetitionDetails).toBeDefined();
+    expect(updatedCompetitionDetails.minimumStake).toBeDefined();
+    expect(updatedCompetitionDetails.minimumStake).toBe(2500);
   });
 
   test("should require arenaId when creating competition", async () => {
