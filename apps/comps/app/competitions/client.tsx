@@ -144,7 +144,13 @@ export default function CompetitionsPageClient() {
         ></div>
 
         <div className="flex h-full w-full items-center justify-center">
-          <RainbowStripes className="absolute left-0 hidden w-[50%] translate-x-[-70%] sm:block md:translate-x-[-50%]" />
+          {/* Full-width snow layer - behind text */}
+          <SnowOverlay className="absolute inset-0 z-10 hidden sm:block" />
+
+          <StringLights
+            side="left"
+            className="absolute left-0 z-[15] hidden h-72 w-[40%] translate-x-[-20%] sm:block md:translate-x-[0%]"
+          />
 
           <div className="z-20 flex translate-y-[-50px] flex-col items-center text-center">
             <h1 className="text-primary-foreground mb-1 text-7xl font-bold sm:text-[83px]">
@@ -178,9 +184,9 @@ export default function CompetitionsPageClient() {
             </div>
           </div>
 
-          <RainbowStripes
-            className="absolute right-0 hidden w-[50%] translate-x-[70%] sm:block md:translate-x-[50%]"
-            direction="left"
+          <StringLights
+            side="right"
+            className="absolute right-0 z-[15] hidden h-72 w-[40%] translate-x-[20%] sm:block md:translate-x-[0%]"
           />
         </div>
       </div>
@@ -337,70 +343,391 @@ const HeroCarousel: React.FC<HeroCarouselProps> = ({
   );
 };
 
-interface RainbowStripesProps {
-  direction?: "left" | "right";
-  width?: string;
-  height?: string;
+/**
+ * Full-width snow overlay - falls consistently across entire hero area
+ * Memoized to prevent unnecessary re-renders
+ */
+const SnowOverlay: React.FC<{ className?: string }> = React.memo(
+  ({ className = "" }) => {
+    // Track container aspect ratio to compensate for viewBox stretch
+    const containerRef = React.useRef<HTMLDivElement>(null);
+    const [aspectRatio, setAspectRatio] = React.useState(3); // Default for wide screens
+
+    React.useEffect(() => {
+      const container = containerRef.current;
+      if (!container) return;
+
+      const updateAspectRatio = () => {
+        const { width, height } = container.getBoundingClientRect();
+        if (height > 0) {
+          setAspectRatio(width / height);
+        }
+      };
+
+      updateAspectRatio();
+      const observer = new ResizeObserver(updateAspectRatio);
+      observer.observe(container);
+      return () => observer.disconnect();
+    }, []);
+
+    // Respect user's motion preferences for accessibility
+    const prefersReducedMotion =
+      typeof window !== "undefined"
+        ? window.matchMedia("(prefers-reduced-motion: reduce)").matches
+        : false;
+
+    const snowflakes = React.useMemo(() => {
+      const flakes = [];
+      // More flakes for full-width coverage
+      for (let i = 0; i < 40; i++) {
+        const seed = (i * 7919 + 31337) % 100000;
+        flakes.push({
+          x: 2 + (seed % 96), // Full width coverage
+          startY: -3 - (seed % 12),
+          size: 0.25 + (seed % 4) * 0.12,
+          duration: 16 + (seed % 10),
+          delay: (seed % 160) / 10,
+          opacity: 0.08 + (seed % 4) * 0.04,
+        });
+      }
+      return flakes;
+    }, []);
+
+    return (
+      <div
+        ref={containerRef}
+        className={cn(
+          "pointer-events-none select-none overflow-hidden",
+          className,
+        )}
+      >
+        <svg
+          className="h-full w-full"
+          viewBox="0 0 100 100"
+          preserveAspectRatio="none"
+        >
+          {snowflakes.map((flake, i) => {
+            const sizeW = flake.size;
+            const sizeH = flake.size * aspectRatio;
+            return (
+              <rect
+                key={`snow-full-${i}`}
+                x={flake.x - sizeW}
+                y={prefersReducedMotion ? 50 : flake.startY - sizeH}
+                width={sizeW * 2}
+                height={sizeH * 2}
+                rx={sizeW * 0.2}
+                fill="#E9EDF1"
+                opacity={flake.opacity}
+              >
+                {!prefersReducedMotion && (
+                  <animate
+                    attributeName="y"
+                    from={flake.startY - sizeH}
+                    to="105"
+                    dur={`${flake.duration}s`}
+                    begin={`${flake.delay}s`}
+                    repeatCount="indefinite"
+                  />
+                )}
+              </rect>
+            );
+          })}
+        </svg>
+      </div>
+    );
+  },
+);
+SnowOverlay.displayName = "SnowOverlay";
+
+interface StringLightsProps {
+  side: "left" | "right";
   className?: string;
 }
 
-const RainbowStripes: React.FC<RainbowStripesProps> = ({
-  direction = "right",
-  className = "",
-}) => {
-  const colors = [
-    "var(--hero-red)", // Red
-    "var(--hero-yellow)", // Yellow
-    "var(--hero-green)", // Green
-    "var(--hero-blue)", // Blue
-    "var(--hero-black)", // Black
-  ];
+/**
+ * Premium festive string lights - professionally designed
+ * Intentional color flow, natural catenary curves, visual hierarchy
+ * Memoized to prevent unnecessary re-renders
+ */
+const StringLights: React.FC<StringLightsProps> = React.memo(
+  ({ side, className = "" }) => {
+    // Track container aspect ratio to compensate for viewBox stretch
+    const containerRef = React.useRef<HTMLDivElement>(null);
+    const [aspectRatio, setAspectRatio] = React.useState(2.5); // Default assumption
 
-  // Create the clip-path for the triangular spike
-  const clipPath =
-    direction === "right"
-      ? "polygon(0 0, calc(100% - 140px) 0, 100% 80%, 100% 100%, 0 100%)"
-      : "polygon(calc(0% + 140px) 0, 100% 0, 100% 100%, 0% 100%, 0% 80% )";
+    React.useEffect(() => {
+      const container = containerRef.current;
+      if (!container) return;
 
-  return (
-    <div className={className}>
-      <div className="relative h-60">
-        {colors.map((color, index) => (
-          <div
-            key={index}
-            className={cn(`h-45 absolute w-full`)}
-            style={{
-              backgroundColor: color,
-              clipPath: clipPath,
-              top: `calc(38px * ${index})`,
-              transform: `translateX(${index * 30 * (direction === "right" ? 1 : -1)}px)`,
-            }}
-          >
-            {index != colors.length - 1 && (
-              <div
-                className={cn(
-                  "absolute z-20 h-full w-full",
-                  "bg-[length:250%_250%,100%_100%] bg-no-repeat",
-                  direction === "right"
-                    ? `bg-[linear-gradient(60deg,transparent_47%,rgba(255,255,255,0.4)_50%,transparent_52%,transparent_100%)]`
-                    : `bg-[linear-gradient(120deg,transparent_47%,rgba(255,255,255,0.4)_50%,transparent_52%,transparent_100%)]`,
-                )}
-                style={{
-                  animation: "shine 6s ease-in-out infinite",
-                  animationDirection:
-                    direction === "right" ? "reverse" : "normal",
-                  // right and left dirs hit on different times
-                  // a small time variation depending on the index
-                  animationDelay:
-                    direction === "right"
-                      ? `${1.9 + Math.random() * 0.2}s`
-                      : `${Math.random() * 0.2}s`,
-                }}
+      const updateAspectRatio = () => {
+        const { width, height } = container.getBoundingClientRect();
+        if (height > 0) {
+          setAspectRatio(width / height);
+        }
+      };
+
+      updateAspectRatio();
+      const observer = new ResizeObserver(updateAspectRatio);
+      observer.observe(container);
+      return () => observer.disconnect();
+    }, []);
+
+    // Official brand colors - hex values from brand guidelines
+    const brandColors = [
+      { main: "#E5342A", glow: "#FF5A50" }, // Red (warm)
+      { main: "#F9B700", glow: "#FFCF40" }, // Yellow (warm)
+      { main: "#38A430", glow: "#5BC450" }, // Green (cool)
+      { main: "#0064C7", glow: "#3090E8" }, // Blue (cool)
+    ];
+
+    // Generate strands with natural hanging catenary curves
+    const strings = React.useMemo(() => {
+      // Intentional color sequences - warm colors outside, cool toward center
+      // This creates visual flow that guides the eye inward
+      const colorSequences = {
+        top: [0, 1, 0, 2, 1, 3, 2, 3], // R Y R G Y B G B - warm to cool
+        bottom: [1, 0, 2, 1, 3, 2, 3], // Y R G Y B G B - offset pattern
+      };
+
+      type BulbVariation = { size: number; isCircle: boolean };
+      const result: {
+        lights: {
+          x: number;
+          y: number;
+          colorIndex: number;
+          intensity: number;
+          delay: number;
+          bulb: BulbVariation;
+        }[];
+        config: {
+          key: string;
+          lights: number;
+          startY: number;
+          endY: number;
+          depth: number;
+        };
+      }[] = [];
+
+      // Two strands: top frames title, bottom frames buttons
+      const configs = [
+        { key: "top", lights: 8, startY: 8, endY: 20, depth: 25 },
+        { key: "bottom", lights: 7, startY: 55, endY: 68, depth: 20 },
+      ];
+
+      // Size and shape variations - mix of circles and squares like reference
+      const bulbVariations = [
+        { size: 1.0, isCircle: false }, // Square
+        { size: 0.95, isCircle: true }, // Circle
+        { size: 0.9, isCircle: false }, // Square
+        { size: 1.0, isCircle: true }, // Circle
+        { size: 0.85, isCircle: false }, // Square
+        { size: 1.05, isCircle: true }, // Circle
+        { size: 0.9, isCircle: false }, // Square
+        { size: 1.0, isCircle: true }, // Circle
+      ];
+
+      configs.forEach((cfg) => {
+        const lights: (typeof result)[0]["lights"] = [];
+        const seq = colorSequences[cfg.key as keyof typeof colorSequences];
+
+        for (let i = 0; i < cfg.lights; i++) {
+          const t = i / (cfg.lights - 1);
+
+          // X position: 5% to 85% to leave breathing room
+          const x = 5 + t * 80;
+
+          // CORRECTED catenary: maximum sag at CENTER, least at edges
+          // Natural hanging curve - gravity pulls center down most
+          const normalizedX = (t - 0.5) * 2; // -1 to 1
+          const parabolicSag = 1 - normalizedX * normalizedX; // 1 at center, 0 at edges
+          const sagAmount = cfg.depth * parabolicSag;
+
+          // Base line connects the anchor points
+          const baseY = cfg.startY + t * (cfg.endY - cfg.startY);
+          const y = baseY + sagAmount;
+
+          // Vary intensity - brighter toward the sag point (center of strand)
+          const centeredness = 1 - Math.abs(t - 0.5) * 2;
+          const intensity = 0.7 + centeredness * 0.3;
+
+          // Get bulb variation (size, roundness, aspect)
+          const bulb = bulbVariations[i % bulbVariations.length]!;
+          const colorIndex = seq[i % seq.length]!;
+
+          lights.push({
+            x: side === "left" ? x : 100 - x,
+            y,
+            colorIndex,
+            intensity,
+            delay: i * 0.3,
+            bulb,
+          });
+        }
+        result.push({ lights, config: cfg });
+      });
+      return result;
+    }, [side]);
+
+    // Snow is now handled by the separate SnowOverlay component for full-width coverage
+
+    // Generate smooth bezier path for wire
+    const getWirePath = (strand: (typeof strings)[0]) => {
+      const pts = strand.lights;
+      if (pts.length < 2) return "";
+
+      const first = pts[0]!;
+      let d = `M ${first.x},${first.y}`;
+      for (let i = 1; i < pts.length; i++) {
+        const prev = pts[i - 1]!;
+        const curr = pts[i]!;
+        const midX = (prev.x + curr.x) / 2;
+        const midY = (prev.y + curr.y) / 2;
+        d += ` Q ${prev.x},${prev.y} ${midX},${midY}`;
+      }
+      const last = pts[pts.length - 1]!;
+      d += ` L ${last.x},${last.y}`;
+      return d;
+    };
+
+    return (
+      <div
+        ref={containerRef}
+        className={cn(
+          "pointer-events-none select-none overflow-hidden",
+          className,
+        )}
+      >
+        <svg
+          className="h-full w-full"
+          viewBox="0 0 100 100"
+          preserveAspectRatio="none"
+        >
+          <defs>
+            {/* Simple soft glow filter */}
+            <filter
+              id={`glow-${side}`}
+              x="-100%"
+              y="-100%"
+              width="300%"
+              height="300%"
+            >
+              <feGaussianBlur
+                in="SourceGraphic"
+                stdDeviation="1.5"
+                result="blur"
               />
-            )}
-          </div>
-        ))}
+              <feMerge>
+                <feMergeNode in="blur" />
+                <feMergeNode in="SourceGraphic" />
+              </feMerge>
+            </filter>
+          </defs>
+
+          {/* Wire strings - thicker branded gray line like reference */}
+          {strings.map((strand, si) => (
+            <path
+              key={`wire-${si}`}
+              d={getWirePath(strand)}
+              fill="none"
+              stroke="#596E89"
+              strokeWidth="0.5"
+              strokeLinecap="round"
+            />
+          ))}
+
+          {/* Light bulbs - mix of circles and squares, simplified glow for performance */}
+          {strings.map((strand, si) =>
+            strand.lights.map((light, li) => {
+              const color = brandColors[light.colorIndex]!;
+              const { size, isCircle } = light.bulb;
+              const baseSize = 2.0;
+              const bulbSize = baseSize * size;
+              // Dynamic aspect ratio compensation - makes shapes appear square regardless of container
+              const heightMultiplier = aspectRatio;
+
+              if (isCircle) {
+                // Circle (ellipse for aspect ratio compensation)
+                const rx = bulbSize;
+                const ry = bulbSize * heightMultiplier;
+
+                return (
+                  <g key={`light-${si}-${li}`}>
+                    {/* Glow */}
+                    <ellipse
+                      cx={light.x}
+                      cy={light.y}
+                      rx={rx * 1.4}
+                      ry={ry * 1.4}
+                      fill={color.glow}
+                      opacity="0.25"
+                      filter={`url(#glow-${side})`}
+                    />
+                    {/* Core bulb */}
+                    <ellipse
+                      cx={light.x}
+                      cy={light.y}
+                      rx={rx}
+                      ry={ry}
+                      fill={color.main}
+                    />
+                    {/* Highlight */}
+                    <ellipse
+                      cx={light.x}
+                      cy={light.y - ry * 0.4}
+                      rx={rx * 0.4}
+                      ry={ry * 0.15}
+                      fill="white"
+                      opacity="0.35"
+                    />
+                  </g>
+                );
+              } else {
+                // Rounded square
+                const sizeW = bulbSize;
+                const sizeH = bulbSize * heightMultiplier;
+                const radius = Math.min(sizeW, sizeH / heightMultiplier) * 0.15;
+
+                return (
+                  <g key={`light-${si}-${li}`}>
+                    {/* Glow */}
+                    <rect
+                      x={light.x - sizeW * 1.4}
+                      y={light.y - sizeH * 1.4}
+                      width={sizeW * 2.8}
+                      height={sizeH * 2.8}
+                      rx={radius * 1.5}
+                      fill={color.glow}
+                      opacity="0.25"
+                      filter={`url(#glow-${side})`}
+                    />
+                    {/* Core bulb */}
+                    <rect
+                      x={light.x - sizeW}
+                      y={light.y - sizeH}
+                      width={sizeW * 2}
+                      height={sizeH * 2}
+                      rx={radius}
+                      fill={color.main}
+                    />
+                    {/* Highlight bar */}
+                    <rect
+                      x={light.x - sizeW * 0.5}
+                      y={light.y - sizeH * 0.55}
+                      width={sizeW}
+                      height={sizeH * 0.2}
+                      rx={radius * 0.5}
+                      fill="white"
+                      opacity="0.35"
+                    />
+                  </g>
+                );
+              }
+            }),
+          )}
+        </svg>
       </div>
-    </div>
-  );
-};
+    );
+  },
+);
+StringLights.displayName = "StringLights";
