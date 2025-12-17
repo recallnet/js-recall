@@ -7,36 +7,22 @@ networks:
 
 services:
   anvil:
-    image: ghcr.io/foundry-rs/foundry:latest
+    build:
+      context: ./docker/anvil
+      dockerfile: Dockerfile
+    image: recall-anvil
     container_name: recall-anvil
     restart: always
     networks:
       - recall-network
     ports:
       - "${ANVIL_PORT:-8546}:8545"
-    entrypoint:
-      ["anvil", "--host", "0.0.0.0", "--chain-id", "31337", "--block-time", "1"]
     healthcheck:
       test:
         ["CMD", "cast", "block-number", "--rpc-url", "http://localhost:8545"]
       interval: 5s
       timeout: 5s
       retries: 5
-
-  deployer:
-    image: node:22-alpine
-    container_name: recall-deployer
-    networks:
-      - recall-network
-    volumes:
-      - .:/workspace
-    working_dir: /workspace/packages/staking-contracts/contracts
-    command: sh -c "pnpm install && npx hardhat deploy --network docker"
-    depends_on:
-      anvil:
-        condition: service_healthy
-    environment:
-      ANVIL_URL: http://anvil:8545
 
   db:
     image: postgres:17-alpine
