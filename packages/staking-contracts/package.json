@@ -18,8 +18,9 @@
   },
   "scripts": {
     "build": "tsup",
-    "test": "pnpm hardhat compile && vitest run",
-    "test:coverage": "pnpm hardhat compile && vitest run --coverage",
+    "test": "pnpm hardhat compile && vitest run --project unit",
+    "test:integration": "vitest run --project integration",
+    "test:coverage": "pnpm hardhat compile && vitest run --coverage --project unit",
     "lint": "eslint . --max-warnings 0",
     "format": "prettier --write . --ignore-path=../../.prettierignore",
     "format:check": "prettier --check . --ignore-path=../../.prettierignore"

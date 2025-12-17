@@ -6,8 +6,7 @@ export default defineConfig({
   test: {
     globals: true,
     environment: "node",
-    include: ["test/**/*.test.ts"],
-    exclude: ["node_modules", "dist", "contracts"],
+    passWithNoTests: true,
     typecheck: { enabled: true, include: ["**/*.test.ts"] },
     coverage: {
       provider: "v8",
@@ -19,5 +18,46 @@ export default defineConfig({
         "src/safe-transaction-proposer.ts",
       ],
     },
+    projects: [
+      {
+        extends: true,
+        test: {
+          name: "unit",
+          root: "./",
+          dir: "./test",
+          include: ["**/*.test.ts"],
+          exclude: [
+            "**/*.integration.test.ts",
+            "node_modules",
+            "dist",
+            "contracts",
+          ],
+          typecheck: { enabled: true, include: ["**/*.test.ts"] },
+        },
+      },
+      {
+        extends: true,
+        test: {
+          name: "integration",
+          root: "./",
+          dir: "./test",
+          include: ["**/*.integration.test.ts"],
+          exclude: ["node_modules", "dist", "contracts"],
+          typecheck: { enabled: true, include: ["**/*.test.ts"] },
+          testTimeout: 30_000,
+          sequence: {
+            concurrent: false,
+            shuffle: false,
+          },
+          maxConcurrency: 1,
+          pool: "threads",
+          poolOptions: {
+            threads: {
+              singleThread: true,
+            },
+          },
+        },
+      },
+    ],
   },
 });

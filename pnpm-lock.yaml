@@ -21803,7 +21803,7 @@ snapshots:
   '@types/pg@8.15.4':
     dependencies:
       '@types/node': 24.3.0
-      pg-protocol: 1.10.0
+      pg-protocol: 1.10.3
       pg-types: 2.2.0
 
   '@types/pg@8.15.5':
@@ -27866,8 +27866,7 @@ snapshots:
 
   pg-protocol@1.10.0: {}
 
-  pg-protocol@1.10.3:
-    optional: true
+  pg-protocol@1.10.3: {}
 
   pg-types@2.2.0:
     dependencies:
@@ -27892,7 +27891,7 @@ snapshots:
     dependencies:
       pg-connection-string: 2.9.0
       pg-pool: 3.10.0(pg@8.16.0)
-      pg-protocol: 1.10.0
+      pg-protocol: 1.10.3
       pg-types: 2.2.0
       pgpass: 1.0.5
     optionalDependencies:

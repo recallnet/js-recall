@@ -34,20 +34,6 @@ jobs:
 
   integration-tests:
     runs-on: ubuntu-latest
-    services:
-      postgres:
-        image: postgres:17
-        env:
-          POSTGRES_USER: postgres
-          POSTGRES_PASSWORD: postgres
-          POSTGRES_DB: trading_simulator_test
-        options: >-
-          --health-cmd pg_isready
-          --health-interval 10s
-          --health-timeout 5s
-          --health-retries 5
-        ports:
-          - 5432:5432
 
     steps:
       - name: Checkout Repository
@@ -59,12 +45,15 @@ jobs:
       - name: Setup Node.js and pnpm
         uses: ./.github/actions/setup-node-pnpm
 
+      - name: Start services via docker compose
+        run: docker compose up -d --wait db anvil
+
       - name: Create test environment for api app
         working-directory: apps/api
         run: |
           cat > .env.test << EOF
           NODE_ENV=test
-          VITE_DATABASE_URL=postgresql://postgres:postgres@localhost:5432/trading_simulator_test
+          VITE_DATABASE_URL=postgresql://postgres:postgres@localhost:5432/postgres
           ROOT_ENCRYPTION_KEY=test_root_encryption_key_with_32_characters
           EVM_CHAINS=eth,polygon,bsc,arbitrum,base,optimism,avalanche,linea
           TEST_MODE=true
@@ -75,7 +64,7 @@ jobs:
         run: pnpm db:migrate
         env:
           NODE_ENV: test
-          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/trading_simulator_test
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/postgres
 
       - name: Run integration tests
         run: |
@@ -83,8 +72,12 @@ jobs:
           pnpm test:integration
         env:
           NODE_ENV: test
-          VITE_DATABASE_URL: postgresql://postgres:postgres@localhost:5432/trading_simulator_test
+          VITE_DATABASE_URL: postgresql://postgres:postgres@localhost:5432/postgres
           TEST_MODE: true
+
+      - name: Stop services
+        if: always()
+        run: docker compose down
 
   e2e-tests:
     runs-on: ubuntu-latest
