@@ -6,24 +6,45 @@
 import { type RouterClient, createRouterClient } from "@orpc/server";
 import { type PrivyClient } from "@privy-io/server-auth";
 import { RequestCookie } from "next/dist/compiled/@edge-runtime/cookies";
+import { expect } from "vitest";
+import { z } from "zod/v4";
 
 import { MockPrivyClient } from "@recallnet/services/lib";
+import {
+  AdminCreateCompetitionSchema,
+  AdminStartCompetitionSchema,
+  PaperTradingInitialBalanceSchema,
+} from "@recallnet/services/types";
+import {
+  generateRandomEthAddress,
+  generateRandomPrivyId,
+  generateRandomString,
+  generateTestHandle,
+} from "@recallnet/test-utils";
+
+import { competitionRepository } from "@/lib/repositories";
 
 import { createLogger } from "../../lib/logger.js";
 import {
+  adminService,
   agentService,
   airdropService,
   arenaService,
+  balanceService,
   boostAwardService,
+  boostBonusService,
   boostService,
   competitionService,
   eigenaiService,
   emailService,
   leaderboardService,
+  partnerService,
+  portfolioSnapshotterService,
   rewardsService,
   sportsService,
   userService,
 } from "../../lib/services.js";
+import { router as adminRouter } from "../../rpc/router/admin/index.js";
 import { router } from "../../rpc/router/index.js";
 
 /**
@@ -46,6 +67,63 @@ function createMockCookies(privyToken?: string) {
       }
     },
   };
+}
+
+/**
+ * Create a mock headers object for testing
+ */
+function createMockHeaders(customHeaders?: Record<string, string>): Headers {
+  const headersMap = new Map<string, string>(
+    Object.entries(customHeaders || {}),
+  );
+
+  return {
+    get(name: string): string | null {
+      return headersMap.get(name.toLowerCase()) || null;
+    },
+    has(name: string): boolean {
+      return headersMap.has(name.toLowerCase());
+    },
+    set(name: string, value: string): void {
+      headersMap.set(name.toLowerCase(), value);
+    },
+    delete(name: string): void {
+      headersMap.delete(name.toLowerCase());
+    },
+    append(name: string, value: string): void {
+      const existing = headersMap.get(name.toLowerCase());
+      headersMap.set(
+        name.toLowerCase(),
+        existing ? `${existing}, ${value}` : value,
+      );
+    },
+    forEach(
+      callbackfn: (value: string, key: string, parent: Headers) => void,
+    ): void {
+      headersMap.forEach((value, key) => {
+        callbackfn(value, key, this as unknown as Headers);
+      });
+    },
+    entries(): IterableIterator<[string, string]> {
+      return headersMap.entries();
+    },
+    keys(): IterableIterator<string> {
+      return headersMap.keys();
+    },
+    values(): IterableIterator<string> {
+      return headersMap.values();
+    },
+    [Symbol.iterator](): IterableIterator<[string, string]> {
+      return headersMap.entries();
+    },
+  } as Headers;
+}
+
+/**
+ * Create a mock params object for testing
+ */
+function createMockParams(customParams?: Record<string, string | string[]>) {
+  return customParams || {};
 }
 
 /**
@@ -80,3 +158,456 @@ export async function createTestRpcClient(
     },
   });
 }
+
+/**
+ * Create a test admin RPC client with optional custom headers
+ *
+ * @param options - Optional configuration
+ * @param options.apiKey - API key to include in Authorization header
+ * @param options.headers - Custom headers to include
+ */
+export async function createTestAdminRpcClient(options?: {
+  apiKey?: string;
+  headers?: Record<string, string>;
+}): Promise<RouterClient<typeof adminRouter>> {
+  const headers = { ...options?.headers };
+
+  // Add Authorization header if apiKey is provided
+  if (options?.apiKey) {
+    headers.authorization = `Bearer ${options.apiKey}`;
+  }
+
+  return createRouterClient(adminRouter, {
+    context: {
+      cookies: createMockCookies("dummy-token"),
+      headers: createMockHeaders(headers),
+      params: createMockParams(),
+      adminService,
+      boostBonusService,
+      userService,
+      competitionService,
+      competitionRepository,
+      agentService,
+      arenaService,
+      partnerService,
+      balanceService,
+      portfolioSnapshotterService,
+      rewardsService,
+      logger: createLogger("TestAdminRpcClient"),
+    },
+  });
+}
+
+/**
+ * Assert that a promise throws an error with a specific error code
+ * Useful for testing RPC error responses
+ */
+export async function assertRpcError<TOutput>(
+  promise: Promise<TOutput>,
+  errorCode: string,
+  options?: {
+    messageContains?: string | string[];
+  },
+): Promise<void> {
+  const result = expect(promise).rejects;
+  await result.toThrow();
+  await result.toMatchObject({
+    code: errorCode,
+  });
+  if (options?.messageContains) {
+    const messageContainsArray = Array.isArray(options.messageContains)
+      ? options.messageContains
+      : [options.messageContains];
+
+    for (const messageContains of messageContainsArray) {
+      await result.toMatchObject({
+        message: expect.stringContaining(messageContains),
+      });
+    }
+  }
+}
+
+/**
+ * Register a user and agent using admin RPC client and return user/agent info
+ */
+export async function registerUserAndAgentAndGetClient({
+  adminRpcClient,
+  walletAddress,
+  embeddedWalletAddress,
+  privyId,
+  userName,
+  userEmail,
+  userImageUrl,
+  agentName,
+  agentHandle,
+  agentDescription,
+  agentImageUrl,
+  agentMetadata,
+  agentWalletAddress,
+}: {
+  adminRpcClient: RouterClient<typeof adminRouter>;
+  walletAddress?: string;
+  embeddedWalletAddress?: string;
+  privyId?: string;
+  userName?: string;
+  userEmail?: string;
+  userImageUrl?: string;
+  agentName?: string;
+  agentHandle?: string;
+  agentDescription?: string;
+  agentImageUrl?: string;
+  agentMetadata?: Record<string, unknown>;
+  agentWalletAddress?: string;
+}) {
+  // Register a new user with optional agent creation
+  const result = await adminRpcClient.users.register({
+    walletAddress: walletAddress || generateRandomEthAddress(),
+    embeddedWalletAddress: embeddedWalletAddress || generateRandomEthAddress(),
+    privyId: privyId || generateRandomPrivyId(),
+    name: userName || `User ${generateRandomString(8)}`,
+    email: userEmail || `user-${generateRandomString(8)}@test.com`,
+    userImageUrl,
+    agentName: agentName || `Agent ${generateRandomString(8)}`,
+    agentHandle: agentHandle || generateTestHandle(agentName),
+    agentDescription:
+      agentDescription || `Test agent for ${agentName || "testing"}`,
+    agentImageUrl,
+    agentMetadata,
+    agentWalletAddress: agentWalletAddress || generateRandomEthAddress(),
+  });
+
+  if (
+    !result.success ||
+    !result.user ||
+    !result.agent ||
+    typeof result.agent.id !== "string"
+  ) {
+    throw new Error("Failed to register user and agent");
+  }
+
+  return {
+    user: {
+      id: result.user.id || "",
+      walletAddress: result.user.walletAddress || "",
+      walletLastVerifiedAt: result.user.walletLastVerifiedAt || "",
+      embeddedWalletAddress: result.user.embeddedWalletAddress || "",
+      privyId: result.user.privyId || "",
+      name: result.user.name || "",
+      email: result.user.email || "",
+      imageUrl: result.user.imageUrl || null,
+      status: result.user.status || "active",
+      metadata: result.user.metadata || null,
+      createdAt: result.user.createdAt || new Date().toISOString(),
+      updatedAt: result.user.updatedAt || new Date().toISOString(),
+      lastLoginAt: result.user.lastLoginAt || new Date().toISOString(),
+    },
+    agent: {
+      id: result.agent.id || "",
+      ownerId: result.agent.ownerId || "",
+      walletAddress: result.agent.walletAddress || "",
+      name: result.agent.name || "",
+      handle: result.agent.handle || "",
+      description: result.agent.description || "",
+      imageUrl: result.agent.imageUrl || null,
+      status: result.agent.status || "active",
+      metadata: result.agent.metadata || null,
+      createdAt: result.agent.createdAt || new Date().toISOString(),
+      updatedAt: result.agent.updatedAt || new Date().toISOString(),
+    },
+    adminRpcClient: await createTestAdminRpcClient({
+      apiKey: result.agent.apiKey,
+    }),
+  };
+}
+
+// Default paper trading initial balances
+const DEFAULT_PAPER_TRADING_INITIAL_BALANCES = [
+  // Solana (SVM) balances
+  {
+    specificChain: "svm" as const,
+    tokenSymbol: "sol",
+    amount: 10,
+  },
+  {
+    specificChain: "svm" as const,
+    tokenSymbol: "usdc",
+    amount: 5000,
+  },
+];
+
+/**
+ * Start a test competition (creates and immediately starts it)
+ */
+export async function startTestCompetition({
+  adminRpcClient,
+  name,
+  agentIds,
+  sandboxMode,
+  externalUrl,
+  imageUrl,
+  tradingConstraints,
+  rewardsIneligible,
+  paperTradingInitialBalances,
+}: {
+  adminRpcClient: RouterClient<typeof adminRouter>;
+  agentIds?: string[];
+} & Partial<z.infer<typeof AdminStartCompetitionSchema>>) {
+  const competitionName = name || `Test competition ${Date.now()}`;
+  const result = await adminRpcClient.competitions.start({
+    name: competitionName,
+    description: `Test competition description for ${competitionName}`,
+    agentIds: agentIds || [],
+    sandboxMode,
+    externalUrl,
+    imageUrl,
+    tradingConstraints,
+    arenaId: "default-paper-arena",
+    paperTradingInitialBalances:
+      paperTradingInitialBalances || DEFAULT_PAPER_TRADING_INITIAL_BALANCES,
+    rewardsIneligible,
+  });
+
+  if (!result.success) {
+    throw new Error("Failed to start competition");
+  }
+
+  return result;
+}
+
+/**
+ * Create a competition in PENDING state without starting it
+ */
+export async function createTestCompetition({
+  adminRpcClient,
+  name,
+  description,
+  sandboxMode,
+  externalUrl,
+  imageUrl,
+  type,
+  tradingType,
+  startDate,
+  endDate,
+  boostStartDate,
+  boostEndDate,
+  joinStartDate,
+  joinEndDate,
+  maxParticipants,
+  tradingConstraints,
+  rewardsIneligible,
+  paperTradingInitialBalances,
+}: {
+  adminRpcClient: RouterClient<typeof adminRouter>;
+} & Partial<z.infer<typeof AdminCreateCompetitionSchema>>) {
+  const competitionName = name || `Test competition ${Date.now()}`;
+  const result = await adminRpcClient.competitions.create({
+    name: competitionName,
+    description:
+      description || `Test competition description for ${competitionName}`,
+    tradingType,
+    sandboxMode,
+    externalUrl,
+    imageUrl,
+    type,
+    startDate: startDate instanceof Date ? startDate.toISOString() : startDate,
+    endDate: endDate instanceof Date ? endDate.toISOString() : endDate,
+    boostStartDate:
+      boostStartDate instanceof Date
+        ? boostStartDate.toISOString()
+        : boostStartDate,
+    boostEndDate:
+      boostEndDate instanceof Date ? boostEndDate.toISOString() : boostEndDate,
+    joinStartDate:
+      joinStartDate instanceof Date
+        ? joinStartDate.toISOString()
+        : joinStartDate,
+    joinEndDate:
+      joinEndDate instanceof Date ? joinEndDate.toISOString() : joinEndDate,
+    maxParticipants,
+    tradingConstraints,
+    rewardsIneligible,
+    arenaId: "default-paper-arena",
+    paperTradingInitialBalances:
+      paperTradingInitialBalances || DEFAULT_PAPER_TRADING_INITIAL_BALANCES,
+  });
+
+  if (!result.success) {
+    throw new Error("Failed to create competition");
+  }
+
+  return result;
+}
+
+/**
+ * Start a perpetual futures test competition (creates and immediately starts it)
+ */
+export async function startPerpsTestCompetition({
+  adminRpcClient,
+  name,
+  agentIds,
+  sandboxMode,
+  externalUrl,
+  imageUrl,
+  tradingConstraints,
+  rewards,
+  evaluationMetric,
+  perpsProvider = {
+    provider: "symphony" as const,
+    initialCapital: 500,
+    selfFundingThreshold: 0,
+    apiUrl: "http://localhost:4567", // Point to mock server by default
+  },
+}: {
+  adminRpcClient: RouterClient<typeof adminRouter>;
+  name?: string;
+  agentIds?: string[];
+  sandboxMode?: boolean;
+  externalUrl?: string;
+  imageUrl?: string;
+  tradingConstraints?: z.infer<
+    typeof AdminStartCompetitionSchema
+  >["tradingConstraints"];
+  rewards?: Record<number, number>;
+  evaluationMetric?: "calmar_ratio" | "sortino_ratio" | "simple_return";
+  perpsProvider?: {
+    provider: "symphony" | "hyperliquid";
+    initialCapital?: number;
+    selfFundingThreshold?: number;
+    minFundingThreshold?: number;
+    apiUrl?: string;
+  };
+}) {
+  const competitionName = name || `Perps Test Competition ${Date.now()}`;
+  const result = await adminRpcClient.competitions.start({
+    name: competitionName,
+    description: `Perpetual futures test competition for ${competitionName}`,
+    type: "perpetual_futures", // Key difference - explicitly set type
+    agentIds: agentIds || [],
+    sandboxMode,
+    externalUrl,
+    imageUrl,
+    tradingConstraints,
+    rewards,
+    evaluationMetric,
+    perpsProvider,
+    arenaId: "default-perps-arena",
+  });
+
+  if (!result.success) {
+    throw new Error("Failed to start perps competition");
+  }
+
+  return result;
+}
+
+/**
+ * Create a perpetual futures competition in PENDING state without starting it
+ */
+export async function createPerpsTestCompetition({
+  adminRpcClient,
+  name,
+  description,
+  sandboxMode,
+  externalUrl,
+  imageUrl,
+  startDate,
+  endDate,
+  boostStartDate,
+  boostEndDate,
+  joinStartDate,
+  joinEndDate,
+  maxParticipants,
+  tradingConstraints,
+  rewards,
+  evaluationMetric,
+  perpsProvider,
+  rewardsIneligible,
+}: {
+  adminRpcClient: RouterClient<typeof adminRouter>;
+  name?: string;
+  description?: string;
+  sandboxMode?: boolean;
+  externalUrl?: string;
+  imageUrl?: string;
+  startDate?: string | Date;
+  endDate?: string | Date;
+  boostStartDate?: string | Date;
+  boostEndDate?: string | Date;
+  joinStartDate?: string | Date;
+  joinEndDate?: string | Date;
+  maxParticipants?: number;
+  tradingConstraints?: z.infer<
+    typeof AdminCreateCompetitionSchema
+  >["tradingConstraints"];
+  rewards?: Record<number, number>;
+  evaluationMetric?: "calmar_ratio" | "sortino_ratio" | "simple_return";
+  perpsProvider?: {
+    provider: "symphony" | "hyperliquid";
+    initialCapital: number;
+    selfFundingThreshold: number;
+    minFundingThreshold?: number;
+    apiUrl?: string;
+  };
+  rewardsIneligible?: string[];
+}) {
+  const competitionName = name || `Perps Test Competition ${Date.now()}`;
+  const result = await adminRpcClient.competitions.create({
+    name: competitionName,
+    description: description || `Perpetual futures test competition`,
+    type: "perpetual_futures",
+    sandboxMode,
+    externalUrl,
+    imageUrl,
+    startDate: startDate instanceof Date ? startDate.toISOString() : startDate,
+    endDate: endDate instanceof Date ? endDate.toISOString() : endDate,
+    boostStartDate:
+      boostStartDate instanceof Date
+        ? boostStartDate.toISOString()
+        : boostStartDate,
+    boostEndDate:
+      boostEndDate instanceof Date ? boostEndDate.toISOString() : boostEndDate,
+    joinStartDate:
+      joinStartDate instanceof Date
+        ? joinStartDate.toISOString()
+        : joinStartDate,
+    joinEndDate:
+      joinEndDate instanceof Date ? joinEndDate.toISOString() : joinEndDate,
+    maxParticipants,
+    tradingConstraints,
+    rewards,
+    evaluationMetric,
+    perpsProvider: perpsProvider || {
+      provider: "symphony",
+      initialCapital: 500,
+      selfFundingThreshold: 0,
+      apiUrl: "http://localhost:4567", // Default to mock server
+    },
+    rewardsIneligible,
+    arenaId: "default-perps-arena",
+  });
+
+  if (!result.success) {
+    throw new Error("Failed to create perps competition");
+  }
+
+  return result;
+}
+
+export const defaultPaperTradingInitialBalances = (): z.infer<
+  typeof PaperTradingInitialBalanceSchema
+>[] => [
+  // Solana (SVM) balances
+  { specificChain: "svm", tokenSymbol: "sol", amount: 10 },
+  { specificChain: "svm", tokenSymbol: "usdc", amount: 5000 },
+  { specificChain: "svm", tokenSymbol: "usdt", amount: 1000 },
+  // Ethereum balances
+  { specificChain: "eth", tokenSymbol: "eth", amount: 1 },
+  { specificChain: "eth", tokenSymbol: "usdc", amount: 5000 },
+  // Note: INITIAL_ETH_USDT_BALANCE=0, so we skip it
+  // Optimism balances
+  { specificChain: "optimism", tokenSymbol: "usdc", amount: 200 },
+  // Polygon balances
+  { specificChain: "polygon", tokenSymbol: "usdc", amount: 200 },
+  // Arbitrum balances
+  { specificChain: "arbitrum", tokenSymbol: "usdc", amount: 200 },
+];
