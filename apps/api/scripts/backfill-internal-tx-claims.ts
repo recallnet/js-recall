@@ -86,6 +86,7 @@ async function findMissingClaims() {
   const stakingConfig = config.stakingIndex.getConfig();
   const convictionClaimsContract = stakingConfig.convictionClaimsContract;
   const hypersyncUrl = stakingConfig.hypersyncUrl;
+  const hypersyncBearerToken = stakingConfig.hypersyncBearerToken;
   if (!convictionClaimsContract || !hypersyncUrl) {
     throw new Error("invalid config, need hypersync and contract");
   }
@@ -94,7 +95,10 @@ async function findMissingClaims() {
   console.log(`🌐 Hypersync URL: ${hypersyncUrl}\n`);
 
   // Create Hypersync client
-  const client = HypersyncClient.new({ url: hypersyncUrl });
+  const client = HypersyncClient.new({
+    url: hypersyncUrl,
+    bearerToken: hypersyncBearerToken,
+  });
 
   // Define the Claimed event ABI
   const claimedEventAbi = {
@@ -125,8 +129,8 @@ async function findMissingClaims() {
   };
 
   // Start from early blocks to find missing claims
-  const startBlock = 35000000; // Start from the beginning
-  const endBlock = 37736523;
+  const startBlock = 39501000; // Sunday, December 15, 2025
+  const endBlock = 39609000; // Wednesday, December 17, 2025
 
   console.log(`📦 Scanning blocks: ${startBlock} to ${endBlock}`);
 
@@ -174,17 +178,21 @@ async function findMissingClaims() {
   while (true) {
     const res = await stream.recv();
 
-    if (!res || !res.data || !res.data.logs || res.data.logs.length === 0) {
-      break; // No more data
+    // No response means stream is exhausted
+    if (!res) {
+      break;
     }
 
-    batch++;
-    console.log(`  Batch ${batch}: Retrieved ${res.data.logs.length} events`);
-    allLogs = allLogs.concat(res.data.logs);
+    // Accumulate logs if present (batches can be empty)
+    if (res.data?.logs && res.data.logs.length > 0) {
+      batch++;
+      console.log(`  Batch ${batch}: Retrieved ${res.data.logs.length} events`);
+      allLogs = allLogs.concat(res.data.logs);
+    }
 
-    // Check if we have more data to fetch
+    // Check if we've reached the end
     if (!res.nextBlock || res.nextBlock > endBlock) {
-      break; // We've reached the end
+      break;
     }
   }
 
@@ -230,15 +238,22 @@ async function findMissingClaims() {
     return;
   }
 
-  // Get all accounts from the database
-  const dbAccounts = await db
-    .select({ account: convictionClaims.account })
+  // Get all account+season pairs from the database
+  const dbClaims = await db
+    .select({
+      account: convictionClaims.account,
+      season: convictionClaims.season,
+    })
     .from(convictionClaims)
     .execute();
 
-  const accountSet = new Set(dbAccounts.map((a) => a.account.toLowerCase()));
+  const accountSeasonSet = new Set(
+    dbClaims.map((c) => `${c.account.toLowerCase()}:${c.season}`),
+  );
 
-  console.log(`📁 Database has ${accountSet.size} unique accounts\n`);
+  console.log(
+    `📁 Database has ${accountSeasonSet.size} unique account+season pairs\n`,
+  );
 
   // Process events and find missing ones
   const missingClaims = [];
@@ -255,38 +270,41 @@ async function findMissingClaims() {
     // Convert topic to address (remove 0x prefix, take last 40 chars)
     const account = "0x" + accountTopic.slice(-40).toLowerCase();
 
-    // Check if this account is in the database
-    if (!accountSet.has(account)) {
-      try {
-        // Decode the full event data
-        const decodedLog = decodeEventLog({
-          abi: [claimedEventAbi],
-          data: log.data as `0x${string}`,
-          topics: log.topics as [`0x${string}`, ...`0x${string}`[]],
-        }) as unknown as {
-          args: {
-            account: string;
-            amount: bigint;
-            claimedAmount: bigint;
-            season: number;
-          };
+    try {
+      // Decode the full event data
+      const decodedLog = decodeEventLog({
+        abi: [claimedEventAbi],
+        data: log.data as `0x${string}`,
+        topics: log.topics as [`0x${string}`, ...`0x${string}`[]],
+      }) as unknown as {
+        args: {
+          account: string;
+          amount: bigint;
+          claimedAmount: bigint;
+          season: number;
         };
+      };
 
+      const season = decodedLog.args.season;
+      const accountSeasonKey = `${account}:${season}`;
+
+      // Check if this account+season pair is in the database
+      if (!accountSeasonSet.has(accountSeasonKey)) {
         const claim = {
           account,
           blockNumber: log.blockNumber,
           transactionHash: log.transactionHash,
           amount: decodedLog.args.amount,
           claimedAmount: decodedLog.args.claimedAmount,
-          season: decodedLog.args.season,
+          season: season,
         };
 
         missingClaims.push(claim);
         totalEligibleAmount += BigInt(claim.amount);
         totalClaimedAmount += BigInt(claim.claimedAmount);
-      } catch {
-        console.log(`⚠️  Failed to decode event at block ${log.blockNumber}`);
       }
+    } catch {
+      console.log(`⚠️  Failed to decode event at block ${log.blockNumber}`);
     }
   }
 
@@ -374,6 +392,7 @@ async function findMissingClaims() {
 
         const client = HypersyncClient.new({
           url: stakingConfig.hypersyncUrl,
+          bearerToken: stakingConfig.hypersyncBearerToken,
         });
         const blockRes = await client.get(blockQuery);
 
