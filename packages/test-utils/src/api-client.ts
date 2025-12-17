@@ -9,6 +9,7 @@ import {
   PagingParams,
 } from "@recallnet/services/types";
 
+import { createLogger } from "./logger.js";
 import {
   PrivyAuthProvider,
   type TestPrivyUser,
@@ -100,6 +101,8 @@ import {
   UserRegistrationResponse,
 } from "./types.js";
 
+const logger = createLogger("ApiClient");
+
 /**
  * API client for testing the Trading Simulator
  *
@@ -184,26 +187,29 @@ export class ApiClient {
   }
 
   /**
-   * Helper method to handle API errors consistently
+   * Helper method to handle API errors consistently.
+   * Logs at debug level since many tests intentionally trigger errors.
    */
   private handleApiError(error: unknown, operation: string): ErrorResponse {
-    console.error(`Failed to ${operation}:`, error);
-
     // Extract the detailed error message from the axios error response
     if (axios.isAxiosError(error) && error.response?.data) {
-      // Return the actual error message from the server with correct status
+      const status = error.response.status;
+      const errorMsg =
+        error.response.data.error ||
+        error.response.data.message ||
+        error.message;
+      // Log concise message at debug level (expected errors in tests)
+      logger.debug({ operation, status, error: errorMsg }, `API error`);
       return {
         success: false,
-        error:
-          error.response.data.error ||
-          error.response.data.message ||
-          error.message,
-        status: error.response.status,
+        error: errorMsg,
+        status,
       };
     }
 
     // Fallback to the generic error message
     const errorMessage = error instanceof Error ? error.message : String(error);
+    logger.debug({ operation, error: errorMessage }, `API error`);
     return { success: false, error: errorMessage, status: 500 };
   }
 
@@ -1319,16 +1325,7 @@ export class ApiClient {
   async executeTrade(
     params: TradeExecutionParams,
   ): Promise<TradeResponse | ErrorResponse> {
-    console.log(
-      `[ApiClient] executeTrade called with params: ${JSON.stringify(params, null, 2)}`,
-    );
-
     try {
-      // Debug log
-      console.log(
-        `[ApiClient] About to execute trade with: ${JSON.stringify(params, null, 2)}`,
-      );
-
       // Make the API call with the exact parameters
       const response = await this.axiosInstance.post("/trade/execute", params);
 

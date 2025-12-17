@@ -41,6 +41,7 @@ export interface PlayByPlayData {
  */
 export async function loadScheduleData(
   baselineDir: string,
+  logger: Logger,
 ): Promise<Map<number, ScheduleGame[]>> {
   const scheduleMap = new Map<number, ScheduleGame[]>();
   const scheduleDir = path.join(baselineDir, "schedule");
@@ -73,7 +74,7 @@ export async function loadScheduleData(
       const existing = scheduleMap.get(season) || [];
       scheduleMap.set(season, [...existing, ...games]);
     } catch (error) {
-      console.error(`Error loading schedule file ${file}:`, error);
+      logger.error({ error }, `Error loading schedule file ${file}:`);
     }
   }
 
@@ -88,6 +89,7 @@ export async function loadScheduleData(
  */
 export async function loadPlayByPlaySnapshots(
   baselineDir: string,
+  logger: Logger,
 ): Promise<Map<number, PlayByPlayData[]>> {
   const snapshotsMap = new Map<number, PlayByPlayData[]>();
   const playsDir = path.join(baselineDir, "plays");
@@ -143,7 +145,7 @@ export async function loadPlayByPlaySnapshots(
         const data = JSON.parse(content) as PlayByPlayData;
         snapshots.push(data);
       } catch (error) {
-        console.error(`Error loading play file ${file}:`, error);
+        logger.error({ error }, `Error loading play file ${file}:`);
       }
     }
 
@@ -160,13 +162,16 @@ export async function loadPlayByPlaySnapshots(
  * @param baselineDir Base directory containing nfl/ folder
  * @returns Object with schedule and playByPlay maps
  */
-export async function loadAllNflData(baselineDir: string): Promise<{
+export async function loadAllNflData(
+  baselineDir: string,
+  logger: Logger,
+): Promise<{
   schedule: Map<number, ScheduleGame[]>;
   playByPlay: Map<number, PlayByPlayData[]>;
 }> {
   const [schedule, playByPlay] = await Promise.all([
-    loadScheduleData(baselineDir),
-    loadPlayByPlaySnapshots(baselineDir),
+    loadScheduleData(baselineDir, logger),
+    loadPlayByPlaySnapshots(baselineDir, logger),
   ]);
 
   return { schedule, playByPlay };
@@ -202,7 +207,7 @@ export class MockSportsDataIOServer {
    * Load all baseline data into memory
    */
   private async loadData(baselineDir: string): Promise<void> {
-    const { playByPlay } = await loadAllNflData(baselineDir);
+    const { playByPlay } = await loadAllNflData(baselineDir, this.logger);
     this.playByPlayData = playByPlay;
 
     this.logger.info(

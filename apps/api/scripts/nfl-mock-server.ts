@@ -11,6 +11,7 @@ import * as dotenv from "dotenv";
 import express, { Express, Request, Response } from "express";
 import { Server } from "http";
 import * as path from "path";
+import { Logger } from "pino";
 import { parseArgs } from "util";
 
 import {
@@ -38,6 +39,7 @@ class SimpleMockSportsDataIOServer {
   private scheduleData: Map<number, ScheduleGame[]> = new Map();
   private playByPlayData: Map<number, PlayByPlayData[]> = new Map();
   private autoAdvanceIntervals: Map<number, NodeJS.Timeout> = new Map();
+  private logger: Logger = createLogger("NFLMockServer");
   private dataLoadPromise: Promise<void>;
   private readonly MAX_AUTO_ADVANCE_GAMES = 10;
 
@@ -53,7 +55,10 @@ class SimpleMockSportsDataIOServer {
    */
   private async loadData(fixtureDir: string): Promise<void> {
     try {
-      const { schedule, playByPlay } = await loadAllNflData(fixtureDir);
+      const { schedule, playByPlay } = await loadAllNflData(
+        fixtureDir,
+        this.logger,
+      );
       this.scheduleData = schedule;
       this.playByPlayData = playByPlay;
       logger.info(
