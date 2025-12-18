@@ -5,6 +5,7 @@ import { readFile } from "node:fs/promises";
 import { extname, join } from "node:path";
 import type { ReactElement } from "react";
 
+import { IDENTICON_BRAND_COLORS, ROW_PATTERNS } from "@/lib/identicon-config";
 import { openForBoosting } from "@/lib/open-for-boosting";
 import { createSafeClient } from "@/rpc/clients/server-side";
 import { RouterOutputs } from "@/rpc/router";
@@ -225,26 +226,6 @@ async function loadAssets(): Promise<CachedAssets> {
 // HELPERS
 // =============================================================================
 
-// Brand colors for DiceBear (without # prefix - lowercase hex)
-const BRAND_COLORS = {
-  primary: ["0064c7", "38a430", "e5342a", "f9b700"], // Blue, Green, Red, Yellow
-};
-
-// Gradient: very sparse at top, medium toward bottom
-type RowPattern =
-  | "oxxxo"
-  | "xxxxx"
-  | "xxoxx"
-  | "xooox"
-  | "xoxox"
-  | "oxoxo"
-  | "ooxoo";
-const ROW1: RowPattern[] = ["ooxoo"]; // 1 cell
-const ROW2: RowPattern[] = ["ooxoo"]; // 1 cell
-const ROW3: RowPattern[] = ["ooxoo", "xooox"]; // 1-2 cells
-const ROW4: RowPattern[] = ["xooox", "ooxoo"]; // 1-2 cells
-const ROW5: RowPattern[] = ["xooox", "oxoxo"]; // 2 cells
-
 /**
  * Generates an identicon SVG as a data URL for agents without profile images.
  * @param agentId - The unique identifier for the agent.
@@ -256,12 +237,12 @@ function generateIdenticonDataUrl(agentId: string, size: number = 32): string {
     seed: agentId,
     size: size,
     backgroundColor: ["transparent"],
-    rowColor: BRAND_COLORS.primary,
-    row1: ROW1,
-    row2: ROW2,
-    row3: ROW3,
-    row4: ROW4,
-    row5: ROW5,
+    rowColor: IDENTICON_BRAND_COLORS.primary,
+    row1: ROW_PATTERNS.row1,
+    row2: ROW_PATTERNS.row2,
+    row3: ROW_PATTERNS.row3,
+    row4: ROW_PATTERNS.row4,
+    row5: ROW_PATTERNS.row5,
   });
   const svg = avatar.toString();
   return `data:image/svg+xml;base64,${Buffer.from(svg).toString("base64")}`;
