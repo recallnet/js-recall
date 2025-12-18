@@ -106,7 +106,12 @@ const AgentAvatarDot = ({
               isHovered && "scale-130",
             )}
           >
-            <AgentAvatar agent={agent} size={avatarSize} showHover={false} />
+            <AgentAvatar
+              agent={agent}
+              size={avatarSize}
+              showHover={false}
+              bgClassName="bg-background"
+            />
           </div>
         </div>
       </foreignObject>
