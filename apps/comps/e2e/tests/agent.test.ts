@@ -1444,7 +1444,7 @@ describe("Agent API", () => {
       expect(nonceResponse).toEqual({
         success: false,
         error:
-          "[AuthMiddleware] Authentication required. Invalid Privy token or no API key provided. Use Authorization: Bearer YOUR_API_KEY",
+          "[AuthMiddleware] Authentication required. No API key provided. Use Authorization: Bearer YOUR_API_KEY",
         status: 401,
       });
 
@@ -1471,7 +1471,7 @@ Purpose: WALLET_VERIFICATION`;
       expect(verifyResponse).toEqual({
         success: false,
         error:
-          "[AuthMiddleware] Authentication required. Invalid Privy token or no API key provided. Use Authorization: Bearer YOUR_API_KEY",
+          "[AuthMiddleware] Authentication required. No API key provided. Use Authorization: Bearer YOUR_API_KEY",
         status: 401,
       });
     });
@@ -1642,7 +1642,7 @@ Purpose: WALLET_VERIFICATION`;
       expect(response).toEqual({
         success: false,
         error:
-          "[AuthMiddleware] Authentication required. Invalid Privy token or no API key provided. Use Authorization: Bearer YOUR_API_KEY",
+          "[AuthMiddleware] Authentication required. No API key provided. Use Authorization: Bearer YOUR_API_KEY",
         status: 401,
       });
     });

@@ -1,6 +1,5 @@
 import { NextFunction, Request, Response } from "express";
 
-import { authLogger } from "@/lib/logger.js";
 import { ServiceRegistry } from "@/services/index.js";
 
 export function makeAuthController(services: ServiceRegistry) {
@@ -27,33 +26,6 @@ export function makeAuthController(services: ServiceRegistry) {
           await services.agentService.generateNonceForAgent(agentId);
 
         res.status(200).json({ nonce });
-      } catch (error) {
-        next(error);
-      }
-    },
-
-    /**
-     * Login a user by updating their last login at. Note: users are automatically created as part
-     * of the authorization middleware.
-     */
-    async login(req: Request, res: Response, next: NextFunction) {
-      try {
-        const identityToken = req.privyToken;
-        if (!identityToken) {
-          return res.status(401).json({ error: "Unauthorized" });
-        }
-
-        const user = await services.userService.loginWithPrivyToken(
-          identityToken,
-          services.privyClient,
-        );
-
-        authLogger.debug(
-          `Login successful for user '${user.id}' with wallet address '${user.walletAddress}'`,
-        );
-        res
-          .status(200)
-          .json({ success: true, userId: user.id, wallet: user.walletAddress });
       } catch (error) {
         next(error);
       }

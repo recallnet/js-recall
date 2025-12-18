@@ -2,19 +2,11 @@ import { Request, Response } from "express";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { type DeepMockProxy, mockDeep } from "vitest-mock-extended";
 
-import {
-  SelectAdmin,
-  SelectAgent,
-  SelectUser,
-} from "@recallnet/db/schema/core/types";
-import { AdminService, AgentService, UserService } from "@recallnet/services";
-import {
-  extractPrivyIdentityToken,
-  verifyPrivyIdentityToken,
-} from "@recallnet/services/lib";
+import { SelectAdmin, SelectAgent } from "@recallnet/db/schema/core/types";
+import { AdminService, AgentService } from "@recallnet/services";
 import { ApiError } from "@recallnet/services/types";
 
-import { extractApiKey, isLoginEndpoint } from "@/middleware/auth-helpers.js";
+import { extractApiKey } from "@/middleware/auth-helpers.js";
 import { authMiddleware } from "@/middleware/auth.middleware.js";
 
 // Mock dependencies
@@ -31,8 +23,6 @@ vi.mock("@/lib/logger.js", () => {
 });
 
 vi.mock("@recallnet/services/lib", () => ({
-  extractPrivyIdentityToken: vi.fn(),
-  verifyPrivyIdentityToken: vi.fn(),
   getSpecificChainBalances: vi.fn(),
   parseEvmChains: vi.fn(),
   specificChainTokens: {},
@@ -40,12 +30,10 @@ vi.mock("@recallnet/services/lib", () => ({
 
 vi.mock("@/middleware/auth-helpers.js", () => ({
   extractApiKey: vi.fn(),
-  isLoginEndpoint: vi.fn(),
 }));
 
 describe("authMiddleware", () => {
   let mockAgentService: DeepMockProxy<AgentService>;
-  let mockUserService: DeepMockProxy<UserService>;
   let mockAdminService: DeepMockProxy<AdminService>;
   let middleware: ReturnType<typeof authMiddleware>;
   let mockReq: Partial<Request>;
@@ -57,15 +45,10 @@ describe("authMiddleware", () => {
 
     // Create mock services using vitest-mock-extended
     mockAgentService = mockDeep<AgentService>();
-    mockUserService = mockDeep<UserService>();
     mockAdminService = mockDeep<AdminService>();
 
     // Create middleware instance
-    middleware = authMiddleware(
-      mockAgentService,
-      mockUserService,
-      mockAdminService,
-    );
+    middleware = authMiddleware(mockAgentService, mockAdminService);
 
     // Setup mock request/response
     mockReq = {
@@ -82,101 +65,7 @@ describe("authMiddleware", () => {
     mockNext = vi.fn();
   });
 
-  describe("Privy JWT Authentication", () => {
-    it("should authenticate successfully with valid Privy token and existing user", async () => {
-      vi.mocked(extractPrivyIdentityToken).mockReturnValue("valid-token");
-      vi.mocked(verifyPrivyIdentityToken).mockResolvedValue({
-        privyId: "privy-123",
-        claims: { cr: "test", linked_accounts: [] },
-      });
-      mockUserService.getUserByPrivyId.mockResolvedValue({
-        id: "user-123",
-        walletAddress: "0x123",
-      } as SelectUser);
-
-      await middleware(mockReq as Request, mockRes as Response, mockNext);
-
-      expect(mockReq.privyToken).toBe("valid-token");
-      expect(mockReq.userId).toBe("user-123");
-      expect(mockNext).toHaveBeenCalledWith();
-      expect(mockAgentService.validateApiKey).not.toHaveBeenCalled();
-    });
-
-    it("should allow login endpoint access for valid token without user", async () => {
-      vi.mocked(extractPrivyIdentityToken).mockReturnValue("valid-token");
-      vi.mocked(verifyPrivyIdentityToken).mockResolvedValue({
-        privyId: "privy-new",
-        claims: { cr: "test", linked_accounts: [] },
-      });
-      mockUserService.getUserByPrivyId.mockResolvedValue(null);
-      vi.mocked(isLoginEndpoint).mockReturnValue(true);
-
-      await middleware(mockReq as Request, mockRes as Response, mockNext);
-
-      expect(mockNext).toHaveBeenCalledWith();
-      expect(mockReq.userId).toBeUndefined();
-    });
-
-    it("should reject non-login endpoint access for valid token without user", async () => {
-      vi.mocked(extractPrivyIdentityToken).mockReturnValue("valid-token");
-      vi.mocked(verifyPrivyIdentityToken).mockResolvedValue({
-        privyId: "privy-new",
-        claims: { cr: "test", linked_accounts: [] },
-      });
-      mockUserService.getUserByPrivyId.mockResolvedValue(null);
-      vi.mocked(isLoginEndpoint).mockReturnValue(false);
-      vi.mocked(extractApiKey).mockReturnValue(undefined);
-
-      await middleware(mockReq as Request, mockRes as Response, mockNext);
-
-      expect(mockNext).toHaveBeenCalledWith(expect.any(ApiError));
-      const error = mockNext.mock.calls[0]?.[0] as ApiError;
-      expect(error).toBeDefined();
-      expect(error.statusCode).toBe(401);
-      expect(error.message).toContain("Authentication required");
-    });
-
-    it("should fall through to API key auth when Privy token validation fails", async () => {
-      vi.mocked(extractPrivyIdentityToken).mockReturnValue("invalid-token");
-      vi.mocked(verifyPrivyIdentityToken).mockRejectedValue(
-        new Error("Invalid token"),
-      );
-      vi.mocked(extractApiKey).mockReturnValue("agent-key");
-      mockAgentService.validateApiKey.mockResolvedValue("agent-123");
-      mockAgentService.getAgent.mockResolvedValue({
-        id: "agent-123",
-        ownerId: "owner-123",
-      } as SelectAgent);
-
-      await middleware(mockReq as Request, mockRes as Response, mockNext);
-
-      expect(mockAgentService.validateApiKey).toHaveBeenCalledWith("agent-key");
-      expect(mockReq.agentId).toBe("agent-123");
-      expect(mockReq.userId).toBe("owner-123");
-      expect(mockNext).toHaveBeenCalledWith();
-    });
-
-    it("should fall through to API key auth when no Privy token provided", async () => {
-      vi.mocked(extractPrivyIdentityToken).mockReturnValue(undefined);
-      vi.mocked(extractApiKey).mockReturnValue("agent-key");
-      mockAgentService.validateApiKey.mockResolvedValue("agent-123");
-      mockAgentService.getAgent.mockResolvedValue({
-        id: "agent-123",
-        ownerId: "owner-123",
-      } as SelectAgent);
-
-      await middleware(mockReq as Request, mockRes as Response, mockNext);
-
-      expect(mockAgentService.validateApiKey).toHaveBeenCalledWith("agent-key");
-      expect(mockNext).toHaveBeenCalledWith();
-    });
-  });
-
   describe("Agent API Key Authentication", () => {
-    beforeEach(async () => {
-      vi.mocked(extractPrivyIdentityToken).mockReturnValue(undefined);
-    });
-
     it("should authenticate successfully with valid agent API key", async () => {
       vi.mocked(extractApiKey).mockReturnValue("valid-agent-key");
       mockAgentService.validateApiKey.mockResolvedValue("agent-123");
@@ -245,7 +134,6 @@ describe("authMiddleware", () => {
 
   describe("Admin API Key Authentication", () => {
     beforeEach(async () => {
-      vi.mocked(extractPrivyIdentityToken).mockReturnValue(undefined);
       vi.mocked(extractApiKey).mockReturnValue("admin-key");
       mockAgentService.validateApiKey.mockResolvedValue(null);
     });
@@ -324,10 +212,6 @@ describe("authMiddleware", () => {
   });
 
   describe("Edge Cases and Error Handling", () => {
-    beforeEach(async () => {
-      vi.mocked(extractPrivyIdentityToken).mockReturnValue(undefined);
-    });
-
     it("should return 401 when no authentication credentials provided", async () => {
       vi.mocked(extractApiKey).mockReturnValue(undefined);
 
@@ -354,16 +238,6 @@ describe("authMiddleware", () => {
       expect(error.message).toContain("Invalid API key");
     });
 
-    it("should handle unexpected errors gracefully", async () => {
-      vi.mocked(extractPrivyIdentityToken).mockImplementation(() => {
-        throw new Error("Unexpected error");
-      });
-
-      await middleware(mockReq as Request, mockRes as Response, mockNext);
-
-      expect(mockNext).toHaveBeenCalledWith(expect.any(Error));
-    });
-
     it("should not expose sensitive information in error messages", async () => {
       vi.mocked(extractApiKey).mockReturnValue("secret-key-12345");
       mockAgentService.validateApiKey.mockResolvedValue(null);
@@ -378,13 +252,7 @@ describe("authMiddleware", () => {
   });
 
   describe("Authentication Fallback Chain", () => {
-    it("should try Privy → Agent → Admin in sequence", async () => {
-      // Privy fails
-      vi.mocked(extractPrivyIdentityToken).mockReturnValue("invalid-privy");
-      vi.mocked(verifyPrivyIdentityToken).mockRejectedValue(
-        new Error("Invalid token"),
-      );
-
+    it("should try Agent → Admin in sequence", async () => {
       // Agent fails
       vi.mocked(extractApiKey).mockReturnValue("some-key");
       mockAgentService.validateApiKey.mockResolvedValue(null);
@@ -405,28 +273,22 @@ describe("authMiddleware", () => {
     });
 
     it("should stop at first successful authentication method", async () => {
-      vi.mocked(extractPrivyIdentityToken).mockReturnValue("valid-token");
-      vi.mocked(verifyPrivyIdentityToken).mockResolvedValue({
-        privyId: "privy-123",
-        claims: { cr: "test", linked_accounts: [] },
-      });
-      mockUserService.getUserByPrivyId.mockResolvedValue({
-        id: "user-123",
-      } as SelectUser);
+      vi.mocked(extractApiKey).mockReturnValue("valid-agent-key");
+      mockAgentService.validateApiKey.mockResolvedValue("agent-123");
+      mockAgentService.getAgent.mockResolvedValue({
+        id: "agent-123",
+        ownerId: "owner-123",
+      } as SelectAgent);
 
       await middleware(mockReq as Request, mockRes as Response, mockNext);
 
-      // Should not attempt API key auth
-      expect(mockAgentService.validateApiKey).not.toHaveBeenCalled();
+      // Should not attempt admin key auth
       expect(mockAdminService.validateApiKey).not.toHaveBeenCalled();
+      expect(mockReq.agentId).toBe("agent-123");
     });
   });
 
   describe("Request Context Population", () => {
-    beforeEach(async () => {
-      vi.mocked(extractPrivyIdentityToken).mockReturnValue(undefined);
-    });
-
     it("should correctly populate request context for agent authentication", async () => {
       vi.mocked(extractApiKey).mockReturnValue("agent-key");
       mockAgentService.validateApiKey.mockResolvedValue("agent-456");
@@ -463,25 +325,6 @@ describe("authMiddleware", () => {
         name: "Super Admin",
       });
       expect(mockReq.agentId).toBeUndefined();
-    });
-
-    it("should correctly populate request context for Privy authentication", async () => {
-      vi.mocked(extractPrivyIdentityToken).mockReturnValue("privy-token");
-      vi.mocked(verifyPrivyIdentityToken).mockResolvedValue({
-        privyId: "privy-abc",
-        claims: { cr: "test", linked_accounts: [] },
-      });
-      mockUserService.getUserByPrivyId.mockResolvedValue({
-        id: "user-xyz",
-        walletAddress: "0xabc",
-      } as SelectUser);
-
-      await middleware(mockReq as Request, mockRes as Response, mockNext);
-
-      expect(mockReq.privyToken).toBe("privy-token");
-      expect(mockReq.userId).toBe("user-xyz");
-      expect(mockReq.agentId).toBeUndefined();
-      expect(mockReq.adminId).toBeUndefined();
     });
   });
 });

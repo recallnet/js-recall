@@ -54,60 +54,6 @@ export function configureAuthRoutes(
 
   /**
    * @openapi
-   * /api/auth/login:
-   *   post:
-   *     summary: Log in with Privy JWT
-   *     description: Verifies the SIWE message and signature, creates a session, and returns user info
-   *     tags: [Auth]
-   *     responses:
-   *       200:
-   *         description: Authentication successful, session created
-   *         content:
-   *           application/json:
-   *             schema:
-   *               type: object
-   *               required:
-   *                 - userId
-   *                 - wallet
-   *               properties:
-   *                 success:
-   *                   type: boolean
-   *                   example: true
-   *                 userId:
-   *                   type: string
-   *                   nullable: true
-   *                   description: The ID of the authenticated user
-   *                   example: "user_123abc"
-   *                 wallet:
-   *                   type: string
-   *                   description: The wallet address of the authenticated user
-   *                   example: "0x123..."
-   *       401:
-   *         description: Authentication failed
-   *         content:
-   *           application/json:
-   *             schema:
-   *               type: object
-   *               required:
-   *                 - error
-   *               properties:
-   *                 error:
-   *                   type: string
-   *                   example: "Unauthorized: signature validation issues"
-   *       500:
-   *         description: Internal server error
-   *         content:
-   *           application/json:
-   *             schema:
-   *               type: object
-   *               properties:
-   *                 error:
-   *                   type: string
-   */
-  router.post("/login", controller.login);
-
-  /**
-   * @openapi
    * /api/auth/verify:
    *   post:
    *     summary: Verify agent wallet ownership

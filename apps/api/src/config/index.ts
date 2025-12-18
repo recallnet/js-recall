@@ -82,11 +82,6 @@ export const config = {
     // Allow overriding Loops base URL for testing/mocking
     baseUrl: process.env.LOOPS_BASE_URL || "https://app.loops.so/api/v1",
   },
-  privy: {
-    appId: process.env.PRIVY_APP_ID || "",
-    appSecret: process.env.PRIVY_APP_SECRET || "",
-    jwksPublicKey: process.env.PRIVY_JWKS_PUBLIC_KEY || "",
-  },
   // Frontend app configuration for interfacing with the server
   app: {
     // Session management and email verification settings for the frontend competitions app

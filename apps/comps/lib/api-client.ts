@@ -44,7 +44,7 @@ export class HttpError extends Error {
 export class UnauthorizedError extends HttpError {
   constructor(message?: string) {
     message = message?.includes(
-      "[AuthMiddleware] Authentication required. Invalid Privy token or no API key provided. Use Authorization: Bearer YOUR_API_KEY",
+      "[AuthMiddleware] Authentication required. No API key provided. Use Authorization: Bearer YOUR_API_KEY",
     )
       ? "Error authenticating. Please try again."
       : message;

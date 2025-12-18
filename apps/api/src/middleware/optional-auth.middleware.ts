@@ -1,23 +1,14 @@
 import { NextFunction, Request, Response } from "express";
 
-import type {
-  AdminService,
-  AgentService,
-  UserService,
-} from "@recallnet/services";
-import {
-  extractPrivyIdentityToken,
-  verifyPrivyIdentityToken,
-} from "@recallnet/services/lib";
+import type { AdminService, AgentService } from "@recallnet/services";
 
-import { config } from "@/config/index.js";
 import { extractApiKey } from "@/middleware/auth-helpers.js";
 
 /**
  * Optional Authentication Middleware
  *
  * This middleware attempts to authenticate a request but NEVER fails.
- * It supports both SIWE session authentication and API key authentication.
+ * It supports API key authentication for agents and admins.
  * If authentication succeeds, it populates req.userId, req.agentId, or req.isAdmin.
  * If authentication fails, it gracefully continues without setting these fields.
  *
@@ -29,33 +20,11 @@ import { extractApiKey } from "@/middleware/auth-helpers.js";
  */
 export function optionalAuthMiddleware(
   agentService: AgentService,
-  userService: UserService,
   adminService: AdminService,
 ) {
   return async (req: Request, _: Response, next: NextFunction) => {
     try {
-      const identityToken = extractPrivyIdentityToken(req);
-      if (identityToken) {
-        try {
-          const { privyId } = await verifyPrivyIdentityToken(
-            identityToken,
-            config.privy.jwksPublicKey,
-            config.privy.appId,
-          );
-
-          req.privyToken = identityToken;
-          const user = await userService.getUserByPrivyId(privyId);
-          if (user) {
-            req.userId = user.id;
-            return next();
-          }
-          // If user not found, continue to API key auth below
-        } catch {
-          // Privy token verification failed, continue to API key auth below
-        }
-      }
-
-      // If no session, try API key authentication
+      // Try API key authentication
       const apiKey = extractApiKey(req);
       if (!apiKey) {
         // No authentication available - continue as unauthenticated
