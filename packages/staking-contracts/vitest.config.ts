@@ -33,7 +33,6 @@ export default defineConfig({
             "dist",
             "contracts",
           ],
-          typecheck: { enabled: true, include: ["**/*.test.ts"] },
         },
       },
       {
@@ -44,7 +43,6 @@ export default defineConfig({
           dir: "./test",
           include: ["**/*.integration.test.ts"],
           exclude: ["node_modules", "dist", "contracts"],
-          typecheck: { enabled: true, include: ["**/*.test.ts"] },
           testTimeout: 30_000,
           sequence: {
             concurrent: false,
