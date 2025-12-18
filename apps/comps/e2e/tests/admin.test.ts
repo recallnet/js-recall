@@ -295,6 +295,7 @@ describe("Admin API", () => {
         },
       }),
       "BAD_REQUEST",
+      { messageContains: "must provide either user ID or user wallet address" },
     );
   });
 
