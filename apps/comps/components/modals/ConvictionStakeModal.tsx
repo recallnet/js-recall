@@ -50,12 +50,6 @@ const DURATION_OPTIONS = [
     percentage: 60n,
   },
   {
-    label: "9 months",
-    subLabel: "Receive 80%",
-    duration: BigInt(270 * 24 * 60 * 60),
-    percentage: 80n,
-  },
-  {
     label: "12 months",
     subLabel: "Receive 100%",
     duration: BigInt(365 * 24 * 60 * 60),
@@ -69,7 +63,7 @@ export const ConvictionStakeModal: React.FC<ConvictionStakeModalProps> = ({
   claim: claimItem,
 }) => {
   const [step, setStep] = useState<StakeStep>("select");
-  const [selectedDurationIndex, setSelectedDurationIndex] = useState<number>(4); // Default to 12 months (index 4)
+  const [selectedDurationIndex, setSelectedDurationIndex] = useState<number>(3); // Default to 12 months (index 3)
 
   const {
     claim,
@@ -82,7 +76,7 @@ export const ConvictionStakeModal: React.FC<ConvictionStakeModalProps> = ({
   useEffect(() => {
     if (isOpen) {
       setStep("select");
-      setSelectedDurationIndex(4); // Reset to 12 months
+      setSelectedDurationIndex(3); // Reset to 12 months
     }
   }, [isOpen]);
 
