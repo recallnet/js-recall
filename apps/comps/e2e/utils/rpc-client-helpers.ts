@@ -16,6 +16,7 @@ import {
   PaperTradingInitialBalanceSchema,
 } from "@recallnet/services/types";
 import {
+  DEFAULT_PAPER_TRADING_INITIAL_BALANCES,
   generateRandomEthAddress,
   generateRandomPrivyId,
   generateRandomString,
@@ -262,21 +263,6 @@ export async function registerUserAndAgentAndGetClient({
   };
 }
 
-// Default paper trading initial balances
-const DEFAULT_PAPER_TRADING_INITIAL_BALANCES = [
-  // Solana (SVM) balances
-  {
-    specificChain: "svm" as const,
-    tokenSymbol: "sol",
-    amount: 10,
-  },
-  {
-    specificChain: "svm" as const,
-    tokenSymbol: "usdc",
-    amount: 5000,
-  },
-];
-
 /**
  * Start a test competition (creates and immediately starts it)
  */
@@ -305,7 +291,7 @@ export async function startTestCompetition({
     tradingConstraints,
     arenaId: "default-paper-arena",
     paperTradingInitialBalances:
-      paperTradingInitialBalances || DEFAULT_PAPER_TRADING_INITIAL_BALANCES,
+      paperTradingInitialBalances || defaultPaperTradingInitialBalances(),
     rewardsIneligible,
   });
 
@@ -370,7 +356,7 @@ export async function createTestCompetition({
     rewardsIneligible,
     arenaId: "default-paper-arena",
     paperTradingInitialBalances:
-      paperTradingInitialBalances || DEFAULT_PAPER_TRADING_INITIAL_BALANCES,
+      paperTradingInitialBalances || defaultPaperTradingInitialBalances(),
   });
 
   if (!result.success) {
@@ -537,19 +523,7 @@ export async function createPerpsTestCompetition({
 
 export const defaultPaperTradingInitialBalances = (): z.infer<
   typeof PaperTradingInitialBalanceSchema
->[] => [
-  // Solana (SVM) balances
-  { specificChain: "svm", tokenSymbol: "sol", amount: 10 },
-  { specificChain: "svm", tokenSymbol: "usdc", amount: 5000 },
-  { specificChain: "svm", tokenSymbol: "usdt", amount: 1000 },
-  // Ethereum balances
-  { specificChain: "eth", tokenSymbol: "eth", amount: 1 },
-  { specificChain: "eth", tokenSymbol: "usdc", amount: 5000 },
-  // Note: INITIAL_ETH_USDT_BALANCE=0, so we skip it
-  // Optimism balances
-  { specificChain: "optimism", tokenSymbol: "usdc", amount: 200 },
-  // Polygon balances
-  { specificChain: "polygon", tokenSymbol: "usdc", amount: 200 },
-  // Arbitrum balances
-  { specificChain: "arbitrum", tokenSymbol: "usdc", amount: 200 },
-];
+>[] =>
+  [...DEFAULT_PAPER_TRADING_INITIAL_BALANCES] as z.infer<
+    typeof PaperTradingInitialBalanceSchema
+  >[];
