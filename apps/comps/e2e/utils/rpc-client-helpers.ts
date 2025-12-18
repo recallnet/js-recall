@@ -70,63 +70,6 @@ function createMockCookies(privyToken?: string) {
 }
 
 /**
- * Create a mock headers object for testing
- */
-function createMockHeaders(customHeaders?: Record<string, string>): Headers {
-  const headersMap = new Map<string, string>(
-    Object.entries(customHeaders || {}),
-  );
-
-  return {
-    get(name: string): string | null {
-      return headersMap.get(name.toLowerCase()) || null;
-    },
-    has(name: string): boolean {
-      return headersMap.has(name.toLowerCase());
-    },
-    set(name: string, value: string): void {
-      headersMap.set(name.toLowerCase(), value);
-    },
-    delete(name: string): void {
-      headersMap.delete(name.toLowerCase());
-    },
-    append(name: string, value: string): void {
-      const existing = headersMap.get(name.toLowerCase());
-      headersMap.set(
-        name.toLowerCase(),
-        existing ? `${existing}, ${value}` : value,
-      );
-    },
-    forEach(
-      callbackfn: (value: string, key: string, parent: Headers) => void,
-    ): void {
-      headersMap.forEach((value, key) => {
-        callbackfn(value, key, this as unknown as Headers);
-      });
-    },
-    entries(): IterableIterator<[string, string]> {
-      return headersMap.entries();
-    },
-    keys(): IterableIterator<string> {
-      return headersMap.keys();
-    },
-    values(): IterableIterator<string> {
-      return headersMap.values();
-    },
-    [Symbol.iterator](): IterableIterator<[string, string]> {
-      return headersMap.entries();
-    },
-  } as Headers;
-}
-
-/**
- * Create a mock params object for testing
- */
-function createMockParams(customParams?: Record<string, string | string[]>) {
-  return customParams || {};
-}
-
-/**
  * Create a server-side RPC client with test context
  */
 export async function createTestRpcClient(
@@ -168,20 +111,19 @@ export async function createTestRpcClient(
  */
 export async function createTestAdminRpcClient(options?: {
   apiKey?: string;
-  headers?: Record<string, string>;
 }): Promise<RouterClient<typeof adminRouter>> {
-  const headers = { ...options?.headers };
+  const headers = new Headers();
 
   // Add Authorization header if apiKey is provided
   if (options?.apiKey) {
-    headers.authorization = `Bearer ${options.apiKey}`;
+    headers.set("authorization", `Bearer ${options.apiKey}`);
   }
 
   return createRouterClient(adminRouter, {
     context: {
       cookies: createMockCookies("dummy-token"),
-      headers: createMockHeaders(headers),
-      params: createMockParams(),
+      headers: headers,
+      params: {},
       adminService,
       boostBonusService,
       userService,
