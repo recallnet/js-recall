@@ -132,7 +132,6 @@ export const ProfilePicture: React.FC<ProfilePictureProps> = ({
             <Identicon
               size={296}
               className="rounded-none"
-              bgClassName="bg-muted"
               // Note: these are are in the same order as the navbar fallback identicon
               address={
                 fallbackData?.walletAddress || fallbackData?.name || "User"
