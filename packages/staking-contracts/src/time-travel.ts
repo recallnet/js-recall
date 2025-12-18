@@ -57,10 +57,13 @@ export class TimeTravel {
 
   /**
    * Advance blockchain time by a specified number of seconds
-   * @param seconds Number of seconds to advance
+   * @param seconds Number of seconds to advance (must be non-negative)
    * @returns The new block timestamp and number
    */
   async increaseTime(seconds: number): Promise<TimeTravelResult> {
+    if (seconds < 0) {
+      throw new Error("TimeTravel.increaseTime: 'seconds' must be non-negative.");
+    }
     await this.testClient.increaseTime({ seconds });
     await this.testClient.mine({ blocks: 1 });
     return this.getCurrentBlock();
@@ -81,10 +84,13 @@ export class TimeTravel {
 
   /**
    * Mine a specified number of blocks
-   * @param blocks Number of blocks to mine (default: 1)
+   * @param blocks Number of blocks to mine (default: 1). Must be a positive integer.
    * @returns The new block timestamp and number
    */
   async mine(blocks: number = 1): Promise<TimeTravelResult> {
+    if (!Number.isFinite(blocks) || !Number.isInteger(blocks) || blocks <= 0) {
+      throw new Error(`blocks must be a positive integer, received: ${blocks}`);
+    }
     await this.testClient.mine({ blocks });
     return this.getCurrentBlock();
   }
@@ -128,6 +134,11 @@ export class TimeTravel {
       (duration.minutes ?? 0) * 60 +
       (duration.seconds ?? 0);
 
+    if (totalSeconds < 0) {
+      throw new RangeError(
+        "advanceBy duration components must be non-negative; resulting totalSeconds was negative.",
+      );
+    }
     return this.increaseTime(totalSeconds);
   }
 

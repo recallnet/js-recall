@@ -118,7 +118,7 @@ describe("TimeTravel", () => {
 
   describe("advanceToDate", () => {
     it("should advance to specific date", async () => {
-      const targetDate = new Date("2030-01-01T00:00:00Z");
+      const targetDate = new Date(Date.now() + 24 * 60 * 60 * 1000); // 1 day from now
       const result = await timeTravel.advanceToDate(targetDate);
 
       expect(result.timestamp).toBe(Math.floor(targetDate.getTime() / 1000));
