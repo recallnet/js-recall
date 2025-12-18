@@ -21,7 +21,6 @@ import {
   ErrorResponse,
   StartCompetitionResponse,
   TradingConstraints,
-  UserProfileResponse,
 } from "./types.js";
 
 // Configured test token address

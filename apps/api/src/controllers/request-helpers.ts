@@ -10,7 +10,6 @@ import {
   ApiError,
   CompetitionAllowedUpdateSchema,
   PagingParamsSchema,
-  PrivyIdentityTokenSchema,
   UuidSchema,
 } from "@recallnet/services/types";
 
@@ -39,24 +38,6 @@ export function ensureAgentId(req: Request) {
     throw new ApiError(401, "Invalid authentication: agent ID is required");
   }
   return ensureUuid(req.agentId);
-}
-
-/**
- * Ensure the request has a Privy identity token
- * @param req Express request
- * @returns The Privy identity token
- */
-export function ensurePrivyIdentityToken(req: Request) {
-  const { success, data, error } = PrivyIdentityTokenSchema.safeParse(
-    req.privyToken,
-  );
-  if (!success) {
-    throw new ApiError(
-      401,
-      `Invalid authentication: Privy identity token: ${error.message}`,
-    );
-  }
-  return data;
 }
 
 /**

@@ -9,6 +9,7 @@ import {
   PagingParams,
 } from "@recallnet/services/types";
 
+import { createLogger } from "./logger.js";
 import {
   PrivyAuthProvider,
   type TestPrivyUser,
@@ -68,10 +69,8 @@ import {
   GetArenaResponse,
   GetCompetitionPartnersResponse,
   GetPartnerResponse,
-  GetUserAgentsResponse,
   GlobalLeaderboardResponse,
   HealthCheckResponse,
-  LinkUserWalletResponse,
   ListArenasResponse,
   ListPartnersResponse,
   LoginResponse,
@@ -85,8 +84,6 @@ import {
   ResetApiKeyResponse,
   ReviewSpotLiveAlertResponse,
   RevokeBonusBoostsResponse,
-  RewardsProofsResponse,
-  RewardsTotalResponse,
   SpecificChain,
   SpotLiveAlertsResponse,
   SpotLiveConfig,
@@ -100,13 +97,11 @@ import {
   UpdateCompetitionResponse,
   UpdatePartnerPositionResponse,
   UpdatePartnerResponse,
-  UserAgentApiKeyResponse,
-  UserCompetitionsResponse,
   UserMetadata,
-  UserProfileResponse,
   UserRegistrationResponse,
-  UserSubscriptionResponse,
 } from "./types.js";
+
+const logger = createLogger("ApiClient");
 
 /**
  * API client for testing the Trading Simulator
@@ -192,26 +187,29 @@ export class ApiClient {
   }
 
   /**
-   * Helper method to handle API errors consistently
+   * Helper method to handle API errors consistently.
+   * Logs at debug level since many tests intentionally trigger errors.
    */
   private handleApiError(error: unknown, operation: string): ErrorResponse {
-    console.error(`Failed to ${operation}:`, error);
-
     // Extract the detailed error message from the axios error response
     if (axios.isAxiosError(error) && error.response?.data) {
-      // Return the actual error message from the server with correct status
+      const status = error.response.status;
+      const errorMsg =
+        error.response.data.error ||
+        error.response.data.message ||
+        error.message;
+      // Log concise message at debug level (expected errors in tests)
+      logger.debug({ operation, status, error: errorMsg }, `API error`);
       return {
         success: false,
-        error:
-          error.response.data.error ||
-          error.response.data.message ||
-          error.message,
-        status: error.response.status,
+        error: errorMsg,
+        status,
       };
     }
 
     // Fallback to the generic error message
     const errorMessage = error instanceof Error ? error.message : String(error);
+    logger.debug({ operation, error: errorMessage }, `API error`);
     return { success: false, error: errorMessage, status: 500 };
   }
 
@@ -977,45 +975,12 @@ export class ApiClient {
   /**
    * Get user profile
    */
-  async getUserProfile(): Promise<UserProfileResponse | ErrorResponse> {
-    try {
-      const response = await this.axiosInstance.get("/user/profile");
-      return response.data;
-    } catch (error) {
-      return this.handleApiError(error, "get profile");
-    }
-  }
-
-  /**
-   * Get user profile
-   */
   async getAgentProfile(): Promise<AgentProfileResponse | ErrorResponse> {
     try {
       const response = await this.axiosInstance.get("/agent/profile");
       return response.data;
     } catch (error) {
       return this.handleApiError(error, "get profile");
-    }
-  }
-
-  /**
-   * Update a user profile
-   * @param profileData Profile data to update including name and imageUrl only (users have limited self-service editing)
-   */
-  async updateUserProfile(profileData: {
-    name?: string;
-    email?: string;
-    imageUrl?: string;
-    metadata?: Record<string, unknown>;
-  }): Promise<UserProfileResponse | ErrorResponse> {
-    try {
-      const response = await this.axiosInstance.put(
-        "/user/profile",
-        profileData,
-      );
-      return response.data;
-    } catch (error) {
-      return this.handleApiError(error, "update user profile");
     }
   }
 
@@ -1035,33 +1000,6 @@ export class ApiClient {
       return response.data;
     } catch (error) {
       return this.handleApiError(error, "update agent profile");
-    }
-  }
-
-  /**
-   * Update a user's agent profile (via SIWE authentication)
-   * @param agentId ID of the agent to update
-   * @param profileData Profile data to update including name, description, and imageUrl only
-   */
-  async updateUserAgentProfile(
-    agentId: string,
-    profileData: {
-      name?: string;
-      handle?: string;
-      description?: string;
-      imageUrl?: string;
-      email?: string;
-      metadata?: AgentMetadata;
-    },
-  ): Promise<AgentProfileResponse | ErrorResponse> {
-    try {
-      const response = await this.axiosInstance.put(
-        `/user/agents/${agentId}/profile`,
-        profileData,
-      );
-      return response.data;
-    } catch (error) {
-      return this.handleApiError(error, "update user agent profile");
     }
   }
 
@@ -1387,16 +1325,7 @@ export class ApiClient {
   async executeTrade(
     params: TradeExecutionParams,
   ): Promise<TradeResponse | ErrorResponse> {
-    console.log(
-      `[ApiClient] executeTrade called with params: ${JSON.stringify(params, null, 2)}`,
-    );
-
     try {
-      // Debug log
-      console.log(
-        `[ApiClient] About to execute trade with: ${JSON.stringify(params, null, 2)}`,
-      );
-
       // Make the API call with the exact parameters
       const response = await this.axiosInstance.post("/trade/execute", params);
 
@@ -2368,144 +2297,6 @@ export class ApiClient {
   }
 
   /**
-   * Create a new agent for the authenticated user
-   * @param name Agent name (required, must be unique for this user)
-   * @param handle Optional agent handle (auto-generated if not provided)
-   * @param description Optional agent description
-   * @param imageUrl Optional agent image URL
-   * @param metadata Optional agent metadata
-   */
-  async createAgent(
-    name: string,
-    handle: string,
-    description?: string,
-    imageUrl?: string,
-    metadata?: Record<string, unknown>,
-  ): Promise<AgentProfileResponse | ErrorResponse> {
-    try {
-      const response = await this.axiosInstance.post("/user/agents", {
-        name,
-        handle,
-        description,
-        imageUrl,
-        metadata,
-      });
-      return response.data;
-    } catch (error) {
-      return this.handleApiError(error, "create agent");
-    }
-  }
-
-  /**
-   * Get all agents owned by the authenticated user
-   * @param params Optional pagination and sorting parameters
-   */
-  async getUserAgents(params?: {
-    limit?: number;
-    offset?: number;
-    sort?: string;
-  }): Promise<GetUserAgentsResponse | ErrorResponse> {
-    try {
-      const queryParams = new URLSearchParams();
-      if (params?.limit !== undefined) {
-        queryParams.append("limit", params.limit.toString());
-      }
-      if (params?.offset !== undefined) {
-        queryParams.append("offset", params.offset.toString());
-      }
-      if (params?.sort) {
-        queryParams.append("sort", params.sort);
-      }
-
-      const url = `/user/agents${queryParams.toString() ? `?${queryParams.toString()}` : ""}`;
-      const response = await this.axiosInstance.get(url);
-      return response.data;
-    } catch (error) {
-      return this.handleApiError(error, "get user agents");
-    }
-  }
-
-  /**
-   * Get details of a specific agent owned by the authenticated user
-   * @param agentId ID of the agent to retrieve
-   */
-  async getUserAgent(
-    agentId: string,
-  ): Promise<AgentProfileResponse | ErrorResponse> {
-    try {
-      const response = await this.axiosInstance.get(`/user/agents/${agentId}`);
-      return response.data;
-    } catch (error) {
-      return this.handleApiError(error, "get user agent");
-    }
-  }
-
-  /**
-   * Get the API key for a specific agent owned by the authenticated user
-   * @param agentId ID of the agent to get the API key for
-   */
-  async getUserAgentApiKey(
-    agentId: string,
-  ): Promise<UserAgentApiKeyResponse | ErrorResponse> {
-    try {
-      const response = await this.axiosInstance.get(
-        `/user/agents/${agentId}/api-key`,
-      );
-      return response.data;
-    } catch (error) {
-      return this.handleApiError(error, "get user agent API key");
-    }
-  }
-
-  /**
-   * Get competitions for user's agents
-   * Requires SIWE session authentication
-   */
-  async getUserCompetitions(params?: {
-    status?: string;
-    claimed?: boolean;
-    limit?: number;
-    offset?: number;
-    sort?: string;
-  }): Promise<UserCompetitionsResponse | ErrorResponse> {
-    try {
-      const queryParams = new URLSearchParams();
-      if (params?.status) queryParams.append("status", params.status);
-      if (params?.claimed !== undefined)
-        queryParams.append("claimed", String(params.claimed));
-      if (params?.limit) queryParams.append("limit", String(params.limit));
-      if (params?.offset) queryParams.append("offset", String(params.offset));
-      if (params?.sort) queryParams.append("sort", params.sort);
-
-      const queryString = queryParams.toString();
-      const url = `/user/competitions${queryString ? `?${queryString}` : ""}`;
-
-      const response = await this.axiosInstance.get(url);
-      return response.data;
-    } catch (error) {
-      return this.handleApiError(error, "get user competitions");
-    }
-  }
-
-  /**
-   * Link a wallet to the authenticated user
-   * @param walletAddress The wallet address to link
-   * @returns A promise that resolves to the link wallet response
-   */
-  async linkUserWallet(
-    walletAddress: string,
-  ): Promise<LinkUserWalletResponse | ErrorResponse> {
-    try {
-      const response = await this.axiosInstance.post("/user/wallet/link", {
-        walletAddress,
-      });
-      return response.data;
-    } catch (error) {
-      return this.handleApiError(error, "link user wallet");
-    }
-  }
-
-  /**
    * Get perps positions for the authenticated agent
    * @param competitionId The competition ID
    * @returns A promise that resolves to the perps positions response
@@ -2520,21 +2311,6 @@ export class ApiClient {
       return response.data;
     } catch (error) {
       return this.handleApiError(error, "get perps positions");
-    }
-  }
-
-  /**
-   * Subscribe to the Loops mailing list
-   * @returns A promise that resolves to the subscription response
-   */
-  async subscribeToMailingList(): Promise<
-    UserSubscriptionResponse | ErrorResponse
-  > {
-    try {
-      const response = await this.axiosInstance.post("/user/subscribe");
-      return response.data;
-    } catch (error) {
-      return this.handleApiError(error, "subscribe to mailing list");
     }
   }
 
@@ -2610,49 +2386,6 @@ export class ApiClient {
       return response.data;
     } catch (error) {
       return this.handleApiError(error, "get competition perps positions");
-    }
-  }
-
-  /**
-   * Unsubscribe from the Loops mailing list
-   * @returns A promise that resolves to the unsubscribe response
-   */
-  async unsubscribeFromMailingList(): Promise<
-    UserSubscriptionResponse | ErrorResponse
-  > {
-    try {
-      const response = await this.axiosInstance.post("/user/unsubscribe");
-      return response.data;
-    } catch (error) {
-      return this.handleApiError(error, "unsubscribe from mailing list");
-    }
-  }
-
-  /**
-   * Get total claimable rewards for the authenticated user
-   * Requires SIWE session authentication
-   */
-  async getTotalClaimableRewards(): Promise<
-    RewardsTotalResponse | ErrorResponse
-  > {
-    try {
-      const response = await this.axiosInstance.get("/user/rewards/total");
-      return response.data;
-    } catch (error) {
-      return this.handleApiError(error, "get total claimable rewards");
-    }
-  }
-
-  /**
-   * Get rewards with proofs for the authenticated user
-   * Requires SIWE session authentication
-   */
-  async getRewardsWithProofs(): Promise<RewardsProofsResponse | ErrorResponse> {
-    try {
-      const response = await this.axiosInstance.get("/user/rewards/proofs");
-      return response.data;
-    } catch (error) {
-      return this.handleApiError(error, "get rewards with proofs");
     }
   }
 

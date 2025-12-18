@@ -99,12 +99,12 @@ export class AdminService {
       if (!existingKey || !this.isValidEncryptionKey(existingKey)) {
         const newKey = this.generateEncryptionKey();
         this.updateEncryptionKeyInMemory(newKey);
-        this.logger.info(
+        this.logger.debug(
           "Generated ROOT_ENCRYPTION_KEY in memory (test mode - file not modified)",
         );
       } else {
         this.updateEncryptionKeyInMemory(existingKey);
-        this.logger.info(
+        this.logger.debug(
           "Using existing ROOT_ENCRYPTION_KEY from environment (test mode)",
         );
       }

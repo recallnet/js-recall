@@ -16,11 +16,9 @@ import {
 } from "@recallnet/ui2/components/dropdown-menu";
 import { cn } from "@recallnet/ui2/lib/utils";
 
-import { Claim } from "@/components/Claim";
 import { ConnectWallet } from "@/components/connect-wallet";
 import { PrivyAuthButton } from "@/components/privy-auth-button";
 import { useSession } from "@/hooks";
-import { useClaim } from "@/hooks/useClaim";
 
 import { BonusBoosts } from "./BonusBoosts";
 import { RecallToken } from "./RecallToken";
@@ -29,7 +27,6 @@ export const Navbar: React.FunctionComponent = () => {
   const pathname = usePathname();
 
   const { isAuthenticated, isWalletConnected } = useSession();
-  const { totalClaimable } = useClaim();
 
   const [open, setOpen] = useState(false);
 
@@ -128,7 +125,6 @@ export const Navbar: React.FunctionComponent = () => {
                 </div>
                 <BonusBoosts />
               </div>
-              {totalClaimable > 0n && <Claim />}
             </div>
           )}
           {isAuthenticated && !isWalletConnected && (

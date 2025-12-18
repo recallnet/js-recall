@@ -36,10 +36,8 @@ afterEach(async () => {
 
 // After all tests in this file complete
 afterAll(async () => {
-  // Clean up any generated ROOT_ENCRYPTION_KEY from .env.test to prevent git commits
   try {
-    // Path to apps/api/.env.test (comps e2e tests use the API's .env.test)
-    const envTestPath = path.resolve(__dirname, "../../../api/.env.test");
+    const envTestPath = path.resolve(__dirname, "../../.env.test");
     if (fs.existsSync(envTestPath)) {
       const envContent = fs.readFileSync(envTestPath, "utf8");
 

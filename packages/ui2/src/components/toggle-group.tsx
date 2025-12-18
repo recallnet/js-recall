@@ -14,7 +14,18 @@ function ToggleGroupItem({ className, ref, ...props }: ToggleGroupItemProps) {
     <ToggleGroupPrimitive.Item
       ref={ref}
       className={cn(
-        "focus-visible:ring-ring inline-flex items-center justify-center rounded-md px-3 py-1.5 text-sm font-medium transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 data-[state=off]:bg-gray-800 data-[state=on]:bg-blue-600 data-[state=off]:text-gray-300 data-[state=on]:text-white data-[state=off]:hover:bg-gray-700 data-[state=off]:hover:text-white",
+        // Base styles
+        "inline-flex items-center justify-center rounded-lg px-5 py-3 text-sm font-medium transition-all",
+        "focus-visible:border-2 focus-visible:border-[#33A5FF] focus-visible:outline-none",
+        "disabled:pointer-events-none",
+        // Primary styles (selected/on)
+        "data-[state=on]:bg-gray-6 data-[state=on]:text-black",
+        "data-[state=on]:hover:bg-gray-5",
+        "data-[state=on]:disabled:bg-gray-4 data-[state=on]:disabled:text-gray-100",
+        // Secondary styles (unselected/off)
+        "data-[state=off]:border-gray-4 data-[state=off]:border data-[state=off]:bg-transparent data-[state=off]:text-gray-100",
+        "data-[state=off]:hover:bg-gray-4/10",
+        "data-[state=off]:disabled:text-gray-4 data-[state=off]:disabled:hover:bg-transparent",
         className,
       )}
       {...props}

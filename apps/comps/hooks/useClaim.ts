@@ -19,6 +19,15 @@ type ClaimItem = {
   merkleRoot: string;
   amount: string; // wei string
   proof: string[];
+  agent: {
+    id: string;
+    name: string;
+    imageUrl: string | null;
+  } | null;
+  competition: {
+    id: string;
+    name: string;
+  };
 };
 
 type AllocationInfo = {
@@ -33,6 +42,8 @@ type AllocationInfo = {
  */
 export type ClaimOperationResult = {
   claims: ClaimItem[];
+  notYetActiveClaims: ClaimItem[];
+  allClaims: ClaimItem[];
   totalClaimable: bigint;
   claim: (item: ClaimItem | ClaimItem[]) => Promise<void>;
   isPending: boolean;
@@ -40,6 +51,8 @@ export type ClaimOperationResult = {
   isConfirmed: boolean;
   error: WriteContractErrorType | null;
   transactionHash: `0x${string}` | undefined;
+  isClaimDataLoading: boolean;
+  claimDataError: Error | null;
 };
 
 /**
@@ -66,7 +79,11 @@ export function useClaim(): ClaimOperationResult {
       confirmations: 2,
     });
 
-  const { data: allClaims } = useQuery<ClaimItem[]>(
+  const {
+    data: allClaims,
+    isLoading: isClaimDataLoading,
+    error: claimsError,
+  } = useQuery<ClaimItem[], Error>(
     tanstackClient.rewards.getClaimData.queryOptions({
       enabled: Boolean(address),
     }),
@@ -270,6 +287,8 @@ export function useClaim(): ClaimOperationResult {
   return useMemo(
     () => ({
       claims: claims ?? [],
+      notYetActiveClaims: notYetActiveClaims ?? [],
+      allClaims: allClaims ?? [],
       totalClaimable,
       claim,
       isPending,
@@ -277,10 +296,13 @@ export function useClaim(): ClaimOperationResult {
       isConfirmed,
       error,
       transactionHash,
-      notYetActiveClaims: notYetActiveClaims ?? [],
+      isClaimDataLoading,
+      claimDataError: claimsError ?? null,
     }),
     [
       claims,
+      notYetActiveClaims,
+      allClaims,
       totalClaimable,
       claim,
       isPending,
@@ -288,7 +310,8 @@ export function useClaim(): ClaimOperationResult {
       isConfirmed,
       error,
       transactionHash,
-      notYetActiveClaims,
+      isClaimDataLoading,
+      claimsError,
     ],
   );
 }

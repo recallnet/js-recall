@@ -10,6 +10,10 @@ import {
   resetDb as resetDbUtil,
 } from "@recallnet/db/utils";
 
+import { createLogger } from "./logger.js";
+
+const logger = createLogger("Database");
+
 // Get database URL from environment
 const databaseUrl =
   process.env.DATABASE_URL ||
@@ -43,7 +47,7 @@ export async function migrateDb() {
     : process.cwd();
   const migrationsFolder = path.resolve(workspaceRoot, "apps/api/drizzle");
 
-  console.log(
+  logger.debug(
     `Looking for migrations in: ${migrationsFolder} (workspace root: ${workspaceRoot})`,
   );
 

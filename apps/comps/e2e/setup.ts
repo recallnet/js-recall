@@ -40,8 +40,7 @@ const log = (message: string) => {
 
 // Setup function to run before all tests
 export async function setup() {
-  // Load test environment variables from apps/api/.env.test
-  const envTestPath = path.resolve(__dirname, "../../api/.env.test");
+  const envTestPath = path.resolve(__dirname, "../.env.test");
   const envTestExists = fs.existsSync(envTestPath);
 
   testLogger.info("========== E2E TEST ENVIRONMENT SETUP ==========");
