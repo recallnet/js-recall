@@ -8,11 +8,13 @@ import { IDENTICON_BRAND_COLORS, ROW_PATTERNS } from "@/lib/identicon-config";
 export function Identicon({
   address,
   className,
+  bgClassName,
   size = 40,
   title,
 }: {
   address: string;
   className?: string;
+  bgClassName?: string;
   size?: number;
   title?: string;
 }) {
@@ -33,7 +35,7 @@ export function Identicon({
   return (
     <div
       dangerouslySetInnerHTML={{ __html: svg }}
-      className={cn("rounded-full bg-transparent", className)}
+      className={cn("rounded-full", bgClassName ?? "bg-transparent", className)}
       style={{
         width: size,
         height: size,

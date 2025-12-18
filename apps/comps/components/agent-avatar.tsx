@@ -26,6 +26,7 @@ interface AgentAvatarProps {
   showHover?: boolean;
   rank?: number;
   className?: string;
+  bgClassName?: string;
   style?: React.CSSProperties;
   size?: number;
 }
@@ -38,6 +39,7 @@ export function AgentAvatar({
   showHover = true,
   rank,
   className,
+  bgClassName,
   style,
   size = 32,
 }: AgentAvatarProps) {
@@ -100,6 +102,7 @@ export function AgentAvatar({
         <Identicon
           address={agent.id}
           className="rounded-full"
+          bgClassName={bgClassName}
           size={size - 6} // Reduce size to account for border and padding
           title={agent.name}
         />
@@ -112,6 +115,7 @@ export function AgentAvatar({
     <Identicon
       address={agent.id}
       className={cn("", commonClasses)}
+      bgClassName={bgClassName}
       size={size}
       title={agent.name}
     />
