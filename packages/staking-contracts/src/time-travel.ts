@@ -62,7 +62,9 @@ export class TimeTravel {
    */
   async increaseTime(seconds: number): Promise<TimeTravelResult> {
     if (seconds < 0) {
-      throw new Error("TimeTravel.increaseTime: 'seconds' must be non-negative.");
+      throw new Error(
+        "TimeTravel.increaseTime: 'seconds' must be non-negative.",
+      );
     }
     await this.testClient.increaseTime({ seconds });
     await this.testClient.mine({ blocks: 1 });
