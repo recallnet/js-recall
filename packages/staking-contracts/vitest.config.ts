@@ -16,6 +16,7 @@ export default defineConfig({
         "contracts/**/*",
         ...coverageConfigDefaults.exclude,
         "src/safe-transaction-proposer.ts",
+        "src/time-travel.ts",
       ],
     },
     projects: [
