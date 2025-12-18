@@ -95,6 +95,7 @@ export const PrivyAuthButton: React.FunctionComponent = () => {
               <AvatarFallback className="text-xs">
                 <Identicon
                   className="rounded-none"
+                  bgClassName="bg-muted"
                   address={walletAddress || displayName || "User"}
                 />
               </AvatarFallback>
