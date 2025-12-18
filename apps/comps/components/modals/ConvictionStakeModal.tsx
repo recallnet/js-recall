@@ -38,6 +38,12 @@ type StakeStep = "select" | "signing" | "confirming" | "success" | "error";
 const DURATION_OPTIONS = [
   { label: "No stake", subLabel: "Receive 10%", duration: 0n, percentage: 10n },
   {
+    label: "1 month",
+    subLabel: "Receive 20%",
+    duration: BigInt(30 * 24 * 60 * 60),
+    percentage: 20n,
+  },
+  {
     label: "3 months",
     subLabel: "Receive 40%",
     duration: BigInt(90 * 24 * 60 * 60),
@@ -48,12 +54,6 @@ const DURATION_OPTIONS = [
     subLabel: "Receive 60%",
     duration: BigInt(180 * 24 * 60 * 60),
     percentage: 60n,
-  },
-  {
-    label: "9 months",
-    subLabel: "Receive 80%",
-    duration: BigInt(270 * 24 * 60 * 60),
-    percentage: 80n,
   },
   {
     label: "12 months",
