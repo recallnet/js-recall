@@ -17,5 +17,9 @@ export { ExternallyOwnedAccountAllocator } from "./externally-owned-account.js";
 // Network types and utilities
 export { Network, getChainForNetwork } from "./network.js";
 
+// Time travel utilities for testing
+export type { TimeTravelConfig, TimeTravelResult } from "./time-travel.js";
+export { TimeTravel, createTimeTravel } from "./time-travel.js";
+
 // ABI
 export { abi } from "./abi.js";
