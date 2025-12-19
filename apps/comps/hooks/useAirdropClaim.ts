@@ -1,5 +1,5 @@
 import { useQueryClient } from "@tanstack/react-query";
-import { useCallback, useEffect, useMemo } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { Hex } from "viem";
 import {
   useAccount,
@@ -15,6 +15,11 @@ import {
 
 import { AirdropABI } from "@/abi/Airdrop";
 import { config as publicConfig } from "@/config/public";
+import {
+  AirdropClaimErrorType,
+  getAirdropClaimErrorType,
+  parseAirdropClaimError,
+} from "@/lib/airdrop-error-handling";
 import { tanstackClient } from "@/rpc/clients/tanstack-query";
 import type { AvailableClaim } from "@/types/conviction-claims";
 import { clientConfig } from "@/wagmi-config";
@@ -31,7 +36,9 @@ export type AirdropClaimOperationResult = {
   isPending: boolean;
   isConfirming: boolean;
   isConfirmed: boolean;
-  error: WriteContractErrorType | null;
+  error: WriteContractErrorType | Error | null;
+  errorMessage: string | null;
+  errorType: AirdropClaimErrorType | null;
   transactionHash: `0x${string}` | undefined;
   nativeFeeAmount: bigint;
 };
@@ -68,10 +75,13 @@ export function useAirdropClaim(): AirdropClaimOperationResult {
   const nativeFeeAmount = airdropData?.[0].result ?? 0n;
   const minimumTokenAmountForFee = airdropData?.[1].result ?? 0n;
 
+  // Track simulation errors separately since they happen before writeContract
+  const [simulationError, setSimulationError] = useState<Error | null>(null);
+
   const {
     writeContract,
     isPending,
-    error,
+    error: writeContractError,
     data: transactionHash,
     reset,
   } = useWriteContract();
@@ -80,6 +90,10 @@ export function useAirdropClaim(): AirdropClaimOperationResult {
       hash: transactionHash,
       confirmations: 2,
     });
+
+  // Combined error from simulation or write contract
+  const error: WriteContractErrorType | Error | null =
+    simulationError ?? writeContractError;
 
   useEffect(() => {
     if (isConfirmed) {
@@ -94,6 +108,7 @@ export function useAirdropClaim(): AirdropClaimOperationResult {
   const claim = useCallback(
     async (target: AirdropClaimItem, duration: bigint) => {
       reset();
+      setSimulationError(null);
 
       if (!target || target.type !== "available") {
         console.info("No eligible airdrop rewards to claim");
@@ -101,11 +116,15 @@ export function useAirdropClaim(): AirdropClaimOperationResult {
       }
 
       if (!airdropContractAddress) {
-        throw new Error("Airdrop contract address not configured");
+        const err = new Error("Airdrop contract address not configured");
+        setSimulationError(err);
+        throw err;
       }
 
       if (!address) {
-        throw new Error("Wallet not connected");
+        const err = new Error("Wallet not connected");
+        setSimulationError(err);
+        throw err;
       }
 
       const proof = target.proof as Hex[];
@@ -113,35 +132,43 @@ export function useAirdropClaim(): AirdropClaimOperationResult {
       const season = target.season as number;
 
       if (season < 0 || season > 255) {
-        throw new Error(
+        const err = new Error(
           `Invalid season value: ${season}. Must be between 0 and 255.`,
         );
+        setSimulationError(err);
+        throw err;
       }
       const signature = (target.signature ?? "0x") as Hex;
 
-      // Check if fee is required
-      const usersClaimedAmount = await readContract(config, {
-        address: airdropContractAddress as Hex,
-        abi: AirdropABI,
-        functionName: "usersClaimedAmount",
-        args: [address as Hex],
-      });
+      try {
+        // Check if fee is required
+        const usersClaimedAmount = await readContract(config, {
+          address: airdropContractAddress as Hex,
+          abi: AirdropABI,
+          functionName: "usersClaimedAmount",
+          args: [address as Hex],
+        });
 
-      let valueToSend = 0n;
-      if (usersClaimedAmount + amount >= minimumTokenAmountForFee) {
-        valueToSend = nativeFeeAmount;
+        let valueToSend = 0n;
+        if (usersClaimedAmount + amount >= minimumTokenAmountForFee) {
+          valueToSend = nativeFeeAmount;
+        }
+
+        const simulationResult = await simulateContract(config, {
+          address: airdropContractAddress as Hex,
+          abi: AirdropABI,
+          functionName: "claim",
+          args: [proof, address as Hex, amount, season, duration, signature],
+          account: address,
+          value: valueToSend,
+        });
+
+        writeContract(simulationResult.request);
+      } catch (err) {
+        const error = err instanceof Error ? err : new Error(String(err));
+        setSimulationError(error);
+        throw error;
       }
-
-      const simulationResult = await simulateContract(config, {
-        address: airdropContractAddress as Hex,
-        abi: AirdropABI,
-        functionName: "claim",
-        args: [proof, address as Hex, amount, season, duration, signature],
-        account: address,
-        value: valueToSend,
-      });
-
-      writeContract(simulationResult.request);
     },
     [
       writeContract,
@@ -154,6 +181,10 @@ export function useAirdropClaim(): AirdropClaimOperationResult {
     ],
   );
 
+  const errorMessage = useMemo(() => parseAirdropClaimError(error), [error]);
+
+  const errorType = useMemo(() => getAirdropClaimErrorType(error), [error]);
+
   return useMemo(
     () => ({
       claim,
@@ -161,6 +192,8 @@ export function useAirdropClaim(): AirdropClaimOperationResult {
       isConfirming,
       isConfirmed,
       error,
+      errorMessage,
+      errorType,
       transactionHash,
       nativeFeeAmount,
     }),
@@ -170,6 +203,8 @@ export function useAirdropClaim(): AirdropClaimOperationResult {
       isConfirming,
       isConfirmed,
       error,
+      errorMessage,
+      errorType,
       transactionHash,
       nativeFeeAmount,
     ],
