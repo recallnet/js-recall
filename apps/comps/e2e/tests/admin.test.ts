@@ -1128,8 +1128,7 @@ describe("Admin API", () => {
 
     // Start competition with both agents
     const competitionName = `Per-Competition Remove Test ${Date.now()}`;
-    const startResponse = await startTestCompetition({
-      adminRpcClient: authorizedAdminClient,
+    const startResponse = await startTestCompetition(authorizedAdminClient, {
       name: competitionName,
       agentIds: [agent1.id, agent2.id],
     });
@@ -1199,8 +1198,7 @@ describe("Admin API", () => {
 
     // Start competition with the agent
     const competitionName = `Per-Competition Reactivate Test ${Date.now()}`;
-    const startResponse = await startTestCompetition({
-      adminRpcClient: authorizedAdminClient,
+    const startResponse = await startTestCompetition(authorizedAdminClient, {
       name: competitionName,
       agentIds: [agent.id],
     });
@@ -1299,8 +1297,7 @@ describe("Admin API", () => {
     );
 
     const competitionName = `Valid Competition Test ${Date.now()}`;
-    const startResponse = await startTestCompetition({
-      adminRpcClient: authorizedAdminClient,
+    const startResponse = await startTestCompetition(authorizedAdminClient, {
       name: competitionName,
       agentIds: [agent.id],
     });
@@ -1335,8 +1332,7 @@ describe("Admin API", () => {
 
     // Start competition with only agent1
     const competitionName = `Single Agent Competition Test ${Date.now()}`;
-    const startResponse = await startTestCompetition({
-      adminRpcClient: authorizedAdminClient,
+    const startResponse = await startTestCompetition(authorizedAdminClient, {
       name: competitionName,
       agentIds: [agent1.id],
     });
@@ -1371,8 +1367,7 @@ describe("Admin API", () => {
 
     // Start competition with only agent1
     const competitionName = `Reactivate Not In Competition Test ${Date.now()}`;
-    const startResponse = await startTestCompetition({
-      adminRpcClient: authorizedAdminClient,
+    const startResponse = await startTestCompetition(authorizedAdminClient, {
       name: competitionName,
       agentIds: [agent1.id],
     });
@@ -1399,8 +1394,7 @@ describe("Admin API", () => {
       });
 
     const competitionName = `Auth Test Competition ${Date.now()}`;
-    const startResponse = await startTestCompetition({
-      adminRpcClient: authorizedAdminClient,
+    const startResponse = await startTestCompetition(authorizedAdminClient, {
       name: competitionName,
       agentIds: [agent.id],
     });
@@ -1437,8 +1431,7 @@ describe("Admin API", () => {
 
     // Start competition with the agent
     const competitionName = `Status Independence Test ${Date.now()}`;
-    const startResponse = await startTestCompetition({
-      adminRpcClient: authorizedAdminClient,
+    const startResponse = await startTestCompetition(authorizedAdminClient, {
       name: competitionName,
       agentIds: [agent.id],
     });
@@ -1554,8 +1547,7 @@ describe("Admin API", () => {
 
   test("should create a perps competition as admin", async () => {
     // Create a perps competition with required provider configuration using helper
-    const response = await createPerpsTestCompetition({
-      adminRpcClient: authorizedAdminClient,
+    const response = await createPerpsTestCompetition(authorizedAdminClient, {
       name: "Test Perps Competition",
       perpsProvider: {
         provider: "symphony",
@@ -1674,11 +1666,13 @@ describe("Admin API", () => {
 
     // Start a perps competition with the agents
     const competitionName = `Perps Competition ${Date.now()}`;
-    const startResponse = await startPerpsTestCompetition({
-      adminRpcClient: authorizedAdminClient,
-      name: competitionName,
-      agentIds: [agent1.id, agent2.id],
-    });
+    const startResponse = await startPerpsTestCompetition(
+      authorizedAdminClient,
+      {
+        name: competitionName,
+        agentIds: [agent1.id, agent2.id],
+      },
+    );
 
     // Verify the competition was started successfully
     expect(startResponse.success).toBe(true);
@@ -1698,8 +1692,7 @@ describe("Admin API", () => {
 
   test("should create a perps competition with minFundingThreshold", async () => {
     // Create a perps competition with minFundingThreshold
-    const response = await createPerpsTestCompetition({
-      adminRpcClient: authorizedAdminClient,
+    const response = await createPerpsTestCompetition(authorizedAdminClient, {
       name: "Perps Competition with Min Funding Threshold",
       perpsProvider: {
         provider: "symphony",
@@ -1741,17 +1734,19 @@ describe("Admin API", () => {
 
   test("should update perps competition to add minFundingThreshold", async () => {
     // First create a perps competition without minFundingThreshold
-    const createResponse = await createPerpsTestCompetition({
-      adminRpcClient: authorizedAdminClient,
-      name: "Perps Competition to Update Min Funding",
-      perpsProvider: {
-        provider: "hyperliquid",
-        initialCapital: 500,
-        selfFundingThreshold: 100,
-        // No minFundingThreshold initially
-        apiUrl: "http://localhost:4567",
+    const createResponse = await createPerpsTestCompetition(
+      authorizedAdminClient,
+      {
+        name: "Perps Competition to Update Min Funding",
+        perpsProvider: {
+          provider: "hyperliquid",
+          initialCapital: 500,
+          selfFundingThreshold: 100,
+          // No minFundingThreshold initially
+          apiUrl: "http://localhost:4567",
+        },
       },
-    });
+    );
 
     expect(createResponse.success).toBe(true);
     const competitionId = createResponse.competition.id;
@@ -1797,18 +1792,20 @@ describe("Admin API", () => {
 
     // Start a perps competition with minFundingThreshold
     const competitionName = `Perps Min Funding Competition ${Date.now()}`;
-    const startResponse = await startPerpsTestCompetition({
-      adminRpcClient: authorizedAdminClient,
-      name: competitionName,
-      agentIds: [agent1.id, agent2.id],
-      perpsProvider: {
-        provider: "symphony",
-        initialCapital: 1000,
-        selfFundingThreshold: 50,
-        minFundingThreshold: 100, // $100 minimum portfolio balance
-        apiUrl: "http://localhost:4567",
+    const startResponse = await startPerpsTestCompetition(
+      authorizedAdminClient,
+      {
+        name: competitionName,
+        agentIds: [agent1.id, agent2.id],
+        perpsProvider: {
+          provider: "symphony",
+          initialCapital: 1000,
+          selfFundingThreshold: 50,
+          minFundingThreshold: 100, // $100 minimum portfolio balance
+          apiUrl: "http://localhost:4567",
+        },
       },
-    });
+    );
 
     // Verify the competition was started successfully
     expect(startResponse.success).toBe(true);
@@ -2088,10 +2085,12 @@ describe("Admin API", () => {
 
   test("should convert pending competition from perps to spot trading", async () => {
     // Create a perps competition
-    const createResponse = await createPerpsTestCompetition({
-      adminRpcClient: authorizedAdminClient,
-      name: "Perps Competition To Convert to Spot",
-    });
+    const createResponse = await createPerpsTestCompetition(
+      authorizedAdminClient,
+      {
+        name: "Perps Competition To Convert to Spot",
+      },
+    );
 
     expect(createResponse.success).toBe(true);
     const competitionId = createResponse.competition.id;
@@ -2128,8 +2127,7 @@ describe("Admin API", () => {
       },
     );
 
-    const startResponse = await startTestCompetition({
-      adminRpcClient: authorizedAdminClient,
+    const startResponse = await startTestCompetition(authorizedAdminClient, {
       name: "Active Competition - No Type Change",
       agentIds: [agent.id],
     });

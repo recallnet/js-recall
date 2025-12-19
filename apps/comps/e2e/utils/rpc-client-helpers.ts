@@ -242,33 +242,20 @@ export async function registerUserAndAgentAndGetClient(
 /**
  * Start a test competition (creates and immediately starts it)
  */
-export async function startTestCompetition({
-  adminRpcClient,
-  name,
-  agentIds,
-  sandboxMode,
-  externalUrl,
-  imageUrl,
-  tradingConstraints,
-  rewardsIneligible,
-  paperTradingInitialBalances,
-}: {
-  adminRpcClient: RouterClient<typeof adminRouter>;
-  agentIds?: string[];
-} & Partial<z.infer<typeof AdminStartCompetitionSchema>>) {
-  const competitionName = name || `Test competition ${Date.now()}`;
+export async function startTestCompetition(
+  adminRpcClient: RouterClient<typeof adminRouter>,
+  params: Partial<z.input<typeof AdminStartCompetitionSchema>>,
+) {
+  const competitionName = params.name || `Test competition ${Date.now()}`;
   const result = await adminRpcClient.competitions.start({
+    ...params,
     name: competitionName,
     description: `Test competition description for ${competitionName}`,
-    agentIds: agentIds || [],
-    sandboxMode,
-    externalUrl,
-    imageUrl,
-    tradingConstraints,
+    agentIds: params.agentIds || [],
     arenaId: "default-paper-arena",
     paperTradingInitialBalances:
-      paperTradingInitialBalances || defaultPaperTradingInitialBalances(),
-    rewardsIneligible,
+      params.paperTradingInitialBalances ||
+      defaultPaperTradingInitialBalances(),
   });
 
   if (!result.success) {
@@ -308,55 +295,18 @@ export async function createTestCompetition(
 /**
  * Start a perpetual futures test competition (creates and immediately starts it)
  */
-export async function startPerpsTestCompetition({
-  adminRpcClient,
-  name,
-  agentIds,
-  sandboxMode,
-  externalUrl,
-  imageUrl,
-  tradingConstraints,
-  rewards,
-  evaluationMetric,
-  perpsProvider = {
-    provider: "symphony" as const,
-    initialCapital: 500,
-    selfFundingThreshold: 0,
-    apiUrl: "http://localhost:4567", // Point to mock server by default
-  },
-}: {
-  adminRpcClient: RouterClient<typeof adminRouter>;
-  name?: string;
-  agentIds?: string[];
-  sandboxMode?: boolean;
-  externalUrl?: string;
-  imageUrl?: string;
-  tradingConstraints?: z.infer<
-    typeof AdminStartCompetitionSchema
-  >["tradingConstraints"];
-  rewards?: Record<number, number>;
-  evaluationMetric?: "calmar_ratio" | "sortino_ratio" | "simple_return";
-  perpsProvider?: {
-    provider: "symphony" | "hyperliquid";
-    initialCapital?: number;
-    selfFundingThreshold?: number;
-    minFundingThreshold?: number;
-    apiUrl?: string;
-  };
-}) {
-  const competitionName = name || `Perps Test Competition ${Date.now()}`;
+export async function startPerpsTestCompetition(
+  adminRpcClient: RouterClient<typeof adminRouter>,
+  params: z.input<typeof AdminStartCompetitionSchema>,
+) {
+  const competitionName = params.name || `Perps Test Competition ${Date.now()}`;
   const result = await adminRpcClient.competitions.start({
+    ...params,
     name: competitionName,
     description: `Perpetual futures test competition for ${competitionName}`,
     type: "perpetual_futures", // Key difference - explicitly set type
-    agentIds: agentIds || [],
-    sandboxMode,
-    externalUrl,
-    imageUrl,
-    tradingConstraints,
-    rewards,
-    evaluationMetric,
-    perpsProvider,
+    agentIds: params.agentIds || [],
+    perpsProvider: params.perpsProvider || DEFAULT_PERPS_PROVIDER,
     arenaId: "default-perps-arena",
   });
 
@@ -370,86 +320,17 @@ export async function startPerpsTestCompetition({
 /**
  * Create a perpetual futures competition in PENDING state without starting it
  */
-export async function createPerpsTestCompetition({
-  adminRpcClient,
-  name,
-  description,
-  sandboxMode,
-  externalUrl,
-  imageUrl,
-  startDate,
-  endDate,
-  boostStartDate,
-  boostEndDate,
-  joinStartDate,
-  joinEndDate,
-  maxParticipants,
-  tradingConstraints,
-  rewards,
-  evaluationMetric,
-  perpsProvider,
-  rewardsIneligible,
-}: {
-  adminRpcClient: RouterClient<typeof adminRouter>;
-  name?: string;
-  description?: string;
-  sandboxMode?: boolean;
-  externalUrl?: string;
-  imageUrl?: string;
-  startDate?: string | Date;
-  endDate?: string | Date;
-  boostStartDate?: string | Date;
-  boostEndDate?: string | Date;
-  joinStartDate?: string | Date;
-  joinEndDate?: string | Date;
-  maxParticipants?: number;
-  tradingConstraints?: z.infer<
-    typeof AdminCreateCompetitionSchema
-  >["tradingConstraints"];
-  rewards?: Record<number, number>;
-  evaluationMetric?: "calmar_ratio" | "sortino_ratio" | "simple_return";
-  perpsProvider?: {
-    provider: "symphony" | "hyperliquid";
-    initialCapital: number;
-    selfFundingThreshold: number;
-    minFundingThreshold?: number;
-    apiUrl?: string;
-  };
-  rewardsIneligible?: string[];
-}) {
-  const competitionName = name || `Perps Test Competition ${Date.now()}`;
+export async function createPerpsTestCompetition(
+  adminRpcClient: RouterClient<typeof adminRouter>,
+  params: Partial<z.input<typeof AdminCreateCompetitionSchema>>,
+) {
+  const competitionName = params.name || `Perps Test Competition ${Date.now()}`;
   const result = await adminRpcClient.competitions.create({
+    ...params,
     name: competitionName,
-    description: description || `Perpetual futures test competition`,
+    description: params.description || `Perpetual futures test competition`,
     type: "perpetual_futures",
-    sandboxMode,
-    externalUrl,
-    imageUrl,
-    startDate: startDate instanceof Date ? startDate.toISOString() : startDate,
-    endDate: endDate instanceof Date ? endDate.toISOString() : endDate,
-    boostStartDate:
-      boostStartDate instanceof Date
-        ? boostStartDate.toISOString()
-        : boostStartDate,
-    boostEndDate:
-      boostEndDate instanceof Date ? boostEndDate.toISOString() : boostEndDate,
-    joinStartDate:
-      joinStartDate instanceof Date
-        ? joinStartDate.toISOString()
-        : joinStartDate,
-    joinEndDate:
-      joinEndDate instanceof Date ? joinEndDate.toISOString() : joinEndDate,
-    maxParticipants,
-    tradingConstraints,
-    rewards,
-    evaluationMetric,
-    perpsProvider: perpsProvider || {
-      provider: "symphony",
-      initialCapital: 500,
-      selfFundingThreshold: 0,
-      apiUrl: "http://localhost:4567", // Default to mock server
-    },
-    rewardsIneligible,
+    perpsProvider: params.perpsProvider || DEFAULT_PERPS_PROVIDER,
     arenaId: "default-perps-arena",
   });
 
@@ -466,3 +347,13 @@ export const defaultPaperTradingInitialBalances = (): z.infer<
   [...DEFAULT_PAPER_TRADING_INITIAL_BALANCES] as z.infer<
     typeof PaperTradingInitialBalanceSchema
   >[];
+
+/**
+ * Default perps provider configuration for testing
+ */
+const DEFAULT_PERPS_PROVIDER = {
+  provider: "symphony" as const,
+  initialCapital: 500,
+  selfFundingThreshold: 0,
+  apiUrl: "http://localhost:4567", // Default to mock server
+};
