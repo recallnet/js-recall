@@ -1014,8 +1014,7 @@ describe("Admin API", () => {
 
   test("should update a competition as admin", async () => {
     // First create a competition
-    const createResponse = await createTestCompetition({
-      adminRpcClient: authorizedAdminClient,
+    const createResponse = await createTestCompetition(authorizedAdminClient, {
       name: "Test Competition for Update",
       description: "Original description",
       type: "trading",
@@ -1049,8 +1048,7 @@ describe("Admin API", () => {
 
   test("should not allow competition update without admin auth", async () => {
     // Create a competition first
-    const createResponse = await createTestCompetition({
-      adminRpcClient: authorizedAdminClient,
+    const createResponse = await createTestCompetition(authorizedAdminClient, {
       name: "Test Competition for Auth Test",
       description: "Test description",
     });
@@ -1082,8 +1080,7 @@ describe("Admin API", () => {
 
   test("should validate competition type and reject restricted field updates", async () => {
     // Create a competition first
-    const createResponse = await createTestCompetition({
-      adminRpcClient: authorizedAdminClient,
+    const createResponse = await createTestCompetition(authorizedAdminClient, {
       name: "Test Competition for Validation",
       description: "Test description",
     });
@@ -1511,8 +1508,7 @@ describe("Admin API", () => {
 
   test("should update a competition with rewards and tradingConstraints", async () => {
     // First create a competition
-    const createResponse = await createTestCompetition({
-      adminRpcClient: authorizedAdminClient,
+    const createResponse = await createTestCompetition(authorizedAdminClient, {
       name: "Test Competition with Rewards",
       description: "Competition to test rewards update",
       type: "trading",
@@ -1578,8 +1574,7 @@ describe("Admin API", () => {
 
   test("should update competition with only perpsProvider field", async () => {
     // First create a regular trading competition using the helper
-    const createResponse = await createTestCompetition({
-      adminRpcClient: authorizedAdminClient,
+    const createResponse = await createTestCompetition(authorizedAdminClient, {
       name: "Test Competition for Type Change",
       description: "Competition to test perpsProvider-only update",
       type: "trading",
@@ -1843,8 +1838,7 @@ describe("Admin API", () => {
 
   test("should atomically rollback competition update when rewards fail", async () => {
     // First create a competition with initial rewards
-    const createResponse = await createTestCompetition({
-      adminRpcClient: authorizedAdminClient,
+    const createResponse = await createTestCompetition(authorizedAdminClient, {
       name: "Atomic Test Competition",
       description: "Testing atomic updates",
       type: "trading",
@@ -1897,8 +1891,7 @@ describe("Admin API", () => {
 
   test("should atomically update competition with trading constraints", async () => {
     // Create a competition
-    const createResponse = await createTestCompetition({
-      adminRpcClient: authorizedAdminClient,
+    const createResponse = await createTestCompetition(authorizedAdminClient, {
       name: "Trading Constraints Test",
       description: "Testing constraints update",
       type: "trading",
@@ -1987,8 +1980,7 @@ describe("Admin API", () => {
     const initialConstraintCount = allConstraints.length;
 
     // Try another creation that should succeed to verify the count
-    const validResponse = await createTestCompetition({
-      adminRpcClient: authorizedAdminClient,
+    const validResponse = await createTestCompetition(authorizedAdminClient, {
       name: "Valid Competition After Rollback",
       description: "This should succeed",
       tradingType: "disallowAll",
@@ -2056,8 +2048,7 @@ describe("Admin API", () => {
 
   test("should convert pending competition from spot trading to perps", async () => {
     // Create a spot trading competition
-    const createResponse = await createTestCompetition({
-      adminRpcClient: authorizedAdminClient,
+    const createResponse = await createTestCompetition(authorizedAdminClient, {
       name: "Competition To Convert to Perps",
       description: "Test converting spot to perps",
       type: "trading",
@@ -2169,8 +2160,7 @@ describe("Admin API", () => {
 
   test("should require perpsProvider when converting to perpetual_futures", async () => {
     // Create a spot trading competition
-    const createResponse = await createTestCompetition({
-      adminRpcClient: authorizedAdminClient,
+    const createResponse = await createTestCompetition(authorizedAdminClient, {
       name: "Competition Missing PerpsProvider",
       description: "Test missing perpsProvider validation",
       type: "trading",
@@ -2211,8 +2201,7 @@ describe("Admin API", () => {
     );
 
     // Create a pending competition
-    const createResponse = await createTestCompetition({
-      adminRpcClient: authorizedAdminClient,
+    const createResponse = await createTestCompetition(authorizedAdminClient, {
       name: "Pending Competition With Agents",
       description: "Test type conversion with registered agents",
       type: "trading",
@@ -2303,8 +2292,7 @@ describe("Admin API", () => {
 
   test("should update competition with prizePools.agent and prizePools.users", async () => {
     // First create a competition without prize pools
-    const createResponse = await createTestCompetition({
-      adminRpcClient: authorizedAdminClient,
+    const createResponse = await createTestCompetition(authorizedAdminClient, {
       name: "Competition to Update with Prize Pools",
       description: "Testing prize pool updates",
       type: "trading",
@@ -2434,8 +2422,7 @@ describe("Admin API", () => {
 
   test("should update a competition with minimum stake", async () => {
     // First create a competition without minimum stake
-    const createResponse = await createTestCompetition({
-      adminRpcClient: authorizedAdminClient,
+    const createResponse = await createTestCompetition(authorizedAdminClient, {
       name: "Competition to Update with Minimum Stake",
       description: "Test updating competition with minimum stake",
       type: "trading",
@@ -2553,8 +2540,7 @@ describe("Admin API", () => {
       },
     );
 
-    const createResponse = await createTestCompetition({
-      adminRpcClient: authorizedAdminClient,
+    const createResponse = await createTestCompetition(authorizedAdminClient, {
       name: "Competition to Update with Invalid Fields",
       description: "Test updating competition with invalid fields",
       type: "trading",
@@ -2850,8 +2836,7 @@ describe("Admin API", () => {
     });
 
     // Create basic competition
-    const createResponse = await createTestCompetition({
-      adminRpcClient: authorizedAdminClient,
+    const createResponse = await createTestCompetition(authorizedAdminClient, {
       name: "Basic Competition",
       type: "trading",
     });
@@ -3106,8 +3091,7 @@ describe("Admin API", () => {
     const partnerId = partnerResponse.partner.id;
 
     // Create competition
-    const compResponse = await createTestCompetition({
-      adminRpcClient: authorizedAdminClient,
+    const compResponse = await createTestCompetition(authorizedAdminClient, {
       name: "Assoc Competition",
       type: "trading",
     });
@@ -3179,8 +3163,7 @@ describe("Admin API", () => {
     });
     const partnerId = partnerResponse.partner.id;
 
-    const compResponse = await createTestCompetition({
-      adminRpcClient: authorizedAdminClient,
+    const compResponse = await createTestCompetition(authorizedAdminClient, {
       name: "Position Competition",
       type: "trading",
     });

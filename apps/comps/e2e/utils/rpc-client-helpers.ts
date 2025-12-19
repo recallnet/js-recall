@@ -281,58 +281,21 @@ export async function startTestCompetition({
 /**
  * Create a competition in PENDING state without starting it
  */
-export async function createTestCompetition({
-  adminRpcClient,
-  name,
-  description,
-  sandboxMode,
-  externalUrl,
-  imageUrl,
-  type,
-  tradingType,
-  startDate,
-  endDate,
-  boostStartDate,
-  boostEndDate,
-  joinStartDate,
-  joinEndDate,
-  maxParticipants,
-  tradingConstraints,
-  rewardsIneligible,
-  paperTradingInitialBalances,
-}: {
-  adminRpcClient: RouterClient<typeof adminRouter>;
-} & Partial<z.infer<typeof AdminCreateCompetitionSchema>>) {
-  const competitionName = name || `Test competition ${Date.now()}`;
+export async function createTestCompetition(
+  adminRpcClient: RouterClient<typeof adminRouter>,
+  params: Partial<z.input<typeof AdminCreateCompetitionSchema>>,
+) {
+  const competitionName = params.name || `Test competition ${Date.now()}`;
   const result = await adminRpcClient.competitions.create({
+    ...params,
     name: competitionName,
     description:
-      description || `Test competition description for ${competitionName}`,
-    tradingType,
-    sandboxMode,
-    externalUrl,
-    imageUrl,
-    type,
-    startDate: startDate instanceof Date ? startDate.toISOString() : startDate,
-    endDate: endDate instanceof Date ? endDate.toISOString() : endDate,
-    boostStartDate:
-      boostStartDate instanceof Date
-        ? boostStartDate.toISOString()
-        : boostStartDate,
-    boostEndDate:
-      boostEndDate instanceof Date ? boostEndDate.toISOString() : boostEndDate,
-    joinStartDate:
-      joinStartDate instanceof Date
-        ? joinStartDate.toISOString()
-        : joinStartDate,
-    joinEndDate:
-      joinEndDate instanceof Date ? joinEndDate.toISOString() : joinEndDate,
-    maxParticipants,
-    tradingConstraints,
-    rewardsIneligible,
+      params.description ||
+      `Test competition description for ${competitionName}`,
     arenaId: "default-paper-arena",
     paperTradingInitialBalances:
-      paperTradingInitialBalances || defaultPaperTradingInitialBalances(),
+      params.paperTradingInitialBalances ||
+      defaultPaperTradingInitialBalances(),
   });
 
   if (!result.success) {
