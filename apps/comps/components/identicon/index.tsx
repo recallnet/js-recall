@@ -1,35 +1,41 @@
-import { toSvg } from "jdenticon";
+import { identicon } from "@dicebear/collection";
+import { createAvatar } from "@dicebear/core";
 
 import { cn } from "@recallnet/ui2/lib/utils";
+
+import { IDENTICON_BRAND_COLORS, ROW_PATTERNS } from "@/lib/identicon-config";
 
 export function Identicon({
   address,
   className,
+  bgClassName,
   size = 40,
   title,
 }: {
   address: string;
   className?: string;
+  bgClassName?: string;
   size?: number;
   title?: string;
 }) {
-  const svg = toSvg(address, size, {
-    padding: 0.9,
-    hues: [227],
-    lightness: {
-      color: [0.74, 1.0],
-      grayscale: [0.63, 0.82],
-    },
-    saturation: {
-      color: 0.51,
-      grayscale: 0.67,
-    },
-    backColor: "#0000",
+  const avatar = createAvatar(identicon, {
+    seed: address,
+    size: size,
+    backgroundColor: ["transparent"],
+    rowColor: IDENTICON_BRAND_COLORS.primary,
+    row1: ROW_PATTERNS.row1,
+    row2: ROW_PATTERNS.row2,
+    row3: ROW_PATTERNS.row3,
+    row4: ROW_PATTERNS.row4,
+    row5: ROW_PATTERNS.row5,
   });
+
+  const svg = avatar.toString();
+
   return (
     <div
       dangerouslySetInnerHTML={{ __html: svg }}
-      className={cn("rounded-full bg-gray-700", className)}
+      className={cn("rounded-full", bgClassName ?? "bg-transparent", className)}
       style={{
         width: size,
         height: size,

@@ -1,9 +1,11 @@
-import { toSvg } from "jdenticon";
+import { identicon } from "@dicebear/collection";
+import { createAvatar } from "@dicebear/core";
 import { ImageResponse } from "next/og";
 import { readFile } from "node:fs/promises";
 import { extname, join } from "node:path";
 import type { ReactElement } from "react";
 
+import { IDENTICON_BRAND_COLORS, ROW_PATTERNS } from "@/lib/identicon-config";
 import { openForBoosting } from "@/lib/open-for-boosting";
 import { createSafeClient } from "@/rpc/clients/server-side";
 import { RouterOutputs } from "@/rpc/router";
@@ -231,13 +233,18 @@ async function loadAssets(): Promise<CachedAssets> {
  * @returns A base64-encoded SVG data URL.
  */
 function generateIdenticonDataUrl(agentId: string, size: number = 32): string {
-  const svg = toSvg(agentId, size, {
-    padding: 0.1,
-    hues: [227],
-    lightness: { color: [0.74, 1.0], grayscale: [0.63, 0.82] },
-    saturation: { color: 0.51, grayscale: 0.67 },
-    backColor: COLORS.avatarBg,
+  const avatar = createAvatar(identicon, {
+    seed: agentId,
+    size: size,
+    backgroundColor: ["transparent"],
+    rowColor: IDENTICON_BRAND_COLORS.primary,
+    row1: ROW_PATTERNS.row1,
+    row2: ROW_PATTERNS.row2,
+    row3: ROW_PATTERNS.row3,
+    row4: ROW_PATTERNS.row4,
+    row5: ROW_PATTERNS.row5,
   });
+  const svg = avatar.toString();
   return `data:image/svg+xml;base64,${Buffer.from(svg).toString("base64")}`;
 }
 

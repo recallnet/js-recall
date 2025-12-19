@@ -39,10 +39,7 @@ function AvatarFallback({
 }: React.ComponentProps<typeof AvatarPrimitive.Fallback>) {
   return (
     <AvatarPrimitive.Fallback
-      className={cn(
-        "bg-muted flex size-full items-center justify-center",
-        className,
-      )}
+      className={cn("flex size-full items-center justify-center", className)}
       {...props}
     />
   );
