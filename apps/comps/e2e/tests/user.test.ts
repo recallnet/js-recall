@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, test } from "vitest";
 
-import { specificChainTokens } from "@recallnet/services/lib";
+import { MockPrivyClient, specificChainTokens } from "@recallnet/services/lib";
 import { ApiClient } from "@recallnet/test-utils";
 import {
   AdminSearchUsersAndAgentsResponse,
@@ -190,69 +190,57 @@ describe("User API", () => {
     expect(foundUser?.imageUrl).toBe(newImageUrl);
   });
 
-  test("creating a new user with duplicate email updates on conflict", async () => {
+  test("creating a new user with duplicate email fails", async () => {
     const originalWalletAddress = generateRandomEthAddress();
     const originalUserEmail = `email@example.com`;
-    const { user: originalUser } = await createPrivyAuthenticatedRpcClient({
+    await createPrivyAuthenticatedRpcClient({
       userName: "Privy Test User",
       userEmail: originalUserEmail,
       embeddedWalletAddress: originalWalletAddress,
       walletAddress: originalWalletAddress,
     });
-    const originalUserId = originalUser.id;
-    // Name is derived from Privy profile; with email provider it defaults to username from email
-    expect(typeof originalUser.name).toBe("string");
-    expect(originalUser.email).toBe(originalUserEmail);
-    // New users use embedded wallet as primary wallet
-    expect(originalUser.embeddedWalletAddress).toBeDefined();
-    expect(originalUser.walletAddress).toBe(originalUser.embeddedWalletAddress);
-    expect(originalUser.walletLastVerifiedAt).toBeDefined();
-    expect(originalUser.lastLoginAt).toBeDefined();
-    const originalLastLoginAt = originalUser.lastLoginAt;
-    const originalWalletLastVerifiedAt = originalUser.walletLastVerifiedAt;
 
-    // Try to create a user with the same email - should succeed and update the user name
+    // Try to create a user with the same email - should fail with user-friendly message
     const newName = "Another Privy Test User";
-    // Note: registering a new wallet address on conflict won't update the user's wallet
     const newWalletAddress = generateRandomEthAddress();
-    // We key off of unique email upon user creation, so this should update the user
-    const existingPrivyId = originalUser.privyId;
-    const { user: updatedUser } = await createPrivyAuthenticatedRpcClient({
-      userName: newName,
-      privyId: existingPrivyId || undefined,
-      userEmail: originalUserEmail,
-      walletAddress: newWalletAddress,
-    });
-    expect(updatedUser.id).toBe(originalUserId);
-    expect(updatedUser.email).toBe(originalUserEmail);
-    // On duplicate email, wallet info is preserved (still the embedded wallet)
-    expect(updatedUser.walletAddress).toBe(originalUser.embeddedWalletAddress);
-    expect(updatedUser.walletLastVerifiedAt).toBe(originalWalletLastVerifiedAt);
-    expect(updatedUser.embeddedWalletAddress).toBe(
-      originalUser.embeddedWalletAddress,
-    );
-    // Should be updated to the "fresh" values
-    expect(updatedUser.name).toBe(newName);
-    expect(updatedUser.lastLoginAt).not.toBe(originalLastLoginAt);
+    await expect(
+      createPrivyAuthenticatedRpcClient({
+        userName: newName,
+        userEmail: originalUserEmail,
+        walletAddress: newWalletAddress,
+      }),
+    ).rejects.toThrow(/A user with this email already exists/);
   });
 
-  test("creating a new user with duplicate wallet address creates a new account", async () => {
-    const originalWalletAddress = generateRandomEthAddress();
+  test("linking a wallet already owned by another user fails", async () => {
+    const sharedWalletAddress = generateRandomEthAddress();
     const user1Email = `user1@example.com`;
-    const { user: originalUser } = await createPrivyAuthenticatedRpcClient({
-      walletAddress: originalWalletAddress,
+
+    // User A logs in and links the wallet
+    const { user: userA } = await createPrivyAuthenticatedRpcClient({
+      walletAddress: sharedWalletAddress,
       userEmail: user1Email,
     });
-    expect(originalUser).toBeDefined();
+    expect(userA).toBeDefined();
+    expect(userA.walletAddress).toBe(sharedWalletAddress);
 
-    // Try to login with the same wallet address - /login is idempotent and should merge
+    // User B logs in with a different email (creates a new account)
     const user2Email = `user2@example.com`;
-    const { user: mergedUser } = await createPrivyAuthenticatedRpcClient({
-      userEmail: user2Email,
-      walletAddress: originalWalletAddress,
-    });
-    // The second login uses a different privyId with its own embedded wallet; it should not merge
-    expect(mergedUser.id).not.toBe(originalUser.id);
+    const { rpcClient: userBClient, user: userB } =
+      await createPrivyAuthenticatedRpcClient({
+        userEmail: user2Email,
+      });
+    expect(userB).toBeDefined();
+    expect(userB.id).not.toBe(userA.id);
+
+    // User B tries to link the same wallet that user A owns - should fail
+    // First simulate the wallet being linked in Privy for user B
+    MockPrivyClient.linkWallet(userB.privyId!, sharedWalletAddress);
+
+    // Attempt to link should fail message
+    await expect(
+      userBClient.user.linkWallet({ walletAddress: sharedWalletAddress }),
+    ).rejects.toThrow(/A user with this walletAddress already exists/);
   });
 
   test("creating a new user with duplicate privyId is idempotent on login", async () => {
