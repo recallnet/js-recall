@@ -12,6 +12,7 @@ import { z } from "zod/v4";
 import { MockPrivyClient } from "@recallnet/services/lib";
 import {
   AdminCreateCompetitionSchema,
+  AdminRegisterUserSchema,
   AdminStartCompetitionSchema,
   PaperTradingInitialBalanceSchema,
 } from "@recallnet/services/types";
@@ -173,50 +174,25 @@ export async function assertRpcError<TOutput>(
 /**
  * Register a user and agent using admin RPC client and return user/agent info
  */
-export async function registerUserAndAgentAndGetClient({
-  adminRpcClient,
-  walletAddress,
-  embeddedWalletAddress,
-  privyId,
-  userName,
-  userEmail,
-  userImageUrl,
-  agentName,
-  agentHandle,
-  agentDescription,
-  agentImageUrl,
-  agentMetadata,
-  agentWalletAddress,
-}: {
-  adminRpcClient: RouterClient<typeof adminRouter>;
-  walletAddress?: string;
-  embeddedWalletAddress?: string;
-  privyId?: string;
-  userName?: string;
-  userEmail?: string;
-  userImageUrl?: string;
-  agentName?: string;
-  agentHandle?: string;
-  agentDescription?: string;
-  agentImageUrl?: string;
-  agentMetadata?: Record<string, unknown>;
-  agentWalletAddress?: string;
-}) {
+export async function registerUserAndAgentAndGetClient(
+  adminRpcClient: RouterClient<typeof adminRouter>,
+  params: Partial<z.infer<typeof AdminRegisterUserSchema>>,
+) {
   // Register a new user with optional agent creation
   const result = await adminRpcClient.users.register({
-    walletAddress: walletAddress || generateRandomEthAddress(),
-    embeddedWalletAddress: embeddedWalletAddress || generateRandomEthAddress(),
-    privyId: privyId || generateRandomPrivyId(),
-    name: userName || `User ${generateRandomString(8)}`,
-    email: userEmail || `user-${generateRandomString(8)}@test.com`,
-    userImageUrl,
-    agentName: agentName || `Agent ${generateRandomString(8)}`,
-    agentHandle: agentHandle || generateTestHandle(agentName),
+    ...params,
+    walletAddress: params.walletAddress || generateRandomEthAddress(),
+    embeddedWalletAddress:
+      params.embeddedWalletAddress || generateRandomEthAddress(),
+    privyId: params.privyId || generateRandomPrivyId(),
+    name: params.name || `User ${generateRandomString(8)}`,
+    email: params.email || `user-${generateRandomString(8)}@test.com`,
+    agentName: params.agentName || `Agent ${generateRandomString(8)}`,
+    agentHandle: params.agentHandle || generateTestHandle(params.agentName),
     agentDescription:
-      agentDescription || `Test agent for ${agentName || "testing"}`,
-    agentImageUrl,
-    agentMetadata,
-    agentWalletAddress: agentWalletAddress || generateRandomEthAddress(),
+      params.agentDescription ||
+      `Test agent for ${params.agentName || "testing"}`,
+    agentWalletAddress: params.agentWalletAddress || generateRandomEthAddress(),
   });
 
   if (
