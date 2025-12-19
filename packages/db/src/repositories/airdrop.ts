@@ -1,4 +1,4 @@
-import { eq, sql } from "drizzle-orm";
+import { and, eq, gt, lte, sql } from "drizzle-orm";
 import { Logger } from "pino";
 
 import {
@@ -421,5 +421,46 @@ export class AirdropRepository {
   async getSeasons(tx?: Transaction) {
     const executor = tx ?? this.#db;
     return await executor.select().from(seasons);
+  }
+
+  /**
+   * Get the current season based on the current timestamp.
+   * A season is current if now() >= start_date AND now() < end_date.
+   *
+   * @param tx - Optional transaction
+   * @returns The current season or null if no season matches the current date
+   */
+  async getCurrentSeason(tx?: Transaction) {
+    const executor = tx ?? this.#db;
+    const [result] = await executor
+      .select()
+      .from(seasons)
+      .where(
+        and(
+          lte(seasons.startDate, sql`now()`),
+          gt(seasons.endDate, sql`now()`),
+        ),
+      )
+      .limit(1);
+
+    return result ?? null;
+  }
+
+  /**
+   * Get a season by its number.
+   *
+   * @param seasonNumber - The season number to look up
+   * @param tx - Optional transaction
+   * @returns The season or null if not found
+   */
+  async getSeasonByNumber(seasonNumber: number, tx?: Transaction) {
+    const executor = tx ?? this.#db;
+    const [result] = await executor
+      .select()
+      .from(seasons)
+      .where(eq(seasons.number, seasonNumber))
+      .limit(1);
+
+    return result ?? null;
   }
 }
