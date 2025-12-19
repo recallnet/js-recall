@@ -55,11 +55,13 @@ export const formatCompactNumber = (value: number): string => {
  * Formats a date into a human-readable string (e.g. "June 1st, 2025")
  * @param date - The date to format
  * @param year - Whether to include the year in the formatted date
+ * @param includeTime - Whether to include the time in the formatted date
  * @returns A formatted date string
  */
 export const formatDate = (
   date: Date | string,
   year: boolean = false,
+  includeTime: boolean = false,
 ): string => {
   let parsedDate: Date;
 
@@ -75,7 +77,11 @@ export const formatDate = (
     return "Invalid Date";
   }
 
-  return format(parsedDate, `MMMM do${year ? " yyyy" : ""}`);
+  let formatStr = "MMMM do";
+  if (year) formatStr += ", yyyy";
+  if (includeTime) formatStr += " h:mm a";
+
+  return format(parsedDate, formatStr);
 };
 
 /**
