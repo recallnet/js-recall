@@ -174,7 +174,7 @@ export async function assertRpcError<TOutput>(
 /**
  * Register a user and agent using admin RPC client and return user/agent info
  */
-export async function registerUserAndAgentAndGetClient(
+export async function registerUserAndAgent(
   adminRpcClient: RouterClient<typeof adminRouter>,
   params: Partial<z.infer<typeof AdminRegisterUserSchema>>,
 ) {

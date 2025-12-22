@@ -41,7 +41,7 @@ import {
   createTestCompetition,
   createTestRpcClient,
   defaultPaperTradingInitialBalances,
-  registerUserAndAgentAndGetClient,
+  registerUserAndAgent,
   startPerpsTestCompetition,
   startTestCompetition,
 } from "../utils/rpc-client-helpers.js";
@@ -1113,13 +1113,13 @@ describe("Admin API", () => {
 
   test("admin can remove agent from specific competition", async () => {
     // Register agents for testing
-    const { agent: agent1 } = await registerUserAndAgentAndGetClient(
+    const { agent: agent1 } = await registerUserAndAgent(
       authorizedAdminClient,
       {
         agentName: "Agent 1 - To Remove",
       },
     );
-    const { agent: agent2 } = await registerUserAndAgentAndGetClient(
+    const { agent: agent2 } = await registerUserAndAgent(
       authorizedAdminClient,
       {
         agentName: "Agent 2 - To Stay",
@@ -1189,12 +1189,9 @@ describe("Admin API", () => {
 
   test("admin can reactivate agent in specific competition", async () => {
     // Register agent for testing
-    const { agent } = await registerUserAndAgentAndGetClient(
-      authorizedAdminClient,
-      {
-        agentName: "Agent - To Reactivate",
-      },
-    );
+    const { agent } = await registerUserAndAgent(authorizedAdminClient, {
+      agentName: "Agent - To Reactivate",
+    });
 
     // Start competition with the agent
     const competitionName = `Per-Competition Reactivate Test ${Date.now()}`;
@@ -1268,12 +1265,9 @@ describe("Admin API", () => {
 
   test("cannot remove agent from non-existent competition", async () => {
     // Register agent for testing
-    const { agent } = await registerUserAndAgentAndGetClient(
-      authorizedAdminClient,
-      {
-        agentName: "Agent - Non-existent Competition",
-      },
-    );
+    const { agent } = await registerUserAndAgent(authorizedAdminClient, {
+      agentName: "Agent - Non-existent Competition",
+    });
 
     // Try to remove agent from non-existent competition
     const nonExistentCompetitionId = "00000000-0000-4000-a000-000000000000";
@@ -1289,12 +1283,9 @@ describe("Admin API", () => {
 
   test("cannot remove non-existent agent from competition", async () => {
     // Register agent and start competition
-    const { agent } = await registerUserAndAgentAndGetClient(
-      authorizedAdminClient,
-      {
-        agentName: "Agent - For Valid Competition",
-      },
-    );
+    const { agent } = await registerUserAndAgent(authorizedAdminClient, {
+      agentName: "Agent - For Valid Competition",
+    });
 
     const competitionName = `Valid Competition Test ${Date.now()}`;
     const startResponse = await startTestCompetition(authorizedAdminClient, {
@@ -1317,13 +1308,13 @@ describe("Admin API", () => {
 
   test("cannot remove agent not participating in competition", async () => {
     // Register two agents
-    const { agent: agent1 } = await registerUserAndAgentAndGetClient(
+    const { agent: agent1 } = await registerUserAndAgent(
       authorizedAdminClient,
       {
         agentName: "Agent 1 - In Competition",
       },
     );
-    const { agent: agent2 } = await registerUserAndAgentAndGetClient(
+    const { agent: agent2 } = await registerUserAndAgent(
       authorizedAdminClient,
       {
         agentName: "Agent 2 - Not In Competition",
@@ -1352,13 +1343,13 @@ describe("Admin API", () => {
 
   test("cannot reactivate agent not in competition", async () => {
     // Register two agents
-    const { agent: agent1 } = await registerUserAndAgentAndGetClient(
+    const { agent: agent1 } = await registerUserAndAgent(
       authorizedAdminClient,
       {
         agentName: "Agent 1 - In Competition",
       },
     );
-    const { agent: agent2 } = await registerUserAndAgentAndGetClient(
+    const { agent: agent2 } = await registerUserAndAgent(
       authorizedAdminClient,
       {
         agentName: "Agent 2 - Not In Competition",
@@ -1388,12 +1379,9 @@ describe("Admin API", () => {
     // Setup admin client to create competition and agents
 
     // Register agent and start competition
-    const { agent } = await registerUserAndAgentAndGetClient(
-      authorizedAdminClient,
-      {
-        agentName: "Agent - Auth Test",
-      },
-    );
+    const { agent } = await registerUserAndAgent(authorizedAdminClient, {
+      agentName: "Agent - Auth Test",
+    });
     const userClient = await createTestAdminRpcClient({
       apiKey: agent.apiKey,
     });
@@ -1427,12 +1415,9 @@ describe("Admin API", () => {
 
   test("per-competition status is independent of global status", async () => {
     // Register agent for testing
-    const { agent } = await registerUserAndAgentAndGetClient(
-      authorizedAdminClient,
-      {
-        agentName: "Agent - Status Independence Test",
-      },
-    );
+    const { agent } = await registerUserAndAgent(authorizedAdminClient, {
+      agentName: "Agent - Status Independence Test",
+    });
 
     // Start competition with the agent
     const competitionName = `Status Independence Test ${Date.now()}`;
@@ -1656,13 +1641,13 @@ describe("Admin API", () => {
 
   test("should start a perps competition with agents", async () => {
     // Register agents for the competition
-    const { agent: agent1 } = await registerUserAndAgentAndGetClient(
+    const { agent: agent1 } = await registerUserAndAgent(
       authorizedAdminClient,
       {
         agentName: "Perps Agent 1",
       },
     );
-    const { agent: agent2 } = await registerUserAndAgentAndGetClient(
+    const { agent: agent2 } = await registerUserAndAgent(
       authorizedAdminClient,
       {
         agentName: "Perps Agent 2",
@@ -1782,13 +1767,13 @@ describe("Admin API", () => {
 
   test("should start a perps competition with minFundingThreshold", async () => {
     // Register agents for the competition
-    const { agent: agent1 } = await registerUserAndAgentAndGetClient(
+    const { agent: agent1 } = await registerUserAndAgent(
       authorizedAdminClient,
       {
         agentName: "Perps Agent with Min Funding 1",
       },
     );
-    const { agent: agent2 } = await registerUserAndAgentAndGetClient(
+    const { agent: agent2 } = await registerUserAndAgent(
       authorizedAdminClient,
       {
         agentName: "Perps Agent with Min Funding 2",
@@ -2125,12 +2110,9 @@ describe("Admin API", () => {
 
   test("should not allow converting active competition type", async () => {
     // Create and start a spot trading competition
-    const { agent } = await registerUserAndAgentAndGetClient(
-      authorizedAdminClient,
-      {
-        agentName: "Agent for Active Competition",
-      },
-    );
+    const { agent } = await registerUserAndAgent(authorizedAdminClient, {
+      agentName: "Agent for Active Competition",
+    });
 
     const startResponse = await startTestCompetition(authorizedAdminClient, {
       name: "Active Competition - No Type Change",
@@ -2190,13 +2172,13 @@ describe("Admin API", () => {
 
   test("should allow type conversion for pending competition with registered agents", async () => {
     // Register agents
-    const { agent: agent1 } = await registerUserAndAgentAndGetClient(
+    const { agent: agent1 } = await registerUserAndAgent(
       authorizedAdminClient,
       {
         agentName: "Agent 1 for Type Conversion",
       },
     );
-    const { agent: agent2 } = await registerUserAndAgentAndGetClient(
+    const { agent: agent2 } = await registerUserAndAgent(
       authorizedAdminClient,
       {
         agentName: "Agent 2 for Type Conversion",
@@ -2340,13 +2322,13 @@ describe("Admin API", () => {
 
   test("should start competition with prizePools", async () => {
     // Register agents for the competition
-    const { agent: agent1 } = await registerUserAndAgentAndGetClient(
+    const { agent: agent1 } = await registerUserAndAgent(
       authorizedAdminClient,
       {
         agentName: "Agent 1 for Prize Pool Start",
       },
     );
-    const { agent: agent2 } = await registerUserAndAgentAndGetClient(
+    const { agent: agent2 } = await registerUserAndAgent(
       authorizedAdminClient,
       {
         agentName: "Agent 2 for Prize Pool Start",
@@ -2489,12 +2471,9 @@ describe("Admin API", () => {
 
   test("should require arenaId when creating new competition via start", async () => {
     // This tests the create-and-start flow (no competitionId provided)
-    const { agent } = await registerUserAndAgentAndGetClient(
-      authorizedAdminClient,
-      {
-        agentName: "Test Agent for Arena Validation",
-      },
-    );
+    const { agent } = await registerUserAndAgent(authorizedAdminClient, {
+      agentName: "Test Agent for Arena Validation",
+    });
 
     await assertRpcError(
       authorizedAdminClient.competitions.start({
