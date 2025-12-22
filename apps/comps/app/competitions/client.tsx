@@ -144,13 +144,11 @@ export default function CompetitionsPageClient() {
         ></div>
 
         <div className="flex h-full w-full items-center justify-center">
-          {/* Full-width snow layer - behind text */}
-          <SnowOverlay className="absolute inset-0 z-10 hidden sm:block" />
+          {/* Fireworks launching and exploding - mid layer */}
+          <Fireworks className="absolute inset-0 z-[8] hidden sm:block" />
 
-          <StringLights
-            side="left"
-            className="absolute left-0 z-[15] hidden h-72 w-[40%] translate-x-[-20%] sm:block md:translate-x-[0%]"
-          />
+          {/* Minimal cityscape silhouette - foreground */}
+          <Cityscape className="absolute inset-x-0 bottom-0 z-[10] hidden h-[40%] sm:block" />
 
           <div className="z-20 flex translate-y-[-50px] flex-col items-center text-center">
             <h1 className="text-primary-foreground mb-1 text-7xl font-bold sm:text-[83px]">
@@ -183,11 +181,6 @@ export default function CompetitionsPageClient() {
               )}
             </div>
           </div>
-
-          <StringLights
-            side="right"
-            className="absolute right-0 z-[15] hidden h-72 w-[40%] translate-x-[20%] sm:block md:translate-x-[0%]"
-          />
         </div>
       </div>
 
@@ -343,59 +336,54 @@ const HeroCarousel: React.FC<HeroCarouselProps> = ({
   );
 };
 
+// Brand colors used across NYE components
+const brandColors = ["#E5342A", "#F9B700", "#38A430", "#0064C7"]; // Red, Yellow, Green, Blue
+
 /**
- * Full-width snow overlay - falls consistently across entire hero area
- * Memoized to prevent unnecessary re-renders
+ * Minimal cityscape silhouette - two-tone bar chart style
+ * Clean geometric rectangles, subtle depth
  */
-const SnowOverlay: React.FC<{ className?: string }> = React.memo(
+const Cityscape: React.FC<{ className?: string }> = React.memo(
   ({ className = "" }) => {
-    // Track container aspect ratio to compensate for viewBox stretch
-    const containerRef = React.useRef<HTMLDivElement>(null);
-    const [aspectRatio, setAspectRatio] = React.useState(3); // Default for wide screens
-
-    React.useEffect(() => {
-      const container = containerRef.current;
-      if (!container) return;
-
-      const updateAspectRatio = () => {
-        const { width, height } = container.getBoundingClientRect();
-        if (height > 0) {
-          setAspectRatio(width / height);
-        }
+    const buildings = React.useMemo(() => {
+      // Seeded pseudo-random for deterministic layout
+      let seed = 54321;
+      const random = () => {
+        seed = (seed * 9301 + 49297) % 233280;
+        return seed / 233280;
       };
 
-      updateAspectRatio();
-      const observer = new ResizeObserver(updateAspectRatio);
-      observer.observe(container);
-      return () => observer.disconnect();
-    }, []);
+      const buildingCount = 24;
+      const result: Array<{
+        x: number;
+        width: number;
+        height: number;
+        color: string;
+      }> = [];
+      let currentX = 0;
 
-    // Respect user's motion preferences for accessibility
-    const prefersReducedMotion =
-      typeof window !== "undefined"
-        ? window.matchMedia("(prefers-reduced-motion: reduce)").matches
-        : false;
+      for (let i = 0; i < buildingCount; i++) {
+        const width = 2.5 + random() * 3; // 2.5-5.5 units wide
+        const height = 15 + random() * 45; // 15-60% height
+        // Two-tone: taller buildings darker, shorter lighter
+        const color = height > 35 ? "#1A1D28" : "#252A36";
 
-    const snowflakes = React.useMemo(() => {
-      const flakes = [];
-      // More flakes for full-width coverage
-      for (let i = 0; i < 40; i++) {
-        const seed = (i * 7919 + 31337) % 100000;
-        flakes.push({
-          x: 2 + (seed % 96), // Full width coverage
-          startY: -3 - (seed % 12),
-          size: 0.25 + (seed % 4) * 0.12,
-          duration: 16 + (seed % 10),
-          delay: (seed % 160) / 10,
-          opacity: 0.08 + (seed % 4) * 0.04,
-        });
+        result.push({ x: currentX, width, height, color });
+        currentX += width + 0.3; // Small gap
       }
-      return flakes;
+
+      // Normalize to fill width
+      const totalWidth = currentX;
+      result.forEach((b) => {
+        b.x = (b.x / totalWidth) * 100;
+        b.width = (b.width / totalWidth) * 100;
+      });
+
+      return result;
     }, []);
 
     return (
       <div
-        ref={containerRef}
         className={cn(
           "pointer-events-none select-none overflow-hidden",
           className,
@@ -406,65 +394,58 @@ const SnowOverlay: React.FC<{ className?: string }> = React.memo(
           viewBox="0 0 100 100"
           preserveAspectRatio="none"
         >
-          {snowflakes.map((flake, i) => {
-            const sizeW = flake.size;
-            const sizeH = flake.size * aspectRatio;
-            return (
-              <rect
-                key={`snow-full-${i}`}
-                x={flake.x - sizeW}
-                y={prefersReducedMotion ? 50 : flake.startY - sizeH}
-                width={sizeW * 2}
-                height={sizeH * 2}
-                rx={sizeW * 0.2}
-                fill="#E9EDF1"
-                opacity={flake.opacity}
-              >
-                {!prefersReducedMotion && (
-                  <animate
-                    attributeName="y"
-                    from={flake.startY - sizeH}
-                    to="105"
-                    dur={`${flake.duration}s`}
-                    begin={`${flake.delay}s`}
-                    repeatCount="indefinite"
-                  />
-                )}
-              </rect>
-            );
-          })}
+          {buildings.map((b, i) => (
+            <rect
+              key={`b-${i}`}
+              x={b.x}
+              y={100 - b.height}
+              width={b.width}
+              height={b.height}
+              fill={b.color}
+            />
+          ))}
         </svg>
       </div>
     );
   },
 );
-SnowOverlay.displayName = "SnowOverlay";
+Cityscape.displayName = "Cityscape";
 
-interface StringLightsProps {
-  side: "left" | "right";
-  className?: string;
+interface FireworkState {
+  id: number;
+  x: number; // Launch x position (0-100)
+  launchY: number; // Where it launches from (bottom of sky, around 70-85)
+  burstY: number; // Where it explodes (10-40)
+  colorIndex: number;
+  createdAt: number;
+  burstTime: number; // When it explodes (after launch travel)
+  isCircleBurst: boolean; // Burst style - all circles or all squares
 }
 
 /**
- * Premium festive string lights - professionally designed
- * Intentional color flow, natural catenary curves, visual hierarchy
- * Memoized to prevent unnecessary re-renders
+ * Fireworks - launch trails shooting up, then exploding into branded particles
  */
-const StringLights: React.FC<StringLightsProps> = React.memo(
-  ({ side, className = "" }) => {
-    // Track container aspect ratio to compensate for viewBox stretch
+const Fireworks: React.FC<{ className?: string }> = React.memo(
+  ({ className = "" }) => {
     const containerRef = React.useRef<HTMLDivElement>(null);
-    const [aspectRatio, setAspectRatio] = React.useState(2.5); // Default assumption
+    const [aspectRatio, setAspectRatio] = React.useState(3);
+    const [fireworks, setFireworks] = React.useState<FireworkState[]>([]);
+    const nextId = React.useRef(0);
+    const [now, setNow] = React.useState(Date.now());
 
+    const prefersReducedMotion =
+      typeof window !== "undefined"
+        ? window.matchMedia("(prefers-reduced-motion: reduce)").matches
+        : false;
+
+    // Track aspect ratio
     React.useEffect(() => {
       const container = containerRef.current;
       if (!container) return;
 
       const updateAspectRatio = () => {
         const { width, height } = container.getBoundingClientRect();
-        if (height > 0) {
-          setAspectRatio(width / height);
-        }
+        if (height > 0) setAspectRatio(width / height);
       };
 
       updateAspectRatio();
@@ -473,121 +454,75 @@ const StringLights: React.FC<StringLightsProps> = React.memo(
       return () => observer.disconnect();
     }, []);
 
-    // Official brand colors - hex values from brand guidelines
-    const brandColors = [
-      { main: "#E5342A", glow: "#FF5A50" }, // Red (warm)
-      { main: "#F9B700", glow: "#FFCF40" }, // Yellow (warm)
-      { main: "#38A430", glow: "#5BC450" }, // Green (cool)
-      { main: "#0064C7", glow: "#3090E8" }, // Blue (cool)
-    ];
+    // Create a new firework
+    const createFirework = React.useCallback((): FireworkState => {
+      const timestamp = Date.now();
 
-    // Generate strands with natural hanging catenary curves
-    const strings = React.useMemo(() => {
-      // Intentional color sequences - warm colors outside, cool toward center
-      // This creates visual flow that guides the eye inward
-      const colorSequences = {
-        top: [0, 1, 0, 2, 1, 3, 2, 3], // R Y R G Y B G B - warm to cool
-        bottom: [1, 0, 2, 1, 3, 2, 3], // Y R G Y B G B - offset pattern
+      return {
+        id: nextId.current++,
+        x: 10 + Math.random() * 80, // Launch from across the width
+        launchY: 75 + Math.random() * 10, // Start from behind buildings (75-85)
+        burstY: 15 + Math.random() * 25, // Explode in upper area (15-40)
+        colorIndex: Math.floor(Math.random() * 4),
+        createdAt: timestamp,
+        burstTime: 800 + Math.random() * 400, // 0.8-1.2s to reach burst point
+        isCircleBurst: Math.random() < 0.5, // Each burst is consistently all circles OR all squares
+      };
+    }, []);
+
+    // Animation loop
+    React.useEffect(() => {
+      if (prefersReducedMotion) {
+        // Show static burst particles
+        setFireworks([createFirework(), createFirework(), createFirework()]);
+        return;
+      }
+
+      // Initial fireworks
+      setFireworks([createFirework(), createFirework()]);
+
+      // Launch new firework every 1-2 seconds
+      const launchInterval = setInterval(() => {
+        setFireworks((prev) => {
+          const currentTime = Date.now();
+          // Keep fireworks for 3 seconds total (launch + burst + fade)
+          const active = prev.filter((f) => currentTime - f.createdAt < 3000);
+          if (active.length < 4) {
+            return [...active, createFirework()];
+          }
+          return active;
+        });
+      }, 1200);
+
+      // Update animation
+      const frameInterval = setInterval(() => setNow(Date.now()), 50);
+
+      return () => {
+        clearInterval(launchInterval);
+        clearInterval(frameInterval);
+      };
+    }, [createFirework, prefersReducedMotion]);
+
+    // Generate burst particles for a firework
+    const getBurstParticles = (fw: FireworkState) => {
+      let seed = fw.id * 12345;
+      const random = () => {
+        seed = (seed * 9301 + 49297) % 233280;
+        return seed / 233280;
       };
 
-      type BulbVariation = { size: number; isCircle: boolean };
-      const result: {
-        lights: {
-          x: number;
-          y: number;
-          colorIndex: number;
-          intensity: number;
-          delay: number;
-          bulb: BulbVariation;
-        }[];
-        config: {
-          key: string;
-          lights: number;
-          startY: number;
-          endY: number;
-          depth: number;
-        };
-      }[] = [];
+      const particles = [];
+      const count = 14 + Math.floor(random() * 6); // 14-20 particles
 
-      // Two strands: top frames title, bottom frames buttons
-      const configs = [
-        { key: "top", lights: 8, startY: 8, endY: 20, depth: 25 },
-        { key: "bottom", lights: 7, startY: 55, endY: 68, depth: 20 },
-      ];
-
-      // Size and shape variations - mix of circles and squares like reference
-      const bulbVariations = [
-        { size: 1.0, isCircle: false }, // Square
-        { size: 0.95, isCircle: true }, // Circle
-        { size: 0.9, isCircle: false }, // Square
-        { size: 1.0, isCircle: true }, // Circle
-        { size: 0.85, isCircle: false }, // Square
-        { size: 1.05, isCircle: true }, // Circle
-        { size: 0.9, isCircle: false }, // Square
-        { size: 1.0, isCircle: true }, // Circle
-      ];
-
-      configs.forEach((cfg) => {
-        const lights: (typeof result)[0]["lights"] = [];
-        const seq = colorSequences[cfg.key as keyof typeof colorSequences];
-
-        for (let i = 0; i < cfg.lights; i++) {
-          const t = i / (cfg.lights - 1);
-
-          // X position: 5% to 85% to leave breathing room
-          const x = 5 + t * 80;
-
-          // CORRECTED catenary: maximum sag at CENTER, least at edges
-          // Natural hanging curve - gravity pulls center down most
-          const normalizedX = (t - 0.5) * 2; // -1 to 1
-          const parabolicSag = 1 - normalizedX * normalizedX; // 1 at center, 0 at edges
-          const sagAmount = cfg.depth * parabolicSag;
-
-          // Base line connects the anchor points
-          const baseY = cfg.startY + t * (cfg.endY - cfg.startY);
-          const y = baseY + sagAmount;
-
-          // Vary intensity - brighter toward the sag point (center of strand)
-          const centeredness = 1 - Math.abs(t - 0.5) * 2;
-          const intensity = 0.7 + centeredness * 0.3;
-
-          // Get bulb variation (size, roundness, aspect)
-          const bulb = bulbVariations[i % bulbVariations.length]!;
-          const colorIndex = seq[i % seq.length]!;
-
-          lights.push({
-            x: side === "left" ? x : 100 - x,
-            y,
-            colorIndex,
-            intensity,
-            delay: i * 0.3,
-            bulb,
-          });
-        }
-        result.push({ lights, config: cfg });
-      });
-      return result;
-    }, [side]);
-
-    // Snow is now handled by the separate SnowOverlay component for full-width coverage
-
-    // Generate smooth bezier path for wire
-    const getWirePath = (strand: (typeof strings)[0]) => {
-      const pts = strand.lights;
-      if (pts.length < 2) return "";
-
-      const first = pts[0]!;
-      let d = `M ${first.x},${first.y}`;
-      for (let i = 1; i < pts.length; i++) {
-        const prev = pts[i - 1]!;
-        const curr = pts[i]!;
-        const midX = (prev.x + curr.x) / 2;
-        const midY = (prev.y + curr.y) / 2;
-        d += ` Q ${prev.x},${prev.y} ${midX},${midY}`;
+      for (let i = 0; i < count; i++) {
+        const angle = (i / count) * Math.PI * 2 + random() * 0.3;
+        particles.push({
+          angle,
+          distance: 3 + random() * 4, // How far they travel
+          size: 0.35 + random() * 0.3, // Smaller particles (0.35-0.65)
+        });
       }
-      const last = pts[pts.length - 1]!;
-      d += ` L ${last.x},${last.y}`;
-      return d;
+      return particles;
     };
 
     return (
@@ -604,17 +539,11 @@ const StringLights: React.FC<StringLightsProps> = React.memo(
           preserveAspectRatio="none"
         >
           <defs>
-            {/* Simple soft glow filter */}
-            <filter
-              id={`glow-${side}`}
-              x="-100%"
-              y="-100%"
-              width="300%"
-              height="300%"
-            >
+            {/* Glow filter: blurred halo + crisp source merged on top */}
+            <filter id="fw-glow" x="-100%" y="-100%" width="300%" height="300%">
               <feGaussianBlur
                 in="SourceGraphic"
-                stdDeviation="1.5"
+                stdDeviation="1.2"
                 result="blur"
               />
               <feMerge>
@@ -624,110 +553,126 @@ const StringLights: React.FC<StringLightsProps> = React.memo(
             </filter>
           </defs>
 
-          {/* Wire strings - thicker branded gray line like reference */}
-          {strings.map((strand, si) => (
-            <path
-              key={`wire-${si}`}
-              d={getWirePath(strand)}
-              fill="none"
-              stroke="#596E89"
-              strokeWidth="0.5"
-              strokeLinecap="round"
-            />
-          ))}
+          {fireworks.map((fw) => {
+            const age = prefersReducedMotion
+              ? fw.burstTime + 500
+              : now - fw.createdAt;
+            const isLaunching = age < fw.burstTime;
+            const burstAge = age - fw.burstTime;
+            const color = brandColors[fw.colorIndex]!;
 
-          {/* Light bulbs - mix of circles and squares, simplified glow for performance */}
-          {strings.map((strand, si) =>
-            strand.lights.map((light, li) => {
-              const color = brandColors[light.colorIndex]!;
-              const { size, isCircle } = light.bulb;
-              const baseSize = 2.0;
-              const bulbSize = baseSize * size;
-              // Dynamic aspect ratio compensation - makes shapes appear square regardless of container
-              const heightMultiplier = aspectRatio;
+            if (isLaunching && !prefersReducedMotion) {
+              // Draw launch trail - tiny white/light squares going up
+              const progress = age / fw.burstTime;
+              const currentY = fw.launchY - (fw.launchY - fw.burstY) * progress;
 
-              if (isCircle) {
-                // Circle (ellipse for aspect ratio compensation)
-                const rx = bulbSize;
-                const ry = bulbSize * heightMultiplier;
-
-                return (
-                  <g key={`light-${si}-${li}`}>
-                    {/* Glow */}
-                    <ellipse
-                      cx={light.x}
-                      cy={light.y}
-                      rx={rx * 1.4}
-                      ry={ry * 1.4}
-                      fill={color.glow}
-                      opacity="0.25"
-                      filter={`url(#glow-${side})`}
-                    />
-                    {/* Core bulb */}
-                    <ellipse
-                      cx={light.x}
-                      cy={light.y}
-                      rx={rx}
-                      ry={ry}
-                      fill={color.main}
-                    />
-                    {/* Highlight */}
-                    <ellipse
-                      cx={light.x}
-                      cy={light.y - ry * 0.4}
-                      rx={rx * 0.4}
-                      ry={ry * 0.15}
-                      fill="white"
-                      opacity="0.35"
-                    />
-                  </g>
-                );
-              } else {
-                // Rounded square
-                const sizeW = bulbSize;
-                const sizeH = bulbSize * heightMultiplier;
-                const radius = Math.min(sizeW, sizeH / heightMultiplier) * 0.15;
-
-                return (
-                  <g key={`light-${si}-${li}`}>
-                    {/* Glow */}
+              // Trail of small squares behind the rocket
+              const trailSquares = [];
+              for (let t = 0; t < 5; t++) {
+                const trailY = currentY + t * 2;
+                if (trailY < fw.launchY) {
+                  const trailOpacity = 0.8 - t * 0.15;
+                  const trailSize = 0.4 - t * 0.05;
+                  trailSquares.push(
                     <rect
-                      x={light.x - sizeW * 1.4}
-                      y={light.y - sizeH * 1.4}
-                      width={sizeW * 2.8}
-                      height={sizeH * 2.8}
-                      rx={radius * 1.5}
-                      fill={color.glow}
-                      opacity="0.25"
-                      filter={`url(#glow-${side})`}
-                    />
-                    {/* Core bulb */}
-                    <rect
-                      x={light.x - sizeW}
-                      y={light.y - sizeH}
-                      width={sizeW * 2}
-                      height={sizeH * 2}
-                      rx={radius}
-                      fill={color.main}
-                    />
-                    {/* Highlight bar */}
-                    <rect
-                      x={light.x - sizeW * 0.5}
-                      y={light.y - sizeH * 0.55}
-                      width={sizeW}
-                      height={sizeH * 0.2}
-                      rx={radius * 0.5}
-                      fill="white"
-                      opacity="0.35"
-                    />
-                  </g>
-                );
+                      key={`trail-${fw.id}-${t}`}
+                      x={fw.x - trailSize}
+                      y={trailY - trailSize * aspectRatio}
+                      width={trailSize * 2}
+                      height={trailSize * 2 * aspectRatio}
+                      fill="#ffffff"
+                      opacity={trailOpacity}
+                    />,
+                  );
+                }
               }
-            }),
-          )}
+
+              return <g key={`fw-${fw.id}`}>{trailSquares}</g>;
+            } else if (burstAge > 0 || prefersReducedMotion) {
+              // Draw explosion
+              const burstProgress = prefersReducedMotion
+                ? 0.5
+                : Math.min(burstAge / 1500, 1);
+              const opacity = prefersReducedMotion
+                ? 0.7
+                : Math.max(0, 1 - burstProgress * 0.8);
+              const expandProgress = Math.min(
+                (prefersReducedMotion ? 500 : burstAge) / 600,
+                1,
+              );
+
+              const particles = getBurstParticles(fw);
+
+              return (
+                <g key={`fw-${fw.id}`} opacity={opacity}>
+                  {particles.map((p, idx) => {
+                    const dist = p.distance * expandProgress;
+                    const px = fw.x + Math.cos(p.angle) * dist;
+                    const py =
+                      fw.burstY + Math.sin(p.angle) * dist + burstProgress * 3;
+                    const sizeW = p.size;
+                    const sizeH = p.size * aspectRatio;
+                    // Glow is 1.6x larger with lower opacity
+                    const glowSizeW = sizeW * 1.6;
+                    const glowSizeH = sizeH * 1.6;
+
+                    if (fw.isCircleBurst) {
+                      return (
+                        <g key={idx}>
+                          {/* Glow halo */}
+                          <ellipse
+                            cx={px}
+                            cy={py}
+                            rx={glowSizeW}
+                            ry={glowSizeH}
+                            fill={color}
+                            opacity={0.35}
+                            filter="url(#fw-glow)"
+                          />
+                          {/* Crisp core */}
+                          <ellipse
+                            cx={px}
+                            cy={py}
+                            rx={sizeW}
+                            ry={sizeH}
+                            fill={color}
+                          />
+                        </g>
+                      );
+                    } else {
+                      return (
+                        <g key={idx}>
+                          {/* Glow halo */}
+                          <rect
+                            x={px - glowSizeW}
+                            y={py - glowSizeH}
+                            width={glowSizeW * 2}
+                            height={glowSizeH * 2}
+                            fill={color}
+                            opacity={0.35}
+                            filter="url(#fw-glow)"
+                          />
+                          {/* Crisp core */}
+                          <rect
+                            x={px - sizeW}
+                            y={py - sizeH}
+                            width={sizeW * 2}
+                            height={sizeH * 2}
+                            fill={color}
+                          />
+                        </g>
+                      );
+                    }
+                  })}
+                </g>
+              );
+            }
+
+            return null;
+          })}
         </svg>
       </div>
     );
   },
 );
-StringLights.displayName = "StringLights";
+Fireworks.displayName = "Fireworks";
