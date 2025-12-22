@@ -525,7 +525,7 @@ export async function getAdminApiKey() {
  * Ensure default arenas exist in the database for testing
  * This should be called before any test that creates competitions
  */
-async function ensureDefaultArenas() {
+export async function ensureDefaultArenas() {
   await db
     .insert(arenas)
     .values({
