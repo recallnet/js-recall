@@ -222,6 +222,7 @@ export async function registerUserAndAgentAndGetClient(
     },
     agent: {
       id: result.agent.id || "",
+      apiKey: result.agent.apiKey,
       ownerId: result.agent.ownerId || "",
       walletAddress: result.agent.walletAddress || "",
       name: result.agent.name || "",
@@ -233,9 +234,6 @@ export async function registerUserAndAgentAndGetClient(
       createdAt: result.agent.createdAt || new Date().toISOString(),
       updatedAt: result.agent.updatedAt || new Date().toISOString(),
     },
-    adminRpcClient: await createTestAdminRpcClient({
-      apiKey: result.agent.apiKey,
-    }),
   };
 }
 

@@ -1388,10 +1388,15 @@ describe("Admin API", () => {
     // Setup admin client to create competition and agents
 
     // Register agent and start competition
-    const { adminRpcClient: userClient, agent } =
-      await registerUserAndAgentAndGetClient(authorizedAdminClient, {
+    const { agent } = await registerUserAndAgentAndGetClient(
+      authorizedAdminClient,
+      {
         agentName: "Agent - Auth Test",
-      });
+      },
+    );
+    const userClient = await createTestAdminRpcClient({
+      apiKey: agent.apiKey,
+    });
 
     const competitionName = `Auth Test Competition ${Date.now()}`;
     const startResponse = await startTestCompetition(authorizedAdminClient, {
