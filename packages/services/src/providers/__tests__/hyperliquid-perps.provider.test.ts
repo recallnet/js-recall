@@ -183,6 +183,64 @@ describe("HyperliquidPerpsProvider", () => {
     },
   ];
 
+  // Sample fills for testing getClosedPositionFills - includes fills with non-zero closedPnl
+  const sampleClosedFills = [
+    {
+      coin: "BTC",
+      px: "46000", // Close price
+      sz: "0.1",
+      side: "A" as const, // Sell to close long
+      time: 1759757700000,
+      startPosition: "0.1",
+      dir: "Close Long",
+      closedPnl: "50", // Realized PnL
+      hash: "0xclosed1",
+      oid: 187731467390,
+      crossed: true,
+      fee: "2.3",
+      tid: 10570200,
+      feeToken: "USDC",
+      cloid: null,
+      twapId: null,
+    },
+    {
+      coin: "ETH",
+      px: "2800", // Close price
+      sz: "2",
+      side: "B" as const, // Buy to close short
+      time: 1759757600000,
+      startPosition: "-2",
+      dir: "Close Short",
+      closedPnl: "-100", // Negative PnL (loss)
+      hash: "0xclosed2",
+      oid: 187731467391,
+      crossed: true,
+      fee: "2.8",
+      tid: 10570201,
+      feeToken: "USDC",
+      cloid: null,
+      twapId: null,
+    },
+    {
+      coin: "SOL",
+      px: "100",
+      sz: "10",
+      side: "B" as const, // Buy to open long (NOT a close)
+      time: 1759757500000,
+      startPosition: "0",
+      dir: "Open Long",
+      closedPnl: "0", // Zero - this is an entry, not a close
+      hash: "0xopen1",
+      oid: 187731467392,
+      crossed: true,
+      fee: "1",
+      tid: 10570202,
+      feeToken: "USDC",
+      cloid: null,
+      twapId: null,
+    },
+  ];
+
   const sampleLedgerUpdates = [
     {
       time: 1759757400000,
@@ -1115,6 +1173,234 @@ describe("HyperliquidPerpsProvider", () => {
       expect(debugSpy).toHaveBeenCalledWith(
         expect.stringContaining("0x1234...5678"),
       );
+    });
+  });
+
+  describe("getClosedPositionFills", () => {
+    it("should fetch and filter closed fills with non-zero closedPnl", async () => {
+      mockAxiosInstance.post.mockResolvedValueOnce({
+        data: sampleClosedFills,
+      });
+
+      const since = new Date(1759757400000);
+      const until = new Date(1759757800000);
+
+      const result = await provider.getClosedPositionFills(
+        "0xtest123",
+        since,
+        until,
+      );
+
+      // Should only include fills with non-zero closedPnl (2 of 3)
+      expect(result).toHaveLength(2);
+
+      // Verify first fill (BTC Close Long)
+      // positionSizeUsd = 0.1 BTC * $46000 = $4600
+      expect(result[0]).toEqual({
+        providerFillId: "0xclosed1-10570200",
+        symbol: "BTC",
+        side: "long",
+        positionSizeUsd: 4600,
+        closePrice: 46000,
+        closedPnl: 50,
+        closedAt: new Date(1759757700000),
+        fee: 2.3,
+      });
+
+      // Verify second fill (ETH Close Short)
+      // positionSizeUsd = 2 ETH * $2800 = $5600
+      expect(result[1]).toEqual({
+        providerFillId: "0xclosed2-10570201",
+        symbol: "ETH",
+        side: "short",
+        positionSizeUsd: 5600,
+        closePrice: 2800,
+        closedPnl: -100,
+        closedAt: new Date(1759757600000),
+        fee: 2.8,
+      });
+    });
+
+    it("should return empty array when no closed fills exist", async () => {
+      // Only entry fills (closedPnl = 0)
+      const entryOnlyFills = [
+        {
+          coin: "SOL",
+          px: "100",
+          sz: "10",
+          side: "B" as const,
+          time: 1759757500000,
+          startPosition: "0",
+          dir: "Open Long",
+          closedPnl: "0",
+          hash: "0xentry1",
+          oid: 187731467400,
+          crossed: true,
+          fee: "1",
+          tid: 10570300,
+          feeToken: "USDC",
+          cloid: null,
+          twapId: null,
+        },
+      ];
+
+      mockAxiosInstance.post.mockResolvedValueOnce({ data: entryOnlyFills });
+
+      const result = await provider.getClosedPositionFills(
+        "0xtest123",
+        new Date(1759757400000),
+        new Date(1759757800000),
+      );
+
+      expect(result).toHaveLength(0);
+    });
+
+    it("should return empty array when API returns no fills", async () => {
+      mockAxiosInstance.post.mockResolvedValueOnce({ data: [] });
+
+      const result = await provider.getClosedPositionFills(
+        "0xtest123",
+        new Date(1759757400000),
+        new Date(1759757800000),
+      );
+
+      expect(result).toHaveLength(0);
+    });
+
+    it("should correctly parse direction for long closes", async () => {
+      const longCloseFills = [
+        {
+          coin: "BTC",
+          px: "50000",
+          sz: "0.5",
+          side: "A" as const,
+          time: 1759757700000,
+          startPosition: "0.5",
+          dir: "Close Long",
+          closedPnl: "100",
+          hash: "0xlong1",
+          oid: 187731467500,
+          crossed: true,
+          fee: "2.5",
+          tid: 10570400,
+          feeToken: "USDC",
+          cloid: null,
+          twapId: null,
+        },
+      ];
+
+      mockAxiosInstance.post.mockResolvedValueOnce({ data: longCloseFills });
+
+      const result = await provider.getClosedPositionFills(
+        "0xtest123",
+        new Date(1759757400000),
+        new Date(1759757800000),
+      );
+
+      expect(result[0]?.side).toBe("long");
+    });
+
+    it("should correctly parse direction for short closes", async () => {
+      const shortCloseFills = [
+        {
+          coin: "ETH",
+          px: "3000",
+          sz: "1",
+          side: "B" as const,
+          time: 1759757700000,
+          startPosition: "-1",
+          dir: "Close Short",
+          closedPnl: "50",
+          hash: "0xshort1",
+          oid: 187731467600,
+          crossed: true,
+          fee: "1.5",
+          tid: 10570500,
+          feeToken: "USDC",
+          cloid: null,
+          twapId: null,
+        },
+      ];
+
+      mockAxiosInstance.post.mockResolvedValueOnce({ data: shortCloseFills });
+
+      const result = await provider.getClosedPositionFills(
+        "0xtest123",
+        new Date(1759757400000),
+        new Date(1759757800000),
+      );
+
+      expect(result[0]?.side).toBe("short");
+    });
+
+    it("should pass correct time parameters to API", async () => {
+      mockAxiosInstance.post.mockResolvedValueOnce({ data: [] });
+
+      const since = new Date("2024-01-01T00:00:00Z");
+      const until = new Date("2024-01-02T00:00:00Z");
+
+      await provider.getClosedPositionFills("0xtest123", since, until);
+
+      expect(mockAxiosInstance.post).toHaveBeenCalledWith("/info", {
+        type: "userFillsByTime",
+        user: "0xtest123",
+        startTime: since.getTime(),
+        endTime: until.getTime(),
+      });
+    });
+
+    it("should generate unique provider fill IDs using hash and tid", async () => {
+      const fillsWithSameHash = [
+        {
+          coin: "BTC",
+          px: "50000",
+          sz: "0.1",
+          side: "A" as const,
+          time: 1759757700000,
+          startPosition: "0.2",
+          dir: "Close Long",
+          closedPnl: "10",
+          hash: "0xsamehash",
+          oid: 187731467700,
+          crossed: true,
+          fee: "2.5",
+          tid: 10570600, // Different tid
+          feeToken: "USDC",
+          cloid: null,
+          twapId: null,
+        },
+        {
+          coin: "BTC",
+          px: "50100",
+          sz: "0.1",
+          side: "A" as const,
+          time: 1759757701000,
+          startPosition: "0.1",
+          dir: "Close Long",
+          closedPnl: "11",
+          hash: "0xsamehash", // Same hash
+          oid: 187731467701,
+          crossed: true,
+          fee: "2.51",
+          tid: 10570601, // Different tid
+          feeToken: "USDC",
+          cloid: null,
+          twapId: null,
+        },
+      ];
+
+      mockAxiosInstance.post.mockResolvedValueOnce({ data: fillsWithSameHash });
+
+      const result = await provider.getClosedPositionFills(
+        "0xtest123",
+        new Date(1759757400000),
+        new Date(1759757800000),
+      );
+
+      // Both fills should have unique IDs due to different tid values
+      expect(result[0]?.providerFillId).toBe("0xsamehash-10570600");
+      expect(result[1]?.providerFillId).toBe("0xsamehash-10570601");
+      expect(result[0]?.providerFillId).not.toBe(result[1]?.providerFillId);
     });
   });
 });

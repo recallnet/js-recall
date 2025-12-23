@@ -370,11 +370,18 @@ export const CompetitionKey: React.FC<CompetitionKeyProps> = ({
                             {formatAmount(Number(position.positionSize))}{" "}
                             {position.asset}
                           </span>
-                          <span className="text-secondary-foreground text-xs">
-                            {formatAmount(Number(position.leverage))}x leverage
-                            • {formatAmount(Number(position.collateralAmount))}{" "}
-                            collateral
-                          </span>
+                          {(position.leverage !== null ||
+                            position.collateralAmount !== null) && (
+                            <span className="text-secondary-foreground text-xs">
+                              {position.leverage !== null &&
+                                `${formatAmount(Number(position.leverage))}x leverage`}
+                              {position.leverage !== null &&
+                                position.collateralAmount !== null &&
+                                " • "}
+                              {position.collateralAmount !== null &&
+                                `${formatAmount(Number(position.collateralAmount))} collateral`}
+                            </span>
+                          )}
                           {position.pnlUsdValue && (
                             <span className="text-secondary-foreground text-xs">
                               PnL:{" "}
@@ -458,11 +465,18 @@ export const CompetitionKey: React.FC<CompetitionKeyProps> = ({
                             {formatAmount(Number(position.positionSize))}{" "}
                             {position.asset}
                           </span>
-                          <span className="text-secondary-foreground text-xs">
-                            {formatAmount(Number(position.leverage))}x leverage
-                            • {formatAmount(Number(position.collateralAmount))}{" "}
-                            collateral
-                          </span>
+                          {(position.leverage !== null ||
+                            position.collateralAmount !== null) && (
+                            <span className="text-secondary-foreground text-xs">
+                              {position.leverage !== null &&
+                                `${formatAmount(Number(position.leverage))}x leverage`}
+                              {position.leverage !== null &&
+                                position.collateralAmount !== null &&
+                                " • "}
+                              {position.collateralAmount !== null &&
+                                `${formatAmount(Number(position.collateralAmount))} collateral`}
+                            </span>
+                          )}
                           {position.pnlUsdValue && (
                             <span className="text-secondary-foreground text-xs">
                               PnL:{" "}
