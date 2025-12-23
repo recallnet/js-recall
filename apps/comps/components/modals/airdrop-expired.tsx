@@ -15,7 +15,7 @@ import { Button } from "../staking/Button";
 type AirdropExpiredModalProps = {
   isOpen: boolean;
   onClose: () => void;
-  seasonName: string;
+  airdropName: string;
   expiredAt: Date;
   eligibleAmount: bigint;
 };

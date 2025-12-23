@@ -14,13 +14,12 @@ import { base } from "@/rpc/context/base";
  * - Eligibility reasons (boosted/competed competition IDs, total unique competitions)
  * - Pool statistics (total stakes, available rewards, forfeited amounts)
  */
-export const getNextSeasonEligibility = base
+export const getNextAirdropEligibility = base
   .input(
     z.object({
       address: z
         .string()
         .regex(/^0x[a-fA-F0-9]{40}$/, "Invalid Ethereum address"),
-      season: z.number().int().positive().optional(),
     }),
   )
   .handler(async ({ input, context, errors }) => {
@@ -29,43 +28,12 @@ export const getNextSeasonEligibility = base
         `Getting next season eligibility for address: ${input.address}`,
       );
 
-      const eligibility = await context.airdropService.getNextSeasonEligibility(
-        input.address,
-        input.season,
-      );
+      const eligibility =
+        await context.airdropService.getNextAirdropEligibility(input.address);
 
       // Convert bigint values to strings for JSON serialization
       return {
-        isEligible: eligibility.isEligible,
-        season: eligibility.season,
-        seasonName: eligibility.seasonName,
-        activitySeason: {
-          number: eligibility.activitySeason.number,
-          name: eligibility.activitySeason.name,
-          startDate: eligibility.activitySeason.startDate.toISOString(),
-          endDate: eligibility.activitySeason.endDate.toISOString(),
-        },
-        activeStake: eligibility.activeStake.toString(),
-        potentialReward: eligibility.potentialReward.toString(),
-        eligibilityReasons: {
-          hasBoostedAgents: eligibility.eligibilityReasons.hasBoostedAgents,
-          hasCompetedInCompetitions:
-            eligibility.eligibilityReasons.hasCompetedInCompetitions,
-          boostedCompetitionIds:
-            eligibility.eligibilityReasons.boostedCompetitionIds,
-          competedCompetitionIds:
-            eligibility.eligibilityReasons.competedCompetitionIds,
-          totalUniqueCompetitions:
-            eligibility.eligibilityReasons.totalUniqueCompetitions,
-        },
-        poolStats: {
-          totalActiveStakes: eligibility.poolStats.totalActiveStakes.toString(),
-          availableRewardsPool:
-            eligibility.poolStats.availableRewardsPool.toString(),
-          totalForfeited: eligibility.poolStats.totalForfeited.toString(),
-          totalAlreadyClaimed:
-            eligibility.poolStats.totalAlreadyClaimed.toString(),
-        },
+        ...eligibility,
         minCompetitionsRequired: MIN_COMPETITIONS_FOR_ELIGIBILITY,
       };
     } catch (error) {

@@ -1,7 +1,7 @@
 import { getClaimsData } from "./get-claims-data";
-import { getNextSeasonEligibility } from "./get-next-season-eligibility";
+import { getNextAirdropEligibility } from "./get-next-season-eligibility";
 
 export const router = {
   getClaimsData,
-  getNextSeasonEligibility,
+  getNextAirdropEligibility,
 } as const;

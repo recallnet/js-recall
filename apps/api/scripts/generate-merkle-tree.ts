@@ -27,7 +27,7 @@ const colors = {
 type Recipient = {
   address: string;
   amount: bigint;
-  season: number;
+  airdrop: number;
   category: string;
   sybilClassification: string;
   flaggedAt: Date | null;
@@ -247,7 +247,7 @@ Examples:
         recipients.push({
           address,
           amount: BigInt(amount),
-          season: parseInt(season, 10),
+          airdrop: parseInt(season, 10),
           category,
           sybilClassification,
           flaggedAt: flaggedAt ? new Date(flaggedAt) : null,
@@ -279,7 +279,7 @@ Examples:
           const values: [string, bigint, number][] = recipients.map((r) => [
             r.address,
             r.amount,
-            r.season,
+            r.airdrop,
           ]);
 
           const tree = StandardMerkleTree.of(values, [

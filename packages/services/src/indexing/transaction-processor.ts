@@ -298,7 +298,7 @@ class TransactionProcessor {
         account: claimer,
         eligibleAmount,
         claimedAmount,
-        season: season,
+        airdrop: season, // Note that we use what is considered as "season" in the contract as "airdrop" in the database.
         duration: duration,
         blockNumber: blockNumber,
         blockTimestamp: blockTimestamp,

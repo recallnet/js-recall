@@ -72,9 +72,9 @@ export const ConvictionEligibility: React.FunctionComponent = () => {
   const { isConvictionEligible } = useConviction();
   const { data: eligibility, isLoading, error } = useNextSeasonEligibility();
 
-  const seasonDisplayName = useMemo(() => {
+  const airdropDisplayName = useMemo(() => {
     if (!eligibility) return "UPCOMING SEASON";
-    return eligibility.seasonName;
+    return eligibility.airdropName;
   }, [eligibility]);
 
   // Determine the action button state
@@ -161,12 +161,12 @@ export const ConvictionEligibility: React.FunctionComponent = () => {
         <div className="relative z-10 flex flex-col gap-2 p-4">
           {/* Two sections container */}
           <div className="flex flex-col gap-2 md:flex-row">
-            {/* Section 1 - Season info and requirements */}
+            {/* Section 1 - Airdrop info and requirements */}
             <div className="bg-gray-3 border-gray-4 flex w-auto flex-col gap-3 rounded-xl border p-4">
-              {/* Season header with badge */}
+              {/* Airdrop header with badge */}
               <div className="flex items-center gap-3">
                 <span className="text-gray-5 text-sm font-bold uppercase">
-                  {seasonDisplayName}
+                  {airdropDisplayName}
                 </span>
                 <StatusBadge
                   isEligible={eligibility.isEligible}

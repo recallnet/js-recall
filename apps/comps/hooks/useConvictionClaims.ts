@@ -6,7 +6,7 @@ import { useAccount } from "wagmi";
 import { attoValueToNumberValue } from "@recallnet/conversions/atto-conversions";
 
 import { tanstackClient } from "@/rpc/clients/tanstack-query";
-import type { ConvictionClaimData } from "@/types/conviction-claims";
+import type { AllocationData } from "@/types/conviction-claims";
 import { formatAmount } from "@/utils/format";
 
 /**
@@ -22,10 +22,10 @@ function getDaysRemaining(targetDate: Date | string, now: Date): number {
 /**
  * Format status text based on claim type
  */
-function getStatusText(claim: ConvictionClaimData, now: Date): string {
-  switch (claim.type) {
+function getStatusText(allocation: AllocationData, now: Date): string {
+  switch (allocation.type) {
     case "available": {
-      const daysRemaining = getDaysRemaining(claim.expiresAt, now);
+      const daysRemaining = getDaysRemaining(allocation.expiresAt, now);
       if (daysRemaining === 0) {
         return "Expires today";
       }
@@ -35,7 +35,7 @@ function getStatusText(claim: ConvictionClaimData, now: Date): string {
       return `${daysRemaining} days to claim`;
     }
     case "claimed-and-staked": {
-      const daysRemaining = getDaysRemaining(claim.unlocksAt, now);
+      const daysRemaining = getDaysRemaining(allocation.unlocksAt, now);
       if (daysRemaining === 0) {
         return "Unlocked";
       }
@@ -46,7 +46,7 @@ function getStatusText(claim: ConvictionClaimData, now: Date): string {
     case "expired":
       return "Expired";
     case "ineligible":
-      return claim.ineligibleReason;
+      return allocation.ineligibleReason;
     default:
       return "Unknown";
   }
@@ -55,10 +55,10 @@ function getStatusText(claim: ConvictionClaimData, now: Date): string {
 /**
  * Format tooltip text based on claim type
  */
-function getTooltipText(claim: ConvictionClaimData): string {
-  switch (claim.type) {
+function getTooltipText(allocation: AllocationData): string {
+  switch (allocation.type) {
     case "available": {
-      const date = toDate(claim.expiresAt);
+      const date = toDate(allocation.expiresAt);
       return `Claim before ${date.toLocaleDateString("en-US", {
         month: "long",
         day: "numeric",
@@ -66,7 +66,7 @@ function getTooltipText(claim: ConvictionClaimData): string {
       })}`;
     }
     case "claimed-and-staked": {
-      const date = toDate(claim.unlocksAt);
+      const date = toDate(allocation.unlocksAt);
       return `Unlocks on ${date.toLocaleDateString("en-US", {
         month: "long",
         day: "numeric",
@@ -74,7 +74,7 @@ function getTooltipText(claim: ConvictionClaimData): string {
       })}`;
     }
     case "claimed-and-not-staked": {
-      const date = toDate(claim.claimedAt);
+      const date = toDate(allocation.claimedAt);
       return `Claimed on ${date.toLocaleDateString("en-US", {
         month: "long",
         day: "numeric",
@@ -82,7 +82,7 @@ function getTooltipText(claim: ConvictionClaimData): string {
       })}`;
     }
     case "expired": {
-      const date = toDate(claim.expiredAt);
+      const date = toDate(allocation.expiredAt);
       return `Expired on ${date.toLocaleDateString("en-US", {
         month: "long",
         day: "numeric",
@@ -90,7 +90,7 @@ function getTooltipText(claim: ConvictionClaimData): string {
       })}`;
     }
     case "ineligible":
-      return claim.ineligibleReason;
+      return allocation.ineligibleReason;
     default:
       return "";
   }
@@ -99,8 +99,8 @@ function getTooltipText(claim: ConvictionClaimData): string {
 /**
  * Get action text based on claim type
  */
-function getActionText(claim: ConvictionClaimData): string {
-  switch (claim.type) {
+function getActionText(allocation: AllocationData): string {
+  switch (allocation.type) {
     case "available":
       return "Claim";
     case "claimed-and-staked":
@@ -116,7 +116,7 @@ function getActionText(claim: ConvictionClaimData): string {
   }
 }
 
-export type FormattedConvictionClaim = ConvictionClaimData & {
+export type FormattedConvictionClaim = AllocationData & {
   formattedAmount: string;
   statusText: string;
   tooltipText: string;
@@ -143,7 +143,7 @@ export function useConvictionClaims(): ConvictionClaimsResult {
     data: claimsData,
     isLoading,
     error,
-  } = useQuery<ConvictionClaimData[], Error>(
+  } = useQuery<AllocationData[], Error>(
     tanstackClient.airdrop.getClaimsData.queryOptions({
       input: { address: address ?? "" },
       enabled: Boolean(address),

@@ -5,7 +5,7 @@ import { DeepMockProxy, mockDeep } from "vitest-mock-extended";
 import { AirdropRepository } from "@recallnet/db/repositories/airdrop";
 import { ConvictionClaimsRepository } from "@recallnet/db/repositories/conviction-claims";
 
-import { AirdropService, ClaimData } from "../airdrop.service.js";
+import { AirdropService, AllocationData } from "../airdrop.service.js";
 
 describe("AirdropService", () => {
   let service: AirdropService;
@@ -96,8 +96,8 @@ describe("AirdropService", () => {
 
       const firstClaim = result[0]!;
       expect(firstClaim.type).toBe("available");
-      expect(firstClaim.season).toBe(1);
-      expect(firstClaim.seasonName).toBe("Season 1");
+      expect(firstClaim.airdrop).toBe(1);
+      expect(firstClaim.airdropName).toBe("Season 1");
       if (firstClaim.type === "available") {
         expect(firstClaim.eligibleAmount).toBe(BigInt("2000000000000000000"));
         expect(firstClaim.proof).toEqual(["0xproof3", "0xproof4"]);
@@ -107,8 +107,8 @@ describe("AirdropService", () => {
       // Season 0 is now available during Season 1 (following season has not ended)
       const secondClaim = result[1]!;
       expect(secondClaim.type).toBe("available");
-      expect(secondClaim.season).toBe(0);
-      expect(secondClaim.seasonName).toBe("Genesis");
+      expect(secondClaim.airdrop).toBe(0);
+      expect(secondClaim.airdropName).toBe("Genesis");
       if (secondClaim.type === "available") {
         expect(secondClaim.eligibleAmount).toBe(BigInt("1000000000000000000"));
         expect(secondClaim.proof).toEqual([]); // Season 0 has empty proof array
@@ -321,9 +321,9 @@ describe("AirdropService", () => {
       expect(result).toHaveLength(3);
 
       // Check sorting (most recent season first)
-      expect(result[0]!.season).toBe(2);
-      expect(result[1]!.season).toBe(1);
-      expect(result[2]!.season).toBe(0);
+      expect(result[0]!.airdrop).toBe(2);
+      expect(result[1]!.airdrop).toBe(1);
+      expect(result[2]!.airdrop).toBe(0);
 
       // Season 2 - Sybil flagged
       const season2Claim = result[0]!;
@@ -408,8 +408,8 @@ describe("AirdropService", () => {
       expect(result).toHaveLength(1);
       const claim = result[0]!;
       expect(claim.type).toBe("claimed-and-staked");
-      expect(claim.season).toBe(0);
-      expect(claim.seasonName).toBe("Genesis");
+      expect(claim.airdrop).toBe(0);
+      expect(claim.airdropName).toBe("Genesis");
       if (claim.type === "claimed-and-staked") {
         expect(claim.eligibleAmount).toBe(BigInt("1000000000000000000"));
         expect(claim.claimedAmount).toBe(BigInt("1000000000000000000"));
@@ -553,15 +553,15 @@ describe("AirdropService", () => {
 
       const result = await service.getAccountClaimsData(mockAddress);
 
-      expect(result.find((c: ClaimData) => c.season === 0)?.seasonName).toBe(
-        "Genesis",
-      );
-      expect(result.find((c: ClaimData) => c.season === 1)?.seasonName).toBe(
-        "Season 1",
-      );
-      expect(result.find((c: ClaimData) => c.season === 2)?.seasonName).toBe(
-        "Season 2",
-      );
+      expect(
+        result.find((c: AllocationData) => c.airdrop === 0)?.airdropName,
+      ).toBe("Genesis");
+      expect(
+        result.find((c: AllocationData) => c.airdrop === 1)?.airdropName,
+      ).toBe("Season 1");
+      expect(
+        result.find((c: AllocationData) => c.airdrop === 2)?.airdropName,
+      ).toBe("Season 2");
     });
 
     it("should mark unclaimed allocation as expired when 90 days past season start for season 0", async () => {
@@ -609,8 +609,8 @@ describe("AirdropService", () => {
       expect(result).toHaveLength(1);
       const claim = result[0]!;
       expect(claim.type).toBe("expired");
-      expect(claim.season).toBe(0);
-      expect(claim.seasonName).toBe("Genesis");
+      expect(claim.airdrop).toBe(0);
+      expect(claim.airdropName).toBe("Genesis");
       if (claim.type === "expired") {
         expect(claim.eligibleAmount).toBe(BigInt("1000000000000000000"));
         expect(claim.expiredAt).toEqual(expectedExpiryDate);
@@ -662,8 +662,8 @@ describe("AirdropService", () => {
       expect(result).toHaveLength(1);
       const claim = result[0]!;
       expect(claim.type).toBe("expired");
-      expect(claim.season).toBe(1);
-      expect(claim.seasonName).toBe("Season 1");
+      expect(claim.airdrop).toBe(1);
+      expect(claim.airdropName).toBe("Season 1");
       if (claim.type === "expired") {
         expect(claim.eligibleAmount).toBe(BigInt("1000000000000000000"));
         expect(claim.expiredAt).toEqual(expectedExpiryDate);
@@ -720,8 +720,8 @@ describe("AirdropService", () => {
       expect(result).toHaveLength(1);
       const claim = result[0]!;
       expect(claim.type).toBe("available");
-      expect(claim.season).toBe(0);
-      expect(claim.seasonName).toBe("Genesis");
+      expect(claim.airdrop).toBe(0);
+      expect(claim.airdropName).toBe("Genesis");
       if (claim.type === "available") {
         expect(claim.eligibleAmount).toBe(BigInt("1000000000000000000"));
         expect(claim.expiresAt).toEqual(expectedExpiryDate);
@@ -778,8 +778,8 @@ describe("AirdropService", () => {
       expect(result).toHaveLength(1);
       const claim = result[0]!;
       expect(claim.type).toBe("available");
-      expect(claim.season).toBe(1);
-      expect(claim.seasonName).toBe("Season 1");
+      expect(claim.airdrop).toBe(1);
+      expect(claim.airdropName).toBe("Season 1");
       if (claim.type === "available") {
         expect(claim.eligibleAmount).toBe(BigInt("1000000000000000000"));
         expect(claim.expiresAt).toEqual(expectedExpiryDate);

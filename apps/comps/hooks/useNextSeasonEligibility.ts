@@ -8,44 +8,13 @@ import { tanstackClient } from "@/rpc/clients/tanstack-query";
 import { formatAmount } from "@/utils/format";
 
 /**
- * Response type from the getNextSeasonEligibility RPC
- */
-export interface NextSeasonEligibilityResponse {
-  isEligible: boolean;
-  season: number;
-  seasonName: string;
-  activitySeason: {
-    number: number;
-    name: string;
-    startDate: string;
-    endDate: string;
-  };
-  activeStake: string;
-  potentialReward: string;
-  eligibilityReasons: {
-    hasBoostedAgents: boolean;
-    hasCompetedInCompetitions: boolean;
-    boostedCompetitionIds: string[];
-    competedCompetitionIds: string[];
-    totalUniqueCompetitions: number;
-  };
-  poolStats: {
-    totalActiveStakes: string;
-    availableRewardsPool: string;
-    totalForfeited: string;
-    totalAlreadyClaimed: string;
-  };
-  minCompetitionsRequired: number;
-}
-
-/**
  * Formatted eligibility data for UI display
  */
 export interface FormattedEligibilityData {
   isEligible: boolean;
   isAlmostEligible: boolean;
-  season: number;
-  seasonName: string;
+  airdrop: number;
+  airdropName: string;
   activitySeasonNumber: number;
   activitySeasonName: string;
   activitySeasonStartDate: Date;
@@ -102,10 +71,9 @@ export interface UseNextSeasonEligibilityResult {
 }
 
 /**
- * Format bigint value from string to display format
+ * Format bigint value to display format
  */
-function formatBigintString(value: string, compact: boolean = true): string {
-  const bigintValue = BigInt(value);
+function formatBigint(bigintValue: bigint, compact: boolean = true): string {
   const numberValue = attoValueToNumberValue(bigintValue);
   if (!numberValue || numberValue === 0) {
     return "0";
@@ -124,8 +92,8 @@ export function useNextSeasonEligibility(): UseNextSeasonEligibilityResult {
     isLoading,
     error,
     refetch,
-  } = useQuery<NextSeasonEligibilityResponse, Error>(
-    tanstackClient.airdrop.getNextSeasonEligibility.queryOptions({
+  } = useQuery(
+    tanstackClient.airdrop.getNextAirdropEligibility.queryOptions({
       input: { address: address ?? "" },
       enabled: Boolean(address),
     }),
@@ -134,16 +102,7 @@ export function useNextSeasonEligibility(): UseNextSeasonEligibilityResult {
   const formattedData = useMemo<FormattedEligibilityData | null>(() => {
     if (!rawData) return null;
 
-    const activitySeasonStartDate = new Date(rawData.activitySeason.startDate);
-    const activitySeasonEndDate = new Date(rawData.activitySeason.endDate);
-
-    const activeStake = BigInt(rawData.activeStake);
-    const potentialReward = BigInt(rawData.potentialReward);
-    const totalActiveStakes = BigInt(rawData.poolStats.totalActiveStakes);
-    const availableRewardsPool = BigInt(rawData.poolStats.availableRewardsPool);
-    const totalForfeited = BigInt(rawData.poolStats.totalForfeited);
-
-    const hasStaked = activeStake > 0n;
+    const hasStaked = rawData.activeStake > 0n;
     const hasBoostedOrCompeted =
       rawData.eligibilityReasons.hasBoostedAgents ||
       rawData.eligibilityReasons.hasCompetedInCompetitions;
@@ -166,16 +125,16 @@ export function useNextSeasonEligibility(): UseNextSeasonEligibilityResult {
     return {
       isEligible: rawData.isEligible,
       isAlmostEligible,
-      season: rawData.season,
-      seasonName: rawData.seasonName,
+      airdrop: rawData.airdrop,
+      airdropName: rawData.airdropName,
       activitySeasonNumber: rawData.activitySeason.number,
       activitySeasonName: rawData.activitySeason.name,
-      activitySeasonStartDate,
-      activitySeasonEndDate,
-      activeStake,
-      activeStakeFormatted: formatBigintString(rawData.activeStake),
-      potentialReward,
-      potentialRewardFormatted: formatBigintString(rawData.potentialReward),
+      activitySeasonStartDate: rawData.activitySeason.startDate,
+      activitySeasonEndDate: rawData.activitySeason.endDate,
+      activeStake: rawData.activeStake,
+      activeStakeFormatted: formatBigint(rawData.activeStake),
+      potentialReward: rawData.potentialReward,
+      potentialRewardFormatted: formatBigint(rawData.potentialReward),
       hasStaked,
       hasBoostedOrCompeted,
       hasBoostedAgents: rawData.eligibilityReasons.hasBoostedAgents,
@@ -186,19 +145,19 @@ export function useNextSeasonEligibility(): UseNextSeasonEligibilityResult {
       totalUniqueCompetitions,
       minCompetitionsRequired,
       competitionsRemaining,
-      totalActiveStakes,
-      totalActiveStakesFormatted: formatBigintString(
+      totalActiveStakes: rawData.poolStats.totalActiveStakes,
+      totalActiveStakesFormatted: formatBigint(
         rawData.poolStats.totalActiveStakes,
       ),
-      availableRewardsPool,
-      availableRewardsPoolFormatted: formatBigintString(
+      availableRewardsPool: rawData.poolStats.availableRewardsPool,
+      availableRewardsPoolFormatted: formatBigint(
         rawData.poolStats.availableRewardsPool,
       ),
-      totalForfeited,
-      totalForfeitedFormatted: formatBigintString(
-        rawData.poolStats.totalForfeited,
+      totalForfeited: rawData.poolStats.totalForfeited,
+      totalForfeitedFormatted: formatBigint(rawData.poolStats.totalForfeited),
+      daysRemainingInActivitySeason: getDaysRemaining(
+        rawData.activitySeason.endDate,
       ),
-      daysRemainingInActivitySeason: getDaysRemaining(activitySeasonEndDate),
     };
   }, [rawData]);
 

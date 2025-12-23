@@ -1,5 +1,5 @@
 #!/usr/bin/env tsx
-import { and, eq, gte, lte, sql } from "drizzle-orm";
+import { and, eq, gte, lt, lte, sql } from "drizzle-orm";
 import * as fs from "fs";
 import * as path from "path";
 import { parseArgs } from "util";
@@ -145,7 +145,7 @@ Examples:
         claimedAmount: convictionClaims.claimedAmount,
         blockTimestamp: convictionClaims.blockTimestamp,
         duration: convictionClaims.duration,
-        season: convictionClaims.season,
+        airdrop: convictionClaims.airdrop,
       })
       .from(convictionClaims)
       .where(
@@ -194,7 +194,7 @@ Examples:
       .select({
         eligibleAmount: convictionClaims.eligibleAmount,
         claimedAmount: convictionClaims.claimedAmount,
-        season: convictionClaims.season,
+        airdrop: convictionClaims.airdrop,
       })
       .from(convictionClaims)
       .where(lte(convictionClaims.blockTimestamp, currentSeason.endDate));
@@ -202,27 +202,30 @@ Examples:
     // Calculate total forfeited (eligibleAmount - claimedAmount for each claim)
     let totalForfeited = 0n;
     // Also collect season information for logging
-    const forfeitedBySeason = new Map<number, bigint>();
+    const forfeitedByAirdrop = new Map<number, bigint>();
 
     for (const claim of allClaims) {
       const forfeited = claim.eligibleAmount - claim.claimedAmount;
       totalForfeited += forfeited;
 
-      const currentSeasonForfeited = forfeitedBySeason.get(claim.season) || 0n;
-      forfeitedBySeason.set(claim.season, currentSeasonForfeited + forfeited);
+      const currentAirdropForfeited =
+        forfeitedByAirdrop.get(claim.airdrop) || 0n;
+      forfeitedByAirdrop.set(
+        claim.airdrop,
+        currentAirdropForfeited + forfeited,
+      );
     }
 
-    // Step 4: Calculate claims from seasons after 0, these are the conviction
-    //         rewards claims
+    // Step 4: Calculate claims from airdrops after 0, these are the conviction rewards claims
     console.log(
       `\n${colors.blue}Step 4: Calculating conviction rewards claims...${colors.reset}`,
     );
 
-    // Get all claims from season 1 and forward, so we can subtract that value
+    // Get all claims from airdrop 1 and forward, so we can subtract that value
     // from the total forfeited amount to get the remaining conviction pool.
-    const convictionClaimsBySeason = await db
+    const convictionClaimsByAirdrop = await db
       .select({
-        season: convictionClaims.season,
+        airdrop: convictionClaims.airdrop,
         totalClaimed: sql<string>`SUM(${convictionClaims.claimedAmount})`.as(
           "totalClaimed",
         ),
@@ -231,16 +234,16 @@ Examples:
       // everything up to the end of this season, exclude season 0
       .where(
         and(
-          // season 1 up to the airdrop being calculated
-          gte(convictionClaims.season, 1),
-          lte(convictionClaims.season, airdropNumber - 1),
+          // airdrop 1 up to, but not including, the airdrop being calculated
+          gte(convictionClaims.airdrop, 1),
+          lt(convictionClaims.airdrop, airdropNumber),
         ),
       )
-      .groupBy(convictionClaims.season);
+      .groupBy(convictionClaims.airdrop);
 
     let totalConvictionRewardsClaimed = 0n;
-    for (const seasonData of convictionClaimsBySeason) {
-      const claimed = BigInt(seasonData.totalClaimed || "0");
+    for (const airdropData of convictionClaimsByAirdrop) {
+      const claimed = BigInt(airdropData.totalClaimed || "0");
       totalConvictionRewardsClaimed += claimed;
     }
 
@@ -467,7 +470,7 @@ Examples:
     );
 
     // Show breakdown by season
-    for (const [season, amount] of forfeitedBySeason.entries()) {
+    for (const [season, amount] of forfeitedByAirdrop.entries()) {
       console.log(`   Season ${season}: ${attoValueToStringValue(amount)}`);
     }
 

@@ -38,9 +38,9 @@ export class ConvictionClaimsRepository {
   }
 
   /**
-   * Get conviction claim for a specific account and season
+   * Get conviction claim for a specific account and airdrop
    */
-  async getClaimByAccountAndSeason(account: string, season: number) {
+  async getClaimByAccountAndAirdrop(account: string, airdrop: number) {
     try {
       const normalizedAccount = account.toLowerCase();
 
@@ -50,7 +50,7 @@ export class ConvictionClaimsRepository {
         .where(
           and(
             eq(convictionClaims.walletAddress, normalizedAccount),
-            eq(convictionClaims.season, season),
+            eq(convictionClaims.airdrop, airdrop),
           ),
         )
         .limit(1);
@@ -65,7 +65,7 @@ export class ConvictionClaimsRepository {
         account: claim.account,
         eligibleAmount: claim.eligibleAmount,
         claimedAmount: claim.claimedAmount,
-        season: claim.season,
+        airdrop: claim.airdrop,
         duration: claim.duration,
         blockNumber: claim.blockNumber,
         blockTimestamp: claim.blockTimestamp,
@@ -74,7 +74,7 @@ export class ConvictionClaimsRepository {
     } catch (error) {
       this.#logger.error(
         { error },
-        `Error fetching claim for account ${account} and season ${season}:`,
+        `Error fetching claim for account ${account} and season ${airdrop}:`,
       );
       throw error;
     }
@@ -106,7 +106,7 @@ export class ConvictionClaimsRepository {
         account: claim.account,
         eligibleAmount: claim.eligibleAmount,
         claimedAmount: claim.claimedAmount,
-        season: claim.season,
+        airdrop: claim.airdrop,
         duration: claim.duration,
         blockNumber: claim.blockNumber,
         blockTimestamp: claim.blockTimestamp,
@@ -119,16 +119,19 @@ export class ConvictionClaimsRepository {
   }
 
   /**
-   * Check if an account has claimed for a specific season
+   * Check if an account has claimed for a specific airdrop
    */
-  async hasClaimedForSeason(account: string, season: number): Promise<boolean> {
+  async hasClaimedForAirdrop(
+    account: string,
+    airdrop: number,
+  ): Promise<boolean> {
     try {
-      const claim = await this.getClaimByAccountAndSeason(account, season);
+      const claim = await this.getClaimByAccountAndAirdrop(account, airdrop);
       return claim !== null;
     } catch (error) {
       this.#logger.error(
         { error },
-        `Error checking claim status for account ${account} and season ${season}:`,
+        `Error checking claim status for account ${account} and airdrop ${airdrop}:`,
       );
       throw error;
     }
@@ -159,7 +162,7 @@ export class ConvictionClaimsRepository {
   async insertClaim(claim: NewConvictionClaim) {
     try {
       this.#logger.info(
-        `Inserting conviction claim for account ${claim.account}, season ${claim.season}`,
+        `Inserting conviction claim for account ${claim.account}, airdrop ${claim.airdrop}`,
       );
 
       const normalizedAccount = claim.account.toLowerCase();
@@ -244,7 +247,7 @@ export class ConvictionClaimsRepository {
         walletAddress: account,
         eligibleAmount: params.eligibleAmount,
         claimedAmount: params.claimedAmount,
-        season: params.season,
+        airdrop: params.airdrop,
         duration: params.duration,
         blockNumber: params.blockNumber,
         blockTimestamp: params.blockTimestamp,
@@ -263,22 +266,22 @@ export class ConvictionClaimsRepository {
    *
    * Parameters:
    * - account: The address to query (will be normalized)
-   * - season: Optional season filter
+   * - airdrop: Optional airdrop filter
    *
    * Returns:
    * - Array of claim records, ordered by block number desc
    */
   async getConvictionClaimsByAccount(
     account: string,
-    season?: number,
+    airdrop?: number,
     tx?: Transaction,
   ): Promise<Array<typeof convictionClaims.$inferSelect>> {
     const executor = tx || this.#db;
     const normalizedAccount = account.toLowerCase();
 
     const conditions = [eq(convictionClaims.walletAddress, normalizedAccount)];
-    if (season !== undefined) {
-      conditions.push(eq(convictionClaims.season, season));
+    if (airdrop !== undefined) {
+      conditions.push(eq(convictionClaims.airdrop, airdrop));
     }
 
     return await executor
@@ -293,22 +296,22 @@ export class ConvictionClaimsRepository {
    *
    * Parameters:
    * - account: The address to query
-   * - season: Optional season filter
+   * - airdrop: Optional airdrop filter
    *
    * Returns:
    * - Total claimed amount as bigint
    */
   async getTotalConvictionClaimedByAccount(
     account: string,
-    season?: number,
+    airdrop?: number,
     tx?: Transaction,
   ): Promise<bigint> {
     const executor = tx || this.#db;
     const normalizedAccount = account.toLowerCase();
 
     const conditions = [eq(convictionClaims.walletAddress, normalizedAccount)];
-    if (season !== undefined) {
-      conditions.push(eq(convictionClaims.season, season));
+    if (airdrop !== undefined) {
+      conditions.push(eq(convictionClaims.airdrop, airdrop));
     }
 
     const rows = await executor
@@ -322,18 +325,18 @@ export class ConvictionClaimsRepository {
   }
 
   /**
-   * Get all conviction claims for a specific season.
+   * Get all conviction claims for a specific airdrop.
    *
    * Parameters:
-   * - season: The season number to query
+   * - airdrop: The airdrop number to query
    * - limit: Optional limit for pagination
    * - offset: Optional offset for pagination
    *
    * Returns:
    * - Array of claim records
    */
-  async getConvictionClaimsBySeason(
-    season: number,
+  async getConvictionClaimsByAirdrop(
+    airdrop: number,
     limit?: number,
     offset?: number,
     tx?: Transaction,
@@ -343,7 +346,7 @@ export class ConvictionClaimsRepository {
     let query = executor
       .select()
       .from(convictionClaims)
-      .where(eq(convictionClaims.season, season))
+      .where(eq(convictionClaims.airdrop, airdrop))
       .orderBy(desc(convictionClaims.blockNumber))
       .$dynamic();
 
@@ -358,18 +361,18 @@ export class ConvictionClaimsRepository {
   }
 
   /**
-   * Get the latest conviction claim for an account in a specific season.
+   * Get the latest conviction claim for an account in a specific airdrop.
    *
    * Parameters:
    * - account: The address to query
-   * - season: The season number
+   * - airdrop: The airdrop number
    *
    * Returns:
    * - The most recent claim record, or null if none exists
    */
   async getLatestConvictionClaim(
     account: string,
-    season: number,
+    airdrop: number,
     tx?: Transaction,
   ): Promise<typeof convictionClaims.$inferSelect | null> {
     const executor = tx || this.#db;
@@ -381,7 +384,7 @@ export class ConvictionClaimsRepository {
       .where(
         and(
           eq(convictionClaims.walletAddress, normalizedAccount),
-          eq(convictionClaims.season, season),
+          eq(convictionClaims.airdrop, airdrop),
         ),
       )
       .orderBy(desc(convictionClaims.blockNumber))
@@ -533,16 +536,16 @@ export class ConvictionClaimsRepository {
   }
 
   /**
-   * Get total conviction rewards claimed across seasons.
+   * Get total conviction rewards claimed across airdrops.
    *
-   * @param fromSeason - Start season (inclusive)
-   * @param toSeason - End season (inclusive)
+   * @param fromAirdrop - Start airdrop (inclusive)
+   * @param toAirdrop - End airdrop (inclusive)
    * @param tx - Optional transaction
-   * @returns Total claimed amount from conviction reward seasons
+   * @returns Total claimed amount from conviction reward airdrops
    */
   async getTotalConvictionRewardsClaimedBySeason(
-    fromSeason: number,
-    toSeason: number,
+    fromAirdrop: number,
+    toAirdrop: number,
     tx?: Transaction,
   ): Promise<bigint> {
     const executor = tx || this.#db;
@@ -555,8 +558,8 @@ export class ConvictionClaimsRepository {
         .from(convictionClaims)
         .where(
           and(
-            gte(convictionClaims.season, fromSeason),
-            lte(convictionClaims.season, toSeason),
+            gte(convictionClaims.airdrop, fromAirdrop),
+            lte(convictionClaims.airdrop, toAirdrop),
           ),
         );
 
@@ -564,7 +567,7 @@ export class ConvictionClaimsRepository {
     } catch (error) {
       this.#logger.error(
         { error },
-        `Error getting total conviction rewards claimed for seasons ${fromSeason}-${toSeason}`,
+        `Error getting total conviction rewards claimed for seasons ${fromAirdrop}-${toAirdrop}`,
       );
       throw error;
     }

@@ -14,7 +14,7 @@ import { useAccount } from "wagmi";
 import { AirdropExpiredModal } from "@/components/modals/airdrop-expired";
 import { AirdropExpiringModal } from "@/components/modals/airdrop-expiring";
 import { tanstackClient } from "@/rpc/clients/tanstack-query";
-import type { ConvictionClaimData } from "@/types/conviction-claims";
+import type { AllocationData } from "@/types/conviction-claims";
 
 /**
  * Number of days before expiration to trigger the "expiring soon" modal
@@ -40,7 +40,7 @@ type ConvictionContextValue = {
   /** Error from claims data fetch */
   error: Error | null;
   /** Raw claims data */
-  claims: ConvictionClaimData[];
+  claims: AllocationData[];
 };
 
 const ConvictionContext = createContext<ConvictionContextValue | null>(null);
@@ -108,16 +108,16 @@ export function ConvictionProvider({
 
   // Modal state
   const [expiredModalClaim, setExpiredModalClaim] =
-    useState<ConvictionClaimData | null>(null);
+    useState<AllocationData | null>(null);
   const [expiringModalClaim, setExpiringModalClaim] =
-    useState<ConvictionClaimData | null>(null);
+    useState<AllocationData | null>(null);
 
   // Fetch claims data
   const {
     data: claimsData,
     isLoading,
     error,
-  } = useQuery<ConvictionClaimData[], Error>(
+  } = useQuery<AllocationData[], Error>(
     tanstackClient.airdrop.getClaimsData.queryOptions({
       input: { address: address ?? "" },
       enabled: Boolean(address) && isConnected,
@@ -138,7 +138,7 @@ export function ConvictionProvider({
     // Find recently expired claims (expired within threshold days)
     const recentlyExpiredClaim = claimsData.find((claim) => {
       if (claim.type !== "expired") return false;
-      if (isModalDismissed(DISMISSED_EXPIRED_KEY_PREFIX, claim.season))
+      if (isModalDismissed(DISMISSED_EXPIRED_KEY_PREFIX, claim.airdrop))
         return false;
 
       const expiredAt = new Date(claim.expiredAt);
@@ -152,7 +152,7 @@ export function ConvictionProvider({
     // Find claims expiring soon
     const expiringSoonClaim = claimsData.find((claim) => {
       if (claim.type !== "available") return false;
-      if (isModalDismissed(DISMISSED_EXPIRING_KEY_PREFIX, claim.season))
+      if (isModalDismissed(DISMISSED_EXPIRING_KEY_PREFIX, claim.airdrop))
         return false;
 
       const expiresAt = new Date(claim.expiresAt);
@@ -177,7 +177,7 @@ export function ConvictionProvider({
   // Handle closing expired modal
   const handleCloseExpiredModal = useCallback(() => {
     if (expiredModalClaim) {
-      dismissModal(DISMISSED_EXPIRED_KEY_PREFIX, expiredModalClaim.season);
+      dismissModal(DISMISSED_EXPIRED_KEY_PREFIX, expiredModalClaim.airdrop);
     }
     setExpiredModalClaim(null);
   }, [expiredModalClaim]);
@@ -185,7 +185,7 @@ export function ConvictionProvider({
   // Handle closing expiring modal
   const handleCloseExpiringModal = useCallback(() => {
     if (expiringModalClaim) {
-      dismissModal(DISMISSED_EXPIRING_KEY_PREFIX, expiringModalClaim.season);
+      dismissModal(DISMISSED_EXPIRING_KEY_PREFIX, expiringModalClaim.airdrop);
     }
     setExpiringModalClaim(null);
   }, [expiringModalClaim]);
@@ -209,7 +209,7 @@ export function ConvictionProvider({
         <AirdropExpiredModal
           isOpen
           onClose={handleCloseExpiredModal}
-          seasonName={expiredModalClaim.seasonName}
+          airdropName={expiredModalClaim.airdropName}
           expiredAt={new Date(expiredModalClaim.expiredAt)}
           eligibleAmount={expiredModalClaim.eligibleAmount}
         />
@@ -220,7 +220,7 @@ export function ConvictionProvider({
         <AirdropExpiringModal
           isOpen
           onClose={handleCloseExpiringModal}
-          seasonName={expiringModalClaim.seasonName}
+          airdropName={expiringModalClaim.airdropName}
           expiresAt={new Date(expiringModalClaim.expiresAt)}
           eligibleAmount={expiringModalClaim.eligibleAmount}
         />

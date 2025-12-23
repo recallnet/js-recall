@@ -6,19 +6,19 @@ import { CompetitionRepository } from "@recallnet/db/repositories/competition";
 import { ConvictionClaimsRepository } from "@recallnet/db/repositories/conviction-claims";
 import { Season } from "@recallnet/db/schema/airdrop/types";
 
-export type BaseClaim = {
-  season: number;
-  seasonName: string;
+export type BaseAllocation = {
+  airdrop: number;
+  airdropName: string;
 };
 
-export type AvailableClaim = BaseClaim & {
+export type AvailableAllocation = BaseAllocation & {
   type: "available";
   eligibleAmount: bigint;
   expiresAt: Date;
   proof: string[];
 };
 
-export type ClaimedAndStakedClaim = BaseClaim & {
+export type ClaimedAndStakedAllocation = BaseAllocation & {
   type: "claimed-and-staked";
   eligibleAmount: bigint;
   claimedAmount: bigint;
@@ -27,31 +27,31 @@ export type ClaimedAndStakedClaim = BaseClaim & {
   unlocksAt: Date;
 };
 
-export type ClaimedAndNotStakedClaim = BaseClaim & {
+export type ClaimedAndNotStakedAllocation = BaseAllocation & {
   type: "claimed-and-not-staked";
   eligibleAmount: bigint;
   claimedAmount: bigint;
   claimedAt: Date;
 };
 
-export type ExpiredClaim = BaseClaim & {
+export type ExpiredAllocation = BaseAllocation & {
   type: "expired";
   eligibleAmount: bigint;
   expiredAt: Date;
 };
 
-export type IneligibleClaim = BaseClaim & {
+export type IneligibleAllocation = BaseAllocation & {
   type: "ineligible";
   ineligibleReason: string;
   ineligibleAmount: bigint;
 };
 
-export type ClaimData =
-  | AvailableClaim
-  | ClaimedAndStakedClaim
-  | ClaimedAndNotStakedClaim
-  | ExpiredClaim
-  | IneligibleClaim;
+export type AllocationData =
+  | AvailableAllocation
+  | ClaimedAndStakedAllocation
+  | ClaimedAndNotStakedAllocation
+  | ExpiredAllocation
+  | IneligibleAllocation;
 
 /**
  * Minimum number of distinct competitions required for eligibility
@@ -99,10 +99,10 @@ export interface EligibilitySeasonMetadata {
 /**
  * Full eligibility data for next season conviction rewards
  */
-export interface NextSeasonEligibility {
+export interface NextAirdropEligibility {
   isEligible: boolean;
-  season: number;
-  seasonName: string;
+  airdrop: number;
+  airdropName: string;
   activeStake: bigint;
   potentialReward: bigint;
   eligibilityReasons: EligibilityReasons;
@@ -151,17 +151,21 @@ export class AirdropService {
   /**
    * Get all airdrop claims data for an account across all seasons
    */
-  async getAccountClaimsData(address: string): Promise<ClaimData[]> {
+  async getAccountClaimsData(address: string): Promise<AllocationData[]> {
     try {
       this.logger.info(`Fetching claims data for address: ${address}`);
 
       const seasons = await this.airdropRepository.getSeasons();
-      const seasonsByNumber = seasons.reduce(
+      const airdropsByNumber = seasons.reduce(
         (acc, season) => {
-          acc[season.number] = season;
+          acc[season.startsWithAirdropNumber] = {
+            number: season.startsWithAirdropNumber,
+            name: `Airdrop ${season.startsWithAirdropNumber}`,
+            timestamp: season.startDate,
+          };
           return acc;
         },
-        {} as Record<number, Season>,
+        {} as Record<number, { number: number; name: string; timestamp: Date }>,
       );
 
       // Get all airdrop allocations for the address
@@ -173,104 +177,106 @@ export class AirdropService {
         await this.convictionClaimsRepository.getClaimsByAccount(address);
 
       // Build claims data for each allocation
-      const claimsData: ClaimData[] = allocations.map((allocation) => {
-        // Find corresponding conviction claim for this season
-        const convictionClaim = convictionClaims.find(
-          (cc) => cc.season === allocation.season,
-        );
-
-        const season = seasonsByNumber[allocation.season];
-        if (!season) {
-          throw new Error(
-            `Season ${allocation.season} not found for allocation`,
+      const allocationsData: AllocationData[] = allocations.map(
+        (allocation) => {
+          // Find corresponding conviction claim for this season
+          const convictionClaim = convictionClaims.find(
+            (cc) => cc.airdrop === allocation.airdrop,
           );
-        }
 
-        const ineligibleReason =
-          allocation.sybilClassification === "sybil"
-            ? allocation.flaggingReason || "Sybil flagged"
-            : allocation.flaggingReason
-              ? allocation.flaggingReason
-              : allocation.ineligibleReason
-                ? allocation.ineligibleReason
-                : undefined;
-
-        if (ineligibleReason) {
-          return {
-            type: "ineligible",
-            season: allocation.season,
-            seasonName: season.name,
-            ineligibleReason,
-            ineligibleAmount: allocation.ineligibleReward || 0n,
-          };
-        } else if (!convictionClaim) {
-          // Determine if the claim has expired
-          // Use UTC-safe date arithmetic to avoid DST issues
-          const daysToAdd = season.number > 0 ? 30 : 90;
-          const expirationTimestamp = new Date(
-            season.startDate.getTime() + daysToAdd * 24 * 60 * 60 * 1000,
-          );
-          const now = new Date();
-          const expired = now > expirationTimestamp;
-
-          if (expired) {
-            return {
-              type: "expired",
-              season: allocation.season,
-              seasonName: season.name,
-              eligibleAmount: allocation.amount,
-              expiredAt: expirationTimestamp,
-            };
+          const airdrop = airdropsByNumber[allocation.airdrop];
+          if (!airdrop) {
+            throw new Error(
+              `Airdrop ${allocation.airdrop} not found for allocation`,
+            );
           }
-          return {
-            type: "available",
-            season: allocation.season,
-            seasonName: season.name,
-            eligibleAmount: allocation.amount,
-            expiresAt: expirationTimestamp,
-            proof: allocation.season > 0 ? allocation.proof : [],
-          };
-        } else if (convictionClaim.duration > 0n) {
-          return {
-            type: "claimed-and-staked",
-            season: allocation.season,
-            seasonName: season.name,
-            eligibleAmount: convictionClaim.eligibleAmount,
-            claimedAmount: convictionClaim.claimedAmount,
-            stakeDuration: Number(convictionClaim.duration),
-            claimedAt: convictionClaim.blockTimestamp,
-            unlocksAt: this.calculateUnlockDate(
-              convictionClaim.blockTimestamp,
-              convictionClaim.duration,
-            ),
-          };
-        } else if (convictionClaim.duration === 0n) {
-          return {
-            type: "claimed-and-not-staked",
-            season: allocation.season,
-            seasonName: season.name,
-            eligibleAmount: convictionClaim.eligibleAmount,
-            claimedAmount: convictionClaim.claimedAmount,
-            claimedAt: convictionClaim.blockTimestamp,
-          };
-        } else {
-          // This should be unreachable if all conditions are properly handled
-          throw new Error(
-            `Unexpected state for allocation: season=${allocation.season}, ` +
-              `hasEndDate=${!!season.endDate}, hasConvictionClaim=${!!convictionClaim}, ` +
-              `ineligibleReason=${ineligibleReason}`,
-          );
-        }
-      });
 
-      // Sort by season (most recent first)
-      claimsData.sort((a, b) => b.season - a.season);
+          const ineligibleReason =
+            allocation.sybilClassification === "sybil"
+              ? allocation.flaggingReason || "Sybil flagged"
+              : allocation.flaggingReason
+                ? allocation.flaggingReason
+                : allocation.ineligibleReason
+                  ? allocation.ineligibleReason
+                  : undefined;
 
-      this.logger.info(
-        `Successfully fetched ${claimsData.length} claims for address ${address}`,
+          if (ineligibleReason) {
+            return {
+              type: "ineligible",
+              airdrop: airdrop.number,
+              airdropName: airdrop.name,
+              ineligibleReason,
+              ineligibleAmount: allocation.ineligibleReward || 0n,
+            };
+          } else if (!convictionClaim) {
+            // Determine if the claim has expired
+            // Use UTC-safe date arithmetic to avoid DST issues
+            const daysToAdd = airdrop.number > 0 ? 30 : 90;
+            const expirationTimestamp = new Date(
+              airdrop.timestamp.getTime() + daysToAdd * 24 * 60 * 60 * 1000,
+            );
+            const now = new Date();
+            const expired = now > expirationTimestamp;
+
+            if (expired) {
+              return {
+                type: "expired",
+                airdrop: airdrop.number,
+                airdropName: airdrop.name,
+                eligibleAmount: allocation.amount,
+                expiredAt: expirationTimestamp,
+              };
+            }
+            return {
+              type: "available",
+              airdrop: airdrop.number,
+              airdropName: airdrop.name,
+              eligibleAmount: allocation.amount,
+              expiresAt: expirationTimestamp,
+              proof: allocation.airdrop > 0 ? allocation.proof : [],
+            };
+          } else if (convictionClaim.duration > 0n) {
+            return {
+              type: "claimed-and-staked",
+              airdrop: airdrop.number,
+              airdropName: airdrop.name,
+              eligibleAmount: convictionClaim.eligibleAmount,
+              claimedAmount: convictionClaim.claimedAmount,
+              stakeDuration: Number(convictionClaim.duration),
+              claimedAt: convictionClaim.blockTimestamp,
+              unlocksAt: this.calculateUnlockDate(
+                convictionClaim.blockTimestamp,
+                convictionClaim.duration,
+              ),
+            };
+          } else if (convictionClaim.duration === 0n) {
+            return {
+              type: "claimed-and-not-staked",
+              airdrop: airdrop.number,
+              airdropName: airdrop.name,
+              eligibleAmount: convictionClaim.eligibleAmount,
+              claimedAmount: convictionClaim.claimedAmount,
+              claimedAt: convictionClaim.blockTimestamp,
+            };
+          } else {
+            // This should be unreachable if all conditions are properly handled
+            throw new Error(
+              `Unexpected state for allocation: airdrop=${allocation.airdrop}, ` +
+                `hasConvictionClaim=${!!convictionClaim}, ` +
+                `ineligibleReason=${ineligibleReason}`,
+            );
+          }
+        },
       );
 
-      return claimsData;
+      // Sort by season (most recent first)
+      allocationsData.sort((a, b) => b.airdrop - a.airdrop);
+
+      this.logger.info(
+        `Successfully fetched ${allocationsData.length} claims for address ${address}`,
+      );
+
+      return allocationsData;
     } catch (error) {
       this.logger.error(
         { error },
@@ -281,22 +287,18 @@ export class AirdropService {
   }
 
   /**
-   * Get eligibility data for next season conviction rewards.
+   * Get eligibility data for the current conviction rewards airdrop.
    *
    * Calculates whether an address is eligible for conviction rewards based on:
-   * - Having active stakes (conviction claims with duration > 0 extending past season end)
-   * - Participating in at least 3 distinct competitions (boosting OR competing combined)
+   * - Having active stakes (conviction claims with duration > 0 extending past current season end)
+   * - Participating in at least 3 distinct competitions (boosting OR competing combined) during current season
    *
    * @param address - The wallet address to check
-   * @param seasonNumber - Optional specific target season number. If provided, activity is checked
-   *                       for season (seasonNumber - 1). If not provided, uses the current season
-   *                       based on dates as the activity season and (current + 1) as the target.
    * @returns Full eligibility data including potential reward and pool statistics
    */
-  async getNextSeasonEligibility(
+  async getNextAirdropEligibility(
     address: string,
-    seasonNumber?: number,
-  ): Promise<NextSeasonEligibility> {
+  ): Promise<NextAirdropEligibility> {
     try {
       const normalizedAddress = address.toLowerCase();
       this.logger.info(
@@ -304,35 +306,13 @@ export class AirdropService {
       );
 
       // Determine the activity season (current season) and target season
-      let currentSeason: Season;
-      let targetSeasonNumber: number;
-
-      if (seasonNumber !== undefined) {
-        // When a specific target season is provided, activity is checked for the previous season
-        const activitySeasonNumber = seasonNumber - 1;
-        const foundActivitySeason =
-          await this.airdropRepository.getSeasonByNumber(activitySeasonNumber);
-        if (!foundActivitySeason) {
-          throw new Error(`Activity season ${activitySeasonNumber} not found`);
-        }
-        currentSeason = foundActivitySeason;
-        targetSeasonNumber = seasonNumber;
-      } else {
-        // Default: use date-based current season detection
-        const foundCurrentSeason =
-          await this.airdropRepository.getCurrentSeason();
-        if (!foundCurrentSeason) {
-          throw new Error(
-            "No current season found based on current date. Check that season date ranges cover the current time.",
-          );
-        }
-        currentSeason = foundCurrentSeason;
-        targetSeasonNumber = currentSeason.number + 1;
+      // Use date-based current season detection
+      const currentSeason = await this.airdropRepository.getCurrentSeason();
+      if (!currentSeason) {
+        throw new Error(
+          "No current season found based on current date. Check that season date ranges cover the current time.",
+        );
       }
-
-      // Get the target season data if it exists (for the season name)
-      const targetSeasonData =
-        await this.airdropRepository.getSeasonByNumber(targetSeasonNumber);
 
       // Calculate pool statistics
       const poolStats = await this.calculatePoolStats(currentSeason);
@@ -368,10 +348,10 @@ export class AirdropService {
           poolStats.totalActiveStakes;
       }
 
-      const result: NextSeasonEligibility = {
+      const result: NextAirdropEligibility = {
         isEligible,
-        season: targetSeasonNumber,
-        seasonName: targetSeasonData?.name || `Season ${targetSeasonNumber}`,
+        airdrop: currentSeason.startsWithAirdropNumber + 1,
+        airdropName: `Season ${currentSeason.startsWithAirdropNumber + 1}`,
         activeStake,
         potentialReward,
         eligibilityReasons,
@@ -388,7 +368,7 @@ export class AirdropService {
         {
           address: normalizedAddress,
           isEligible,
-          season: targetSeasonNumber,
+          airdrop: currentSeason.startsWithAirdropNumber + 1,
           activeStake: activeStake.toString(),
           potentialReward: potentialReward.toString(),
           totalUniqueCompetitions: eligibilityReasons.totalUniqueCompetitions,

@@ -242,13 +242,13 @@ async function findMissingClaims() {
   const dbClaims = await db
     .select({
       account: convictionClaims.account,
-      season: convictionClaims.season,
+      airdrop: convictionClaims.airdrop,
     })
     .from(convictionClaims)
     .execute();
 
   const accountSeasonSet = new Set(
-    dbClaims.map((c) => `${c.account.toLowerCase()}:${c.season}`),
+    dbClaims.map((c) => `${c.account.toLowerCase()}:${c.airdrop}`),
   );
 
   console.log(
@@ -414,7 +414,7 @@ async function findMissingClaims() {
           walletAddress: claim.account.toLowerCase(),
           eligibleAmount: claim.amount,
           claimedAmount: claim.claimedAmount,
-          season: claim.season,
+          airdrop: claim.season, // Note we are using "season" from the contract as "airdrop" in the database.
           duration: calculateDurationFromClaim(
             claim.amount,
             claim.claimedAmount,

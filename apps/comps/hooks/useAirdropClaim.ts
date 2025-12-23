@@ -21,10 +21,10 @@ import {
   parseAirdropClaimError,
 } from "@/lib/airdrop-error-handling";
 import { tanstackClient } from "@/rpc/clients/tanstack-query";
-import type { AvailableClaim } from "@/types/conviction-claims";
+import type { AvailableAllocation } from "@/types/conviction-claims";
 import { clientConfig } from "@/wagmi-config";
 
-type AirdropClaimItem = AvailableClaim & {
+type AirdropClaimItem = AvailableAllocation & {
   signature?: Hex;
 };
 
@@ -129,7 +129,7 @@ export function useAirdropClaim(): AirdropClaimOperationResult {
 
       const proof = target.proof as Hex[];
       const amount = target.eligibleAmount;
-      const season = target.season as number;
+      const season = target.airdrop; // Note that we use our app's airdrop number as the "season" in the contract.
 
       if (season < 0 || season > 255) {
         const err = new Error(

@@ -47,7 +47,7 @@ export class AirdropRepository {
       return {
         address: allocation.address,
         amount: allocation.amount,
-        season: allocation.season,
+        airdrop: allocation.airdrop,
         proof: allocation.proof,
         category: allocation.category || "",
         sybilClassification: allocation.sybilClassification as
@@ -84,7 +84,7 @@ export class AirdropRepository {
       return results.map((allocation) => ({
         address: allocation.address,
         amount: allocation.amount,
-        season: allocation.season,
+        airdrop: allocation.airdrop,
         proof: allocation.proof,
         category: allocation.category || "",
         sybilClassification: allocation.sybilClassification as
@@ -180,7 +180,7 @@ export class AirdropRepository {
       return results.map((allocation) => ({
         address: allocation.address,
         amount: allocation.amount,
-        season: allocation.season,
+        airdrop: allocation.airdrop,
         proof: allocation.proof,
         category: allocation.category || "",
         sybilClassification: allocation.sybilClassification as
@@ -283,7 +283,7 @@ export class AirdropRepository {
       const allocations = results.map((allocation) => ({
         address: allocation.address,
         amount: allocation.amount,
-        season: allocation.season,
+        airdrop: allocation.airdrop,
         proof: allocation.proof,
         category: allocation.category || "",
         sybilClassification: allocation.sybilClassification as
@@ -410,7 +410,7 @@ export class AirdropRepository {
       .values(newSeason)
       .returning()
       .onConflictDoNothing();
-    if (res && res.number > 0) {
+    if (res && res.number > 1) {
       await executor
         .update(seasons)
         .set({ endDate: res.startDate })

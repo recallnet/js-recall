@@ -1,50 +1,51 @@
 /**
- * Types for conviction airdrop claims data
- * These types mirror the ClaimData types from packages/services/src/airdrop.service.ts
+ * Types for conviction airdrop allocations data
+ * These types mirror the AllocationData types from packages/services/src/airdrop.service.ts
  */
 
-export type BaseClaim = {
-  season: number;
-  seasonName: string;
+export type BaseAllocation = {
+  airdrop: number;
+  airdropName: string;
 };
 
-export type AvailableClaim = BaseClaim & {
+export type AvailableAllocation = BaseAllocation & {
   type: "available";
   eligibleAmount: bigint;
-  expiresAt: Date | string;
+  expiresAt: Date;
   proof: string[];
 };
 
-export type ClaimedAndStakedClaim = BaseClaim & {
+export type ClaimedAndStakedAllocation = BaseAllocation & {
   type: "claimed-and-staked";
   eligibleAmount: bigint;
   claimedAmount: bigint;
   stakeDuration: number;
-  claimedAt: Date | string;
-  unlocksAt: Date | string;
+  claimedAt: Date;
+  unlocksAt: Date;
 };
 
-export type ClaimedAndNotStakedClaim = BaseClaim & {
+export type ClaimedAndNotStakedAllocation = BaseAllocation & {
   type: "claimed-and-not-staked";
   eligibleAmount: bigint;
   claimedAmount: bigint;
-  claimedAt: Date | string;
+  claimedAt: Date;
 };
 
-export type ExpiredClaim = BaseClaim & {
+export type ExpiredAllocation = BaseAllocation & {
   type: "expired";
   eligibleAmount: bigint;
-  expiredAt: Date | string;
+  expiredAt: Date;
 };
 
-export type IneligibleClaim = BaseClaim & {
+export type IneligibleAllocation = BaseAllocation & {
   type: "ineligible";
   ineligibleReason: string;
+  ineligibleAmount: bigint;
 };
 
-export type ConvictionClaimData =
-  | AvailableClaim
-  | ClaimedAndStakedClaim
-  | ClaimedAndNotStakedClaim
-  | ExpiredClaim
-  | IneligibleClaim;
+export type AllocationData =
+  | AvailableAllocation
+  | ClaimedAndStakedAllocation
+  | ClaimedAndNotStakedAllocation
+  | ExpiredAllocation
+  | IneligibleAllocation;

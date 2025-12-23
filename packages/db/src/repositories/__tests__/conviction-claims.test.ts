@@ -142,7 +142,7 @@ describe("ConvictionClaimsRepository", () => {
         configurable: true,
       });
 
-      const result = await repository.getClaimByAccountAndSeason(
+      const result = await repository.getClaimByAccountAndAirdrop(
         "0x1234567890123456789012345678901234567890",
         0,
       );
@@ -166,7 +166,7 @@ describe("ConvictionClaimsRepository", () => {
         configurable: true,
       });
 
-      const result = await repository.getClaimByAccountAndSeason(
+      const result = await repository.getClaimByAccountAndAirdrop(
         "0x1234567890123456789012345678901234567890",
         0,
       );
@@ -200,7 +200,7 @@ describe("ConvictionClaimsRepository", () => {
         configurable: true,
       });
 
-      const result = await repository.hasClaimedForSeason(
+      const result = await repository.hasClaimedForAirdrop(
         "0x1234567890123456789012345678901234567890",
         0,
       );
@@ -220,7 +220,7 @@ describe("ConvictionClaimsRepository", () => {
         configurable: true,
       });
 
-      const result = await repository.hasClaimedForSeason(
+      const result = await repository.hasClaimedForAirdrop(
         "0x1234567890123456789012345678901234567890",
         0,
       );
