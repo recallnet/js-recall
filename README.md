@@ -129,7 +129,7 @@ The repository includes configurations for:
 - Cursor
 - Zed
 
-### Local Development Environment Setup
+### Local Development Setup
 
 The repository includes a `docker-compose.yml` that will start all of the needed services to test and develop against a full network
 
@@ -137,12 +137,14 @@ To start you can do: `docker compose up`
 
 Services:
 
-- anvil: available on the host machine via ANVIL_PORT (default 8546)
+- anvil: available on the host machine via ANVIL_PORT (default 8545)
 - db: postgres instance available on the host machine via POSTGRES_PORT (default 5433)
 - api: the api server and metrics server available on the host machine via API_PORT (default 3000) and METRICS_PORT (default 3003)
 - comps: the next.js server available via COMPS_PORT (default 3001)
 
 See `.env.example` for the full list of env vars
+
+More details are available in LOCKER_DOCKER_DEV.md
 
 ## Development with Cursor
 
