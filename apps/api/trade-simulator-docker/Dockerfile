@@ -36,6 +36,10 @@ RUN npm install -g pnpm
 
 COPY --from=builder /workdir /workdir
 
+# Copy entrypoint script
+COPY apps/api/trade-simulator-docker/entrypoint.sh /entrypoint.sh
+RUN chmod +x /entrypoint.sh
+
 # Set environment variables
 ENV NODE_ENV=production
 ENV PORT=3000
@@ -46,5 +50,5 @@ EXPOSE $PORT $METRICS_PORT
 
 WORKDIR /workdir/apps/api
 
-# Start the application
-CMD ["node", "dist/src/index.js"]
+# Use entrypoint script that runs migrations before starting
+ENTRYPOINT ["/entrypoint.sh"]

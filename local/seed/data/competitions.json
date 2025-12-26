@@ -1,0 +1,319 @@
+[
+  {
+    "name": "Winter Perpetuals Championship",
+    "description": "Trade perpetual futures with advanced risk management strategies. Compete for the highest Calmar ratio over 30 days.",
+    "arenaName": "Perpetuals Trading",
+    "type": "perpetual_futures",
+    "status": "ended",
+    "imageUrl": "https://picsum.photos/seed/perps-winter/800/400",
+    "externalUrl": null,
+    "startDate": "2024-01-15T00:00:00Z",
+    "endDate": "2024-02-14T23:59:59Z",
+    "boostStartDate": "2024-01-10T00:00:00Z",
+    "boostEndDate": "2024-01-15T00:00:00Z",
+    "joinStartDate": "2024-01-01T00:00:00Z",
+    "joinEndDate": "2024-01-14T23:59:59Z",
+    "maxParticipants": 100,
+    "minimumStake": "100",
+    "minRecallRank": null,
+    "allowlistOnly": false,
+    "vips": [],
+    "allowlist": [],
+    "blocklist": [],
+    "agentAllocation": "10000",
+    "agentAllocationUnit": "USDC",
+    "boosterAllocation": "5000",
+    "boosterAllocationUnit": "USDC",
+    "boostTimeDecayRate": "0.05",
+    "rewardRules": {
+      "distribution": "tiered",
+      "prizes": [
+        { "rank": 1, "amount": "5000", "unit": "USDC" },
+        { "rank": 2, "amount": "3000", "unit": "USDC" },
+        { "rank": 3, "amount": "2000", "unit": "USDC" },
+        { "ranks": [4, 10], "amount": "500", "unit": "USDC" }
+      ]
+    },
+    "rewardDetails": "Top 10 agents receive USDC rewards based on Calmar ratio performance.",
+    "sandboxMode": false,
+    "displayState": "active",
+    "tradingConfig": {
+      "dataSource": "external_api",
+      "evaluationMetric": "calmar_ratio",
+      "initialCapital": "10000",
+      "selfFundingThresholdUsd": "1000",
+      "minFundingThreshold": "100",
+      "inactivityHours": 72
+    }
+  },
+  {
+    "name": "Spring Spot Trading Challenge",
+    "description": "Live spot trading competition on Base network. Trade approved tokens with real-time portfolio tracking.",
+    "arenaName": "Spot Trading",
+    "type": "spot_live_trading",
+    "status": "active",
+    "imageUrl": "https://picsum.photos/seed/spot-spring/800/400",
+    "externalUrl": null,
+    "startDate": "2024-03-01T00:00:00Z",
+    "endDate": "2024-04-30T23:59:59Z",
+    "boostStartDate": "2024-02-25T00:00:00Z",
+    "boostEndDate": "2024-03-01T00:00:00Z",
+    "joinStartDate": "2024-02-20T00:00:00Z",
+    "joinEndDate": "2024-03-15T23:59:59Z",
+    "maxParticipants": 200,
+    "minimumStake": "50",
+    "minRecallRank": 100,
+    "allowlistOnly": false,
+    "vips": [],
+    "allowlist": [],
+    "blocklist": [],
+    "agentAllocation": "5000",
+    "agentAllocationUnit": "USDC",
+    "boosterAllocation": "2500",
+    "boosterAllocationUnit": "USDC",
+    "boostTimeDecayRate": "0.03",
+    "rewardRules": {
+      "distribution": "tiered",
+      "prizes": [
+        { "rank": 1, "amount": "10000", "unit": "USDC" },
+        { "rank": 2, "amount": "6000", "unit": "USDC" },
+        { "rank": 3, "amount": "4000", "unit": "USDC" },
+        { "ranks": [4, 10], "amount": "1000", "unit": "USDC" },
+        { "ranks": [11, 25], "amount": "500", "unit": "USDC" }
+      ]
+    },
+    "rewardDetails": "Top 25 agents share a 30,000 USDC prize pool based on PnL performance.",
+    "sandboxMode": false,
+    "displayState": "active",
+    "tradingConfig": {
+      "dataSource": "rpc_direct",
+      "selfFundingThresholdUsd": "500",
+      "minFundingThreshold": "50",
+      "inactivityHours": 48,
+      "syncIntervalMinutes": 5,
+      "chains": [
+        {
+          "specificChain": "base-mainnet",
+          "enabled": true
+        }
+      ],
+      "allowedTokens": [
+        {
+          "specificChain": "base-mainnet",
+          "tokenAddress": "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913",
+          "tokenSymbol": "USDC"
+        },
+        {
+          "specificChain": "base-mainnet",
+          "tokenAddress": "0x4200000000000000000000000000000000000006",
+          "tokenSymbol": "WETH"
+        },
+        {
+          "specificChain": "base-mainnet",
+          "tokenAddress": "0x50c5725949A6F0c72E6C4a641F24049A917DB0Cb",
+          "tokenSymbol": "DAI"
+        }
+      ],
+      "allowedProtocols": [
+        {
+          "specificChain": "base-mainnet",
+          "protocol": "uniswap-v3",
+          "routerAddress": "0x2626664c2603336E57B271c5C0b26F421741e481",
+          "factoryAddress": "0x33128a8fC17869897dcE68Ed026d694621f6FDfD"
+        }
+      ]
+    }
+  },
+  {
+    "name": "Cross-Chain Masters Series",
+    "description": "Advanced cross-chain trading competition. Optimize trades across multiple chains and bridges.",
+    "arenaName": "Cross-Chain Trading",
+    "type": "spot_live_trading",
+    "status": "active",
+    "imageUrl": "https://picsum.photos/seed/cross-chain/800/400",
+    "externalUrl": "https://recall.trade/competitions/cross-chain",
+    "startDate": "2024-03-10T00:00:00Z",
+    "endDate": "2024-05-10T23:59:59Z",
+    "boostStartDate": "2024-03-05T00:00:00Z",
+    "boostEndDate": "2024-03-10T00:00:00Z",
+    "joinStartDate": "2024-03-01T00:00:00Z",
+    "joinEndDate": "2024-03-20T23:59:59Z",
+    "maxParticipants": 50,
+    "minimumStake": "500",
+    "minRecallRank": 500,
+    "allowlistOnly": false,
+    "vips": [],
+    "allowlist": [],
+    "blocklist": [],
+    "agentAllocation": "25000",
+    "agentAllocationUnit": "USDC",
+    "boosterAllocation": "10000",
+    "boosterAllocationUnit": "USDC",
+    "boostTimeDecayRate": "0.08",
+    "rewardRules": {
+      "distribution": "tiered",
+      "prizes": [
+        { "rank": 1, "amount": "50000", "unit": "USDC" },
+        { "rank": 2, "amount": "30000", "unit": "USDC" },
+        { "rank": 3, "amount": "20000", "unit": "USDC" },
+        { "ranks": [4, 5], "amount": "10000", "unit": "USDC" }
+      ]
+    },
+    "rewardDetails": "Elite competition with 120,000 USDC prize pool. Requires advanced ranking.",
+    "sandboxMode": false,
+    "displayState": "active",
+    "tradingConfig": {
+      "dataSource": "rpc_direct",
+      "selfFundingThresholdUsd": "2000",
+      "minFundingThreshold": "500",
+      "inactivityHours": 24,
+      "syncIntervalMinutes": 3,
+      "chains": [
+        {
+          "specificChain": "ethereum-mainnet",
+          "enabled": true
+        },
+        {
+          "specificChain": "base-mainnet",
+          "enabled": true
+        },
+        {
+          "specificChain": "arbitrum-mainnet",
+          "enabled": true
+        }
+      ],
+      "allowedTokens": [
+        {
+          "specificChain": "ethereum-mainnet",
+          "tokenAddress": "0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48",
+          "tokenSymbol": "USDC"
+        },
+        {
+          "specificChain": "base-mainnet",
+          "tokenAddress": "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913",
+          "tokenSymbol": "USDC"
+        }
+      ],
+      "allowedProtocols": []
+    }
+  },
+  {
+    "name": "Summer Perpetuals Pro League",
+    "description": "Premium perpetuals competition for professional traders. High stakes, high rewards.",
+    "arenaName": "Perpetuals Trading",
+    "type": "perpetual_futures",
+    "status": "pending",
+    "imageUrl": "https://picsum.photos/seed/perps-summer/800/400",
+    "externalUrl": null,
+    "startDate": "2024-06-01T00:00:00Z",
+    "endDate": "2024-08-31T23:59:59Z",
+    "boostStartDate": "2024-05-25T00:00:00Z",
+    "boostEndDate": "2024-06-01T00:00:00Z",
+    "joinStartDate": "2024-05-15T00:00:00Z",
+    "joinEndDate": "2024-05-30T23:59:59Z",
+    "maxParticipants": 75,
+    "minimumStake": "1000",
+    "minRecallRank": 1000,
+    "allowlistOnly": false,
+    "vips": [],
+    "allowlist": [],
+    "blocklist": [],
+    "agentAllocation": "50000",
+    "agentAllocationUnit": "USDC",
+    "boosterAllocation": "25000",
+    "boosterAllocationUnit": "USDC",
+    "boostTimeDecayRate": "0.10",
+    "rewardRules": {
+      "distribution": "tiered",
+      "prizes": [
+        { "rank": 1, "amount": "100000", "unit": "USDC" },
+        { "rank": 2, "amount": "60000", "unit": "USDC" },
+        { "rank": 3, "amount": "40000", "unit": "USDC" },
+        { "ranks": [4, 10], "amount": "10000", "unit": "USDC" }
+      ]
+    },
+    "rewardDetails": "Pro league with 270,000 USDC prize pool. Invitation required for top tier.",
+    "sandboxMode": false,
+    "displayState": "active",
+    "tradingConfig": {
+      "dataSource": "external_api",
+      "evaluationMetric": "sortino_ratio",
+      "initialCapital": "50000",
+      "selfFundingThresholdUsd": "5000",
+      "minFundingThreshold": "1000",
+      "inactivityHours": 48
+    }
+  },
+  {
+    "name": "Beginner Spot Trading",
+    "description": "Entry-level spot trading competition. Learn and earn in a low-risk environment.",
+    "arenaName": "Spot Trading",
+    "type": "spot_live_trading",
+    "status": "pending",
+    "imageUrl": "https://picsum.photos/seed/spot-beginner/800/400",
+    "externalUrl": null,
+    "startDate": "2024-05-01T00:00:00Z",
+    "endDate": "2024-05-31T23:59:59Z",
+    "boostStartDate": "2024-04-25T00:00:00Z",
+    "boostEndDate": "2024-05-01T00:00:00Z",
+    "joinStartDate": "2024-04-20T00:00:00Z",
+    "joinEndDate": "2024-04-30T23:59:59Z",
+    "maxParticipants": 500,
+    "minimumStake": "10",
+    "minRecallRank": null,
+    "allowlistOnly": false,
+    "vips": [],
+    "allowlist": [],
+    "blocklist": [],
+    "agentAllocation": "1000",
+    "agentAllocationUnit": "USDC",
+    "boosterAllocation": "500",
+    "boosterAllocationUnit": "USDC",
+    "boostTimeDecayRate": "0.02",
+    "rewardRules": {
+      "distribution": "tiered",
+      "prizes": [
+        { "rank": 1, "amount": "1000", "unit": "USDC" },
+        { "rank": 2, "amount": "600", "unit": "USDC" },
+        { "rank": 3, "amount": "400", "unit": "USDC" },
+        { "ranks": [4, 20], "amount": "100", "unit": "USDC" }
+      ]
+    },
+    "rewardDetails": "Beginner-friendly competition with 4,700 USDC prize pool.",
+    "sandboxMode": false,
+    "displayState": "active",
+    "tradingConfig": {
+      "dataSource": "rpc_direct",
+      "selfFundingThresholdUsd": "100",
+      "minFundingThreshold": "10",
+      "inactivityHours": 96,
+      "syncIntervalMinutes": 10,
+      "chains": [
+        {
+          "specificChain": "base-mainnet",
+          "enabled": true
+        }
+      ],
+      "allowedTokens": [
+        {
+          "specificChain": "base-mainnet",
+          "tokenAddress": "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913",
+          "tokenSymbol": "USDC"
+        },
+        {
+          "specificChain": "base-mainnet",
+          "tokenAddress": "0x4200000000000000000000000000000000000006",
+          "tokenSymbol": "WETH"
+        }
+      ],
+      "allowedProtocols": [
+        {
+          "specificChain": "base-mainnet",
+          "protocol": "uniswap-v3",
+          "routerAddress": "0x2626664c2603336E57B271c5C0b26F421741e481",
+          "factoryAddress": "0x33128a8fC17869897dcE68Ed026d694621f6FDfD"
+        }
+      ]
+    }
+  }
+]

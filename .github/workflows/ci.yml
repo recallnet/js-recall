@@ -47,6 +47,8 @@ jobs:
 
       - name: Start services via docker compose
         run: docker compose up -d --wait db anvil
+        env:
+          POSTGRES_PORT: 5432
 
       - name: Create test environment for api app
         working-directory: apps/api
