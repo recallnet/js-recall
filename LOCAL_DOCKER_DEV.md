@@ -2,37 +2,24 @@
 
 Quick reference for local development with Docker Compose.
 
-## Quick Start
+This setup supports **4 flexible development scenarios** using Docker Compose profiles, allowing you to run services locally or in Docker based on your goals.
 
-```bash
-# Copy environment config
-cp .env.docker-compose.example .env
+---
 
-# Start everything (auto-seeds data)
-docker-compose up
+## Development Scenarios
 
-# Access services
-# Frontend: http://localhost:3001
-# API: http://localhost:3000
-# Anvil: http://localhost:8545
-# Postgres: localhost:5433
-```
+| Scenario                 | Command                             | What runs in Docker            | What runs locally |
+| ------------------------ | ----------------------------------- | ------------------------------ | ----------------- |
+| **1. Only comps local**  | `docker compose --profile comps up` | db, anvil, api, db-seed        | comps             |
+| **2. API + comps local** | `docker compose up`                 | db, anvil, db-seed             | api, comps        |
+| **3. Everything Docker** | `docker compose --profile full up`  | db, anvil, api, db-seed, comps | nothing           |
+| **4. Only API local**    | `docker compose --profile api up`   | db, anvil, db-seed, comps      | api               |
 
-## Authentication Modes
-
-**Mock Mode** (default, recommended):
-
-- No Privy account needed
-- Users have fake Privy IDs: `did:privy:local-user-0`
-- Connect with any Anvil wallet
-
-**Privy Mode**:
-
-- Set `AUTH_MODE=privy` in `.env`
-- Requires Privy developer account
-- Configure in `apps/api/.env`
+---
 
 ## Seeded Data
+
+When you start the Docker Compose stack, the `db-seed` service automatically seeds the database with:
 
 - **10 Users** - Mapped to Anvil wallets (10,000 ETH each)
 - **15 Agents** - With API keys (agents 11-13 left unenrolled for testing)
@@ -59,130 +46,244 @@ docker-compose up
 | 8    | `0x23618e81E3f5cdF7f54C3d65f7FBc0aBf5B21E8f` |
 | 9    | `0xa0Ee7A142d267C1f36714E4a8F75612F20a79720` |
 
-Private keys in `docker/seed/src/anvil-wallets.ts`
+Private keys available in `docker/seed/src/anvil-wallets.ts`
 
 ### Get Agent API Keys
 
 ```bash
-docker-compose logs db-seed | grep "API Key"
+docker compose logs db-seed | grep "API Key"
 # or
 ./docker/seed/show-api-keys.sh
 ```
 
+---
+
 ## Common Commands
 
+### Basic Operations
+
 ```bash
+# Start services in foreground
+docker compose --profile comps up
+
+# Start services in background
+docker compose --profile comps up -d
+
+# Stop services
+docker compose down
+
+# Stop and remove volumes (complete reset)
+docker compose down -v
+
 # View logs
-docker-compose logs -f
-docker-compose logs db-seed
+docker compose logs -f
+docker compose logs -f api
+docker compose logs -f comps
+docker compose logs db-seed | grep "API Key"
 
-# Restart service
-docker-compose restart api
+# Restart a specific service
+docker compose restart api
 
-# Rebuild service
-docker-compose build api
-docker-compose up api
+# Rebuild a service after code changes
+docker compose build api
+docker compose up api
+```
 
-# Reseed database (idempotent)
-docker-compose up db-seed
+### Database Operations
 
-# Complete reset
-docker-compose down -v
-docker-compose up
-
-# Database access
+```bash
+# Access database directly
 psql postgresql://postgres:postgres@localhost:5433/postgres
 
-# Drizzle Studio (from apps/api)
+# Run migrations (when API is local)
+cd apps/api
+pnpm db:migrate
+
+# Open Drizzle Studio (requires API's .env configured)
+cd apps/api
 pnpm db:studio
+
+# Reseed database (idempotent - safe to run multiple times)
+docker compose up db-seed
 ```
+
+---
 
 ## MetaMask Setup
 
-1. Add network:
-   - RPC: http://localhost:8545
+1. **Add Local Network:**
+
+   - Network name: Anvil Local
+   - RPC URL: http://localhost:8545
    - Chain ID: 31337
-   - Currency: ETH
-2. Import private key from `docker/seed/src/anvil-wallets.ts`
-3. Balance: 10,000 ETH
+   - Currency symbol: ETH
+
+2. **Import Test Account:**
+   - Copy a private key from `docker/seed/src/anvil-wallets.ts`
+   - Import into MetaMask
+   - You'll have 10,000 ETH to work with
+
+---
 
 ## Test Agent API
 
 ```bash
-# Get API key from logs
-API_KEY=$(docker-compose logs db-seed | grep "API Key" | head -1 | awk '{print $NF}')
+# Get an API key from seed logs
+API_KEY=$(docker compose logs db-seed | grep "API Key" | head -1 | awk '{print $NF}')
 
-# Make request
+# Make authenticated request
 curl http://localhost:3000/backend-api/api/agents/me \
   -H "Authorization: Bearer $API_KEY"
 ```
 
-## Contracts
+---
 
-Anvil image includes pre-deployed contracts. Contract addresses saved in:
+## Authentication Modes
+
+### Mock Mode (Default, Recommended)
+
+- No Privy account needed
+- Users have fake Privy IDs: `did:privy:local-user-0`, `did:privy:local-user-1`, etc.
+- Connect with any Anvil wallet address
+- Perfect for local development
+
+### Privy Mode
+
+To use real Privy authentication:
+
+1. Set `AUTH_MODE=privy` in your `.env` file
+2. Configure Privy credentials in `apps/api/.env`
+3. See `apps/api/.env.example` for required variables
+
+---
+
+## Smart Contracts
+
+The Anvil container includes pre-deployed smart contracts. Contract addresses are saved in:
 `packages/staking-contracts/contracts/deployments/docker/`
 
-**Rebuild anvil state** (if contracts change):
+### Rebuild Anvil State
+
+If contracts change, rebuild the Anvil state:
 
 ```bash
+# Rebuild state with updated contracts
 ./docker/anvil/rebuild-state.sh
-docker-compose build anvil
+
+# Rebuild the Anvil image
+docker compose build anvil
+
+# Restart with new state
+docker compose up anvil
 ```
 
-- `anvil-state.json` - Pre-dumped blockchain state with deployed contracts and funded accounts
-- `rebuild-state.sh` - Script uses docker to build, start anvil, deploy contracts, fund accounts, etc... When finished it will clean up the docker artifacts, and copy the resulting blockchain state file into this repo.
-- `generate-state.sh` - Used inside a docker container to deploy contracts, etc...
-
-### How to rebuild
-
-````bash
-# From repo root:
-./docker/anvil/rebuild-state.sh
-
-# Then rebuild the image:
-docker-compose build anvil
+---
 
 ## Troubleshooting
 
-**Port conflicts**: Override in `.env`:
+### Port Conflicts
+
+Override default ports in your `.env` file:
 
 ```env
 ANVIL_PORT=8546
 POSTGRES_PORT=5434
 API_PORT=3002
-````
-
-**Database issues**:
-
-```bash
-docker-compose logs db
-docker-compose restart db
+COMPS_PORT=3002
 ```
 
-**Seeder fails**: Check API migrations completed:
+### Database Issues
 
 ```bash
-docker-compose logs api | grep migration
+# Check database logs
+docker compose logs db
+
+# Restart database
+docker compose restart db
+
+# Complete database reset
+docker compose down -v
+docker compose up
 ```
 
-**Stale data**:
+### API Migration Issues
 
 ```bash
-docker-compose down -v
-docker-compose up
+# Check if migrations ran
+docker compose logs api | grep migration
+
+# When running API locally, manually run migrations
+cd apps/api
+pnpm db:migrate
 ```
 
-## Modifying Seed Data
+### Seeder Fails
 
-**Arenas/Competitions**: Edit `docker/seed/data/*.json`
+The db-seed service expects database migrations to be complete:
 
-**Enrollments**: Edit `src/competitions.ts` in `docker/seed/`
+- **With `--profile comps` or `--profile full`:** API container runs migrations automatically
+- **Without profile (scenarios 2 & 4):** You MUST run `pnpm db:migrate` locally first
 
-**Rebuild**: `docker-compose build db-seed && docker-compose up db-seed`
+```bash
+# Check seeder logs
+docker compose logs db-seed
 
-## Additional Docs
+# Re-run seeder (idempotent)
+docker compose up db-seed
+```
 
-- Seed service: `docker/seed/README.md`
-- Anvil info: `docker/anvil/README.md`
-- API docs: `apps/api/README.md`
-- Agent development: `AGENTS.md`
+### Stale Data
+
+```bash
+# Complete reset
+docker compose down -v
+docker compose --profile full up
+```
+
+### Node/pnpm PATH Issues
+
+Add to your `~/.bashrc` or `~/.zshrc`:
+
+```bash
+export PATH="/home/joe/.nvm/versions/node/v22.13.1/bin/:$PATH"
+```
+
+Then reload: `source ~/.bashrc` or `source ~/.zshrc`
+
+---
+
+## Performance Tips
+
+1. **Run services in background:** Use `-d` flag for faster terminal access
+
+   ```bash
+   docker compose --profile api up -d
+   ```
+
+2. **Use Scenario 1 or 2 for active development:** Local execution is much faster than containers
+
+3. **Keep Docker Compose running:** No need to stop/start between code changes when running locally
+
+4. **Use Scenario 3 sparingly:** Only for testing full stack or when sharing setup
+
+---
+
+## Quick Reference Table
+
+| What you're working on    | Recommended Scenario | Command                                |
+| ------------------------- | -------------------- | -------------------------------------- |
+| Frontend (comps) only     | Scenario 1           | `docker compose --profile comps up`    |
+| Backend (API) only        | Scenario 2 or 4      | `docker compose up` or `--profile api` |
+| Full-stack development    | Scenario 2           | `docker compose up`                    |
+| Testing Docker deployment | Scenario 3           | `docker compose --profile full up`     |
+| Sharing environment       | Scenario 3           | `docker compose --profile full up`     |
+
+---
+
+## Additional Documentation
+
+- **Seed service:** `docker/seed/README.md`
+- **Anvil setup:** `docker/anvil/README.md`
+- **API documentation:** `apps/api/README.md`
+- **Development guidelines:** `AGENTS.md`
+- **Comps app:** `apps/comps/README.md`

@@ -45,6 +45,9 @@ services:
       retries: 5
 
   api:
+    profiles:
+      - comps
+      - full
     build:
       context: .
       dockerfile: apps/api/trade-simulator-docker/Dockerfile
@@ -78,10 +81,13 @@ services:
       DATABASE_URL: postgresql://postgres:postgres@db/postgres
       AUTH_MODE: ${AUTH_MODE:-mock}
     depends_on:
-      api:
-        condition: service_started
+      db:
+        condition: service_healthy
 
   comps:
+    profiles:
+      - api
+      - full
     build:
       context: .
       dockerfile: apps/comps/Dockerfile
@@ -104,13 +110,15 @@ services:
       PORT: ${COMPS_PORT:-3001}
       AUTH_MODE: ${AUTH_MODE:-mock}
       DATABASE_URL: postgresql://postgres:postgres@db/postgres
+      NEXT_PUBLIC_API_BASE_URL: "${COMPS_API_URL:-http://localhost:${API_PORT:-3000}}${API_PREFIX:+/${API_PREFIX}}/api"
       NEXT_PUBLIC_CHAIN_ID: ${NEXT_PUBLIC_CHAIN_ID:-31337}
       NEXT_PUBLIC_ETH_RPC_URL: ${NEXT_PUBLIC_ETH_RPC_URL:-http://anvil:8545}
       NEXT_PUBLIC_TOKEN_CONTRACT_ADDRESS: ${NEXT_PUBLIC_TOKEN_CONTRACT_ADDRESS:-0x5FbDB2315678afecb367f032d93F642f64180aa3}
       NEXT_PUBLIC_STAKING_CONTRACT_ADDRESS: ${NEXT_PUBLIC_STAKING_CONTRACT_ADDRESS:-0x9A676e781A523b5d0C0e43731313A708CB607508}
       NEXT_PUBLIC_REWARD_ALLOCATION_CONTRACT_ADDRESS: ${NEXT_PUBLIC_REWARD_ALLOCATION_CONTRACT_ADDRESS:-0x68B1D87F95878fE05B998F19b66F4baba5De1aed}
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
     depends_on:
-      - api
       - db-seed
       - anvil
 
