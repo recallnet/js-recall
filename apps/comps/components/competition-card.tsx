@@ -1,15 +1,14 @@
 "use client";
 
-import { useQuery } from "@tanstack/react-query";
+import { formatDistanceToNow } from "date-fns";
+import { ArrowRight } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 import React from "react";
 
-import { Badge } from "@recallnet/ui2/components/badge";
-import { Card } from "@recallnet/ui2/components/card";
+import { Button } from "@recallnet/ui2/components/button";
 import { cn } from "@recallnet/ui2/lib/utils";
 
-import { tanstackClient } from "@/rpc/clients/tanstack-query";
 import { CompetitionWithUserAgents } from "@/types";
 import { formatAmount } from "@/utils/format";
 
@@ -17,13 +16,6 @@ import {
   formatCompetitionDates,
   formatCompetitionType,
 } from "../utils/competition-utils";
-import { Recall } from "./Recall";
-import { CompetitionActions } from "./competition-actions";
-import { CompetitionStateSummary } from "./competition-state-summary";
-import { CompetitionStatusBanner } from "./competition-status-banner";
-import { ParticipantsAvatars } from "./participants-avatars";
-import { Rewards } from "./rewards";
-import { RewardsTGE } from "./rewards-tge";
 
 interface CompetitionCardProps {
   competition: CompetitionWithUserAgents;
@@ -34,142 +26,213 @@ export const CompetitionCard: React.FC<CompetitionCardProps> = ({
   competition,
   className,
 }) => {
-  const { data: topLeaders } = useQuery(
-    tanstackClient.competitions.getAgents.queryOptions({
-      input: { competitionId: competition.id },
-    }),
-  );
-
   const duration = formatCompetitionDates(
     competition.startDate,
     competition.endDate,
   );
 
+  const getStatusBadge = (): React.ReactNode => {
+    switch (competition.status) {
+      case "active":
+        return (
+          <div className="flex items-center gap-1.5 rounded border border-green-500/30 bg-gray-900/80 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-green-400 backdrop-blur-sm">
+            <span className="relative flex h-1.5 w-1.5">
+              <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-green-400 opacity-75" />
+              <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-green-400" />
+            </span>
+            LIVE
+          </div>
+        );
+      case "pending":
+        return (
+          <div className="flex items-center gap-1.5 rounded border border-blue-400/30 bg-gray-900/80 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-blue-400 backdrop-blur-sm">
+            <span className="h-1.5 w-1.5 rounded-full bg-blue-400" />
+            SOON
+          </div>
+        );
+      default:
+        return null;
+    }
+  };
+
+  const getBoostingStatus = (): { text: string; isActive: boolean } => {
+    if (competition.status === "ended")
+      return { text: "Closed", isActive: false };
+    if (!competition.endDate) return { text: "TBA", isActive: false };
+
+    const end = new Date(competition.endDate);
+    if (end < new Date()) return { text: "Closed", isActive: false };
+
+    const distance = formatDistanceToNow(end, { addSuffix: false });
+    // Use short format for days/hours if possible, but date-fns formatDistanceToNow is verbose by default
+    // formatDistanceToNow doesn't support short units easily without custom locale,
+    // so we'll stick to standard output or simple replace.
+    const shortDistance = distance
+      .replace(" days", "d")
+      .replace(" day", "d")
+      .replace(" hours", "h")
+      .replace(" hour", "h")
+      .replace(" minutes", "m")
+      .replace(" minute", "m");
+
+    return { text: `Ends in ${shortDistance}`, isActive: true };
+  };
+
+  const getRegistrationStatus = (): string => {
+    if (competition.status === "active") return "Open";
+    if (competition.status === "pending") return "Open";
+    return "Closed";
+  };
+
+  const totalRewards = competition.rewardsTge
+    ? Number(competition.rewardsTge.agentPool)
+    : competition.rewards?.reduce((sum, r) => sum + r.reward, 0) || 0;
+
+  const boostingStatus = getBoostingStatus();
+  const registrationStatus = getRegistrationStatus();
+
+  const isEnded = competition.status === "ended";
+
   return (
-    <Card
-      cropSize={35}
-      corner="bottom-right"
-      className={cn("bg-card group flex w-full flex-col", className)}
+    <div
+      className={cn(
+        "group relative flex w-full flex-col rounded-2xl border pr-2 transition-all duration-300 sm:flex-row sm:items-center",
+        isEnded
+          ? "border-gray-800/50 bg-gray-900/10 hover:border-gray-800"
+          : "border-gray-800 bg-gray-900/20 hover:border-gray-700",
+        className,
+      )}
     >
-      <CompetitionStatusBanner status={competition.status} />
-
-      <div className="flex h-full w-full">
-        <div className="flex w-full flex-col gap-2 border-r">
-          <div className="flex w-full items-start justify-between align-top">
-            <Link
-              href={`/competitions/${competition.id}`}
-              className="group inline-block p-6"
-            >
-              <h1 className="text-primary-foreground text-3xl font-bold group-hover:underline">
-                {competition.name}
-              </h1>
-            </Link>
-
-            <ParticipantsAvatars
-              compId={competition.id}
-              agents={competition.agents}
-              className="pr-6 pt-6"
-              showRank={competition.status !== "pending"}
-            />
-          </div>
-
-          <Badge variant="gray" className="ml-6 px-3 py-1 text-sm">
-            {formatCompetitionType(competition.type)}
-          </Badge>
-
-          <p className="text-secondary-foreground max-h-50 mb-auto overflow-y-auto text-ellipsis px-6 py-2">
-            {competition.description}
-          </p>
-
-          <ParticipantsAvatars
-            compId={competition.id}
-            agents={topLeaders?.agents || []}
-            className="px-6 py-2"
-            showRank={competition.status !== "pending"}
-          />
-
-          <hr />
-
-          {competition.status === "ended" ? null : (
-            <CompetitionStateSummary
-              competition={competition}
-              className="px-6 py-2"
-            />
-          )}
-
-          <CompetitionActions competition={competition} className="px-6 pb-4" />
-        </div>
-
-        <div className="flex w-full flex-col">
-          <div className="flex w-full">
-            <div className="w-full border-r p-6">
-              <h3 className="text-secondary-foreground mb-1 text-xs font-semibold uppercase">
-                Duration
-              </h3>
-              <p className="text-primary-foreground font-semibold">
-                {duration}
-              </p>
-            </div>
-            <div className="w-full p-6">
-              {/* Rewards (token or legacy) */}
-              <h3 className="text-secondary-foreground mb-1 text-xs font-semibold uppercase">
-                Rewards
-              </h3>
-              {competition.rewardsTge ? (
-                <RewardsTGE
-                  rewards={{
-                    agentPrizePool: BigInt(competition.rewardsTge.agentPool),
-                    userPrizePool: BigInt(competition.rewardsTge.userPool),
-                  }}
-                  compact
-                />
-              ) : competition.rewards ? (
-                <Rewards rewards={competition.rewards} compact />
-              ) : (
-                <p className="text-primary-foreground font-semibold">TBA</p>
-              )}
-              {/* Minimum stake to join, if present */}
-
-              <h3 className="text-secondary-foreground mb-1 mt-4 text-xs font-semibold uppercase">
-                Minimum Stake
-              </h3>
-              <div className="text-primary-foreground flex items-center gap-1 font-bold">
-                {competition.minimumStake ? (
-                  <>
-                    <Recall /> {formatAmount(competition.minimumStake, 0, true)}
-                  </>
-                ) : (
-                  <span className="text-primary-foreground font-semibold">
-                    N/A
-                  </span>
-                )}
-              </div>
-            </div>
-          </div>
-          <div className="relative h-full w-full content-center overflow-hidden">
-            {competition.imageUrl ? (
-              <Image
-                src={competition.imageUrl}
-                alt="Competition"
-                fill={true}
-                className="duration-800 object-cover transition ease-in-out group-hover:scale-105"
-                onError={(e) => {
-                  const target = e.target as HTMLImageElement;
-                  target.style.display = "none";
-                }}
-              />
-            ) : (
-              <Image
-                src={"/competition_image_container.svg"}
-                alt={competition.name}
-                width={550}
-                height={550}
-                className="duration-800 object-cover transition ease-in-out group-hover:scale-105"
-              />
+      {/* Left: Image & Badge */}
+      <div
+        className={cn(
+          "relative m-3 h-24 w-24 shrink-0 overflow-hidden rounded-xl bg-gray-800 sm:h-24 sm:w-24",
+          isEnded ? "opacity-40" : "",
+        )}
+      >
+        {competition.imageUrl ? (
+          <Image
+            src={competition.imageUrl}
+            alt={competition.name}
+            fill
+            className={cn(
+              "object-cover transition-transform duration-500",
+              isEnded ? "" : "group-hover:scale-105",
             )}
+          />
+        ) : (
+          <div className="flex h-full w-full items-center justify-center bg-gradient-to-br from-gray-800 to-gray-900">
+            <span className="font-mono text-4xl font-bold text-gray-700">
+              R
+            </span>
+          </div>
+        )}
+        <div className="absolute left-2 top-2">{getStatusBadge()}</div>
+      </div>
+
+      {/* Middle: Info */}
+      <div className="flex flex-1 flex-col justify-center gap-1 px-4 pb-4 sm:px-0 sm:pb-0 sm:pl-2">
+        <div className="flex items-center gap-2 font-mono text-[10px] font-medium uppercase tracking-widest text-gray-500">
+          <span>{formatCompetitionType(competition.type)}</span>
+          <span className="h-1 w-1 rounded-full bg-gray-700" />
+          <span className="font-sans normal-case tracking-normal text-gray-400">
+            {duration}
+          </span>
+        </div>
+        <h3
+          className={cn(
+            "text-xl font-medium tracking-tight",
+            isEnded ? "text-gray-400" : "text-white",
+          )}
+        >
+          {competition.name}
+        </h3>
+        <p className="line-clamp-2 max-w-lg text-xs leading-relaxed text-gray-500">
+          {competition.description}
+        </p>
+      </div>
+
+      {/* Right: Stats & Button */}
+      <div className="flex flex-wrap items-center gap-6 border-t border-gray-800 px-4 py-4 sm:flex-nowrap sm:gap-8 sm:border-t-0 sm:py-0 sm:pr-4">
+        {/* Stats Group */}
+        <div className="flex flex-1 items-center justify-between gap-6 sm:justify-end sm:gap-8">
+          {/* Rewards */}
+          <div className="flex flex-col items-end gap-0.5">
+            <span className="font-mono text-[10px] font-medium uppercase tracking-widest text-gray-600">
+              Rewards
+            </span>
+            <span
+              className={cn(
+                "text-lg font-bold",
+                isEnded ? "text-gray-400" : "text-white",
+              )}
+            >
+              {totalRewards > 0 ? formatAmount(totalRewards, 0, true) : "0"}
+            </span>
+          </div>
+
+          {/* Divider */}
+          <div className="hidden h-8 w-px bg-gray-800 sm:block" />
+
+          {/* Registration */}
+          <div className="flex flex-col items-center gap-0.5">
+            <span className="font-mono text-[10px] font-medium uppercase tracking-widest text-gray-600">
+              Registration
+            </span>
+            <span
+              className={cn(
+                "text-sm font-medium",
+                isEnded ? "text-gray-400" : "text-gray-300",
+              )}
+            >
+              {registrationStatus}
+            </span>
+          </div>
+
+          {/* Boosting */}
+          <div className="flex min-w-[100px] flex-col items-center gap-0.5">
+            <span className="font-mono text-[10px] font-medium uppercase tracking-widest text-gray-600">
+              Boosting
+            </span>
+            <span
+              className={cn(
+                "whitespace-nowrap text-sm font-medium",
+                boostingStatus.isActive ? "text-gray-200" : "text-gray-500",
+                isEnded && !boostingStatus.isActive ? "text-gray-400" : "",
+              )}
+            >
+              {boostingStatus.isActive ? (
+                <>
+                  Ends in{" "}
+                  <span className="font-bold text-green-400">
+                    {boostingStatus.text.replace("Ends in ", "")}
+                  </span>
+                </>
+              ) : (
+                boostingStatus.text
+              )}
+            </span>
           </div>
         </div>
+
+        {/* View Button */}
+        <Link
+          href={`/competitions/${competition.id}`}
+          className="w-full shrink-0 sm:w-auto"
+        >
+          <Button
+            variant={isEnded ? "outline" : "default"}
+            className={cn(
+              "h-10 w-full rounded-full px-6 font-semibold sm:w-auto",
+              isEnded
+                ? "border-gray-700 bg-transparent text-gray-100 hover:bg-gray-800 hover:text-white"
+                : "bg-white text-black hover:bg-gray-200",
+            )}
+          >
+            View <ArrowRight className="ml-2 h-4 w-4" />
+          </Button>
+        </Link>
       </div>
-    </Card>
+    </div>
   );
 };
