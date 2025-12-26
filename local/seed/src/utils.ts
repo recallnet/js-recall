@@ -47,7 +47,7 @@ export async function waitFor(
       if (await condition()) {
         return;
       }
-    } catch (error) {
+    } catch {
       // Ignore errors during wait
     }
     await sleep(interval);

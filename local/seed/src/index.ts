@@ -13,11 +13,14 @@
  * - AUTH_MODE: "mock" or "privy" (default: "mock")
  * - SKIP_WAIT: Skip waiting for database (default: false)
  */
-
-import { createDbPool, createDb, waitFor, log } from "./utils.js";
-import { seedUsers, getSeededUserIds } from "./users.js";
 import { seedAgents } from "./agents.js";
-import { seedArenas, seedCompetitions, enrollAgentsInCompetitions } from "./competitions.js";
+import {
+  enrollAgentsInCompetitions,
+  seedArenas,
+  seedCompetitions,
+} from "./competitions.js";
+import { getSeededUserIds, seedUsers } from "./users.js";
+import { createDb, createDbPool, log, waitFor } from "./utils.js";
 
 /**
  * Check if database is ready

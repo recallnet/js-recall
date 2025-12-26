@@ -9,6 +9,32 @@ import schema from "@recallnet/db/schema";
 
 import { log } from "./utils.js";
 
+// Type imports from schema
+type CompetitionType =
+  | "trading"
+  | "perpetual_futures"
+  | "spot_live_trading"
+  | "sports_prediction";
+type CompetitionStatus = "pending" | "active" | "ending" | "ended";
+type AllocationUnit = "RECALL" | "USDC" | "USD";
+type DisplayState = "active" | "waitlist" | "cancelled" | "pending" | "paused";
+type PerpsDataSource = "external_api" | "onchain_indexing" | "hybrid";
+type SpotLiveDataSource = "rpc_direct" | "envio_indexing" | "hybrid";
+type EvaluationMetric = "calmar_ratio" | "sortino_ratio" | "simple_return";
+type SpecificChain =
+  | "eth"
+  | "polygon"
+  | "bsc"
+  | "arbitrum"
+  | "optimism"
+  | "avalanche"
+  | "base"
+  | "linea"
+  | "zksync"
+  | "scroll"
+  | "mantle"
+  | "svm";
+
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
@@ -16,8 +42,8 @@ interface CompetitionData {
   name: string;
   description: string;
   arenaName: string;
-  type: string;
-  status: string;
+  type: CompetitionType;
+  status: CompetitionStatus;
   imageUrl: string;
   externalUrl: string | null;
   startDate: string;
@@ -34,30 +60,30 @@ interface CompetitionData {
   allowlist: string[];
   blocklist: string[];
   agentAllocation: string;
-  agentAllocationUnit: string;
+  agentAllocationUnit: AllocationUnit;
   boosterAllocation: string;
-  boosterAllocationUnit: string;
+  boosterAllocationUnit: AllocationUnit;
   boostTimeDecayRate: string;
-  rewardRules: any;
+  rewardRules: Record<string, unknown>;
   rewardDetails: string;
   sandboxMode: boolean;
-  displayState: string;
+  displayState: DisplayState;
   tradingConfig?: {
-    dataSource?: string;
-    evaluationMetric?: string;
+    dataSource?: PerpsDataSource | SpotLiveDataSource;
+    evaluationMetric?: EvaluationMetric;
     initialCapital?: string;
     selfFundingThresholdUsd?: string;
     minFundingThreshold?: string;
     inactivityHours?: number;
     syncIntervalMinutes?: number;
-    chains?: Array<{ specificChain: string; enabled: boolean }>;
+    chains?: Array<{ specificChain: SpecificChain; enabled: boolean }>;
     allowedTokens?: Array<{
-      specificChain: string;
+      specificChain: SpecificChain;
       tokenAddress: string;
       tokenSymbol: string;
     }>;
     allowedProtocols?: Array<{
-      specificChain: string;
+      specificChain: SpecificChain;
       protocol: string;
       routerAddress: string;
       factoryAddress?: string;
@@ -93,6 +119,70 @@ async function loadCompetitions(): Promise<CompetitionData[]> {
 }
 
 /**
+ * Calculate dynamic dates for a competition based on its status
+ */
+function calculateCompetitionDates(status: string) {
+  const now = new Date();
+  const COMPETITION_LENGTH_DAYS = 7;
+  const JOIN_WINDOW_DAYS = 3; // Join window ends at start date
+  const BOOST_WINDOW_DAYS = 2; // Boost window ends at start date
+
+  let startDate: Date;
+  let endDate: Date;
+
+  switch (status) {
+    case "ended":
+      // Competition ended 23 days ago, started 30 days ago
+      startDate = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+      endDate = new Date(
+        startDate.getTime() + COMPETITION_LENGTH_DAYS * 24 * 60 * 60 * 1000,
+      );
+      break;
+    case "active":
+      // Competition started 3 days ago, ends in 4 days
+      startDate = new Date(now.getTime() - 3 * 24 * 60 * 60 * 1000);
+      endDate = new Date(
+        startDate.getTime() + COMPETITION_LENGTH_DAYS * 24 * 60 * 60 * 1000,
+      );
+      break;
+    case "pending":
+      // Competition starts in 7 days, ends in 14 days
+      startDate = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000);
+      endDate = new Date(
+        startDate.getTime() + COMPETITION_LENGTH_DAYS * 24 * 60 * 60 * 1000,
+      );
+      break;
+    default:
+      // Default to pending dates
+      startDate = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000);
+      endDate = new Date(
+        startDate.getTime() + COMPETITION_LENGTH_DAYS * 24 * 60 * 60 * 1000,
+      );
+  }
+
+  // Calculate join dates: window ends at start date, opens JOIN_WINDOW_DAYS before
+  const joinEndDate = new Date(startDate.getTime());
+  const joinStartDate = new Date(
+    startDate.getTime() - JOIN_WINDOW_DAYS * 24 * 60 * 60 * 1000,
+  );
+
+  // Calculate boost dates: window ends at start date, opens BOOST_WINDOW_DAYS before
+  const boostEndDate = new Date(startDate.getTime());
+  const boostStartDate = new Date(
+    startDate.getTime() - BOOST_WINDOW_DAYS * 24 * 60 * 60 * 1000,
+  );
+
+  return {
+    startDate,
+    endDate,
+    joinStartDate,
+    joinEndDate,
+    boostStartDate,
+    boostEndDate,
+  };
+}
+
+/**
  * Seed arenas into the database
  */
 export async function seedArenas(
@@ -112,7 +202,7 @@ export async function seedArenas(
         .where(eq(schema.arenas.name, arenaData.name))
         .limit(1);
 
-      if (existing.length > 0) {
+      if (existing.length > 0 && existing[0]) {
         log(`Arena ${arenaData.name} already exists, skipping`, "info");
         arenaIdMap.set(arenaData.name, existing[0].id);
         continue;
@@ -173,54 +263,55 @@ export async function seedCompetitions(
         .where(eq(schema.competitions.name, compData.name))
         .limit(1);
 
-      if (existing.length > 0) {
+      if (existing.length > 0 && existing[0]) {
         log(`Competition ${compData.name} already exists, skipping`, "info");
         competitionIds.push(existing[0].id);
         continue;
       }
 
+      // Calculate dynamic dates based on competition status
+      const dates = calculateCompetitionDates(compData.status);
+
       // Insert competition with generated UUID
       const competitionId = randomUUID();
-      await db.insert(schema.competitions).values({
+      const competitionValues = {
         id: competitionId,
         arenaId: arenaId,
         name: compData.name,
         description: compData.description,
-        type: compData.type as any,
+        type: compData.type,
         imageUrl: compData.imageUrl,
         externalUrl: compData.externalUrl,
-        startDate: new Date(compData.startDate),
-        endDate: new Date(compData.endDate),
-        boostStartDate: compData.boostStartDate
-          ? new Date(compData.boostStartDate)
-          : null,
-        boostEndDate: compData.boostEndDate
-          ? new Date(compData.boostEndDate)
-          : null,
-        joinStartDate: new Date(compData.joinStartDate),
-        joinEndDate: new Date(compData.joinEndDate),
+        startDate: dates.startDate,
+        endDate: dates.endDate,
+        boostStartDate: dates.boostStartDate,
+        boostEndDate: dates.boostEndDate,
+        joinStartDate: dates.joinStartDate,
+        joinEndDate: dates.joinEndDate,
         maxParticipants: compData.maxParticipants,
         registeredParticipants: 0,
-        minimumStake: compData.minimumStake,
+        minimumStake: parseFloat(compData.minimumStake),
         minRecallRank: compData.minRecallRank,
         allowlistOnly: compData.allowlistOnly,
         vips: compData.vips,
         allowlist: compData.allowlist,
         blocklist: compData.blocklist,
-        agentAllocation: compData.agentAllocation,
-        agentAllocationUnit: compData.agentAllocationUnit as any,
-        boosterAllocation: compData.boosterAllocation,
-        boosterAllocationUnit: compData.boosterAllocationUnit as any,
-        boostTimeDecayRate: compData.boostTimeDecayRate,
-        rewardRules: compData.rewardRules,
+        agentAllocation: parseFloat(compData.agentAllocation),
+        agentAllocationUnit: compData.agentAllocationUnit,
+        boosterAllocation: parseFloat(compData.boosterAllocation),
+        boosterAllocationUnit: compData.boosterAllocationUnit,
+        boostTimeDecayRate: parseFloat(compData.boostTimeDecayRate),
+        rewardRules: JSON.stringify(compData.rewardRules),
         rewardDetails: compData.rewardDetails,
-        status: compData.status as any,
+        status: compData.status,
         sandboxMode: compData.sandboxMode,
-        displayState: compData.displayState as any,
+        displayState: compData.displayState,
         engineId: null,
         engineVersion: null,
         rewardsIneligible: [],
-      });
+      };
+
+      await db.insert(schema.competitions).values(competitionValues);
 
       competitionIds.push(competitionId);
       log(`Created competition: ${compData.name}`, "success");
@@ -253,35 +344,39 @@ async function seedTradingConfig(
   try {
     if (compData.type === "perpetual_futures" && config.dataSource) {
       // Insert perps config
-      await db.insert(schema.perpsCompetitionConfig).values({
+      const perpsConfigValues = {
         competitionId: competitionId,
-        dataSource: config.dataSource as any,
+        dataSource: config.dataSource as PerpsDataSource,
         dataSourceConfig: {},
-        evaluationMetric: config.evaluationMetric as any,
+        evaluationMetric: config.evaluationMetric as EvaluationMetric,
         initialCapital: config.initialCapital || "10000",
         selfFundingThresholdUsd: config.selfFundingThresholdUsd || "1000",
         minFundingThreshold: config.minFundingThreshold || "100",
         inactivityHours: config.inactivityHours || 72,
-      });
+      };
+      await db.insert(schema.perpsCompetitionConfig).values(perpsConfigValues);
       log(`Created perps config for competition ${competitionId}`, "success");
     } else if (compData.type === "spot_live_trading") {
       // Insert spot live config
-      await db.insert(schema.spotLiveCompetitionConfig).values({
+      const spotLiveConfigValues = {
         competitionId: competitionId,
-        dataSource: (config.dataSource as any) || "onchain",
+        dataSource: (config.dataSource as SpotLiveDataSource) || "rpc_direct",
         dataSourceConfig: {},
         selfFundingThresholdUsd: config.selfFundingThresholdUsd || "500",
         minFundingThreshold: config.minFundingThreshold || "50",
         inactivityHours: config.inactivityHours || 48,
         syncIntervalMinutes: config.syncIntervalMinutes || 5,
-      });
+      };
+      await db
+        .insert(schema.spotLiveCompetitionConfig)
+        .values(spotLiveConfigValues);
 
       // Insert chains
       if (config.chains) {
         for (const chain of config.chains) {
           await db.insert(schema.spotLiveCompetitionChains).values({
             competitionId: competitionId,
-            specificChain: chain.specificChain,
+            specificChain: chain.specificChain as SpecificChain,
             enabled: chain.enabled,
           });
         }
@@ -292,7 +387,7 @@ async function seedTradingConfig(
         for (const token of config.allowedTokens) {
           await db.insert(schema.spotLiveAllowedTokens).values({
             competitionId: competitionId,
-            specificChain: token.specificChain,
+            specificChain: token.specificChain as SpecificChain,
             tokenAddress: token.tokenAddress,
             tokenSymbol: token.tokenSymbol,
           });
@@ -304,7 +399,7 @@ async function seedTradingConfig(
         for (const protocol of config.allowedProtocols) {
           await db.insert(schema.spotLiveAllowedProtocols).values({
             competitionId: competitionId,
-            specificChain: protocol.specificChain,
+            specificChain: protocol.specificChain as SpecificChain,
             protocol: protocol.protocol,
             routerAddress: protocol.routerAddress,
             factoryAddress: protocol.factoryAddress,
@@ -347,12 +442,6 @@ export async function enrollAgentsInCompetitions(
   competitionIds: string[],
 ): Promise<void> {
   log("Enrolling agents in competitions...");
-
-  // Get competition details
-  const competitions = await db
-    .select()
-    .from(schema.competitions)
-    .where(eq(schema.competitions.id, competitionIds[0]));
 
   const competitionsByName = new Map<string, string>();
   for (const compId of competitionIds) {
@@ -403,6 +492,7 @@ export async function enrollAgentsInCompetitions(
       const agentId = agentIds[agentIndex];
 
       try {
+        if (!agentId) throw new Error("invalid agentId");
         // Check if already enrolled
         const existing = await db
           .select()
