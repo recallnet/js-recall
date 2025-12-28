@@ -95,11 +95,20 @@ export async function seedUsers(
 export async function getSeededUserIds(
   db: NodePgDatabase<typeof schema>,
 ): Promise<string[]> {
-  // Get all users and return first 10 (our seeded Anvil users)
-  const allUsers = await db
-    .select({ id: schema.users.id })
-    .from(schema.users)
-    .limit(10);
+  // Get users in the same order as ANVIL_WALLETS to ensure consistent indexing
+  const userIds: string[] = [];
 
-  return allUsers.map((u) => u.id);
+  for (const wallet of ANVIL_WALLETS) {
+    const [user] = await db
+      .select({ id: schema.users.id })
+      .from(schema.users)
+      .where(eq(schema.users.walletAddress, wallet.address))
+      .limit(1);
+
+    if (user) {
+      userIds.push(user.id);
+    }
+  }
+
+  return userIds;
 }

@@ -19,7 +19,7 @@ rm -f "$STATE_FILE"
 # Build the state generation image
 echo "Building state generation container..."
 cd "$REPO_ROOT"
-docker build -f docker/anvil/Dockerfile.stategen -t recall-anvil-stategen .
+docker build -f local/anvil/Dockerfile.stategen -t recall-anvil-stategen .
 
 # Run the container to generate state
 echo ""

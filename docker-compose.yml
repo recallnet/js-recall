@@ -8,7 +8,7 @@ networks:
 services:
   anvil:
     build:
-      context: ./docker/anvil
+      context: ./local/anvil
       dockerfile: Dockerfile
     image: recall-anvil
     container_name: recall-anvil
@@ -71,7 +71,7 @@ services:
   db-seed:
     build:
       context: .
-      dockerfile: docker/seed/Dockerfile
+      dockerfile: local/seed/Dockerfile
     image: recall-db-seed
     container_name: recall-db-seed
     restart: "no"

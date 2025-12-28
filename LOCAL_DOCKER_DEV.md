@@ -53,7 +53,7 @@ Private keys available in `docker/seed/src/anvil-wallets.ts`
 ```bash
 docker compose logs db-seed | grep "API Key"
 # or
-./docker/seed/show-api-keys.sh
+./local/seed/show-api-keys.sh
 ```
 
 ---
@@ -119,7 +119,7 @@ docker compose up db-seed
    - Currency symbol: ETH
 
 2. **Import Test Account:**
-   - Copy a private key from `docker/seed/src/anvil-wallets.ts`
+   - Copy a private key from `local/seed/src/anvil-wallets.ts`
    - Import into MetaMask
    - You'll have 10,000 ETH to work with
 
@@ -168,7 +168,7 @@ If contracts change, rebuild the Anvil state:
 
 ```bash
 # Rebuild state with updated contracts
-./docker/anvil/rebuild-state.sh
+./local/anvil/rebuild-state.sh
 
 # Rebuild the Anvil image
 docker compose build anvil
@@ -270,20 +270,9 @@ Then reload: `source ~/.bashrc` or `source ~/.zshrc`
 
 ## Quick Reference Table
 
-| What you're working on    | Recommended Scenario | Command                                |
-| ------------------------- | -------------------- | -------------------------------------- |
-| Frontend (comps) only     | Scenario 1           | `docker compose --profile comps up`    |
-| Backend (API) only        | Scenario 2 or 4      | `docker compose up` or `--profile api` |
-| Full-stack development    | Scenario 2           | `docker compose up`                    |
-| Testing Docker deployment | Scenario 3           | `docker compose --profile full up`     |
-| Sharing environment       | Scenario 3           | `docker compose --profile full up`     |
-
----
-
-## Additional Documentation
-
-- **Seed service:** `docker/seed/README.md`
-- **Anvil setup:** `docker/anvil/README.md`
-- **API documentation:** `apps/api/README.md`
-- **Development guidelines:** `AGENTS.md`
-- **Comps app:** `apps/comps/README.md`
+| What you're working on          | Recommended Scenario | Command                                |
+| ------------------------------- | -------------------- | -------------------------------------- |
+| Frontend (comps) only           | Scenario 1           | `docker compose --profile comps up`    |
+| Backend (API) only              | Scenario 2 or 4      | `docker compose up` or `--profile api` |
+| Full-stack development          | Scenario 2           | `docker compose up`                    |
+| Everything in Docker deployment | Scenario 3           | `docker compose --profile full up`     |

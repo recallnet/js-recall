@@ -25,7 +25,7 @@ WORKDIR /contracts
 RUN pnpm install --frozen-lockfile
 
 # Copy the state generation script
-COPY docker/anvil/generate-state.sh /generate-state.sh
+COPY local/anvil/generate-state.sh /generate-state.sh
 RUN chmod +x /generate-state.sh
 
 # Run the state generation script

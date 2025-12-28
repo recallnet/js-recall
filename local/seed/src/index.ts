@@ -13,6 +13,11 @@
  * - AUTH_MODE: "mock" or "privy" (default: "mock")
  * - SKIP_WAIT: Skip waiting for database (default: false)
  */
+import path from "path";
+import { fileURLToPath } from "url";
+
+import { migrateDb } from "@recallnet/db/utils";
+
 import { seedAgents } from "./agents.js";
 import {
   enrollAgentsInCompetitions,
@@ -21,6 +26,8 @@ import {
 } from "./competitions.js";
 import { getSeededUserIds, seedUsers } from "./users.js";
 import { createDb, createDbPool, log, waitFor } from "./utils.js";
+
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 /**
  * Check if database is ready
@@ -83,6 +90,26 @@ async function main() {
   const db = createDb(pool);
 
   try {
+    log("");
+    log("=".repeat(60));
+    log("Running database migrations...");
+    log("=".repeat(60));
+    log("");
+
+    // Run migrations first
+    const migrationsFolder = path.resolve(
+      __dirname,
+      "../../../apps/api/drizzle",
+    );
+    await migrateDb(db, pool, migrationsFolder, {
+      info: (message) =>
+        log(
+          typeof message === "string" ? message : JSON.stringify(message),
+          "info",
+        ),
+      error: (message, error) => log(`${message}: ${error}`, "error"),
+    });
+
     log("");
     log("=".repeat(60));
     log("Starting database seeding...");
