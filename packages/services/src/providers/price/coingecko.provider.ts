@@ -66,15 +66,17 @@ const OnchainResponseDataSchema = z.object({
   attributes: z.object({
     address: z.string(),
     symbol: z.string(),
-    price_usd: z.string(),
-    volume_usd: z.object({
-      h24: z.string(),
-    }),
-    total_reserve_in_usd: z.string(),
-    fdv_usd: z.string(),
-    // Note: This can be null in the API response, but it (seemingly) only happens for the native
-    // SOL token (`So11..112`). Downstream clients should handle this through token "whitelists",
-    // in case it is used for validation (e.g., trading constraints in the API app).
+    price_usd: z.string().nullable(),
+    volume_usd: z
+      .object({
+        h24: z.string(),
+      })
+      .nullable(),
+    total_reserve_in_usd: z.string().nullable(),
+    fdv_usd: z.string().nullable(),
+    // Note: These fields can be null in the API response when CoinGecko doesn't have price data
+    // for a token (e.g., newly deployed tokens, low liquidity, or API issues). Downstream clients
+    // should handle this through token "whitelists" or by skipping unpriceable tokens.
     market_cap_usd: z.string().nullable(),
   }),
   relationships: z.object({
@@ -294,7 +296,7 @@ export class CoinGeckoProvider implements PriceSource {
    */
   private parseOnchainResponse(
     response: Tokens.TokenGetAddressResponse,
-  ): TokenInfo {
+  ): TokenInfo | null {
     const {
       success,
       error,
@@ -308,13 +310,21 @@ export class CoinGeckoProvider implements PriceSource {
     const { data, included: pools } = parsedData;
     const { symbol, price_usd, volume_usd, total_reserve_in_usd, fdv_usd } =
       data.attributes;
+
+    // Return null if price data is missing
+    if (price_usd === null) {
+      return null;
+    }
+
     return {
       price: parseFloat(price_usd),
       symbol: symbol.toUpperCase(),
       pairCreatedAt: this.getCreatedAtTimestampFromPools(pools),
-      volume: { h24: parseFloat(volume_usd.h24) },
-      liquidity: { usd: parseFloat(total_reserve_in_usd) },
-      fdv: parseFloat(fdv_usd),
+      volume: volume_usd ? { h24: parseFloat(volume_usd.h24) } : undefined,
+      liquidity: total_reserve_in_usd
+        ? { usd: parseFloat(total_reserve_in_usd) }
+        : undefined,
+      fdv: fdv_usd ? parseFloat(fdv_usd) : undefined,
     };
   }
 
@@ -346,6 +356,15 @@ export class CoinGeckoProvider implements PriceSource {
         total_reserve_in_usd,
         fdv_usd,
       } = token.attributes;
+
+      // Skip tokens with null prices - they cannot be priced
+      if (price_usd === null) {
+        this.logger.debug(
+          `[CoinGecko] Skipping token ${address} - price_usd is null`,
+        );
+        continue;
+      }
+
       // The batch response includes a `data` array and `included` array. Each includes all of
       // the respective tokens and pools, which means we need to find the matching pool relative
       // to the token. The `tokens` response includes a pool ID value, and this matches with the
@@ -357,9 +376,11 @@ export class CoinGeckoProvider implements PriceSource {
         pairCreatedAt: this.getCreatedAtTimestampFromPools(
           pools.filter((p) => p.id === poolId),
         ),
-        volume: { h24: parseFloat(volume_usd.h24) },
-        liquidity: { usd: parseFloat(total_reserve_in_usd) },
-        fdv: parseFloat(fdv_usd),
+        volume: volume_usd ? { h24: parseFloat(volume_usd.h24) } : undefined,
+        liquidity: total_reserve_in_usd
+          ? { usd: parseFloat(total_reserve_in_usd) }
+          : undefined,
+        fdv: fdv_usd ? parseFloat(fdv_usd) : undefined,
       });
     }
 
