@@ -1,19 +1,21 @@
 # Local Docker Development
 
-Quick reference for local development with Docker Compose.
-
-This setup supports **4 flexible development scenarios** using Docker Compose profiles, allowing you to run services locally or in Docker based on your goals.
+This setup supports using Docker Compose to get a somewhat realistic dev environment running locally with an Anvil chain, contracts, mock data, etc... There are different Docker profiles configured for different dev goals.
 
 ---
 
-## Development Scenarios
+## Development profiles
 
-| Scenario                 | Command                             | What runs in Docker            | What runs locally |
+| Scenario                 | Command                             |
 | ------------------------ | ----------------------------------- | ------------------------------ | ----------------- |
-| **1. Only comps local**  | `docker compose --profile comps up` | db, anvil, api, db-seed        | comps             |
-| **2. API + comps local** | `docker compose up`                 | db, anvil, db-seed             | api, comps        |
-| **3. Everything Docker** | `docker compose --profile full up`  | db, anvil, api, db-seed, comps | nothing           |
-| **4. Only API local**    | `docker compose --profile api up`   | db, anvil, db-seed, comps      | api               |
+| **1. Explicitly running comps, with all other infra in Docker**  | `docker compose --profile comps up` |
+| **2. Explicitly running api + comps** | `docker compose up` |
+| **3. Everything in Docker** | `docker compose --profile full up`  |
+| **4. Explicitly running api**    | `docker compose --profile api up`   |
+
+As an example, to work on `comps` in a normal next.js dev flow, i.e. hot reloading etc...  You can do `docker compose --profile comps up` in one terminal window, then do `cd apps/comps && npm run dev` in another window.  
+
+**NOTE: Docker exposes postgres on port 5433 so that you can keep the normal 5432 reserved for a separate postgres instance on the host machine. Update your .env as needed**
 
 ---
 
@@ -46,7 +48,7 @@ When you start the Docker Compose stack, the `db-seed` service automatically see
 | 8    | `0x23618e81E3f5cdF7f54C3d65f7FBc0aBf5B21E8f` |
 | 9    | `0xa0Ee7A142d267C1f36714E4a8F75612F20a79720` |
 
-Private keys available in `docker/seed/src/anvil-wallets.ts`
+Private keys available in `local/seed/src/anvil-wallets.ts`
 
 ### Get Agent API Keys
 
@@ -63,26 +65,17 @@ docker compose logs db-seed | grep "API Key"
 ### Basic Operations
 
 ```bash
-# Start services in foreground
+# Start in foreground, log everything to terminal
 docker compose --profile comps up
 
-# Start services in background
+# Start in background, logs available via docker tooling
 docker compose --profile comps up -d
 
 # Stop services
 docker compose down
 
-# Stop and remove volumes (complete reset)
+# Stop and remove volumes (reset database)
 docker compose down -v
-
-# View logs
-docker compose logs -f
-docker compose logs -f api
-docker compose logs -f comps
-docker compose logs db-seed | grep "API Key"
-
-# Restart a specific service
-docker compose restart api
 
 # Rebuild a service after code changes
 docker compose build api
@@ -94,8 +87,10 @@ docker compose up api
 ```bash
 # Access database directly
 psql postgresql://postgres:postgres@localhost:5433/postgres
+# or 
+docker exec -it recall-db psql -U postgres
 
-# Run migrations (when API is local)
+# Run migrations (when API is running on host)
 cd apps/api
 pnpm db:migrate
 
