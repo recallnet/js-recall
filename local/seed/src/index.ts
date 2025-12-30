@@ -7,6 +7,7 @@
  * - Arenas (competition categories)
  * - Competitions (with various statuses)
  * - Agent enrollments (some enrolled, some left for manual testing)
+ * - Competition data (snapshots, trades, positions, leaderboards)
  *
  * Environment Variables:
  * - DATABASE_URL: PostgreSQL connection string
@@ -19,6 +20,7 @@ import { fileURLToPath } from "url";
 import { migrateDb } from "@recallnet/db/utils";
 
 import { seedAgents } from "./agents.js";
+import { seedCompetitionData } from "./competition-data.js";
 import {
   enrollAgentsInCompetitions,
   seedArenas,
@@ -135,6 +137,10 @@ async function main() {
 
     // Step 5: Enroll some agents in competitions
     await enrollAgentsInCompetitions(db, agentIds, competitionIds);
+    log("");
+
+    // Step 6: Seed all competition data (snapshots, trades, positions, leaderboards)
+    await seedCompetitionData(db, competitionIds);
     log("");
 
     // Summary
