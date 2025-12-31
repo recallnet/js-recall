@@ -4,6 +4,43 @@ This setup supports using Docker Compose to get a somewhat realistic dev environ
 
 ---
 
+### Getting Started
+
+For first time use, you will want to start by building:
+`docker compose build`
+
+NOTE: if you encounter errors, consider cleaning up docker.
+```bash
+# nuclear option...
+docker stop $(docker ps -q)
+docker rm $(docker container ls -q -a)
+docker image rm $(docker image ls -q)
+docker volume rm $(docker volume ls -q)
+docker system prune --volumes
+```
+
+### Basic Operations
+
+```bash
+# Start in foreground (log to terminal), run comps app on host
+docker compose --profile comps up
+
+# Start in background, logs available via docker tooling
+docker compose --profile comps up -d
+
+# Stop services
+docker compose down
+
+# Stop and remove volumes (reset database)
+docker compose down -v
+
+# Rebuild a service after code changes
+docker compose build api
+docker compose up api
+```
+
+---
+
 ## Development profiles
 
 | Scenario                 | Command                             |
@@ -60,28 +97,6 @@ docker compose logs db-seed | grep "API Key"
 
 ---
 
-## Common Commands
-
-### Basic Operations
-
-```bash
-# Start in foreground, log everything to terminal
-docker compose --profile comps up
-
-# Start in background, logs available via docker tooling
-docker compose --profile comps up -d
-
-# Stop services
-docker compose down
-
-# Stop and remove volumes (reset database)
-docker compose down -v
-
-# Rebuild a service after code changes
-docker compose build api
-docker compose up api
-```
-
 ### Database Operations
 
 ```bash
@@ -89,17 +104,6 @@ docker compose up api
 psql postgresql://postgres:postgres@localhost:5433/postgres
 # or 
 docker exec -it recall-db psql -U postgres
-
-# Run migrations (when API is running on host)
-cd apps/api
-pnpm db:migrate
-
-# Open Drizzle Studio (requires API's .env configured)
-cd apps/api
-pnpm db:studio
-
-# Reseed database (idempotent - safe to run multiple times)
-docker compose up db-seed
 ```
 
 ---
@@ -135,7 +139,7 @@ curl http://localhost:3000/backend-api/api/agents/me \
 
 ## Authentication Modes
 
-### Mock Mode (Default, Recommended)
+### Mock Mode
 
 - No Privy account needed
 - Users have fake Privy IDs: `did:privy:local-user-0`, `did:privy:local-user-1`, etc.
