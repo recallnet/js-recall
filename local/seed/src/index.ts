@@ -11,7 +11,6 @@
  *
  * Environment Variables:
  * - DATABASE_URL: PostgreSQL connection string
- * - AUTH_MODE: "mock" or "privy" (default: "mock")
  * - SKIP_WAIT: Skip waiting for database (default: false)
  */
 import path from "path";
@@ -57,7 +56,6 @@ async function main() {
 
   // Get configuration
   const DATABASE_URL = process.env.DATABASE_URL;
-  const AUTH_MODE = (process.env.AUTH_MODE || "mock") as "mock" | "privy";
   const SKIP_WAIT = process.env.SKIP_WAIT === "true";
 
   if (!DATABASE_URL) {
@@ -67,7 +65,6 @@ async function main() {
 
   log(`Configuration:`);
   log(`  DATABASE_URL: ${DATABASE_URL.replace(/:[^:@]+@/, ":***@")}`);
-  log(`  AUTH_MODE: ${AUTH_MODE}`);
   log(`  SKIP_WAIT: ${SKIP_WAIT}`);
   log("");
 
@@ -123,7 +120,7 @@ async function main() {
     log("");
 
     // Step 2: Seed users (from Anvil wallets)
-    await seedUsers(db, AUTH_MODE);
+    await seedUsers(db);
     const userIds = await getSeededUserIds(db);
     log("");
 
@@ -159,11 +156,6 @@ async function main() {
     log("  1. API should be accessible at http://localhost:3000");
     log("  2. Frontend should be accessible at http://localhost:3001");
     log("  3. Check logs for agent API keys");
-    if (AUTH_MODE === "mock") {
-      log("  4. Use mock auth mode - any Anvil wallet address will work");
-    } else {
-      log("  4. Configure Privy with the seeded user wallet addresses");
-    }
     log("");
   } catch (error) {
     log(`Seeding failed: ${error}`, "error");

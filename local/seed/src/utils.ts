@@ -87,13 +87,6 @@ export function hashApiKey(apiKey: string): string {
 }
 
 /**
- * Generate a Privy-like ID for mock mode
- */
-export function generateMockPrivyId(index: number): string {
-  return `did:privy:local-user-${index}`;
-}
-
-/**
  * Generate a random Ethereum address (for agents)
  */
 export function generateRandomEthAddress(): string {

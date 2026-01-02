@@ -16,6 +16,74 @@ type CompetitionType =
   | "spot_live_trading"
   | "sports_prediction";
 type CompetitionStatus = "pending" | "active" | "ending" | "ended";
+
+/**
+ * Seed date states for generating relative competition dates.
+ * These control both the competition phase and boost window status.
+ */
+type SeedDateState =
+  | "ended"
+  | "active-noboost"
+  | "active-boost"
+  | "pending-noboost"
+  | "pending-boost";
+
+/**
+ * Date offsets in days relative to "now" for each seed date state.
+ * Positive = future, negative = past.
+ */
+const DATE_OFFSETS: Record<
+  SeedDateState,
+  {
+    startDate: number;
+    endDate: number;
+    joinStartDate: number;
+    joinEndDate: number;
+    boostStartDate: number;
+    boostEndDate: number;
+  }
+> = {
+  ended: {
+    startDate: -30,
+    endDate: -23,
+    joinStartDate: -33,
+    joinEndDate: -30,
+    boostStartDate: -32,
+    boostEndDate: -30,
+  },
+  "active-noboost": {
+    startDate: -3,
+    endDate: 4,
+    joinStartDate: -6,
+    joinEndDate: -3,
+    boostStartDate: -5,
+    boostEndDate: -3,
+  },
+  "active-boost": {
+    startDate: -0.25,
+    endDate: 7,
+    joinStartDate: -3,
+    joinEndDate: 1,
+    boostStartDate: -1,
+    boostEndDate: 2,
+  },
+  "pending-noboost": {
+    startDate: 7,
+    endDate: 14,
+    joinStartDate: 4,
+    joinEndDate: 7,
+    boostStartDate: 5,
+    boostEndDate: 7,
+  },
+  "pending-boost": {
+    startDate: 3,
+    endDate: 10,
+    joinStartDate: -1,
+    joinEndDate: 3,
+    boostStartDate: -1,
+    boostEndDate: 2,
+  },
+};
 type AllocationUnit = "RECALL" | "USDC" | "USD";
 type DisplayState = "active" | "waitlist" | "cancelled" | "pending" | "paused";
 type PerpsDataSource = "external_api" | "onchain_indexing" | "hybrid";
@@ -44,6 +112,7 @@ interface CompetitionData {
   arenaName: string;
   type: CompetitionType;
   status: CompetitionStatus;
+  seedDateState: SeedDateState;
   imageUrl: string;
   externalUrl: string | null;
   startDate: string;
@@ -121,64 +190,19 @@ async function loadCompetitions(): Promise<CompetitionData[]> {
 /**
  * Calculate dynamic dates for a competition based on its status
  */
-function calculateCompetitionDates(status: string) {
+function calculateCompetitionDates(seedState: SeedDateState) {
   const now = new Date();
-  const COMPETITION_LENGTH_DAYS = 7;
-  const JOIN_WINDOW_DAYS = 3; // Join window ends at start date
-  const BOOST_WINDOW_DAYS = 2; // Boost window ends at start date
+  const DAY_MS = 24 * 60 * 60 * 1000;
 
-  let startDate: Date;
-  let endDate: Date;
-
-  switch (status) {
-    case "ended":
-      // Competition ended 23 days ago, started 30 days ago
-      startDate = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
-      endDate = new Date(
-        startDate.getTime() + COMPETITION_LENGTH_DAYS * 24 * 60 * 60 * 1000,
-      );
-      break;
-    case "active":
-      // Competition started 3 days ago, ends in 4 days
-      startDate = new Date(now.getTime() - 3 * 24 * 60 * 60 * 1000);
-      endDate = new Date(
-        startDate.getTime() + COMPETITION_LENGTH_DAYS * 24 * 60 * 60 * 1000,
-      );
-      break;
-    case "pending":
-      // Competition starts in 7 days, ends in 14 days
-      startDate = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000);
-      endDate = new Date(
-        startDate.getTime() + COMPETITION_LENGTH_DAYS * 24 * 60 * 60 * 1000,
-      );
-      break;
-    default:
-      // Default to pending dates
-      startDate = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000);
-      endDate = new Date(
-        startDate.getTime() + COMPETITION_LENGTH_DAYS * 24 * 60 * 60 * 1000,
-      );
-  }
-
-  // Calculate join dates: window ends at start date, opens JOIN_WINDOW_DAYS before
-  const joinEndDate = new Date(startDate.getTime());
-  const joinStartDate = new Date(
-    startDate.getTime() - JOIN_WINDOW_DAYS * 24 * 60 * 60 * 1000,
-  );
-
-  // Calculate boost dates: window ends at start date, opens BOOST_WINDOW_DAYS before
-  const boostEndDate = new Date(startDate.getTime());
-  const boostStartDate = new Date(
-    startDate.getTime() - BOOST_WINDOW_DAYS * 24 * 60 * 60 * 1000,
-  );
+  const offsets = DATE_OFFSETS[seedState];
 
   return {
-    startDate,
-    endDate,
-    joinStartDate,
-    joinEndDate,
-    boostStartDate,
-    boostEndDate,
+    startDate: new Date(now.getTime() + offsets.startDate * DAY_MS),
+    endDate: new Date(now.getTime() + offsets.endDate * DAY_MS),
+    joinStartDate: new Date(now.getTime() + offsets.joinStartDate * DAY_MS),
+    joinEndDate: new Date(now.getTime() + offsets.joinEndDate * DAY_MS),
+    boostStartDate: new Date(now.getTime() + offsets.boostStartDate * DAY_MS),
+    boostEndDate: new Date(now.getTime() + offsets.boostEndDate * DAY_MS),
   };
 }
 
@@ -269,8 +293,8 @@ export async function seedCompetitions(
         continue;
       }
 
-      // Calculate dynamic dates based on competition status
-      const dates = calculateCompetitionDates(compData.status);
+      // Calculate dynamic dates based on seed date state
+      const dates = calculateCompetitionDates(compData.seedDateState);
 
       // Insert competition with generated UUID
       const competitionId = randomUUID();

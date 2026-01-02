@@ -64,7 +64,6 @@ services:
       API_PREFIX: ${API_PREFIX:-backend-api}
       PORT: ${API_PORT:-3000}
       METRICS_PORT: ${METRICS_PORT:-3003}
-      AUTH_MODE: ${AUTH_MODE:-mock}
     depends_on:
       - db
 
@@ -79,7 +78,6 @@ services:
       - recall-network
     environment:
       DATABASE_URL: postgresql://postgres:postgres@db/postgres
-      AUTH_MODE: ${AUTH_MODE:-mock}
     depends_on:
       db:
         condition: service_healthy
@@ -108,7 +106,6 @@ services:
       - "${COMPS_PORT:-3001}:${COMPS_PORT:-3001}"
     environment:
       PORT: ${COMPS_PORT:-3001}
-      AUTH_MODE: ${AUTH_MODE:-mock}
       DATABASE_URL: postgresql://postgres:postgres@db/postgres
       NEXT_PUBLIC_API_BASE_URL: "${COMPS_API_URL:-http://localhost:${API_PORT:-3000}}${API_PREFIX:+/${API_PREFIX}}/api"
       NEXT_PUBLIC_CHAIN_ID: ${NEXT_PUBLIC_CHAIN_ID:-31337}

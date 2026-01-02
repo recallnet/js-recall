@@ -10,6 +10,7 @@ For first time use, you will want to start by building:
 `docker compose build`
 
 NOTE: if you encounter errors, consider cleaning up docker.
+
 ```bash
 # nuclear option...
 docker stop $(docker ps -q)
@@ -43,14 +44,14 @@ docker compose up api
 
 ## Development profiles
 
-| Scenario                 | Command                             |
-| ------------------------ | ----------------------------------- | ------------------------------ | ----------------- |
-| **1. Explicitly running comps, with all other infra in Docker**  | `docker compose --profile comps up` |
-| **2. Explicitly running api + comps** | `docker compose up` |
-| **3. Everything in Docker** | `docker compose --profile full up`  |
-| **4. Explicitly running api**    | `docker compose --profile api up`   |
+| Scenario                                                        | Command                             |
+| --------------------------------------------------------------- | ----------------------------------- |
+| **1. Explicitly running comps, with all other infra in Docker** | `docker compose --profile comps up` |
+| **2. Explicitly running api + comps**                           | `docker compose up`                 |
+| **3. Everything in Docker**                                     | `docker compose --profile full up`  |
+| **4. Explicitly running api**                                   | `docker compose --profile api up`   |
 
-As an example, to work on `comps` in a normal next.js dev flow, i.e. hot reloading etc...  You can do `docker compose --profile comps up` in one terminal window, then do `cd apps/comps && npm run dev` in another window.  
+As an example, to work on `comps` in a normal next.js dev flow, i.e. hot reloading etc... You can do `docker compose --profile comps up` in one terminal window, then do `cd apps/comps && npm run dev` in another window.
 
 **NOTE: Docker exposes postgres on port 5433 so that you can keep the normal 5432 reserved for a separate postgres instance on the host machine. Update your .env as needed**
 
@@ -102,7 +103,7 @@ docker compose logs db-seed | grep "API Key"
 ```bash
 # Access database directly
 psql postgresql://postgres:postgres@localhost:5433/postgres
-# or 
+# or
 docker exec -it recall-db psql -U postgres
 ```
 
@@ -134,25 +135,6 @@ API_KEY=$(docker compose logs db-seed | grep "API Key" | head -1 | awk '{print $
 curl http://localhost:3000/backend-api/api/agents/me \
   -H "Authorization: Bearer $API_KEY"
 ```
-
----
-
-## Authentication Modes
-
-### Mock Mode
-
-- No Privy account needed
-- Users have fake Privy IDs: `did:privy:local-user-0`, `did:privy:local-user-1`, etc.
-- Connect with any Anvil wallet address
-- Perfect for local development
-
-### Privy Mode
-
-To use real Privy authentication:
-
-1. Set `AUTH_MODE=privy` in your `.env` file
-2. Configure Privy credentials in `apps/api/.env`
-3. See `apps/api/.env.example` for required variables
 
 ---
 

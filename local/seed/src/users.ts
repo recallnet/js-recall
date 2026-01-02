@@ -5,7 +5,7 @@ import type { NodePgDatabase } from "drizzle-orm/node-postgres";
 import schema from "@recallnet/db/schema";
 
 import { ANVIL_WALLETS } from "./anvil-wallets.js";
-import { generateMockPrivyId, log } from "./utils.js";
+import { log } from "./utils.js";
 
 export interface UserSeedData {
   walletAddress: string;
@@ -18,7 +18,7 @@ export interface UserSeedData {
 /**
  * Generate user seed data from Anvil wallets
  */
-export function generateUserData(authMode: "mock" | "privy"): UserSeedData[] {
+export function generateUserData(): UserSeedData[] {
   const userNames = [
     "Alice Trader",
     "Bob Arbitrage",
@@ -34,7 +34,7 @@ export function generateUserData(authMode: "mock" | "privy"): UserSeedData[] {
 
   return ANVIL_WALLETS.map((wallet, index) => ({
     walletAddress: wallet.address,
-    privyId: authMode === "mock" ? generateMockPrivyId(index) : null,
+    privyId: null,
     name: userNames[index] || `User ${index + 1}`,
     email: `user${index}@recall.local`,
     imageUrl: `https://api.dicebear.com/7.x/avataaars/svg?seed=${index}`,
@@ -46,11 +46,10 @@ export function generateUserData(authMode: "mock" | "privy"): UserSeedData[] {
  */
 export async function seedUsers(
   db: NodePgDatabase<typeof schema>,
-  authMode: "mock" | "privy",
 ): Promise<void> {
   log("Seeding users...");
 
-  const userData = generateUserData(authMode);
+  const userData = generateUserData();
 
   for (const user of userData) {
     try {
