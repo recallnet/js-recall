@@ -80,7 +80,7 @@ export default function Stakes() {
             </div>
           )}
 
-          <div className="flex max-h-[400px] flex-col gap-6 sm:flex-row">
+          <div className="flex flex-col gap-6 sm:max-h-[400px] sm:flex-row">
             <div className="flex-1">
               <Rewards />
             </div>

@@ -288,7 +288,9 @@ export class AirdropService {
    * - Participating in at least 3 distinct competitions (boosting OR competing combined)
    *
    * @param address - The wallet address to check
-   * @param seasonNumber - Optional specific season to check, defaults to next season
+   * @param seasonNumber - Optional specific target season number. If provided, activity is checked
+   *                       for season (seasonNumber - 1). If not provided, uses the current season
+   *                       based on dates as the activity season and (current + 1) as the target.
    * @returns Full eligibility data including potential reward and pool statistics
    */
   async getNextSeasonEligibility(
@@ -301,43 +303,36 @@ export class AirdropService {
         `Calculating next season eligibility for address: ${normalizedAddress}`,
       );
 
-      // Get all seasons to determine the target season
-      const seasons = await this.airdropRepository.getSeasons();
-      const sortedSeasons = seasons.sort((a, b) => b.number - a.number);
+      // Determine the activity season (current season) and target season
+      let currentSeason: Season;
+      let targetSeasonNumber: number;
 
-      // Determine target season
-      let targetSeason: Season;
       if (seasonNumber !== undefined) {
-        const found = seasons.find((s) => s.number === seasonNumber);
-        if (!found) {
-          throw new Error(`Season ${seasonNumber} not found`);
+        // When a specific target season is provided, activity is checked for the previous season
+        const activitySeasonNumber = seasonNumber - 1;
+        const foundActivitySeason =
+          await this.airdropRepository.getSeasonByNumber(activitySeasonNumber);
+        if (!foundActivitySeason) {
+          throw new Error(`Activity season ${activitySeasonNumber} not found`);
         }
-        targetSeason = found;
+        currentSeason = foundActivitySeason;
+        targetSeasonNumber = seasonNumber;
       } else {
-        // Default to next season (latest season number + 1)
-        const latestSeason = sortedSeasons[0];
-        if (!latestSeason) {
-          throw new Error("No seasons found in database");
+        // Default: use date-based current season detection
+        const foundCurrentSeason =
+          await this.airdropRepository.getCurrentSeason();
+        if (!foundCurrentSeason) {
+          throw new Error(
+            "No current season found based on current date. Check that season date ranges cover the current time.",
+          );
         }
-        // For next season, we use the current/latest season's data
-        // The "next season" rewards are calculated based on activity in the current season
-        targetSeason = latestSeason;
+        currentSeason = foundCurrentSeason;
+        targetSeasonNumber = currentSeason.number + 1;
       }
 
-      // For eligibility calculation, we need the current season (one before the target)
-      const currentSeasonNumber =
-        seasonNumber !== undefined ? seasonNumber - 1 : targetSeason.number;
-      const currentSeason = seasons.find(
-        (s) => s.number === currentSeasonNumber,
-      );
-      if (!currentSeason) {
-        throw new Error(`Current season ${currentSeasonNumber} not found`);
-      }
-
-      const targetSeasonNumber = currentSeasonNumber + 1;
-      const targetSeasonData = seasons.find(
-        (s) => s.number === targetSeasonNumber,
-      );
+      // Get the target season data if it exists (for the season name)
+      const targetSeasonData =
+        await this.airdropRepository.getSeasonByNumber(targetSeasonNumber);
 
       // Calculate pool statistics
       const poolStats = await this.calculatePoolStats(currentSeason);
