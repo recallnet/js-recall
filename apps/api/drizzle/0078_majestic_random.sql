@@ -1,0 +1,2 @@
+ALTER TABLE "trading_comps"."perpetual_positions" ALTER COLUMN "collateral_amount" DROP NOT NULL;--> statement-breakpoint
+ALTER TABLE "trading_comps"."perpetual_positions" ALTER COLUMN "entry_price" DROP NOT NULL;

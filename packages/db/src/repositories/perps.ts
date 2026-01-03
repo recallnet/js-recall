@@ -709,7 +709,10 @@ export class PerpsRepository {
           await this.batchUpsertPerpsPositionsInTransaction(tx, positions);
 
         // 2. Close positions that weren't in the update (no longer open)
+        // Only include IDs from positions with status="Open" to avoid mixing
+        // with closed fill records that have different ID formats
         const updatedPositionIds = positions
+          .filter((p) => p.status === "Open")
           .map((p) => p.providerPositionId)
           .filter((id): id is string => Boolean(id));
 

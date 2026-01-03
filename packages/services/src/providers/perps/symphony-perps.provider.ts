@@ -202,6 +202,11 @@ export class SymphonyPerpsProvider implements IPerpsDataProvider {
     return "Symphony";
   }
 
+  // Note: getClosedPositionFills is intentionally not implemented for Symphony.
+  // Symphony's API does not provide historical fills, so positions that close
+  // between syncs cannot be recovered. The data processor checks for method
+  // availability before calling, so this limitation is handled gracefully.
+
   /**
    * Get circuit breaker health status
    */

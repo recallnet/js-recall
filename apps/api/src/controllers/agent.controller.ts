@@ -444,10 +444,14 @@ export function makeAgentController(services: ServiceRegistry) {
             marketSymbol: pos.asset || null,
             asset: pos.asset,
             isLong: pos.isLong,
-            leverage: Number(pos.leverage || 0),
+            leverage: pos.leverage !== null ? Number(pos.leverage) : null,
             size: Number(pos.positionSize),
-            collateral: Number(pos.collateralAmount),
-            averagePrice: Number(pos.entryPrice),
+            collateral:
+              pos.collateralAmount !== null
+                ? Number(pos.collateralAmount)
+                : null,
+            averagePrice:
+              pos.entryPrice !== null ? Number(pos.entryPrice) : null,
             markPrice: Number(pos.currentPrice || 0),
             liquidationPrice: pos.liquidationPrice
               ? Number(pos.liquidationPrice)
