@@ -1318,7 +1318,8 @@ export function configureCompetitionsRoutes(
    *                         example: true
    *                       leverage:
    *                         type: number
-   *                         description: Position leverage
+   *                         nullable: true
+   *                         description: Position leverage (null for positions recovered from fills)
    *                         example: 10
    *                       size:
    *                         type: number
@@ -1326,11 +1327,13 @@ export function configureCompetitionsRoutes(
    *                         example: 0.5
    *                       collateral:
    *                         type: number
-   *                         description: Collateral/margin amount
+   *                         nullable: true
+   *                         description: Collateral amount (null for positions recovered from fills)
    *                         example: 2250
    *                       averagePrice:
    *                         type: number
-   *                         description: Average entry price
+   *                         nullable: true
+   *                         description: Entry price (null for positions recovered from fills)
    *                         example: 45000
    *                       markPrice:
    *                         type: number
@@ -1347,7 +1350,8 @@ export function configureCompetitionsRoutes(
    *                         example: 500
    *                       pnlPercentage:
    *                         type: number
-   *                         description: PnL as percentage of collateral (from Symphony)
+   *                         nullable: true
+   *                         description: PnL as percentage (null for positions recovered from fills)
    *                         example: 0.05
    *                       realizedPnl:
    *                         type: number
@@ -1514,15 +1518,18 @@ export function configureCompetitionsRoutes(
    *                         type: boolean
    *                       leverage:
    *                         type: number
+   *                         nullable: true
    *                         example: 10
    *                       size:
    *                         type: number
    *                         example: 0.5
    *                       collateral:
    *                         type: number
+   *                         nullable: true
    *                         example: 1000
    *                       averagePrice:
    *                         type: number
+   *                         nullable: true
    *                         example: 50000
    *                       markPrice:
    *                         type: number
@@ -1536,7 +1543,8 @@ export function configureCompetitionsRoutes(
    *                         example: 500
    *                       pnlPercentage:
    *                         type: number
-   *                         description: PnL as percentage of collateral (from Symphony)
+   *                         nullable: true
+   *                         description: PnL as percentage (null for positions recovered from fills)
    *                         example: 0.05
    *                       realizedPnl:
    *                         type: number

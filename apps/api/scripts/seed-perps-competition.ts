@@ -86,22 +86,31 @@ const colors = {
 // ================================================================================
 // Test data definitions
 // ================================================================================
+interface TestPosition {
+  asset: string;
+  side: "long" | "short";
+  size: number;
+  /** Null for positions recovered from fills */
+  entryPrice: number | null;
+  currentPrice: number;
+  /** Null for positions recovered from fills */
+  leverage: number | null;
+  /** Null for positions recovered from fills */
+  margin: number | null;
+  pnl: number;
+  /** Position status - defaults to "Open" if not specified */
+  status?: "Open" | "Closed" | "Liquidated";
+  /** For closed positions, when it was closed */
+  closedAt?: Date;
+}
+
 interface TestAgent {
   name: string;
   handle: string;
   email: string;
   userWalletAddress: string; // User's wallet for authentication
   agentWalletAddress: string; // Agent's wallet for trading
-  positions: {
-    asset: string;
-    side: "long" | "short";
-    size: number;
-    entryPrice: number;
-    currentPrice: number;
-    leverage: number;
-    margin: number;
-    pnl: number;
-  }[];
+  positions: TestPosition[];
   accountSummary: {
     totalEquity: number;
     availableBalance: number;
@@ -336,6 +345,82 @@ const testAgents: TestAgent[] = [
       hasRiskMetrics: true,
     },
   },
+  {
+    // Agent with closed positions recovered from fills - tests null field handling
+    name: "Fill Recovery Agent",
+    handle: "fill_recovery",
+    email: "fill_recovery@test.com",
+    userWalletAddress: "0xaaaa000000000000000000000000000000000006",
+    agentWalletAddress: "0x6666666666666666666666666666666666666666",
+    positions: [
+      // Open position with full data (normal)
+      {
+        asset: "BTC",
+        side: "long",
+        size: 0.25,
+        entryPrice: 102000,
+        currentPrice: 103743,
+        leverage: 5,
+        margin: 5100,
+        pnl: 435.75,
+        status: "Open",
+      },
+      // Closed position recovered from fills - no leverage/margin/entryPrice available
+      {
+        asset: "ETH",
+        side: "long",
+        size: 3,
+        entryPrice: null, // Not available from fills
+        currentPrice: 3521,
+        leverage: null, // Not available from fills
+        margin: null, // Not available from fills
+        pnl: 450, // Closed with profit
+        status: "Closed",
+        closedAt: new Date(Date.now() - 2 * 60 * 60 * 1000), // 2 hours ago
+      },
+      // Another closed position recovered from fills
+      {
+        asset: "SOL",
+        side: "short",
+        size: 50,
+        entryPrice: null, // Not available from fills
+        currentPrice: 209.76,
+        leverage: null, // Not available from fills
+        margin: null, // Not available from fills
+        pnl: -125, // Closed with loss
+        status: "Closed",
+        closedAt: new Date(Date.now() - 5 * 60 * 60 * 1000), // 5 hours ago
+      },
+      // Closed position with full data (closed normally, not recovered)
+      {
+        asset: "DOGE",
+        side: "long",
+        size: 10000,
+        entryPrice: 0.35,
+        currentPrice: 0.38,
+        leverage: 3,
+        margin: 1167,
+        pnl: 300, // Closed with profit
+        status: "Closed",
+        closedAt: new Date(Date.now() - 24 * 60 * 60 * 1000), // 1 day ago
+      },
+    ],
+    accountSummary: {
+      totalEquity: 7360.75,
+      availableBalance: 2260.75,
+      marginUsed: 5100, // Only the open BTC position uses margin
+      totalVolume: 28000,
+      totalTrades: 12,
+      totalUnrealizedPnl: 435.75, // Only from open BTC position
+      totalRealizedPnl: 625, // From closed positions (450 - 125 + 300)
+    },
+    riskMetrics: {
+      simpleReturn: 0.106, // 10.6% return
+      maxDrawdown: -0.08, // 8% drawdown
+      calmarRatio: 1.33, // Good Calmar Ratio
+      hasRiskMetrics: true,
+    },
+  },
 ];
 
 // ================================================================================
@@ -446,6 +531,7 @@ async function seedPerpsCompetition(): Promise<void> {
       "0xaaaa000000000000000000000000000000000003",
       "0xaaaa000000000000000000000000000000000004",
       "0xaaaa000000000000000000000000000000000005",
+      "0xaaaa000000000000000000000000000000000006", // Fill Recovery Agent
     ];
 
     // Now delete test users (this will cascade delete their agents)
@@ -514,9 +600,53 @@ async function seedPerpsCompetition(): Promise<void> {
       );
     }
 
-    // Step 2: Create perps competition using admin API
+    // Step 2: Create or get perps arena
     console.log(
-      `\n${colors.blue}Step 2: Creating perps competition via admin API...${colors.reset}`,
+      `\n${colors.blue}Step 2: Creating/getting perps arena...${colors.reset}`,
+    );
+
+    interface ArenaResponse {
+      success: boolean;
+      arena?: { id: string; name: string };
+      error?: string;
+    }
+
+    // Try to create perps arena (will fail if it already exists - that's OK)
+    const perpsArenaId = "perpetual-futures-trading";
+    try {
+      const arenaResponse = await apiRequest<ArenaResponse>(
+        "POST",
+        "/api/admin/arenas",
+        {
+          id: perpsArenaId,
+          name: "Perpetual Futures Trading Arena",
+          category: "crypto_trading",
+          skill: "perpetual_futures_trading",
+          kind: "Competition",
+          createdBy: "seed-script",
+        },
+      );
+      if (arenaResponse.success && arenaResponse.arena) {
+        console.log(
+          `${colors.green}  ✓ Created perps arena: ${arenaResponse.arena.name}${colors.reset}`,
+        );
+      }
+    } catch (error) {
+      // Arena might already exist (409 conflict), which is fine
+      const errorMsg = error instanceof Error ? error.message : String(error);
+      if (errorMsg.includes("409") || errorMsg.includes("already exists")) {
+        console.log(
+          `${colors.yellow}  ✓ Using existing perps arena: ${perpsArenaId}${colors.reset}`,
+        );
+      } else {
+        // Some other error - rethrow
+        throw error;
+      }
+    }
+
+    // Step 3: Create perps competition using admin API
+    console.log(
+      `\n${colors.blue}Step 3: Creating perps competition via admin API...${colors.reset}`,
     );
 
     const competitionName = `Test Perps Competition ${uniqueSuffix} ${Date.now()}`;
@@ -537,6 +667,7 @@ async function seedPerpsCompetition(): Promise<void> {
         description:
           "Test competition for perpetual futures trading with seeded data",
         type: "perpetual_futures",
+        arenaId: perpsArenaId,
         startDate: now.toISOString(),
         endDate: endDate.toISOString(),
         perpsProvider: {
@@ -614,7 +745,9 @@ async function seedPerpsCompetition(): Promise<void> {
           totalUnrealizedPnl:
             testData.accountSummary.totalUnrealizedPnl.toString(),
           totalRealizedPnl: testData.accountSummary.totalRealizedPnl.toString(),
-          openPositionsCount: testData.positions.length,
+          openPositionsCount: testData.positions.filter(
+            (p) => p.status === undefined || p.status === "Open",
+          ).length,
           timestamp: now,
         };
 
@@ -627,24 +760,36 @@ async function seedPerpsCompetition(): Promise<void> {
 
         // Create positions
         const positions: InsertPerpetualPosition[] = testData.positions.map(
-          (pos, index) => ({
-            id: randomUUID(),
-            agentId,
-            competitionId,
-            providerPositionId: `${testData.agentWalletAddress}_${pos.asset}_${index}`,
-            asset: pos.asset,
-            isLong: pos.side === "long",
-            leverage: pos.leverage.toString(),
-            positionSize: pos.size.toString(),
-            collateralAmount: pos.margin.toString(),
-            entryPrice: pos.entryPrice.toString(),
-            currentPrice: pos.currentPrice.toString(),
-            pnlUsdValue: pos.pnl.toString(),
-            pnlPercentage: ((pos.pnl / pos.margin) * 100).toString(),
-            status: "Open",
-            createdAt: now,
-            capturedAt: now,
-          }),
+          (pos, index) => {
+            // Calculate PnL percentage - handle null margin for recovered positions
+            let pnlPercentage: string | null = null;
+            if (pos.margin !== null && pos.margin > 0) {
+              pnlPercentage = ((pos.pnl / pos.margin) * 100).toString();
+            }
+
+            return {
+              id: randomUUID(),
+              agentId,
+              competitionId,
+              providerPositionId: `${testData.agentWalletAddress}_${pos.asset}_${index}`,
+              asset: pos.asset,
+              isLong: pos.side === "long",
+              // These fields are null for positions recovered from fills
+              leverage: pos.leverage !== null ? pos.leverage.toString() : null,
+              positionSize: pos.size.toString(),
+              collateralAmount:
+                pos.margin !== null ? pos.margin.toString() : null,
+              entryPrice:
+                pos.entryPrice !== null ? pos.entryPrice.toString() : null,
+              currentPrice: pos.currentPrice.toString(),
+              pnlUsdValue: pos.pnl.toString(),
+              pnlPercentage,
+              status: pos.status ?? "Open",
+              closedAt: pos.closedAt ?? null,
+              createdAt: now,
+              capturedAt: now,
+            };
+          },
         );
 
         if (positions.length > 0) {

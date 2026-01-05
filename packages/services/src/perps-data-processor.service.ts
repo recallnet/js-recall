@@ -17,6 +17,7 @@ import type {
   BatchPerpsSyncResult,
   BatchPerpsSyncWithSummaries,
   CalmarRatioCalculationResult,
+  ClosedPositionFill,
   IPerpsDataProvider,
   PerpsAccountSummary,
   PerpsCompetitionProcessingResult,
@@ -79,8 +80,16 @@ export class PerpsDataProcessor {
       isLong: position.side === "long",
       leverage: this.numberToString(position.leverage),
       positionSize: this.numberToString(position.positionSizeUsd) || "0",
-      collateralAmount: this.numberToString(position.collateralAmount) || "0",
-      entryPrice: this.numberToString(position.entryPrice) || "0",
+      // Null for positions recovered from fills (data unavailable)
+      collateralAmount:
+        position.collateralAmount !== undefined
+          ? this.numberToString(position.collateralAmount)
+          : null,
+      // Null for positions recovered from fills (data unavailable)
+      entryPrice:
+        position.entryPrice !== undefined
+          ? this.numberToString(position.entryPrice)
+          : null,
       currentPrice: this.numberToString(position.currentPrice),
       liquidationPrice: this.numberToString(position.liquidationPrice),
       pnlUsdValue: this.numberToString(position.pnlUsdValue),
@@ -90,6 +99,37 @@ export class PerpsDataProcessor {
       createdAt: position.openedAt || new Date(),
       lastUpdatedAt: position.lastUpdatedAt || null,
       closedAt: position.closedAt || null,
+    };
+  }
+
+  /**
+   * Transform a closed position fill to database format
+   * Used for positions that closed between sync cycles
+   */
+  private transformClosedFillToDb(
+    fill: ClosedPositionFill,
+    agentId: string,
+    competitionId: string,
+  ): InsertPerpetualPosition {
+    return {
+      agentId,
+      competitionId,
+      providerPositionId: fill.providerFillId,
+      providerTradeId: null,
+      asset: fill.symbol,
+      isLong: fill.side === "long",
+      leverage: null, // Not available from fills
+      positionSize: this.numberToString(fill.positionSizeUsd) || "0",
+      collateralAmount: null, // Not available from fills
+      entryPrice: null, // Not available from fills (only close price)
+      currentPrice: this.numberToString(fill.closePrice),
+      liquidationPrice: null,
+      pnlUsdValue: this.numberToString(fill.closedPnl),
+      pnlPercentage: null, // Cannot calculate without entry price
+      status: "Closed",
+      createdAt: fill.closedAt, // Use close time as best approximation
+      lastUpdatedAt: fill.closedAt,
+      closedAt: fill.closedAt,
     };
   }
 
@@ -330,12 +370,16 @@ export class PerpsDataProcessor {
    * @param agents Array of agent data to process
    * @param competitionId Competition ID
    * @param provider The perps data provider to use
+   * @param competitionStartDate Competition start date for fetching closed fills
+   * @param competitionEndDate Competition end date (or current time if still active)
    * @returns Batch processing results with raw account summaries
    */
   async processBatchAgentData(
     agents: Array<{ agentId: string; walletAddress: string }>,
     competitionId: string,
     provider: IPerpsDataProvider,
+    competitionStartDate?: Date,
+    competitionEndDate?: Date,
   ): Promise<BatchPerpsSyncWithSummaries> {
     if (!provider) {
       throw new Error("[PerpsDataProcessor] Provider is required");
@@ -371,9 +415,12 @@ export class PerpsDataProcessor {
           // 3. The Symphony provider has built-in retry logic (3 retries with exponential backoff)
           // 4. The outer Promise.allSettled provides per-agent resilience - if this agent fails,
           //    others will still be processed
-          // Check for initial capital for this agent
+
+          // Check for initial capital and last sync time for this agent
           let initialCapital: number | undefined;
+          let lastSyncTime: Date | undefined;
           try {
+            // Fetch initial capital from first snapshot
             const { first } =
               await this.competitionRepo.getFirstAndLastSnapshots(
                 competitionId,
@@ -392,22 +439,71 @@ export class PerpsDataProcessor {
                 // Leave initialCapital as undefined to use provider's default
               }
             }
+
+            // Fetch last sync time for closed fills optimization
+            // This prevents re-fetching all fills from competition start on every sync
+            const lastSummary =
+              await this.perpsRepo.getLatestPerpsAccountSummary(
+                agentId,
+                competitionId,
+              );
+            if (lastSummary?.timestamp) {
+              lastSyncTime = lastSummary.timestamp;
+            }
           } catch {
-            // Continue without initial capital
+            // Continue without initial capital or last sync time
             this.logger.debug(
-              `[PerpsDataProcessor] No initial capital found for agent ${agentId}`,
+              `[PerpsDataProcessor] No initial capital or last sync time found for agent ${agentId}`,
             );
           }
 
+          // Fetch open positions and account summary in parallel
           const [accountSummary, positions] = await Promise.all([
             provider.getAccountSummary(walletAddress, initialCapital),
             provider.getPositions(walletAddress),
           ]);
 
-          // Transform to database format
+          // Fetch closed position fills if provider supports it and we have competition dates
+          let closedFills: ClosedPositionFill[] = [];
+          if (competitionStartDate && provider.getClosedPositionFills) {
+            // Use last sync time to avoid re-fetching all fills from competition start
+            // First sync: lastSyncTime is undefined, so we use competitionStartDate
+            // Subsequent syncs: use the later of lastSyncTime or competitionStartDate
+            const fillsStartDate = lastSyncTime
+              ? new Date(
+                  Math.max(
+                    lastSyncTime.getTime(),
+                    competitionStartDate.getTime(),
+                  ),
+                )
+              : competitionStartDate;
+            const fillsEndDate = competitionEndDate || new Date();
+            closedFills = await provider.getClosedPositionFills(
+              walletAddress,
+              fillsStartDate,
+              fillsEndDate,
+            );
+
+            if (closedFills.length > 0) {
+              this.logger.debug(
+                `[PerpsDataProcessor] Found ${closedFills.length} closed fills for agent ${agentId}`,
+              );
+            }
+          }
+
+          // Transform open positions to database format
           const dbPositions = positions.map((p) =>
             this.transformPositionToDb(p, agentId, competitionId),
           );
+
+          // Transform closed fills to database format and merge
+          const dbClosedFillPositions = closedFills.map((fill) =>
+            this.transformClosedFillToDb(fill, agentId, competitionId),
+          );
+
+          // Combine open positions with closed fills
+          const allDbPositions = [...dbPositions, ...dbClosedFillPositions];
+
           const dbAccountSummary = this.transformAccountSummaryToDb(
             accountSummary,
             agentId,
@@ -417,7 +513,7 @@ export class PerpsDataProcessor {
           return {
             agentId,
             competitionId,
-            positions: dbPositions,
+            positions: allDbPositions,
             accountSummary: dbAccountSummary,
             // Include raw account summary for monitoring to reuse
             rawAccountSummary: accountSummary,
@@ -564,11 +660,15 @@ export class PerpsDataProcessor {
    * Process all agents in a competition
    * @param competitionId Competition ID
    * @param provider The perps data provider to use
+   * @param competitionStartDate Competition start date for fetching closed fills
+   * @param competitionEndDate Competition end date (or current time if still active)
    * @returns Batch processing results with account summaries
    */
   async processCompetitionAgents(
     competitionId: string,
     provider: IPerpsDataProvider,
+    competitionStartDate?: Date,
+    competitionEndDate?: Date,
   ): Promise<BatchPerpsSyncWithSummaries> {
     if (!provider) {
       throw new Error("[PerpsDataProcessor] Provider is required");
@@ -616,7 +716,13 @@ export class PerpsDataProcessor {
       );
     }
 
-    return this.processBatchAgentData(agentData, competitionId, provider);
+    return this.processBatchAgentData(
+      agentData,
+      competitionId,
+      provider,
+      competitionStartDate,
+      competitionEndDate,
+    );
   }
 
   /**
@@ -737,9 +843,12 @@ export class PerpsDataProcessor {
       );
 
       // 3. Process all agents (filtering handled internally)
+      // Pass competition dates for closed fill recovery
       const result = await this.processCompetitionAgents(
         competitionId,
         provider,
+        competition.startDate ?? undefined,
+        competition.endDate ?? undefined,
       );
 
       syncResult = result;

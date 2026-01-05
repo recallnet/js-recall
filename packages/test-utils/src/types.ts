@@ -1157,14 +1157,18 @@ export interface PerpsPosition {
   marketSymbol: string | null;
   asset: string;
   isLong: boolean;
-  leverage: number;
+  /** Leverage - null for positions recovered from fills */
+  leverage: number | null;
   size: number;
-  collateral: number;
-  averagePrice: number;
+  /** Collateral amount - null for positions recovered from fills */
+  collateral: number | null;
+  /** Entry price - null for positions recovered from fills */
+  averagePrice: number | null;
   markPrice: number;
   liquidationPrice: number | null;
   unrealizedPnl: number;
-  pnlPercentage: number;
+  /** PnL percentage - null for positions recovered from fills (entry price unknown) */
+  pnlPercentage: number | null;
   realizedPnl: number;
   status: string;
   openedAt: string;
