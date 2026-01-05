@@ -372,22 +372,26 @@ describe("BoostRepository Bonus Boost Methods Integration Tests", () => {
 
   describe("findActiveBoostBonusesByUserId()", () => {
     test("should return only active boosts for user", async () => {
+      // Use future dates relative to now to avoid test failures when dates pass
+      const oneMonthFromNow = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000);
+      const oneYearFromNow = new Date(Date.now() + 365 * 24 * 60 * 60 * 1000);
+
       const active1 = await repository.createBoostBonus({
         userId: testUserId,
         amount: 500n,
-        expiresAt: new Date("2025-12-31T23:59:59Z"),
+        expiresAt: oneMonthFromNow,
       });
 
       const active2 = await repository.createBoostBonus({
         userId: testUserId,
         amount: 1000n,
-        expiresAt: new Date("2026-12-31T23:59:59Z"),
+        expiresAt: oneYearFromNow,
       });
 
       const inactive = await repository.createBoostBonus({
         userId: testUserId,
         amount: 750n,
-        expiresAt: new Date("2025-12-31T23:59:59Z"),
+        expiresAt: oneMonthFromNow,
       });
       await repository.updateBoostBonus(inactive.id, { isActive: false });
 
@@ -409,16 +413,20 @@ describe("BoostRepository Bonus Boost Methods Integration Tests", () => {
     });
 
     test("should order results by expiresAt ASC (soonest first)", async () => {
+      // Use future dates relative to now
+      const oneMonthFromNow = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000);
+      const sixMonthsFromNow = new Date(Date.now() + 180 * 24 * 60 * 60 * 1000);
+
       const expiresLater = await repository.createBoostBonus({
         userId: testUserId,
         amount: 500n,
-        expiresAt: new Date("2026-06-30T23:59:59Z"),
+        expiresAt: sixMonthsFromNow,
       });
 
       const expiresSooner = await repository.createBoostBonus({
         userId: testUserId,
         amount: 1000n,
-        expiresAt: new Date("2025-12-31T23:59:59Z"),
+        expiresAt: oneMonthFromNow,
       });
 
       const results =
@@ -450,6 +458,9 @@ describe("BoostRepository Bonus Boost Methods Integration Tests", () => {
     });
 
     test("should not return boosts from other users", async () => {
+      // Use future dates relative to now
+      const oneMonthFromNow = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000);
+
       const otherUserId = randomUUID();
       const otherWallet = `0x${randomUUID().replace(/-/g, "").substring(0, 40).padEnd(40, "0")}`;
       await db.insert(coreSchema.users).values({
@@ -462,13 +473,13 @@ describe("BoostRepository Bonus Boost Methods Integration Tests", () => {
       await repository.createBoostBonus({
         userId: otherUserId,
         amount: 500n,
-        expiresAt: new Date("2025-12-31T23:59:59Z"),
+        expiresAt: oneMonthFromNow,
       });
 
       const testUserBoost = await repository.createBoostBonus({
         userId: testUserId,
         amount: 1000n,
-        expiresAt: new Date("2025-12-31T23:59:59Z"),
+        expiresAt: oneMonthFromNow,
       });
 
       const results =
@@ -485,10 +496,13 @@ describe("BoostRepository Bonus Boost Methods Integration Tests", () => {
 
   describe("findAllActiveBoostBonuses()", () => {
     test("should return all active boosts across all users", async () => {
+      // Use future dates relative to now
+      const oneMonthFromNow = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000);
+
       const boost1 = await repository.createBoostBonus({
         userId: testUserId,
         amount: 500n,
-        expiresAt: new Date("2025-12-31T23:59:59Z"),
+        expiresAt: oneMonthFromNow,
       });
 
       const otherUserId = randomUUID();
@@ -503,14 +517,14 @@ describe("BoostRepository Bonus Boost Methods Integration Tests", () => {
       const boost2 = await repository.createBoostBonus({
         userId: otherUserId,
         amount: 1000n,
-        expiresAt: new Date("2025-12-31T23:59:59Z"),
+        expiresAt: oneMonthFromNow,
       });
 
       // Create inactive boost
       const inactive = await repository.createBoostBonus({
         userId: testUserId,
         amount: 750n,
-        expiresAt: new Date("2025-12-31T23:59:59Z"),
+        expiresAt: oneMonthFromNow,
       });
       await repository.updateBoostBonus(inactive.id, { isActive: false });
 
@@ -534,10 +548,13 @@ describe("BoostRepository Bonus Boost Methods Integration Tests", () => {
     });
 
     test("should order results by createdAt DESC", async () => {
+      // Use future dates relative to now
+      const oneMonthFromNow = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000);
+
       const first = await repository.createBoostBonus({
         userId: testUserId,
         amount: 500n,
-        expiresAt: new Date("2025-12-31T23:59:59Z"),
+        expiresAt: oneMonthFromNow,
       });
 
       await new Promise((resolve) => setTimeout(resolve, 10));
@@ -545,7 +562,7 @@ describe("BoostRepository Bonus Boost Methods Integration Tests", () => {
       const second = await repository.createBoostBonus({
         userId: testUserId,
         amount: 1000n,
-        expiresAt: new Date("2025-12-31T23:59:59Z"),
+        expiresAt: oneMonthFromNow,
       });
 
       const results = await repository.findAllActiveBoostBonuses();
