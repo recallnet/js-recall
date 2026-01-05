@@ -69,7 +69,7 @@ dotenv.config({ path: path.resolve(process.cwd(), ".env") });
 // ================================================================================
 // ⚠️ IMPORTANT: This key should be from your LOCAL development environment only!
 // Never commit a real API key to source control
-const ADMIN_API_KEY = "bdccee4a38c5d0f7_7240afd90c2024e6"; // <-- FILL IN YOUR LOCAL ADMIN API KEY HERE
+const ADMIN_API_KEY = ""; // <-- FILL IN YOUR LOCAL ADMIN API KEY HERE
 const API_BASE_URL = "http://localhost:3000"; // Local API only - DO NOT change to production URL
 
 // Colors for console output
