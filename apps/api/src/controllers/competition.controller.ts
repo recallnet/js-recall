@@ -499,7 +499,10 @@ export function makeCompetitionController(services: ServiceRegistry) {
             ? Number(position.liquidationPrice)
             : null,
           unrealizedPnl: Number(position.pnlUsdValue || 0),
-          pnlPercentage: Number(position.pnlPercentage || 0),
+          pnlPercentage:
+            position.pnlPercentage !== null
+              ? Number(position.pnlPercentage)
+              : null,
           realizedPnl: 0,
           status: position.status || "Open",
           openedAt: position.createdAt.toISOString(),
@@ -589,7 +592,8 @@ export function makeCompetitionController(services: ServiceRegistry) {
               ? Number(pos.liquidationPrice)
               : null,
             unrealizedPnl: Number(pos.pnlUsdValue || 0),
-            pnlPercentage: Number(pos.pnlPercentage || 0),
+            pnlPercentage:
+              pos.pnlPercentage !== null ? Number(pos.pnlPercentage) : null,
             realizedPnl: 0, // Not tracked in our schema
             status: pos.status,
             openedAt: pos.createdAt.toISOString(),

@@ -1207,7 +1207,8 @@ export interface PerpsPosition {
   markPrice: number;
   liquidationPrice: number | null;
   unrealizedPnl: number;
-  pnlPercentage: number;
+  /** PnL percentage - null for positions recovered from fills (entry price unknown) */
+  pnlPercentage: number | null;
   realizedPnl: number;
   status: string;
   openedAt: string;

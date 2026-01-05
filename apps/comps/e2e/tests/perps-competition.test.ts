@@ -3,6 +3,7 @@ import { and, eq } from "drizzle-orm";
 import { beforeEach, describe, expect, test } from "vitest";
 
 import {
+  perpetualPositions,
   perpsRiskMetrics,
   portfolioSnapshots,
   riskMetricsSnapshots,
@@ -821,6 +822,82 @@ describe("Perps Competition", () => {
       expect(errorResponse.status).toBe(400);
       expect(errorResponse.error).toContain("perpetual futures");
     }
+  });
+
+  test("should return null (not 0) for unavailable fields on closed positions recovered from fills", async () => {
+    // This test verifies that positions recovered from fills (which have null for
+    // entryPrice, leverage, collateral, pnlPercentage) return null in the API response
+    // rather than being coerced to 0 during serialization.
+
+    const adminClient = createTestClient(getBaseUrl());
+    await adminClient.loginAsAdmin(adminApiKey);
+
+    const { agent, client: agentClient } =
+      await registerUserAndAgentAndGetClient({
+        adminApiKey,
+        agentName: "Closed Position Null Fields Test Agent",
+      });
+
+    // Start a perps competition
+    const competitionResponse = await startPerpsTestCompetition({
+      adminClient,
+      name: `Closed Position Null Fields Test ${Date.now()}`,
+      agentIds: [agent.id],
+    });
+
+    expect(competitionResponse.success).toBe(true);
+    const competition = competitionResponse.competition;
+
+    // Directly insert a closed position with null fields (simulating a position
+    // recovered from fills where entry price, leverage, etc. are unavailable)
+    const closedPositionId = randomUUID();
+    const now = new Date();
+    await db.insert(perpetualPositions).values({
+      id: closedPositionId,
+      agentId: agent.id,
+      competitionId: competition.id,
+      providerPositionId: `fill-recovered-${Date.now()}`,
+      providerTradeId: null,
+      asset: "ETH",
+      isLong: false,
+      leverage: null, // Not available from fills
+      positionSize: "5000",
+      collateralAmount: null, // Not available from fills
+      entryPrice: null, // Not available from fills (only close price)
+      currentPrice: "3200",
+      liquidationPrice: null,
+      pnlUsdValue: "-150",
+      pnlPercentage: null, // Cannot calculate without entry price
+      status: "Closed",
+      createdAt: new Date(now.getTime() - 3600000), // 1 hour ago
+      lastUpdatedAt: now,
+      closedAt: now,
+    });
+
+    // Get positions via API
+    const positionsResponse = await agentClient.getPerpsPositions(
+      competition.id,
+    );
+    expect(positionsResponse.success).toBe(true);
+
+    const typedResponse = positionsResponse as PerpsPositionsResponse;
+    expect(typedResponse.positions).toHaveLength(1);
+
+    const closedPosition = typedResponse.positions[0];
+
+    // Verify the position data
+    expect(closedPosition?.asset).toBe("ETH");
+    expect(closedPosition?.isLong).toBe(false);
+    expect(closedPosition?.status).toBe("Closed");
+    expect(closedPosition?.unrealizedPnl).toBe(-150);
+
+    // These fields should be null (not 0) for positions recovered from fills
+    // The API serialization should preserve null values, not coerce them to 0
+    expect(closedPosition?.averagePrice).toBeNull();
+    expect(closedPosition?.leverage).toBeNull();
+    expect(closedPosition?.collateral).toBeNull();
+    expect(closedPosition?.pnlPercentage).toBeNull();
+    expect(closedPosition?.liquidationPrice).toBeNull();
   });
 
   test("should sync and persist agent positions from Symphony to database", async () => {

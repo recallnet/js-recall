@@ -457,7 +457,8 @@ export function makeAgentController(services: ServiceRegistry) {
               ? Number(pos.liquidationPrice)
               : null,
             unrealizedPnl: Number(pos.pnlUsdValue || 0),
-            pnlPercentage: Number(pos.pnlPercentage || 0), // Include Symphony's calculation
+            pnlPercentage:
+              pos.pnlPercentage !== null ? Number(pos.pnlPercentage) : null,
             realizedPnl: 0, // Not tracked in current schema
             status: pos.status || "Open",
             openedAt: pos.createdAt.toISOString(),

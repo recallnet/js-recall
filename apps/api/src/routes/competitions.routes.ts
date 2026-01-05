@@ -1350,7 +1350,8 @@ export function configureCompetitionsRoutes(
    *                         example: 500
    *                       pnlPercentage:
    *                         type: number
-   *                         description: PnL as percentage of collateral (from Symphony)
+   *                         nullable: true
+   *                         description: PnL as percentage (null for positions recovered from fills)
    *                         example: 0.05
    *                       realizedPnl:
    *                         type: number
@@ -1542,7 +1543,8 @@ export function configureCompetitionsRoutes(
    *                         example: 500
    *                       pnlPercentage:
    *                         type: number
-   *                         description: PnL as percentage of collateral (from Symphony)
+   *                         nullable: true
+   *                         description: PnL as percentage (null for positions recovered from fills)
    *                         example: 0.05
    *                       realizedPnl:
    *                         type: number
