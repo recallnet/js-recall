@@ -16,6 +16,7 @@ import { PerpsDataProcessor } from "../perps-data-processor.service.js";
 import { RiskMetricsService } from "../risk-metrics.service.js";
 import type { AgentPerpsSyncData } from "../types/perps.js";
 import type {
+  ClosedPositionFill,
   IPerpsDataProvider,
   PerpsAccountSummary,
   PerpsPosition,
@@ -71,6 +72,19 @@ describe("PerpsDataProcessor", () => {
     status: "Open",
     openedAt: new Date("2024-01-01"),
     lastUpdatedAt: new Date("2024-01-02"),
+  };
+
+  // Sample closed position fill that matches what provider.getClosedPositionFills returns
+  // This represents a position that closed between sync cycles and was recovered from fills
+  const sampleClosedFill: ClosedPositionFill = {
+    providerFillId: "fill-abc123-456",
+    symbol: "ETH",
+    side: "short",
+    positionSizeUsd: 5000,
+    closePrice: 2500,
+    closedPnl: -150,
+    closedAt: new Date("2024-01-15T10:30:00Z"),
+    fee: 5,
   };
 
   // Helper function to create a mock sync result that matches what the repository would return
@@ -1064,6 +1078,288 @@ describe("PerpsDataProcessor", () => {
           expect.objectContaining({ agentId: "agent-1" }),
           expect.objectContaining({ agentId: "agent-1" }),
           expect.objectContaining({ agentId: "agent-2" }),
+        ]),
+      );
+    });
+
+    it("should transform closed position fills to database format when provider supports getClosedPositionFills", async () => {
+      // Create a provider that supports closed fills
+      const providerWithClosedFills: IPerpsDataProvider = {
+        ...mockProvider,
+        getClosedPositionFills: vi.fn().mockResolvedValue([sampleClosedFill]),
+      };
+
+      const agents = [{ agentId: "agent-1", walletAddress: "0x111" }];
+
+      // Competition dates are required for closed fills to be fetched
+      const competitionStartDate = new Date("2024-01-01");
+      const competitionEndDate = new Date("2024-01-31");
+
+      // Mock repository methods that are called before getClosedPositionFills
+      // These simulate a first sync scenario (no existing snapshots or summaries)
+      mockCompetitionRepo.getFirstAndLastSnapshots = vi
+        .fn()
+        .mockResolvedValue({ first: null, last: null });
+      mockPerpsRepo.getLatestPerpsAccountSummary = vi
+        .fn()
+        .mockResolvedValue(null);
+
+      await processor.processBatchAgentData(
+        agents,
+        "comp-1",
+        providerWithClosedFills,
+        competitionStartDate,
+        competitionEndDate,
+      );
+
+      // Verify getClosedPositionFills was called with correct parameters
+      // On first sync (no lastSyncTime), fillsStartDate equals competitionStartDate
+      expect(
+        providerWithClosedFills.getClosedPositionFills,
+      ).toHaveBeenCalledWith("0x111", competitionStartDate, competitionEndDate);
+
+      // Verify the closed fill was transformed correctly and included in positions
+      expect(mockPerpsRepo.batchSyncAgentsPerpsData).toHaveBeenCalledWith(
+        expect.arrayContaining([
+          expect.objectContaining({
+            agentId: "agent-1",
+            competitionId: "comp-1",
+            positions: expect.arrayContaining([
+              // Open position from getPositions (already tested elsewhere)
+              expect.objectContaining({
+                providerPositionId: "pos-123",
+                status: "Open",
+              }),
+              // Closed fill transformed to database format
+              expect.objectContaining({
+                agentId: "agent-1",
+                competitionId: "comp-1",
+                providerPositionId: "fill-abc123-456", // Maps from providerFillId
+                providerTradeId: null,
+                asset: "ETH", // Maps from symbol
+                isLong: false, // side === "short" -> isLong = false
+                leverage: null, // Not available from fills
+                positionSize: "5000", // positionSizeUsd transformed to string
+                collateralAmount: null, // Not available from fills
+                entryPrice: null, // Not available from fills (only close price)
+                currentPrice: "2500", // Maps from closePrice
+                liquidationPrice: null,
+                pnlUsdValue: "-150", // Maps from closedPnl
+                pnlPercentage: null, // Cannot calculate without entry price
+                status: "Closed",
+                createdAt: sampleClosedFill.closedAt, // Uses closedAt as best approximation
+                lastUpdatedAt: sampleClosedFill.closedAt,
+                closedAt: sampleClosedFill.closedAt,
+              }),
+            ]),
+          }),
+        ]),
+      );
+    });
+
+    it("should correctly transform closed fill with long side to isLong: true", async () => {
+      const longClosedFill: ClosedPositionFill = {
+        ...sampleClosedFill,
+        side: "long",
+        closedPnl: 250, // Profitable long position
+      };
+
+      const providerWithLongFill: IPerpsDataProvider = {
+        ...mockProvider,
+        getClosedPositionFills: vi.fn().mockResolvedValue([longClosedFill]),
+      };
+
+      const agents = [{ agentId: "agent-1", walletAddress: "0x111" }];
+
+      // Mock repository methods for first sync scenario
+      mockCompetitionRepo.getFirstAndLastSnapshots = vi
+        .fn()
+        .mockResolvedValue({ first: null, last: null });
+      mockPerpsRepo.getLatestPerpsAccountSummary = vi
+        .fn()
+        .mockResolvedValue(null);
+
+      await processor.processBatchAgentData(
+        agents,
+        "comp-1",
+        providerWithLongFill,
+        new Date("2024-01-01"),
+        new Date("2024-01-31"),
+      );
+
+      expect(mockPerpsRepo.batchSyncAgentsPerpsData).toHaveBeenCalledWith(
+        expect.arrayContaining([
+          expect.objectContaining({
+            positions: expect.arrayContaining([
+              expect.objectContaining({
+                isLong: true, // side === "long" -> isLong = true
+                pnlUsdValue: "250",
+              }),
+            ]),
+          }),
+        ]),
+      );
+    });
+
+    it("should not fetch closed fills when provider does not support getClosedPositionFills", async () => {
+      // Provider without getClosedPositionFills method (like Symphony)
+      const providerWithoutClosedFills: IPerpsDataProvider = {
+        getName: vi.fn().mockReturnValue("SymphonyProvider"),
+        getAccountSummary: vi.fn().mockResolvedValue(sampleAccountSummary),
+        getPositions: vi.fn().mockResolvedValue([samplePosition]),
+        isHealthy: vi.fn().mockResolvedValue(true),
+        // Note: no getClosedPositionFills method
+      };
+
+      const agents = [{ agentId: "agent-1", walletAddress: "0x111" }];
+
+      // Mock repository methods for first sync scenario
+      mockCompetitionRepo.getFirstAndLastSnapshots = vi
+        .fn()
+        .mockResolvedValue({ first: null, last: null });
+      mockPerpsRepo.getLatestPerpsAccountSummary = vi
+        .fn()
+        .mockResolvedValue(null);
+
+      await processor.processBatchAgentData(
+        agents,
+        "comp-1",
+        providerWithoutClosedFills,
+        new Date("2024-01-01"),
+        new Date("2024-01-31"),
+      );
+
+      // Should only have the open position, no closed fills
+      expect(mockPerpsRepo.batchSyncAgentsPerpsData).toHaveBeenCalledWith(
+        expect.arrayContaining([
+          expect.objectContaining({
+            positions: expect.arrayContaining([
+              expect.objectContaining({
+                providerPositionId: "pos-123",
+                status: "Open",
+              }),
+            ]),
+          }),
+        ]),
+      );
+
+      // Verify no closed fill positions were added
+      const callArgs = vi.mocked(mockPerpsRepo.batchSyncAgentsPerpsData).mock
+        .calls[0]?.[0];
+      expect(callArgs).toBeDefined();
+      const positions = callArgs?.[0]?.positions;
+      expect(positions).toHaveLength(1); // Only the open position
+    });
+
+    it("should not fetch closed fills when competitionStartDate is not provided", async () => {
+      const providerWithClosedFills: IPerpsDataProvider = {
+        ...mockProvider,
+        getClosedPositionFills: vi.fn().mockResolvedValue([sampleClosedFill]),
+      };
+
+      const agents = [{ agentId: "agent-1", walletAddress: "0x111" }];
+
+      // Mock repository methods
+      mockCompetitionRepo.getFirstAndLastSnapshots = vi
+        .fn()
+        .mockResolvedValue({ first: null, last: null });
+      mockPerpsRepo.getLatestPerpsAccountSummary = vi
+        .fn()
+        .mockResolvedValue(null);
+
+      // Call without competitionStartDate - the condition `if (competitionStartDate && ...)` is false
+      await processor.processBatchAgentData(
+        agents,
+        "comp-1",
+        providerWithClosedFills,
+        // No competitionStartDate or competitionEndDate
+      );
+
+      // getClosedPositionFills should NOT be called without competition dates
+      expect(
+        providerWithClosedFills.getClosedPositionFills,
+      ).not.toHaveBeenCalled();
+    });
+
+    it("should use lastSyncTime for closed fills optimization on subsequent syncs", async () => {
+      const providerWithClosedFills: IPerpsDataProvider = {
+        ...mockProvider,
+        getClosedPositionFills: vi.fn().mockResolvedValue([sampleClosedFill]),
+      };
+
+      const agents = [{ agentId: "agent-1", walletAddress: "0x111" }];
+
+      // Competition dates
+      const competitionStartDate = new Date("2024-01-01T00:00:00Z");
+      const competitionEndDate = new Date("2024-01-31T00:00:00Z");
+
+      // Simulate a subsequent sync where we have a previous sync timestamp
+      // The lastSyncTime is AFTER competition start, so it should be used
+      const lastSyncTime = new Date("2024-01-15T12:00:00Z");
+
+      mockCompetitionRepo.getFirstAndLastSnapshots = vi
+        .fn()
+        .mockResolvedValue({ first: null, last: null });
+      mockPerpsRepo.getLatestPerpsAccountSummary = vi.fn().mockResolvedValue({
+        timestamp: lastSyncTime,
+        totalEquity: "10500",
+      });
+
+      await processor.processBatchAgentData(
+        agents,
+        "comp-1",
+        providerWithClosedFills,
+        competitionStartDate,
+        competitionEndDate,
+      );
+
+      // Verify getClosedPositionFills was called with lastSyncTime (the later date)
+      // instead of competitionStartDate, optimizing to only fetch recent fills
+      expect(
+        providerWithClosedFills.getClosedPositionFills,
+      ).toHaveBeenCalledWith(
+        "0x111",
+        lastSyncTime, // Uses lastSyncTime since it's after competitionStartDate
+        competitionEndDate,
+      );
+    });
+
+    it("should handle closed fill with zero positionSizeUsd by falling back to '0'", async () => {
+      const zeroSizeFill: ClosedPositionFill = {
+        ...sampleClosedFill,
+        positionSizeUsd: 0,
+      };
+
+      const providerWithZeroFill: IPerpsDataProvider = {
+        ...mockProvider,
+        getClosedPositionFills: vi.fn().mockResolvedValue([zeroSizeFill]),
+      };
+
+      // Mock repository methods for first sync scenario
+      mockCompetitionRepo.getFirstAndLastSnapshots = vi
+        .fn()
+        .mockResolvedValue({ first: null, last: null });
+      mockPerpsRepo.getLatestPerpsAccountSummary = vi
+        .fn()
+        .mockResolvedValue(null);
+
+      await processor.processBatchAgentData(
+        [{ agentId: "agent-1", walletAddress: "0x111" }],
+        "comp-1",
+        providerWithZeroFill,
+        new Date("2024-01-01"),
+        new Date("2024-01-31"),
+      );
+
+      expect(mockPerpsRepo.batchSyncAgentsPerpsData).toHaveBeenCalledWith(
+        expect.arrayContaining([
+          expect.objectContaining({
+            positions: expect.arrayContaining([
+              expect.objectContaining({
+                positionSize: "0", // Zero is correctly transformed to "0"
+              }),
+            ]),
+          }),
         ]),
       );
     });
