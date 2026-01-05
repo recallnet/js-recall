@@ -120,6 +120,10 @@ services:
       - anvil
 
   cron:
+    profiles:
+      - comps
+      - api
+      - full
     build:
       context: ./local/cron
       dockerfile: Dockerfile
