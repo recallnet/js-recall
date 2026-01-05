@@ -119,5 +119,20 @@ services:
       - db-seed
       - anvil
 
+  cron:
+    build:
+      context: ./local/cron
+      dockerfile: Dockerfile
+    image: recall-cron
+    container_name: recall-cron
+    restart: always
+    networks:
+      - recall-network
+    environment:
+      COMPS_URL: ${COMPS_URL:-http://host.docker.internal:3001}
+      CRON_SECRET: ${CRON_SECRET:-local-dev-secret}
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+
 volumes:
   postgres-data:

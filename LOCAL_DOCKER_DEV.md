@@ -125,6 +125,20 @@ docker exec -it recall-db psql -U postgres
 
 ---
 
+## Cron Jobs
+
+The `cron` container automatically calls comps app endpoints on a schedule (competition start/end, portfolio snapshots, etc.).
+
+**Setup:** Add to `apps/comps/.env.local` or `apps/comps/.env`:
+
+```env
+CRON_SECRET=local-dev-secret
+```
+
+The cron container runs by default and silently retries if comps isn't ready yet.
+
+---
+
 ## Test Agent API
 
 ```bash
