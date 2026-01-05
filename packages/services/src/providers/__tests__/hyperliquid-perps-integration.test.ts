@@ -57,15 +57,6 @@ describe("HyperliquidPerpsProvider - Integration Tests (Real API)", () => {
     expect(typeof summary.totalEquity).toBe("number");
     expect(typeof summary.totalUnrealizedPnl).toBe("number");
     expect(typeof summary.totalRealizedPnl).toBe("number");
-
-    console.log(`\n✓ Account Summary for ${TEST_WALLET.address}:`);
-    console.log(`  Total Equity: $${summary.totalEquity.toFixed(2)}`);
-    console.log(
-      `  Unrealized PnL: $${(summary.totalUnrealizedPnl ?? 0).toFixed(2)}`,
-    );
-    console.log(
-      `  Realized PnL: $${(summary.totalRealizedPnl ?? 0).toFixed(2)}`,
-    );
   }, 30000);
 
   test("should fetch open positions from real Hyperliquid API", async () => {
@@ -74,25 +65,8 @@ describe("HyperliquidPerpsProvider - Integration Tests (Real API)", () => {
     // Verify structure
     expect(Array.isArray(positions)).toBe(true);
 
-    console.log(
-      `\n✓ Found ${positions.length} open positions for ${TEST_WALLET.address}`,
-    );
-
-    // Log details for any positions found
-    positions.forEach((position, index) => {
-      console.log(`  Position ${index + 1}:`);
-      console.log(`    Symbol: ${position.symbol}`);
-      console.log(`    Side: ${position.side}`);
-      console.log(`    Size: $${position.positionSizeUsd.toFixed(2)}`);
-      console.log(
-        `    Entry Price: $${position.entryPrice?.toFixed(4) ?? "N/A"}`,
-      );
-      console.log(`    Leverage: ${position.leverage ?? "N/A"}x`);
-      console.log(
-        `    Collateral: $${position.collateralAmount?.toFixed(2) ?? "N/A"}`,
-      );
-
-      // Verify each position has required fields
+    // Verify each position has required fields
+    positions.forEach((position) => {
       expect(position.symbol).toBeDefined();
       expect(position.side).toMatch(/^(long|short)$/);
     });
@@ -109,24 +83,8 @@ describe("HyperliquidPerpsProvider - Integration Tests (Real API)", () => {
     expect(Array.isArray(fills)).toBe(true);
     expect(fills.length).toBeGreaterThan(0);
 
-    console.log(`\n✓ Found ${fills.length} closed position fills`);
-    console.log(
-      `  Period: ${KNOWN_FILLS_PERIOD.start.toISOString()} to ${KNOWN_FILLS_PERIOD.end.toISOString()}`,
-    );
-
     // Verify structure of first fill
     const firstFill = fills[0]!;
-    console.log(`\n  Sample closed fill:`);
-    console.log(`    Provider Fill ID: ${firstFill.providerFillId}`);
-    console.log(`    Symbol: ${firstFill.symbol}`);
-    console.log(`    Side: ${firstFill.side}`);
-    console.log(`    Position Size: $${firstFill.positionSizeUsd.toFixed(2)}`);
-    console.log(`    Close Price: $${firstFill.closePrice.toFixed(4)}`);
-    console.log(`    Closed PnL: $${firstFill.closedPnl.toFixed(4)}`);
-    console.log(`    Closed At: ${firstFill.closedAt.toISOString()}`);
-    console.log(
-      `    Fee: ${firstFill.fee !== undefined ? `$${firstFill.fee.toFixed(4)}` : "N/A"}`,
-    );
 
     // Verify all required fields are present with correct types
     expect(firstFill.providerFillId).toBeDefined();
@@ -152,10 +110,6 @@ describe("HyperliquidPerpsProvider - Integration Tests (Real API)", () => {
         KNOWN_FILLS_PERIOD.end.getTime(),
       );
     });
-
-    console.log(
-      `\n✓ All ${fills.length} fills are within requested date range`,
-    );
   }, 30000);
 
   test("should return empty array for wallet with no closed fills in date range", async () => {
@@ -171,10 +125,6 @@ describe("HyperliquidPerpsProvider - Integration Tests (Real API)", () => {
 
     expect(Array.isArray(fills)).toBe(true);
     expect(fills.length).toBe(0);
-
-    console.log(
-      `\n✓ Correctly returned empty array for date range with no fills`,
-    );
   }, 30000);
 
   test("should verify closed fills have unique provider fill IDs", async () => {
@@ -190,9 +140,6 @@ describe("HyperliquidPerpsProvider - Integration Tests (Real API)", () => {
 
     // All IDs should be unique
     expect(uniqueIds.size).toBe(fillIds.length);
-
-    console.log(`\n✓ All ${fills.length} fills have unique provider IDs`);
-    console.log(`  Sample IDs: ${fillIds.slice(0, 3).join(", ")}...`);
   }, 30000);
 
   test("should correctly parse fill direction from Hyperliquid dir field", async () => {
@@ -206,14 +153,6 @@ describe("HyperliquidPerpsProvider - Integration Tests (Real API)", () => {
     fills.forEach((fill) => {
       expect(fill.side).toMatch(/^(long|short)$/);
     });
-
-    // Count by side for logging
-    const longCount = fills.filter((f) => f.side === "long").length;
-    const shortCount = fills.filter((f) => f.side === "short").length;
-
-    console.log(`\n✓ Fill direction parsing:`);
-    console.log(`  Long closes: ${longCount}`);
-    console.log(`  Short closes: ${shortCount}`);
   }, 30000);
 
   test("should only return fills with non-zero closedPnl (critical filter)", async () => {
@@ -228,10 +167,6 @@ describe("HyperliquidPerpsProvider - Integration Tests (Real API)", () => {
     fills.forEach((fill) => {
       expect(fill.closedPnl).not.toBe(0);
     });
-
-    console.log(
-      `\n✓ All ${fills.length} fills have non-zero closedPnl (filter working correctly)`,
-    );
   }, 30000);
 
   test("should handle concurrent requests without issues", async () => {
@@ -249,11 +184,6 @@ describe("HyperliquidPerpsProvider - Integration Tests (Real API)", () => {
     expect(summary).toBeDefined();
     expect(Array.isArray(positions)).toBe(true);
     expect(Array.isArray(fills)).toBe(true);
-
-    console.log(`\n✓ Concurrent requests completed successfully:`);
-    console.log(`  Account summary: $${summary.totalEquity.toFixed(2)} equity`);
-    console.log(`  Open positions: ${positions.length}`);
-    console.log(`  Closed fills: ${fills.length}`);
   }, 30000);
 
   test("should verify provider name", () => {
@@ -265,9 +195,5 @@ describe("HyperliquidPerpsProvider - Integration Tests (Real API)", () => {
 
     expect(typeof isHealthy).toBe("boolean");
     expect(isHealthy).toBe(true);
-
-    console.log(
-      `\n✓ Provider health check: ${isHealthy ? "healthy" : "unhealthy"}`,
-    );
   }, 30000);
 });
