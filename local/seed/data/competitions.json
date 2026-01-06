@@ -95,30 +95,30 @@
       "syncIntervalMinutes": 5,
       "chains": [
         {
-          "specificChain": "base-mainnet",
+          "specificChain": "base",
           "enabled": true
         }
       ],
       "allowedTokens": [
         {
-          "specificChain": "base-mainnet",
+          "specificChain": "base",
           "tokenAddress": "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913",
           "tokenSymbol": "USDC"
         },
         {
-          "specificChain": "base-mainnet",
+          "specificChain": "base",
           "tokenAddress": "0x4200000000000000000000000000000000000006",
           "tokenSymbol": "WETH"
         },
         {
-          "specificChain": "base-mainnet",
+          "specificChain": "base",
           "tokenAddress": "0x50c5725949A6F0c72E6C4a641F24049A917DB0Cb",
           "tokenSymbol": "DAI"
         }
       ],
       "allowedProtocols": [
         {
-          "specificChain": "base-mainnet",
+          "specificChain": "base",
           "protocol": "uniswap-v3",
           "routerAddress": "0x2626664c2603336E57B271c5C0b26F421741e481",
           "factoryAddress": "0x33128a8fC17869897dcE68Ed026d694621f6FDfD"
@@ -173,26 +173,26 @@
       "syncIntervalMinutes": 3,
       "chains": [
         {
-          "specificChain": "ethereum-mainnet",
+          "specificChain": "eth",
           "enabled": true
         },
         {
-          "specificChain": "base-mainnet",
+          "specificChain": "base",
           "enabled": true
         },
         {
-          "specificChain": "arbitrum-mainnet",
+          "specificChain": "arbitrum",
           "enabled": true
         }
       ],
       "allowedTokens": [
         {
-          "specificChain": "ethereum-mainnet",
+          "specificChain": "eth",
           "tokenAddress": "0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48",
           "tokenSymbol": "USDC"
         },
         {
-          "specificChain": "base-mainnet",
+          "specificChain": "base",
           "tokenAddress": "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913",
           "tokenSymbol": "USDC"
         }
@@ -295,25 +295,25 @@
       "syncIntervalMinutes": 10,
       "chains": [
         {
-          "specificChain": "base-mainnet",
+          "specificChain": "base",
           "enabled": true
         }
       ],
       "allowedTokens": [
         {
-          "specificChain": "base-mainnet",
+          "specificChain": "base",
           "tokenAddress": "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913",
           "tokenSymbol": "USDC"
         },
         {
-          "specificChain": "base-mainnet",
+          "specificChain": "base",
           "tokenAddress": "0x4200000000000000000000000000000000000006",
           "tokenSymbol": "WETH"
         }
       ],
       "allowedProtocols": [
         {
-          "specificChain": "base-mainnet",
+          "specificChain": "base",
           "protocol": "uniswap-v3",
           "routerAddress": "0x2626664c2603336E57B271c5C0b26F421741e481",
           "factoryAddress": "0x33128a8fC17869897dcE68Ed026d694621f6FDfD"
