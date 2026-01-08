@@ -146,7 +146,14 @@ describe("TimeTravel", () => {
       const reverted = await timeTravel.getCurrentBlock();
 
       // Block number should be back to snapshot state
-      expect(reverted.blockNumber).toBe(beforeSnapshot.blockNumber);
+      // Allow for off-by-a-bit due to Anvil's --block-time 1 auto-mining
+      // between revert() and getCurrentBlock()
+      expect(reverted.blockNumber).toBeGreaterThanOrEqual(
+        beforeSnapshot.blockNumber - 2n,
+      );
+      expect(reverted.blockNumber).toBeLessThanOrEqual(
+        beforeSnapshot.blockNumber + 2n,
+      );
     });
   });
 });
