@@ -13,8 +13,10 @@ import {
 import { tokenAmount } from "../custom-types.js";
 
 export const seasons = pgTable("seasons", {
-  number: integer().primaryKey().notNull(),
-  startsWithAirdropNumber: integer().notNull().unique(),
+  number: integer().primaryKey(),
+  startsWithAirdropNumber: integer("starts_with_airdrop_number")
+    .notNull()
+    .unique(),
   name: text().notNull().unique(),
   startDate: timestamp("start_date", { withTimezone: true }).notNull(),
   endDate: timestamp("end_date", { withTimezone: true }).notNull(),
