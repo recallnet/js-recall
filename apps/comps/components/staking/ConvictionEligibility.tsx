@@ -249,7 +249,7 @@ export const ConvictionEligibility: React.FunctionComponent = () => {
             {actionState.type === "eligible" && (
               <div className="bg-gray-4 rounded-lg px-4 py-2">
                 <span className="text-gray-6 font-mono text-sm font-semibold tracking-wider">
-                  REWARDS IN {actionState.days} DAYS
+                  REWARDS SNAPSHOT IN {actionState.days} DAYS
                 </span>
               </div>
             )}
