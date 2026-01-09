@@ -44,8 +44,12 @@ export function calculateTimeProgress(
   return {
     progress,
     progressText,
-    startDateFormatted: formatDate(new Date(Number(startTime) * 1000)),
-    endDateFormatted: formatDate(new Date(Number(endTime) * 1000)),
+    startDateFormatted: formatDate(
+      new Date(Number(startTime) * 1000),
+      true,
+      true,
+    ),
+    endDateFormatted: formatDate(new Date(Number(endTime) * 1000), true, true),
     startDateISO: new Date(Number(startTime) * 1000).toISOString(),
     endDateISO: new Date(Number(endTime) * 1000).toISOString(),
   };
