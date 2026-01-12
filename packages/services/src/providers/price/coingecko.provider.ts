@@ -478,18 +478,30 @@ export class CoinGeckoProvider implements PriceSource {
         }
       }
     } catch (error) {
-      this.logger.error(
+      this.logger.warn(
         {
           error: error instanceof Error ? error.message : JSON.stringify(error),
           tokenCount: tokenAddresses.length,
           network,
         },
-        `Error fetching batch prices`,
+        `Batch price fetch failed, falling back to individual requests`,
       );
-      // Set all to null on complete batch failure
-      for (const address of tokenAddresses) {
-        results.set(address, null);
-      }
+
+      // Fallback to individual requests when batch fails
+      const individualResults = await Promise.allSettled(
+        tokenAddresses.map((address) => this.fetchPrice(address, network)),
+      );
+
+      individualResults.forEach((result, index) => {
+        const address = tokenAddresses[index];
+        if (address !== undefined) {
+          if (result.status === "fulfilled") {
+            results.set(address, result.value);
+          } else {
+            results.set(address, null);
+          }
+        }
+      });
     }
     return results;
   }

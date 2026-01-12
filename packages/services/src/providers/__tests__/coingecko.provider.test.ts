@@ -400,6 +400,95 @@ describe("CoinGeckoProvider", () => {
       expect(results.get(tokens[0]!)?.symbol).toBe("BURN");
       expect(results.get(ethereumTokens.usdc)?.price).toBe(1.0002548824);
     });
+
+    it("should fallback to individual requests when batch fails", async () => {
+      const tokens = [ethereumTokens.eth, ethereumTokens.usdc];
+
+      // Mock batch API to always fail with a network-retryable error
+      mockCoinGeckoInstance.onchain.networks.tokens.multi.getAddresses.mockImplementation(
+        async () => {
+          const error: Error & { response?: { status: number } } = new Error(
+            "Batch API timeout",
+          );
+          error.response = { status: 429 };
+          throw error;
+        },
+      );
+
+      // Mock individual API calls for fallback
+      mockTokenPrice(mockCoinGeckoInstance, commonMockResponses.eth);
+      mockTokenPrice(mockCoinGeckoInstance, commonMockResponses.usdc);
+
+      const results = await provider.getBatchPrices(
+        tokens,
+        BlockchainType.EVM,
+        "eth",
+      );
+
+      // Batch API should have been called (multiple times due to retry)
+      expect(
+        mockCoinGeckoInstance.onchain.networks.tokens.multi.getAddresses,
+      ).toHaveBeenCalled();
+
+      // Individual API should have been called as fallback
+      expect(
+        mockCoinGeckoInstance.onchain.networks.tokens.getAddress,
+      ).toHaveBeenCalledTimes(2);
+
+      // Results should still be returned via fallback
+      expect(results.size).toBe(2);
+      expect(results.get(ethereumTokens.eth)?.price).toBe(4473.03);
+      expect(results.get(ethereumTokens.usdc)?.price).toBe(1.0002548824);
+
+      // Verify warning was logged for fallback
+      expect(mockLogger.warn).toHaveBeenCalledWith(
+        expect.objectContaining({
+          tokenCount: 2,
+          network: "eth",
+        }),
+        expect.stringContaining("falling back to individual requests"),
+      );
+    }, 10000);
+
+    it("should handle partial failures in fallback mode", async () => {
+      const tokens = [ethereumTokens.eth, ethereumTokens.usdc];
+
+      // Mock batch API to always fail with a network-retryable error
+      mockCoinGeckoInstance.onchain.networks.tokens.multi.getAddresses.mockImplementation(
+        async () => {
+          const error: Error & { response?: { status: number } } = new Error(
+            "Batch API timeout",
+          );
+          error.response = { status: 429 };
+          throw error;
+        },
+      );
+
+      // Mock individual calls: ETH succeeds, USDC fails with network error (triggering retries)
+      mockCoinGeckoInstance.onchain.networks.tokens.getAddress.mockImplementation(
+        async (address: string) => {
+          if (address === ethereumTokens.eth.toLowerCase()) {
+            return commonMockResponses.eth;
+          }
+          const error: Error & { response?: { status: number } } = new Error(
+            "Individual API error",
+          );
+          error.response = { status: 429 };
+          throw error;
+        },
+      );
+
+      const results = await provider.getBatchPrices(
+        tokens,
+        BlockchainType.EVM,
+        "eth",
+      );
+
+      // Results should have one success and one null
+      expect(results.size).toBe(2);
+      expect(results.get(ethereumTokens.eth)?.price).toBe(4473.03);
+      expect(results.get(ethereumTokens.usdc)).toBeNull();
+    }, 15000);
   });
 
   describe("Stablecoin detection", () => {
