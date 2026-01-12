@@ -75,6 +75,8 @@ export const ConvictionStakeModal: React.FC<ConvictionStakeModalProps> = ({
     claim,
     isConfirmed,
     error: writeError,
+    errorMessage,
+    errorType,
     transactionHash,
   } = useAirdropClaim();
 
@@ -336,11 +338,12 @@ export const ConvictionStakeModal: React.FC<ConvictionStakeModalProps> = ({
               <X className="h-8 w-8 text-red-500" />
             </div>
             <div className="text-center">
-              <div className="text-xl font-bold text-red-500">Failed</div>
-              <div className="mt-2 text-gray-400">
-                {writeError
-                  ? writeError.message
-                  : "An error occurred while processing your transaction."}
+              <div className="text-xl font-bold text-red-500">
+                {errorType === "user_rejected" ? "Cancelled" : "Failed"}
+              </div>
+              <div className="mt-2 max-w-sm text-gray-400">
+                {errorMessage ??
+                  "An error occurred while processing your transaction."}
               </div>
             </div>
             <div className="flex w-full gap-4">

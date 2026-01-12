@@ -149,7 +149,7 @@ export const StakeSkeleton: React.FunctionComponent<StakeSkeletonProps> = ({
       ) : null}
 
       {/* Rewards Row Skeleton */}
-      <div className="flex max-h-[400px] flex-col gap-6 sm:flex-row">
+      <div className="flex flex-col gap-6 sm:max-h-[400px] sm:flex-row">
         <div className="flex-1">
           <div className="flex h-full flex-col gap-4">
             <div className="flex gap-1">
