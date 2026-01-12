@@ -19,6 +19,7 @@ import { fileURLToPath } from "url";
 import { migrateDb } from "@recallnet/db/utils";
 
 import { seedAgents } from "./agents.js";
+import { seedAirdrop } from "./airdrop.js";
 import { seedCompetitionData } from "./competition-data.js";
 import {
   enrollAgentsInCompetitions,
@@ -138,6 +139,10 @@ async function main() {
 
     // Step 6: Seed all competition data (snapshots, trades, positions, leaderboards)
     await seedCompetitionData(db, competitionIds);
+    log("");
+
+    // Step 7: Seed airdrop data (seasons and allocations)
+    await seedAirdrop(db);
     log("");
 
     // Summary

@@ -29,10 +29,19 @@ for i in {1..10}; do
   sleep 1
 done
 
-# Deploy contracts
+# Deploy contracts and capture output
 echo "Deploying contracts..."
 cd /contracts
-ANVIL_URL=http://localhost:8545 npx hardhat deploy --network docker --reset
+ANVIL_URL=http://localhost:8545 npx hardhat deploy --network docker --reset 2>&1 | tee /tmp/deploy-output.log
+
+# Extract and display contract addresses for documentation
+echo ""
+echo "==================================="
+echo "  Deployed Contract Addresses"
+echo "==================================="
+echo ""
+grep -E "(deployed to|deployed at|created at):" /tmp/deploy-output.log || echo "See deployment logs above for addresses"
+echo ""
 
 # Stop anvil (triggers state dump)
 echo "Stopping anvil and dumping state..."

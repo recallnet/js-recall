@@ -7,7 +7,7 @@ This setup supports using Docker Compose to get a somewhat realistic dev environ
 ### Getting Started
 
 For first time use, you will want to start by building:
-`docker compose build`
+`docker compose --profile full build`
 
 NOTE: if you encounter errors, consider cleaning up docker.
 
@@ -70,6 +70,7 @@ When you start the Docker Compose stack, the `db-seed` service automatically see
   - Cross-Chain Masters Series (active, 6 agents)
   - Summer Perpetuals Pro League (pending, 0 agents)
   - Beginner Spot Trading (pending, 0 agents)
+- **Airdrop/Conviction Staking** - Season 1 with 9 claimable allocations (1000 tokens each)
 
 ### Anvil Test Wallets
 
@@ -156,6 +157,38 @@ curl http://localhost:3000/backend-api/api/agents/me \
 
 The Anvil container includes pre-deployed smart contracts. Contract addresses are saved in:
 `packages/staking-contracts/contracts/deployments/docker/`
+
+### Airdrop Contracts
+
+The local environment includes a fully functional airdrop system:
+
+- **FuulAirdropDistributorFactory** - Factory for creating airdrop distributors
+- **FuulAirdropDistributor** - Handles token claims with conviction staking
+
+**Claimable Accounts:** Anvil wallets 1-9 (not wallet 0, which is the deployer)
+
+| Duration | Penalty | Receive % |
+|----------|---------|-----------|
+| No stake | 50% | 10% |
+| 30 days | 30% | 20% |
+| 90 days | 15% | 40% |
+| 180 days | 5% | 60% |
+| 365 days | 0% | 100% |
+
+**Contract Address:**
+The airdrop distributor address is set via `NEXT_PUBLIC_AIRDROP_CONTRACT_ADDRESS`.
+Default: `0x09635F643e140090A9A8Dcd712eD6285858ceBef`
+
+If you rebuild the Anvil state, verify the address in the deployment logs:
+```bash
+./local/anvil/rebuild-state.sh | grep "created at"
+```
+
+**Testing the Airdrop UI:**
+1. Import an Anvil private key (wallets 1-9) into MetaMask
+2. Connect wallet to the comps app
+3. Navigate to the Stake page
+4. The "Conviction Staking" section should appear with claimable rewards
 
 ### Rebuild Anvil State
 
