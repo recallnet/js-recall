@@ -178,18 +178,6 @@ describe("DexScreenerProvider", () => {
   });
 
   describe("Wrapped native token price fetching (integration)", () => {
-    it("should fetch WBNB price on BSC", async () => {
-      const priceReport = await provider.getPrice(
-        specificChainTokens.bsc.bnb,
-        BlockchainType.EVM,
-        "bsc",
-      );
-
-      expect(priceReport).not.toBeNull();
-      expect(typeof priceReport?.price).toBe("number");
-      expect(priceReport?.price).toBeGreaterThan(0);
-    }, 15000);
-
     it("should fetch WAVAX price on Avalanche", async () => {
       const priceReport = await provider.getPrice(
         specificChainTokens.avalanche.avax,
@@ -252,19 +240,6 @@ describe("DexScreenerProvider", () => {
   });
 
   describe("USDC price fetching on new chains (integration)", () => {
-    it("should fetch USDC price on BSC", async () => {
-      const priceReport = await provider.getPrice(
-        specificChainTokens.bsc.usdc,
-        BlockchainType.EVM,
-        "bsc",
-      );
-
-      expect(priceReport).not.toBeNull();
-      expect(typeof priceReport?.price).toBe("number");
-      // USDC should be close to $1
-      expect(priceReport?.price).toBeCloseTo(1, 1);
-    }, 15000);
-
     it("should fetch USDC price on Avalanche", async () => {
       const priceReport = await provider.getPrice(
         specificChainTokens.avalanche.usdc,

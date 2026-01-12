@@ -33,7 +33,6 @@ export class DexScreenerProvider implements PriceSource {
   private readonly chainMapping: Record<SpecificChain, string> = {
     eth: "ethereum",
     polygon: "polygon",
-    bsc: "bsc",
     arbitrum: "arbitrum",
     optimism: "optimism",
     avalanche: "avalanche",

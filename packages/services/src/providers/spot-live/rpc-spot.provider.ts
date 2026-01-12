@@ -1437,7 +1437,6 @@ export class RpcSpotProvider implements ISpotLiveDataProvider {
       optimism: 2, // ~2 seconds per block
       polygon: 2, // ~2 seconds per block
       avalanche: 2, // ~2 seconds per block
-      bsc: 3, // ~3 seconds per block
       linea: 3, // ~3 seconds per block
       zksync: 1, // ~1 second per block
       scroll: 3, // ~3 seconds per block
