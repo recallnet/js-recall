@@ -148,23 +148,28 @@ async function generateAndSendReport(competitionId: string): Promise<void> {
       .slice(0, 1);
 
     const topCompetitor = originalTopAgents[0];
-    if (!topCompetitor) {
-      throw new Error("No top competitor found");
-    }
-    const proof = await services.rewardsService.retrieveProof(
-      competitionId,
-      topCompetitor.address as `0x${string}`,
-      topCompetitor.amount,
-    );
-    const proofHex = proof
-      .map((p) => `0x${Buffer.from(p).toString("hex")}`)
-      .join(",");
+    let verificationExample: {
+      address: string;
+      amount: string;
+      proof: string;
+    } | null = null;
 
-    const verificationExample = {
-      address: topCompetitor.address,
-      amount: formatAmount(topCompetitor.amount),
-      proof: proofHex,
-    };
+    if (topCompetitor) {
+      const proof = await services.rewardsService.retrieveProof(
+        competitionId,
+        topCompetitor.address as `0x${string}`,
+        topCompetitor.amount,
+      );
+      const proofHex = proof
+        .map((p) => `0x${Buffer.from(p).toString("hex")}`)
+        .join(",");
+
+      verificationExample = {
+        address: topCompetitor.address,
+        amount: formatAmount(topCompetitor.amount),
+        proof: proofHex,
+      };
+    }
 
     // Generate timestamp
     const generatedDate =

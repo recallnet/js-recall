@@ -125,13 +125,34 @@ $$
 
 You can see that at $d = 1$ (first day of the boost allocation window), $b_{u,i,d} = b_{u,i}$, that is, all of your boosts will be used to affect your payout. This means if **everyone only allocates boosts on the first day**, we revert to the scenario described in section **2**.
 
+With time-based decay, the total time-weighted boost for competitor $i$ is:
+
+$$
+B_i = \sum_{u}{\sum_{d=1}^{N}{b_{u,i,d}}}
+$$
+
+where $N$ is the last day of the boost allocation window. Note that $B_i$ uses time-weighted boosts, ensuring consistency with the numerator in the payout calculation.
+
 With that, $Payout_{u,i}$ becomes
 
 $$
 \text{Payout}_{u,i} =\begin{cases}\text{Pool}_i \cdot \dfrac{\sum_{d=1}^{N}{b_{u,i,d}}}{B_i}, & \text{if } B_i>0 \\[2mm]0, & \text{if } B_i=0\end{cases}
 $$
 
-where $N$ is the last day of the boost allocation window. In this setting, the sum of payouts does not equal to the total pool of rewards:
+### Example: Time-Weighted Distribution
+
+Consider a competitor prize pool of 1000 tokens with two users:
+
+- User A votes 100 on Day 1 (weight 100% = 1.0)
+- User B votes 400 on Day 3 (weight 25% = 0.25)
+
+- Weighted total: $B_i = 100 \times 1.0 + 400 \times 0.25 = 200$
+- User A reward: $1000 \times \frac{100 \times 1.0}{200} = 500$ tokens
+- User B reward: $1000 \times \frac{400 \times 0.25}{200} = 500$ tokens
+
+Both users receive equal rewards because they contributed equal time-weighted boosts (100 each).
+
+In this setting, the sum of payouts does not equal to the total pool of rewards:
 
 $$
 \sum_u{Payout_u} \neq X
@@ -174,6 +195,8 @@ If competitors A and B are tied for 1st place:
 - **Time-based:** You earn higher rewards by correctly predicting winners earlier
 
 ## Code for the above calculation
+
+### Basic calculation (without time decay)
 
 ```python
 from collections import defaultdict
@@ -234,5 +257,120 @@ for rank in range(k):
 # Step 3: print results
 for user, payout in user_payouts.items():
     print(f"User {user}: {payout:.2f}")
+
+```
+
+### Calculation with time-based decay
+
+```python
+from collections import defaultdict
+from decimal import Decimal, getcontext, ROUND_DOWN
+from datetime import datetime
+
+getcontext().prec = 50
+
+# Test parameters matching TypeScript test
+X = 1000 * 10**18  # 1000 ETH in WEI
+k = 3              # Top-3 placements
+r = Decimal("0.5") # Prize pool decay factor
+q = Decimal("0.5") # Time decay factor
+
+# Boost allocation window: 2024-01-01 to 2024-01-05 (4 days)
+window_start = datetime(2024, 1, 1)
+window_end = datetime(2024, 1, 5)
+
+# Leaderboard: 3 competitors ranked 1, 2, 3
+results = ["Competitor A", "Competitor B", "Competitor C"]
+
+# Boost allocations with exact timestamps from test
+# Format: (competitor, user, boost_amount, timestamp)
+boost_allocations = [
+    # Alice's allocations
+    ("Competitor A", "Alice", 100, datetime(2024, 1, 1, 12, 0, 0)),  # Day 1: decay^0 = 1.0
+    ("Competitor B", "Alice", 50, datetime(2024, 1, 2, 18, 0, 0)),   # Day 2: decay^1 = 0.5
+    ("Competitor C", "Alice", 75, datetime(2024, 1, 3, 9, 0, 0)),    # Day 3: decay^2 = 0.25
+
+    # Bob's allocations
+    ("Competitor A", "Bob", 80, datetime(2024, 1, 1, 15, 0, 0)),     # Day 1: decay^0 = 1.0
+    ("Competitor A", "Bob", 40, datetime(2024, 1, 2, 10, 0, 0)),      # Day 2: decay^1 = 0.5
+    ("Competitor B", "Bob", 120, datetime(2024, 1, 1, 20, 0, 0)),     # Day 1: decay^0 = 1.0
+    ("Competitor C", "Bob", 60, datetime(2024, 1, 4, 14, 0, 0)),      # Day 4: decay^3 = 0.125
+
+    # Charlie's allocations
+    ("Competitor B", "Charlie", 90, datetime(2024, 1, 2, 12, 0, 0)),  # Day 2: decay^1 = 0.5
+    ("Competitor C", "Charlie", 200, datetime(2024, 1, 1, 8, 0, 0)), # Day 1: decay^0 = 1.0
+    ("Competitor C", "Charlie", 30, datetime(2024, 1, 3, 16, 0, 0)),  # Day 3: decay^2 = 0.25
+]
+
+def get_day_index(timestamp: datetime, window_start: datetime, window_end: datetime) -> int:
+    """Get the day index (0-based) for a timestamp within the window.
+    Each day interval is [start + n*24h, start + (n+1)*24h) for n = 0, 1, 2, ...
+    """
+    if timestamp < window_start or timestamp >= window_end:
+        return -1
+
+    delta = timestamp - window_start
+    day_index = delta.days
+    return day_index
+
+def calculate_time_weight(timestamp: datetime, window_start: datetime, window_end: datetime, q: Decimal) -> Decimal:
+    """Calculate time decay weight: w_d = q^index where index is 0 for day 1, 1 for day 2, etc."""
+    day_index = get_day_index(timestamp, window_start, window_end)
+    if day_index < 0:
+        return Decimal(0)
+    return q ** day_index
+
+# Step 1: Compute placement pools using prize pool decay
+unnormalized_weights = [r ** i for i in range(k)]
+total_weight = sum(unnormalized_weights)
+placement_pools = [Decimal(X) * (w / total_weight) for w in unnormalized_weights]
+
+# Step 2: Calculate time-weighted boosts per user per competitor
+user_effective_boosts = defaultdict(lambda: defaultdict(Decimal))  # {competitor: {user: effective_boost}}
+competitor_total_effective_boosts = defaultdict(Decimal)  # {competitor: total_effective_boost}
+
+for competitor, user, boost, timestamp in boost_allocations:
+    time_weight = calculate_time_weight(timestamp, window_start, window_end, q)
+    effective_boost = Decimal(boost) * time_weight
+
+    user_effective_boosts[competitor][user] += effective_boost
+    competitor_total_effective_boosts[competitor] += effective_boost
+
+# Step 3: Distribute each placement's pool to boosters using time-weighted boosts
+user_payouts = {}  # {user_id: total_payout}
+
+for rank in range(k):
+    competitor = results[rank]
+    pool = placement_pools[rank]
+
+    # Total time-weighted boost for this competitor (denominator)
+    total_effective_boost = competitor_total_effective_boosts.get(competitor, Decimal(0))
+
+    if total_effective_boost == 0:
+        continue
+
+    # Distribute proportionally using time-weighted boosts
+    for user, effective_boost in user_effective_boosts.get(competitor, {}).items():
+        if effective_boost > 0:
+            # Both numerator (effective_boost) and denominator (total_effective_boost) use time weighting
+            share = effective_boost / total_effective_boost
+            payout = pool * share
+            print(f"Rank {rank+1} ({competitor}): User {user}, Effective Boost: {effective_boost}, Share: {share:.6f}, Payout: {payout:.0f} WEI")
+            user_payouts[user] = user_payouts.get(user, Decimal(0)) + payout
+
+    print()
+
+# Step 4: Print results (matching TypeScript test expectations)
+print("Total payouts:")
+for user in sorted(user_payouts.keys()):
+    payout = user_payouts[user]
+    # Convert to match TypeScript bigint representation
+    payout_bigint = int(payout.to_integral_value(rounding=ROUND_DOWN))
+    print(f"User {user}: {payout_bigint} WEI ({payout / Decimal(10**18):.6f} ETH)")
+
+# Expected results (from TypeScript test):
+# Alice: 334767399782879659040 WEI
+# Bob: 470749065176309758353 WEI
+# Charlie: 194483535040810582606 WEI
 
 ```
