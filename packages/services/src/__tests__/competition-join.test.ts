@@ -172,7 +172,6 @@ describe("CompetitionService - joinCompetition", () => {
       evmChains: [
         "eth",
         "polygon",
-        "bsc",
         "arbitrum",
         "base",
         "optimism",

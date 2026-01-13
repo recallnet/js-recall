@@ -82,7 +82,6 @@ export enum BlockchainType {
 export const SPECIFIC_CHAIN_NAMES = [
   "eth",
   "polygon",
-  "bsc",
   "arbitrum",
   "optimism",
   "avalanche",
@@ -104,7 +103,6 @@ export type SpecificChain = z.infer<typeof SpecificChainSchema>;
 export const chainTypeMapping: Record<SpecificChain, BlockchainType> = {
   eth: BlockchainType.EVM,
   polygon: BlockchainType.EVM,
-  bsc: BlockchainType.EVM,
   arbitrum: BlockchainType.EVM,
   optimism: BlockchainType.EVM,
   avalanche: BlockchainType.EVM,

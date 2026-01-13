@@ -35,11 +35,6 @@ const testTokens = {
     MATIC: "0x0d500B1d8E8eF31E21C99d1Db9A6444d3ADf1270",
     USDC: "0x3c499c542cEF5E3811e1192ce70d8cC03d5c3359",
   },
-  // Binance Smart Chain
-  bsc: {
-    BNB: "0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c", // WBNB
-    USDT: "0x55d398326f99059fF775485246999027B3197955",
-  },
   // Arbitrum
   arbitrum: {
     ETH: "0x82aF49447D8a07e3bd95BD0d56f35241523fBab1",
@@ -87,11 +82,6 @@ describe("Multi-Chain Provider Tests", () => {
       const polygonToken = testTokens.polygon.MATIC;
       const polygonChain = multiChainProvider.determineChain(polygonToken);
       expect(polygonChain).toBe(BlockchainType.EVM);
-
-      // Test BSC token
-      const bscToken = testTokens.bsc.BNB;
-      const bscChain = multiChainProvider.determineChain(bscToken);
-      expect(bscChain).toBe(BlockchainType.EVM);
     });
 
     it("should correctly identify Solana token addresses", () => {

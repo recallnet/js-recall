@@ -858,7 +858,6 @@ The following chains can be specified:
 
 - `eth` - Ethereum Mainnet
 - `polygon` - Polygon Network
-- `bsc` - Binance Smart Chain
 - `arbitrum` - Arbitrum One
 - `base` - Base
 - `optimism` - Optimism
@@ -937,12 +936,12 @@ The application will automatically detect and use the base64-encoded certificate
 
 ### Chain Configuration
 
-| Variable                   | Required | Default                                                  | Description                                                  |
-| -------------------------- | -------- | -------------------------------------------------------- | ------------------------------------------------------------ |
-| `EVM_CHAINS`               | Optional | `eth,polygon,bsc,arbitrum,base,optimism,avalanche,linea` | Comma-separated list of supported EVM chains                 |
-| `MAX_TRADE_PERCENTAGE`     | Optional | `25`                                                     | Maximum trade size as percentage of portfolio value          |
-| `EVM_CHAIN_PRIORITY`       | Optional | `eth,polygon,base,arbitrum`                              | Chain priority for price lookups (first chain checked first) |
-| `ALLOW_MOCK_PRICE_HISTORY` | Optional | `true` in dev, `false` in prod                           | Allow generation of mock price history data                  |
+| Variable                   | Required | Default                                              | Description                                                  |
+| -------------------------- | -------- | ---------------------------------------------------- | ------------------------------------------------------------ |
+| `EVM_CHAINS`               | Optional | `eth,polygon,arbitrum,base,optimism,avalanche,linea` | Comma-separated list of supported EVM chains                 |
+| `MAX_TRADE_PERCENTAGE`     | Optional | `25`                                                 | Maximum trade size as percentage of portfolio value          |
+| `EVM_CHAIN_PRIORITY`       | Optional | `eth,polygon,base,arbitrum`                          | Chain priority for price lookups (first chain checked first) |
+| `ALLOW_MOCK_PRICE_HISTORY` | Optional | `true` in dev, `false` in prod                       | Allow generation of mock price history data                  |
 
 ### Initial Token Balances
 
@@ -1351,7 +1350,7 @@ cp .env.example .env
 
 Then edit the file to configure your environment. Key configuration options include:
 
-- `EVM_CHAINS`: Comma-separated list of supported EVM chains (defaults to eth,polygon,bsc,arbitrum,base,optimism,avalanche,linea)
+- `EVM_CHAINS`: Comma-separated list of supported EVM chains (defaults to eth,polygon,arbitrum,base,optimism,avalanche,linea)
 - `ALLOW_MOCK_PRICE_HISTORY`: Whether to allow mock price history data generation (defaults to true in development, false in production)
 - `DATABASE_URL`: PostgreSQL connection string (primary database)
 - `DATABASE_READ_REPLICA_URL`: PostgreSQL read replica connection string (optional)

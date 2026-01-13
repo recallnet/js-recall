@@ -30,7 +30,6 @@ export interface CoinGeckoProviderConfig {
 type CoinGeckoNetwork =
   | "eth"
   | "polygon_pos"
-  | "bsc"
   | "arbitrum"
   | "optimism"
   | "avax"
@@ -47,7 +46,6 @@ type CoinGeckoNetwork =
 const COINGECKO_NETWORKS = {
   eth: "eth",
   polygon: "polygon_pos",
-  bsc: "bsc",
   arbitrum: "arbitrum",
   optimism: "optimism",
   avalanche: "avax",

@@ -46,7 +46,6 @@ const CHAIN_EXPLORER_TX_URLS: Record<SpecificChain, string> = {
   // EVM chains
   eth: "https://etherscan.io/tx/",
   polygon: "https://polygonscan.com/tx/",
-  bsc: "https://bscscan.com/tx/",
   arbitrum: "https://arbiscan.io/tx/",
   optimism: "https://optimistic.etherscan.io/tx/",
   avalanche: "https://snowscan.xyz/tx/",

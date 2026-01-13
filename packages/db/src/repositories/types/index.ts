@@ -21,7 +21,6 @@ export type ActorStatus = z.infer<typeof ActorStatusSchema>;
 export const SpecificChainSchema = z.enum([
   "eth",
   "polygon",
-  "bsc",
   "arbitrum",
   "optimism",
   "avalanche",

@@ -26,7 +26,6 @@ export enum BlockchainType {
 export enum SpecificChain {
   ETH = "eth",
   POLYGON = "polygon",
-  BSC = "bsc",
   ARBITRUM = "arbitrum",
   OPTIMISM = "optimism",
   AVALANCHE = "avalanche",
