@@ -16,7 +16,6 @@ export const NATIVE_TOKEN_SYMBOLS: Record<string, string> = {
   arbitrum: "ETH",
   optimism: "ETH",
   polygon: "MATIC",
-  bsc: "BNB",
   avalanche: "AVAX",
   linea: "ETH",
   zksync: "ETH",
@@ -47,15 +46,12 @@ export function getWrappedNativeAddress(
   if (!chainTokens) return undefined;
 
   // Each chain has its own native token key
-  // SVM: sol, Polygon: matic, BSC: bnb, Avalanche: avax, Mantle: mnt, others: eth
+  // SVM: sol, Polygon: matic, Avalanche: avax, Mantle: mnt, others: eth
   if (chain === "svm" && "sol" in chainTokens) {
     return chainTokens.sol;
   }
   if (chain === "polygon" && "matic" in chainTokens) {
     return chainTokens.matic;
-  }
-  if (chain === "bsc" && "bnb" in chainTokens) {
-    return chainTokens.bnb;
   }
   if (chain === "avalanche" && "avax" in chainTokens) {
     return chainTokens.avax;
@@ -137,10 +133,6 @@ export const specificChainTokens = {
     usdc: "0x0b2C639c533813f4Aa9D7837CAf62653d097Ff85",
     usdt: "0x94b008aa00579c1307b0ef2c499ad98a8ce58e58",
   },
-  bsc: {
-    bnb: "0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c", // WBNB - wrapped native BNB
-    usdc: "0x8AC76a51cc950d9822D68b83fE1Ad97B32Cd580d", // Binance-Peg USDC (canonical)
-  },
   avalanche: {
     avax: "0xB31f66AA3C1e785363F0875A1B74E27b85FD66c7", // WAVAX - wrapped native AVAX
     usdc: "0xB97EF9Ef8734C71904D8002F8b6Bc66Dd9c48a6E", // Native USDC (Circle)
@@ -171,7 +163,6 @@ export function parseEvmChains(): SpecificChain[] {
   const defaultChains: SpecificChain[] = [
     "eth",
     "polygon",
-    "bsc",
     "arbitrum",
     "base",
     "optimism",
@@ -189,7 +180,6 @@ export function parseEvmChains(): SpecificChain[] {
       [
         "eth",
         "polygon",
-        "bsc",
         "arbitrum",
         "optimism",
         "avalanche",

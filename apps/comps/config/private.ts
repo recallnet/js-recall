@@ -22,7 +22,6 @@ const configSchema = z.strictObject({
     .default([
       "eth",
       "polygon",
-      "bsc",
       "arbitrum",
       "base",
       "optimism",

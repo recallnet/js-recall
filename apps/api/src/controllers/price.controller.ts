@@ -55,7 +55,6 @@ export function makePriceController(services: ServiceRegistry) {
           [
             "eth",
             "polygon",
-            "bsc",
             "arbitrum",
             "optimism",
             "avalanche",

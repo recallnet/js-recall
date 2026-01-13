@@ -198,10 +198,7 @@ function createMockTransfer(params: {
   category?: AssetTransfersCategory;
 }): AssetTransfersWithMetadataResult {
   // Use EXTERNAL category for native tokens (ETH, MATIC, etc.)
-  const isNativeTransfer =
-    params.asset === "ETH" ||
-    params.asset === "MATIC" ||
-    params.asset === "BNB";
+  const isNativeTransfer = params.asset === "ETH" || params.asset === "MATIC";
   const category =
     params.category ??
     (isNativeTransfer

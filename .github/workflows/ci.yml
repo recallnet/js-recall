@@ -55,7 +55,7 @@ jobs:
           NODE_ENV=test
           VITE_DATABASE_URL=postgresql://postgres:postgres@localhost:5432/postgres
           ROOT_ENCRYPTION_KEY=test_root_encryption_key_with_32_characters
-          EVM_CHAINS=eth,polygon,bsc,arbitrum,base,optimism,avalanche,linea
+          EVM_CHAINS=eth,polygon,arbitrum,base,optimism,avalanche,linea
           TEST_MODE=true
           EOF
 

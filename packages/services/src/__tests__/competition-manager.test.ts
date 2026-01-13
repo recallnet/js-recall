@@ -267,7 +267,6 @@ describe("CompetitionService", () => {
         evmChains: [
           "eth",
           "polygon",
-          "bsc",
           "arbitrum",
           "base",
           "optimism",

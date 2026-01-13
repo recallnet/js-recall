@@ -42,7 +42,7 @@ export function configurePriceRoutes(
    *         name: specificChain
    *         schema:
    *           type: string
-   *           enum: [eth, polygon, bsc, arbitrum, optimism, avalanche, base, linea, zksync, scroll, mantle, svm]
+   *           enum: [eth, polygon, arbitrum, optimism, avalanche, base, linea, zksync, scroll, mantle, svm]
    *         required: false
    *         description: Specific chain for EVM tokens
    *         example: eth
