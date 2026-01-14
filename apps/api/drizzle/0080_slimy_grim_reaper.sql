@@ -5,6 +5,7 @@ ALTER TABLE "seasons" ADD COLUMN "number" integer GENERATED ALWAYS AS ("seasons"
 ALTER TABLE "airdrop_allocations" ADD CONSTRAINT "airdrop_allocations_airdrop_seasons_starts_with_airdrop_fk" FOREIGN KEY ("airdrop") REFERENCES "public"."seasons"("starts_with_airdrop") ON DELETE restrict ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "conviction_claims" ADD CONSTRAINT "conviction_claims_season_seasons_starts_with_airdrop_fk" FOREIGN KEY ("season") REFERENCES "public"."seasons"("starts_with_airdrop") ON DELETE restrict ON UPDATE no action;--> statement-breakpoint
 CREATE INDEX "idx_number" ON "seasons" USING btree ("number");--> statement-breakpoint
+UPDATE "seasons" SET "name" = 'Season 5' WHERE "starts_with_airdrop" = 4;--> statement-breakpoint
 UPDATE "seasons" SET "name" = 'Season 4' WHERE "starts_with_airdrop" = 3;--> statement-breakpoint
 UPDATE "seasons" SET "name" = 'Season 3' WHERE "starts_with_airdrop" = 2;--> statement-breakpoint
 UPDATE "seasons" SET "name" = 'Season 2' WHERE "starts_with_airdrop" = 1;--> statement-breakpoint
