@@ -81,17 +81,17 @@ function setLocalStorageItem(key: string, value: string): void {
 }
 
 /**
- * Check if a modal for a given season has been dismissed
+ * Check if a modal for a given airdrop has been dismissed
  */
-function isModalDismissed(prefix: string, season: number): boolean {
-  return getLocalStorageItem(`${prefix}${season}`) === "true";
+function isModalDismissed(prefix: string, airdrop: number): boolean {
+  return getLocalStorageItem(`${prefix}${airdrop}`) === "true";
 }
 
 /**
- * Mark a modal for a given season as dismissed
+ * Mark a modal for a given airdrop as dismissed
  */
-function dismissModal(prefix: string, season: number): void {
-  setLocalStorageItem(`${prefix}${season}`, "true");
+function dismissModal(prefix: string, airdrop: number): void {
+  setLocalStorageItem(`${prefix}${airdrop}`, "true");
 }
 
 type ConvictionProviderProps = {
@@ -138,7 +138,7 @@ export function ConvictionProvider({
     // Find recently expired claims (expired within threshold days)
     const recentlyExpiredClaim = claimsData.find((claim) => {
       if (claim.type !== "expired") return false;
-      if (isModalDismissed(DISMISSED_EXPIRED_KEY_PREFIX, claim.season))
+      if (isModalDismissed(DISMISSED_EXPIRED_KEY_PREFIX, claim.airdrop))
         return false;
 
       const expiredAt = new Date(claim.expiredAt);
@@ -152,7 +152,7 @@ export function ConvictionProvider({
     // Find claims expiring soon
     const expiringSoonClaim = claimsData.find((claim) => {
       if (claim.type !== "available") return false;
-      if (isModalDismissed(DISMISSED_EXPIRING_KEY_PREFIX, claim.season))
+      if (isModalDismissed(DISMISSED_EXPIRING_KEY_PREFIX, claim.airdrop))
         return false;
 
       const expiresAt = new Date(claim.expiresAt);
@@ -177,7 +177,7 @@ export function ConvictionProvider({
   // Handle closing expired modal
   const handleCloseExpiredModal = useCallback(() => {
     if (expiredModalClaim) {
-      dismissModal(DISMISSED_EXPIRED_KEY_PREFIX, expiredModalClaim.season);
+      dismissModal(DISMISSED_EXPIRED_KEY_PREFIX, expiredModalClaim.airdrop);
     }
     setExpiredModalClaim(null);
   }, [expiredModalClaim]);
@@ -185,7 +185,7 @@ export function ConvictionProvider({
   // Handle closing expiring modal
   const handleCloseExpiringModal = useCallback(() => {
     if (expiringModalClaim) {
-      dismissModal(DISMISSED_EXPIRING_KEY_PREFIX, expiringModalClaim.season);
+      dismissModal(DISMISSED_EXPIRING_KEY_PREFIX, expiringModalClaim.airdrop);
     }
     setExpiringModalClaim(null);
   }, [expiringModalClaim]);
@@ -209,7 +209,6 @@ export function ConvictionProvider({
         <AirdropExpiredModal
           isOpen
           onClose={handleCloseExpiredModal}
-          seasonName={expiredModalClaim.seasonName}
           expiredAt={new Date(expiredModalClaim.expiredAt)}
           eligibleAmount={expiredModalClaim.eligibleAmount}
         />
@@ -220,7 +219,6 @@ export function ConvictionProvider({
         <AirdropExpiringModal
           isOpen
           onClose={handleCloseExpiringModal}
-          seasonName={expiringModalClaim.seasonName}
           expiresAt={new Date(expiringModalClaim.expiresAt)}
           eligibleAmount={expiringModalClaim.eligibleAmount}
         />

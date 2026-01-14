@@ -1,3 +1,4 @@
+import { SQL, sql } from "drizzle-orm";
 import {
   boolean,
   index,
@@ -5,7 +6,6 @@ import {
   jsonb,
   pgTable,
   primaryKey,
-  serial,
   text,
   timestamp,
   varchar,
@@ -13,13 +13,25 @@ import {
 
 import { tokenAmount } from "../custom-types.js";
 
-export const seasons = pgTable("seasons", {
-  id: serial().primaryKey().notNull(),
-  number: integer().notNull().unique(),
-  name: text().notNull().unique(),
-  startDate: timestamp("start_date", { withTimezone: true }).notNull(),
-  endDate: timestamp("end_date", { withTimezone: true }).notNull(),
-});
+export const seasons = pgTable(
+  "seasons",
+  {
+    startsWithAirdrop: integer("starts_with_airdrop").notNull().unique(),
+    number: integer("number")
+      .notNull()
+      .unique()
+      .generatedAlwaysAs((): SQL => sql`${seasons.startsWithAirdrop} + 1`),
+    name: text().notNull().unique(),
+    startDate: timestamp("start_date", { withTimezone: true }).notNull(),
+    endDate: timestamp("end_date", { withTimezone: true }).notNull(),
+  },
+  (table) => [
+    primaryKey({ columns: [table.startsWithAirdrop] }),
+    index("idx_number").on(table.number),
+    index("idx_start_date").on(table.startDate),
+    index("idx_end_date").on(table.endDate),
+  ],
+);
 
 // Main table for storing airdrop allocations data
 export const airdropAllocations = pgTable(
@@ -28,9 +40,9 @@ export const airdropAllocations = pgTable(
     address: varchar("address", { length: 42 }).notNull(),
     // Allocation amount as string to handle large numbers
     amount: tokenAmount("amount").notNull(), // Max uint256 as string
-    season: integer("season")
+    airdrop: integer("airdrop")
       .notNull()
-      .references(() => seasons.number, { onDelete: "restrict" }),
+      .references(() => seasons.startsWithAirdrop, { onDelete: "restrict" }),
     // Merkle proof stored as JSON array
     proof: jsonb("proof").$type<string[]>().notNull().default([]), // JSON array of hex strings
     // Optional category for allocation classification
@@ -56,10 +68,10 @@ export const airdropAllocations = pgTable(
       .notNull(),
   },
   (table) => [
-    primaryKey({ columns: [table.address, table.season] }),
+    primaryKey({ columns: [table.address, table.airdrop] }),
     // Indexes for common query patterns
     index("idx_sybil_classification").on(table.sybilClassification),
-    index("idx_season").on(table.season),
+    index("idx_airdrop").on(table.airdrop),
     index("idx_amount").on(table.amount),
     index("idx_address_lower").on(table.address),
   ],

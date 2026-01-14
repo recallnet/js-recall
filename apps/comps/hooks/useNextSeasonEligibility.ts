@@ -8,12 +8,11 @@ import { tanstackClient } from "@/rpc/clients/tanstack-query";
 import { formatAmount } from "@/utils/format";
 
 /**
- * Response type from the getNextSeasonEligibility RPC
+ * Response type from the getNextAirdropEligibility RPC
  */
-export interface NextSeasonEligibilityResponse {
+export interface NextAirdropEligibilityResponse {
   isEligible: boolean;
-  season: number;
-  seasonName: string;
+  airdrop: number;
   activitySeason: {
     number: number;
     name: string;
@@ -44,8 +43,7 @@ export interface NextSeasonEligibilityResponse {
 export interface FormattedEligibilityData {
   isEligible: boolean;
   isAlmostEligible: boolean;
-  season: number;
-  seasonName: string;
+  airdrop: number;
   activitySeasonNumber: number;
   activitySeasonName: string;
   activitySeasonStartDate: Date;
@@ -124,8 +122,8 @@ export function useNextSeasonEligibility(): UseNextSeasonEligibilityResult {
     isLoading,
     error,
     refetch,
-  } = useQuery<NextSeasonEligibilityResponse, Error>(
-    tanstackClient.airdrop.getNextSeasonEligibility.queryOptions({
+  } = useQuery<NextAirdropEligibilityResponse, Error>(
+    tanstackClient.airdrop.getNextAirdropEligibility.queryOptions({
       input: { address: address ?? "" },
       enabled: Boolean(address),
     }),
@@ -166,8 +164,7 @@ export function useNextSeasonEligibility(): UseNextSeasonEligibilityResult {
     return {
       isEligible: rawData.isEligible,
       isAlmostEligible,
-      season: rawData.season,
-      seasonName: rawData.seasonName,
+      airdrop: rawData.airdrop,
       activitySeasonNumber: rawData.activitySeason.number,
       activitySeasonName: rawData.activitySeason.name,
       activitySeasonStartDate,
