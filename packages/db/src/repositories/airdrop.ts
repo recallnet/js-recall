@@ -47,7 +47,7 @@ export class AirdropRepository {
       return {
         address: allocation.address,
         amount: allocation.amount,
-        season: allocation.season,
+        airdrop: allocation.airdrop,
         proof: allocation.proof,
         category: allocation.category || "",
         sybilClassification: allocation.sybilClassification as
@@ -84,7 +84,7 @@ export class AirdropRepository {
       return results.map((allocation) => ({
         address: allocation.address,
         amount: allocation.amount,
-        season: allocation.season,
+        airdrop: allocation.airdrop,
         proof: allocation.proof,
         category: allocation.category || "",
         sybilClassification: allocation.sybilClassification as
@@ -180,7 +180,7 @@ export class AirdropRepository {
       return results.map((allocation) => ({
         address: allocation.address,
         amount: allocation.amount,
-        season: allocation.season,
+        airdrop: allocation.airdrop,
         proof: allocation.proof,
         category: allocation.category || "",
         sybilClassification: allocation.sybilClassification as
@@ -283,7 +283,7 @@ export class AirdropRepository {
       const allocations = results.map((allocation) => ({
         address: allocation.address,
         amount: allocation.amount,
-        season: allocation.season,
+        airdrop: allocation.airdrop,
         proof: allocation.proof,
         category: allocation.category || "",
         sybilClassification: allocation.sybilClassification as
@@ -459,6 +459,24 @@ export class AirdropRepository {
       .select()
       .from(seasons)
       .where(eq(seasons.number, seasonNumber))
+      .limit(1);
+
+    return result ?? null;
+  }
+
+  /**
+   * Get a season starting with a given airdrop number.
+   *
+   * @param airdrop - The airdrop number to look up
+   * @param tx - Optional transaction
+   * @returns The season or null if not found
+   */
+  async getSeasonStartingWithAirdrop(airdrop: number, tx?: Transaction) {
+    const executor = tx ?? this.#db;
+    const [result] = await executor
+      .select()
+      .from(seasons)
+      .where(eq(seasons.startsWithAirdrop, airdrop))
       .limit(1);
 
     return result ?? null;

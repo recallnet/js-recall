@@ -7,8 +7,8 @@ import { ConvictionClaimsRepository } from "@recallnet/db/repositories/convictio
 import { Season } from "@recallnet/db/schema/airdrop/types";
 
 export type BaseClaim = {
-  season: number;
-  seasonName: string;
+  airdrop: number;
+  airdropName: string;
 };
 
 export type AvailableClaim = BaseClaim & {
@@ -97,12 +97,11 @@ export interface EligibilitySeasonMetadata {
 }
 
 /**
- * Full eligibility data for next season conviction rewards
+ * Full eligibility data for next airdrop conviction rewards
  */
-export interface NextSeasonEligibility {
+export interface NextAirdropEligibility {
   isEligible: boolean;
-  season: number;
-  seasonName: string;
+  airdrop: number;
   activeStake: bigint;
   potentialReward: bigint;
   eligibilityReasons: EligibilityReasons;
@@ -149,6 +148,14 @@ export class AirdropService {
   }
 
   /**
+   * Get display name for an airdrop
+   * Airdrop 0 is "Genesis", all others are "Airdrop X"
+   */
+  private getAirdropName(airdrop: number): string {
+    return airdrop === 0 ? "Genesis" : `Airdrop ${airdrop}`;
+  }
+
+  /**
    * Get all airdrop claims data for an account across all seasons
    */
   async getAccountClaimsData(address: string): Promise<ClaimData[]> {
@@ -156,9 +163,9 @@ export class AirdropService {
       this.logger.info(`Fetching claims data for address: ${address}`);
 
       const seasons = await this.airdropRepository.getSeasons();
-      const seasonsByNumber = seasons.reduce(
+      const seasonsByAirdropNumber = seasons.reduce(
         (acc, season) => {
-          acc[season.number] = season;
+          acc[season.startsWithAirdrop] = season;
           return acc;
         },
         {} as Record<number, Season>,
@@ -176,13 +183,13 @@ export class AirdropService {
       const claimsData: ClaimData[] = allocations.map((allocation) => {
         // Find corresponding conviction claim for this season
         const convictionClaim = convictionClaims.find(
-          (cc) => cc.season === allocation.season,
+          (cc) => cc.season === allocation.airdrop, // Note that conviction claims "seasons" correspond to our airdrop numbers
         );
 
-        const season = seasonsByNumber[allocation.season];
+        const season = seasonsByAirdropNumber[allocation.airdrop];
         if (!season) {
           throw new Error(
-            `Season ${allocation.season} not found for allocation`,
+            `Season starting with airdrop ${allocation.airdrop} not found for allocation`,
           );
         }
 
@@ -198,15 +205,15 @@ export class AirdropService {
         if (ineligibleReason) {
           return {
             type: "ineligible",
-            season: allocation.season,
-            seasonName: season.name,
+            airdrop: allocation.airdrop,
+            airdropName: this.getAirdropName(allocation.airdrop),
             ineligibleReason,
             ineligibleAmount: allocation.ineligibleReward || 0n,
           };
         } else if (!convictionClaim) {
           // Determine if the claim has expired
           // Use UTC-safe date arithmetic to avoid DST issues
-          const daysToAdd = season.number > 0 ? 30 : 90;
+          const daysToAdd = allocation.airdrop > 0 ? 30 : 90;
           const expirationTimestamp = new Date(
             season.startDate.getTime() + daysToAdd * 24 * 60 * 60 * 1000,
           );
@@ -216,25 +223,25 @@ export class AirdropService {
           if (expired) {
             return {
               type: "expired",
-              season: allocation.season,
-              seasonName: season.name,
+              airdrop: allocation.airdrop,
+              airdropName: this.getAirdropName(allocation.airdrop),
               eligibleAmount: allocation.amount,
               expiredAt: expirationTimestamp,
             };
           }
           return {
             type: "available",
-            season: allocation.season,
-            seasonName: season.name,
+            airdrop: allocation.airdrop,
+            airdropName: this.getAirdropName(allocation.airdrop),
             eligibleAmount: allocation.amount,
             expiresAt: expirationTimestamp,
-            proof: allocation.season > 0 ? allocation.proof : [],
+            proof: allocation.airdrop > 0 ? allocation.proof : [],
           };
         } else if (convictionClaim.duration > 0n) {
           return {
             type: "claimed-and-staked",
-            season: allocation.season,
-            seasonName: season.name,
+            airdrop: allocation.airdrop,
+            airdropName: this.getAirdropName(allocation.airdrop),
             eligibleAmount: convictionClaim.eligibleAmount,
             claimedAmount: convictionClaim.claimedAmount,
             stakeDuration: Number(convictionClaim.duration),
@@ -247,8 +254,8 @@ export class AirdropService {
         } else if (convictionClaim.duration === 0n) {
           return {
             type: "claimed-and-not-staked",
-            season: allocation.season,
-            seasonName: season.name,
+            airdrop: allocation.airdrop,
+            airdropName: this.getAirdropName(allocation.airdrop),
             eligibleAmount: convictionClaim.eligibleAmount,
             claimedAmount: convictionClaim.claimedAmount,
             claimedAt: convictionClaim.blockTimestamp,
@@ -256,7 +263,7 @@ export class AirdropService {
         } else {
           // This should be unreachable if all conditions are properly handled
           throw new Error(
-            `Unexpected state for allocation: season=${allocation.season}, ` +
+            `Unexpected state for allocation: airdrop=${allocation.airdrop}, ` +
               `hasEndDate=${!!season.endDate}, hasConvictionClaim=${!!convictionClaim}, ` +
               `ineligibleReason=${ineligibleReason}`,
           );
@@ -264,7 +271,7 @@ export class AirdropService {
       });
 
       // Sort by season (most recent first)
-      claimsData.sort((a, b) => b.season - a.season);
+      claimsData.sort((a, b) => b.airdrop - a.airdrop);
 
       this.logger.info(
         `Successfully fetched ${claimsData.length} claims for address ${address}`,
@@ -281,22 +288,23 @@ export class AirdropService {
   }
 
   /**
-   * Get eligibility data for next season conviction rewards.
+   * Get eligibility data for next airdrop conviction rewards.
    *
-   * Calculates whether an address is eligible for conviction rewards based on:
-   * - Having active stakes (conviction claims with duration > 0 extending past season end)
+   * Calculates whether an address is eligible for airdrop conviction rewards based on:
+   * - Having active stakes (conviction claims with duration > 0 extending past the airdrop time)
    * - Participating in at least 3 distinct competitions (boosting OR competing combined)
+   *   during the season preceding the airdrop
    *
-   * @param address - The wallet address to check
-   * @param seasonNumber - Optional specific target season number. If provided, activity is checked
-   *                       for season (seasonNumber - 1). If not provided, uses the current season
-   *                       based on dates as the activity season and (current + 1) as the target.
+   * @param address - Wallet address to check
+   * @param airdropNumber - Optional target airdrop number. When provided, checks activity for
+   *   the preceding season. When omitted, uses the current season as the activity window and
+   *   targets the next season's airdrop.
    * @returns Full eligibility data including potential reward and pool statistics
    */
-  async getNextSeasonEligibility(
+  async getNextAirdropEligibility(
     address: string,
-    seasonNumber?: number,
-  ): Promise<NextSeasonEligibility> {
+    airdropNumber?: number,
+  ): Promise<NextAirdropEligibility> {
     try {
       const normalizedAddress = address.toLowerCase();
       this.logger.info(
@@ -305,18 +313,22 @@ export class AirdropService {
 
       // Determine the activity season (current season) and target season
       let currentSeason: Season;
-      let targetSeasonNumber: number;
+      let targetAirdropNumber: number;
 
-      if (seasonNumber !== undefined) {
-        // When a specific target season is provided, activity is checked for the previous season
-        const activitySeasonNumber = seasonNumber - 1;
+      if (airdropNumber !== undefined) {
+        // When a specific target airdrop is provided, activity is checked for the preceding season
+        const activitySeasonAirdropNumber = airdropNumber - 1;
         const foundActivitySeason =
-          await this.airdropRepository.getSeasonByNumber(activitySeasonNumber);
+          await this.airdropRepository.getSeasonStartingWithAirdrop(
+            activitySeasonAirdropNumber,
+          );
         if (!foundActivitySeason) {
-          throw new Error(`Activity season ${activitySeasonNumber} not found`);
+          throw new Error(
+            `Activity season airdrop ${activitySeasonAirdropNumber} not found`,
+          );
         }
         currentSeason = foundActivitySeason;
-        targetSeasonNumber = seasonNumber;
+        targetAirdropNumber = airdropNumber;
       } else {
         // Default: use date-based current season detection
         const foundCurrentSeason =
@@ -327,12 +339,8 @@ export class AirdropService {
           );
         }
         currentSeason = foundCurrentSeason;
-        targetSeasonNumber = currentSeason.number + 1;
+        targetAirdropNumber = foundCurrentSeason.startsWithAirdrop + 1;
       }
-
-      // Get the target season data if it exists (for the season name)
-      const targetSeasonData =
-        await this.airdropRepository.getSeasonByNumber(targetSeasonNumber);
 
       // Calculate pool statistics
       const poolStats = await this.calculatePoolStats(currentSeason);
@@ -368,10 +376,9 @@ export class AirdropService {
           poolStats.totalActiveStakes;
       }
 
-      const result: NextSeasonEligibility = {
+      const result: NextAirdropEligibility = {
         isEligible,
-        season: targetSeasonNumber,
-        seasonName: targetSeasonData?.name || `Season ${targetSeasonNumber}`,
+        airdrop: targetAirdropNumber,
         activeStake,
         potentialReward,
         eligibilityReasons,
@@ -388,7 +395,7 @@ export class AirdropService {
         {
           address: normalizedAddress,
           isEligible,
-          season: targetSeasonNumber,
+          airdrop: targetAirdropNumber,
           activeStake: activeStake.toString(),
           potentialReward: potentialReward.toString(),
           totalUniqueCompetitions: eligibilityReasons.totalUniqueCompetitions,

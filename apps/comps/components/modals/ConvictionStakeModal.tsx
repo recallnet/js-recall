@@ -140,8 +140,8 @@ export const ConvictionStakeModal: React.FC<ConvictionStakeModalProps> = ({
       }
 
       const claimPayload = {
-        season: claimItem.season,
-        seasonName: claimItem.seasonName,
+        airdrop: claimItem.airdrop,
+        airdropName: claimItem.airdropName,
         type: claimItem.type,
         eligibleAmount: claimItem.eligibleAmount,
         expiresAt: claimItem.expiresAt,

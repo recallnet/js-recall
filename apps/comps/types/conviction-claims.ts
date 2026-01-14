@@ -4,8 +4,8 @@
  */
 
 export type BaseClaim = {
-  season: number;
-  seasonName: string;
+  airdrop: number;
+  airdropName: string;
 };
 
 export type AvailableClaim = BaseClaim & {

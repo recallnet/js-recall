@@ -1,5 +1,5 @@
 #!/usr/bin/env tsx
-import { and, eq, gte, lte, sql } from "drizzle-orm";
+import { and, eq, gte, lt, lte, sql } from "drizzle-orm";
 import * as fs from "fs";
 import * as path from "path";
 import { parseArgs } from "util";
@@ -120,7 +120,7 @@ Examples:
   }
 
   console.log(
-    `${colors.cyan}🔍 Calculating eligibility for airdrop season ${airdropNumber}${colors.reset}`,
+    `${colors.cyan}🔍 Calculating eligibility for airdrop ${airdropNumber}${colors.reset}`,
   );
 
   try {
@@ -131,14 +131,14 @@ Examples:
     const [currentSeason] = await db
       .select()
       .from(seasons)
-      .where(eq(seasons.number, airdropNumber - 1));
+      .where(eq(seasons.startsWithAirdrop, airdropNumber - 1));
     if (!currentSeason) {
-      console.error(`Season ${airdropNumber - 1} not found`);
+      console.error(`Season for airdrop ${airdropNumber - 1} not found`);
       process.exit(1);
     }
 
     // Actively locked stakes that came from an airdrop are those where
-    // blockTimestamp + duration > season start time
+    // blockTimestamp + duration > season end time
     const activeStakesQuery = await db
       .select({
         account: convictionClaims.account,
@@ -218,7 +218,7 @@ Examples:
       `\n${colors.blue}Step 4: Calculating conviction rewards claims...${colors.reset}`,
     );
 
-    // Get all claims from season 1 and forward, so we can subtract that value
+    // Get all claims from airdrop 1 and forward, so we can subtract that value
     // from the total forfeited amount to get the remaining conviction pool.
     const convictionClaimsBySeason = await db
       .select({
@@ -233,7 +233,7 @@ Examples:
         and(
           // season 1 up to the airdrop being calculated
           gte(convictionClaims.season, 1),
-          lte(convictionClaims.season, airdropNumber - 1),
+          lt(convictionClaims.season, airdropNumber),
         ),
       )
       .groupBy(convictionClaims.season);
