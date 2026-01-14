@@ -23,9 +23,10 @@
 <% top5Boosters.forEach((booster, index) => { %> • `<%= booster.address %>`: <%= booster.amountFormatted %>
 <% }); %><% } %>
 
-:brain: *Verification Instructions*
+<% if (verificationExample) { %>:brain: *Verification Instructions*
 Use the CLI tool <https://github.com/recallnet/verify-merkle-proof|verify_merkle_proof> to verify an individual reward proof (example using top competitor):
 
 ```
 verify_merkle_proof --root <%= merkleRoot %> --address <%= verificationExample.address %> --amount <%= verificationExample.amount %> --proof <%= verificationExample.proof %>
 ```
+<% } %>
