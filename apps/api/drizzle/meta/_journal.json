@@ -554,6 +554,13 @@
       "when": 1765922654555,
       "tag": "0078_majestic_random",
       "breakpoints": true
+    },
+    {
+      "idx": 79,
+      "version": "7",
+      "when": 1768427634919,
+      "tag": "0079_daily_dracula",
+      "breakpoints": true
     }
   ]
 }
