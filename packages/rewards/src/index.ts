@@ -97,10 +97,6 @@ export function calculateRewardsForUsers(
     boost,
     timestamp,
   } of boostAllocations) {
-    competitorTotals[competitor] = (
-      competitorTotals[competitor] || new Decimal(0)
-    ).add(new Decimal(boost.toString()));
-
     if (!userTotals[user_wallet]) {
       userTotals[user_wallet] = {};
     }
@@ -112,6 +108,10 @@ export function calculateRewardsForUsers(
     const effectiveBoost = boostDecayFn(timestamp).times(
       new Decimal(boost.toString()),
     );
+
+    competitorTotals[competitor] = (
+      competitorTotals[competitor] || new Decimal(0)
+    ).add(effectiveBoost);
 
     userTotals[user_wallet]![competitor] = (
       userTotals[user_wallet]![competitor] || new Decimal(0)

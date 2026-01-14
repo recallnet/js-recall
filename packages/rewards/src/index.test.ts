@@ -160,12 +160,15 @@ describe("calculate rewards for users", () => {
     const aliceReward = rewards.find((r) => r.address === "Alice")!;
     const charlieReward = rewards.find((r) => r.address === "Charlie")!;
 
-    expect(aliceReward.amount).eq(294551339071887017092n);
+    expect(aliceReward.amount).eq(334767399782879659040n);
     expect(aliceReward.owner).eq("alice-id");
-    expect(bobReward.amount).eq(394543812352031530113n);
+    expect(bobReward.amount).eq(470749065176309758353n);
     expect(bobReward.owner).eq("bob-id");
-    expect(charlieReward.amount).eq(130663856691253951527n);
+    expect(charlieReward.amount).eq(194483535040810582606n);
     expect(charlieReward.owner).eq("charlie-id");
+
+    const payoutsSum = rewards.reduce((sum, reward) => sum + reward.amount, 0n);
+    expect(payoutsSum).toEqual(prizePool - 1n);
   });
 
   it("should calculate rewards correctly for 1000 ETH prize pool with 3 users and 3 competitors over 4-day window with no decay", () => {
