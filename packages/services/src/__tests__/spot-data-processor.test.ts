@@ -513,6 +513,234 @@ describe("SpotDataProcessor", () => {
       );
     });
 
+    describe("transfer whitelist filtering", () => {
+      const whitelistedTokenAddress =
+        "0x833589fcd6edb6e08f4c7c32d4f71b54bda02913"; // USDC
+      const spamTokenAddress = "0x158a07d7b2e76d37d9e88bf1681fc2695c32715d"; // Airdrop spam
+
+      it("should filter out transfers of non-whitelisted tokens when whitelist is enabled", async () => {
+        // Whitelist only USDC
+        const allowedTokens = new Map([
+          ["base", new Set([whitelistedTokenAddress])],
+        ]);
+
+        // Create spam transfer (not whitelisted)
+        const spamTransfer: SpotTransfer = {
+          type: "deposit",
+          tokenAddress: spamTokenAddress,
+          amount: 1000,
+          from: "0xexternal",
+          to: "0xagent",
+          timestamp: new Date("2024-01-14"),
+          txHash: "0xspam123",
+          blockNumber: 1000001,
+          chain: "base",
+        };
+
+        // Provider returns a spam token transfer
+        const providerWithSpamTransfer = {
+          ...mockProvider,
+          getTransferHistory: vi.fn().mockResolvedValue([spamTransfer]),
+          getTradesSince: vi.fn().mockResolvedValue({ trades: [] }),
+        };
+
+        await processor.processAgentData(
+          "agent-1",
+          "comp-1",
+          "0xagent123",
+          providerWithSpamTransfer,
+          allowedTokens,
+          true, // Whitelist enabled
+          ["base"],
+          new Date("2024-01-01"),
+        );
+
+        // Should NOT save any transfers (spam token filtered out)
+        expect(
+          mockSpotLiveRepo.batchSaveSpotLiveTransfers,
+        ).not.toHaveBeenCalled();
+
+        // Should log the filtering
+        expect(mockLogger.debug).toHaveBeenCalledWith(
+          expect.stringContaining("Transfer whitelist filtered"),
+        );
+      });
+
+      it("should save whitelisted token transfers when whitelist is enabled", async () => {
+        // Whitelist USDC
+        const allowedTokens = new Map([
+          ["base", new Set([whitelistedTokenAddress])],
+        ]);
+
+        // Create USDC transfer (whitelisted)
+        const whitelistedTransfer: SpotTransfer = {
+          type: "deposit",
+          tokenAddress: whitelistedTokenAddress,
+          amount: 100,
+          from: "0xexternal",
+          to: "0xagent",
+          timestamp: new Date("2024-01-14"),
+          txHash: "0xusdc123",
+          blockNumber: 1000001,
+          chain: "base",
+        };
+
+        // Provider returns a whitelisted transfer
+        const providerWithWhitelistedTransfer = {
+          ...mockProvider,
+          getTransferHistory: vi.fn().mockResolvedValue([whitelistedTransfer]),
+          getTradesSince: vi.fn().mockResolvedValue({ trades: [] }),
+        };
+
+        await processor.processAgentData(
+          "agent-1",
+          "comp-1",
+          "0xagent123",
+          providerWithWhitelistedTransfer,
+          allowedTokens,
+          true, // Whitelist enabled
+          ["base"],
+          new Date("2024-01-01"),
+        );
+
+        // Should save the whitelisted transfer
+        expect(
+          mockSpotLiveRepo.batchSaveSpotLiveTransfers,
+        ).toHaveBeenCalledWith(
+          expect.arrayContaining([
+            expect.objectContaining({
+              tokenAddress: whitelistedTokenAddress,
+              type: "deposit",
+            }),
+          ]),
+        );
+      });
+
+      it("should save all transfers when whitelist is disabled", async () => {
+        // Create spam transfer
+        const spamTransfer: SpotTransfer = {
+          type: "deposit",
+          tokenAddress: spamTokenAddress,
+          amount: 1000,
+          from: "0xexternal",
+          to: "0xagent",
+          timestamp: new Date("2024-01-14"),
+          txHash: "0xspam123",
+          blockNumber: 1000001,
+          chain: "base",
+        };
+
+        // Provider returns a spam token transfer
+        const providerWithSpamTransfer = {
+          ...mockProvider,
+          getTransferHistory: vi.fn().mockResolvedValue([spamTransfer]),
+          getTradesSince: vi.fn().mockResolvedValue({ trades: [] }),
+        };
+
+        // Mock price for the spam token
+        mockPriceTracker.getBulkPrices.mockResolvedValue(
+          new Map([
+            [
+              `${spamTokenAddress.toLowerCase()}:base`,
+              { ...samplePrice, token: spamTokenAddress },
+            ],
+          ]),
+        );
+
+        await processor.processAgentData(
+          "agent-1",
+          "comp-1",
+          "0xagent123",
+          providerWithSpamTransfer,
+          new Map(), // Empty allowedTokens
+          false, // Whitelist disabled
+          ["base"],
+          new Date("2024-01-01"),
+        );
+
+        // Should save all transfers when whitelist disabled
+        expect(
+          mockSpotLiveRepo.batchSaveSpotLiveTransfers,
+        ).toHaveBeenCalledWith(
+          expect.arrayContaining([
+            expect.objectContaining({
+              tokenAddress: spamTokenAddress,
+              type: "deposit",
+            }),
+          ]),
+        );
+      });
+
+      it("should filter mixed transfers keeping only whitelisted tokens", async () => {
+        // Whitelist USDC
+        const allowedTokens = new Map([
+          ["base", new Set([whitelistedTokenAddress])],
+        ]);
+
+        // Create both whitelisted and spam transfers
+        const whitelistedTransfer: SpotTransfer = {
+          type: "deposit",
+          tokenAddress: whitelistedTokenAddress,
+          amount: 100,
+          from: "0xexternal",
+          to: "0xagent",
+          timestamp: new Date("2024-01-14"),
+          txHash: "0xusdc123",
+          blockNumber: 1000001,
+          chain: "base",
+        };
+
+        const spamTransfer: SpotTransfer = {
+          type: "deposit",
+          tokenAddress: spamTokenAddress,
+          amount: 1000,
+          from: "0xexternal",
+          to: "0xagent",
+          timestamp: new Date("2024-01-14"),
+          txHash: "0xspam123",
+          blockNumber: 1000002,
+          chain: "base",
+        };
+
+        // Provider returns both transfers
+        const providerWithMixedTransfers = {
+          ...mockProvider,
+          getTransferHistory: vi
+            .fn()
+            .mockResolvedValue([whitelistedTransfer, spamTransfer]),
+          getTradesSince: vi.fn().mockResolvedValue({ trades: [] }),
+        };
+
+        await processor.processAgentData(
+          "agent-1",
+          "comp-1",
+          "0xagent123",
+          providerWithMixedTransfers,
+          allowedTokens,
+          true, // Whitelist enabled
+          ["base"],
+          new Date("2024-01-01"),
+        );
+
+        // Should only save the whitelisted transfer
+        expect(
+          mockSpotLiveRepo.batchSaveSpotLiveTransfers,
+        ).toHaveBeenCalledWith(
+          expect.arrayContaining([
+            expect.objectContaining({
+              tokenAddress: whitelistedTokenAddress,
+            }),
+          ]),
+        );
+
+        // Verify only one transfer was saved (not the spam)
+        const savedTransfers =
+          mockSpotLiveRepo.batchSaveSpotLiveTransfers.mock.calls[0]?.[0];
+        expect(savedTransfers).toHaveLength(1);
+        expect(savedTransfers?.[0]?.tokenAddress).toBe(whitelistedTokenAddress);
+      });
+    });
+
     it("should throw error if provider is null", async () => {
       await expect(
         processor.processAgentData(
