@@ -1,6 +1,6 @@
 {
-  "id": "0cfdf097-697b-475d-8909-a91b0246672c",
-  "prevId": "2e31e09e-2f30-4fda-8d24-5b43fb6ab5e3",
+  "id": "a08e10e7-7b57-409a-8ef1-7390fd32c05e",
+  "prevId": "0cfdf097-697b-475d-8909-a91b0246672c",
   "version": "7",
   "dialect": "postgresql",
   "tables": {
@@ -176,7 +176,17 @@
           "with": {}
         }
       },
-      "foreignKeys": {},
+      "foreignKeys": {
+        "airdrop_allocations_airdrop_seasons_starts_with_airdrop_fk": {
+          "name": "airdrop_allocations_airdrop_seasons_starts_with_airdrop_fk",
+          "tableFrom": "airdrop_allocations",
+          "tableTo": "seasons",
+          "columnsFrom": ["airdrop"],
+          "columnsTo": ["starts_with_airdrop"],
+          "onDelete": "restrict",
+          "onUpdate": "no action"
+        }
+      },
       "compositePrimaryKeys": {
         "airdrop_allocations_address_airdrop_pk": {
           "name": "airdrop_allocations_address_airdrop_pk",
@@ -253,14 +263,18 @@
         "starts_with_airdrop": {
           "name": "starts_with_airdrop",
           "type": "integer",
-          "primaryKey": false,
-          "notNull": false
+          "primaryKey": true,
+          "notNull": true
         },
         "number": {
           "name": "number",
           "type": "integer",
           "primaryKey": false,
-          "notNull": true
+          "notNull": true,
+          "generated": {
+            "as": "\"seasons\".\"starts_with_airdrop\" + 1",
+            "type": "stored"
+          }
         },
         "name": {
           "name": "name",
@@ -282,6 +296,21 @@
         }
       },
       "indexes": {
+        "idx_number": {
+          "name": "idx_number",
+          "columns": [
+            {
+              "expression": "number",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
         "idx_start_date": {
           "name": "idx_start_date",
           "columns": [
@@ -1279,7 +1308,17 @@
           "with": {}
         }
       },
-      "foreignKeys": {},
+      "foreignKeys": {
+        "conviction_claims_season_seasons_starts_with_airdrop_fk": {
+          "name": "conviction_claims_season_seasons_starts_with_airdrop_fk",
+          "tableFrom": "conviction_claims",
+          "tableTo": "seasons",
+          "columnsFrom": ["season"],
+          "columnsTo": ["starts_with_airdrop"],
+          "onDelete": "restrict",
+          "onUpdate": "no action"
+        }
+      },
       "compositePrimaryKeys": {},
       "uniqueConstraints": {},
       "policies": {},
