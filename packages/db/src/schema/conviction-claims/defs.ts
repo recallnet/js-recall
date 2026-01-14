@@ -38,7 +38,7 @@ export const convictionClaims = pgTable(
     claimedAmount: tokenAmount("claimed_amount").notNull(),
     season: integer("season") // Season number (0, 1, 2, etc.)
       .notNull()
-      .references(() => seasons.number, { onDelete: "restrict" }),
+      .references(() => seasons.startsWithAirdrop, { onDelete: "restrict" }), // Note that conviction claims season maps to our web app's airdrop number
     duration: bigint("duration", { mode: "bigint" }).notNull(), // Stake duration in seconds
 
     // Blockchain metadata

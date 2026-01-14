@@ -16,7 +16,7 @@ import { tokenAmount } from "../custom-types.js";
 export const seasons = pgTable(
   "seasons",
   {
-    startsWithAirdrop: integer("starts_with_airdrop").notNull().unique(),
+    startsWithAirdrop: integer("starts_with_airdrop").primaryKey(),
     number: integer("number")
       .notNull()
       .unique()
@@ -26,7 +26,6 @@ export const seasons = pgTable(
     endDate: timestamp("end_date", { withTimezone: true }).notNull(),
   },
   (table) => [
-    primaryKey({ columns: [table.startsWithAirdrop] }),
     index("idx_number").on(table.number),
     index("idx_start_date").on(table.startDate),
     index("idx_end_date").on(table.endDate),
