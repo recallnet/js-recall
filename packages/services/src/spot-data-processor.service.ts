@@ -324,7 +324,7 @@ export class SpotDataProcessor {
       const filteredBalances = tokenWhitelistEnabled
         ? allTokenBalances.filter((b) => {
             const chainTokens = allowedTokens.get(b.chain);
-            return chainTokens?.has(b.tokenAddress);
+            return chainTokens?.has(b.tokenAddress.toLowerCase());
           })
         : allTokenBalances;
 
@@ -948,82 +948,111 @@ export class SpotDataProcessor {
           }
 
           if (allTransfers.length > 0) {
-            // Extract unique tokens from transfers
-            const uniqueTransferTokens = allTransfers.reduce((acc, t) => {
-              acc.set(t.tokenAddress.toLowerCase(), t.chain);
-              return acc;
-            }, new Map<string, SpecificChain>());
+            // Filter by token whitelist (same as trades) - ignore airdrop spam tokens
+            // Non-whitelisted tokens can't be traded and aren't tracked, so their
+            // transfers have no competitive impact and create noise in violation alerts
+            const whitelistedTransfers = tokenWhitelistEnabled
+              ? allTransfers.filter((t) => {
+                  const chainTokens = allowedTokens.get(t.chain);
+                  return chainTokens?.has(t.tokenAddress.toLowerCase());
+                })
+              : allTransfers;
 
-            const transferTokensList: Array<{
-              address: string;
-              chain: SpecificChain;
-            }> = Array.from(uniqueTransferTokens.entries()).map(
-              ([address, chain]) => ({ address, chain }),
-            );
+            if (
+              tokenWhitelistEnabled &&
+              whitelistedTransfers.length < allTransfers.length
+            ) {
+              this.logger.debug(
+                `[SpotDataProcessor] Transfer whitelist filtered ${allTransfers.length} → ${whitelistedTransfers.length} transfers (filtered out airdrops/spam)`,
+              );
+            }
 
-            // Fetch prices for unique transfer tokens (best effort)
-            const transferPriceMap =
-              await this.fetchPricesForTrades(transferTokensList);
-
-            // Enrich transfers with price data (async to support symbol sanitization)
-            const enrichedTransferRecords: InsertSpotLiveTransferHistory[] =
-              await Promise.all(
-                allTransfers.map(
-                  async (t): Promise<InsertSpotLiveTransferHistory> => {
-                    // Key by address:chain for multi-chain support
-                    const priceKey = `${t.tokenAddress.toLowerCase()}:${t.chain}`;
-                    const price = transferPriceMap.get(priceKey);
-                    // Use native token symbol for native tokens (zero address), not the price API's wrapped symbol
-                    const rawSymbol = isNativeToken(t.tokenAddress)
-                      ? getNativeTokenSymbol(t.chain)
-                      : (price?.symbol ?? "UNKNOWN");
-                    // Sanitize symbol to handle cases where price provider returns address as symbol
-                    const tokenSymbol = await this.sanitizeTokenSymbol(
-                      rawSymbol,
-                      t.tokenAddress,
-                      t.chain,
-                      provider,
-                    );
-                    const amountUsd = price
-                      ? (t.amount * price.price).toString()
-                      : null;
-
-                    return {
-                      agentId,
-                      competitionId,
-                      type: t.type,
-                      specificChain: t.chain, // Already typed as SpecificChain from SpotTransfer
-                      tokenAddress: t.tokenAddress,
-                      tokenSymbol,
-                      amount: t.amount.toString(),
-                      amountUsd,
-                      fromAddress: t.from,
-                      toAddress: t.to,
-                      txHash: t.txHash,
-                      blockNumber: t.blockNumber,
-                      transferTimestamp: t.timestamp,
-                    };
-                  },
-                ),
+            // Only proceed if there are whitelisted transfers to process
+            if (whitelistedTransfers.length === 0) {
+              this.logger.debug(
+                `[SpotDataProcessor] No whitelisted transfers to record for agent ${agentId}`,
+              );
+            } else {
+              // Extract unique tokens from whitelisted transfers
+              const uniqueTransferTokens = whitelistedTransfers.reduce(
+                (acc, t) => {
+                  acc.set(t.tokenAddress.toLowerCase(), t.chain);
+                  return acc;
+                },
+                new Map<string, SpecificChain>(),
               );
 
-            const savedTransfers =
-              await this.spotLiveRepo.batchSaveSpotLiveTransfers(
-                enrichedTransferRecords,
+              const transferTokensList: Array<{
+                address: string;
+                chain: SpecificChain;
+              }> = Array.from(uniqueTransferTokens.entries()).map(
+                ([address, chain]) => ({ address, chain }),
               );
-            transfersRecorded = savedTransfers.length;
 
-            if (transfersRecorded > 0) {
-              const unpricedCount = enrichedTransferRecords.filter(
-                (t) => t.tokenSymbol === "UNKNOWN",
-              ).length;
-              const warningMsg =
-                `[SpotDataProcessor] Recorded ${transfersRecorded} transfers for agent ${agentId} (potential violations)` +
-                (unpricedCount > 0
-                  ? `. ${unpricedCount} transfers could not be priced`
-                  : "");
+              // Fetch prices for unique transfer tokens (best effort)
+              const transferPriceMap =
+                await this.fetchPricesForTrades(transferTokensList);
 
-              this.logger.warn(warningMsg);
+              // Enrich transfers with price data (async to support symbol sanitization)
+              const enrichedTransferRecords: InsertSpotLiveTransferHistory[] =
+                await Promise.all(
+                  whitelistedTransfers.map(
+                    async (t): Promise<InsertSpotLiveTransferHistory> => {
+                      // Key by address:chain for multi-chain support
+                      const priceKey = `${t.tokenAddress.toLowerCase()}:${t.chain}`;
+                      const price = transferPriceMap.get(priceKey);
+                      // Use native token symbol for native tokens (zero address), not the price API's wrapped symbol
+                      const rawSymbol = isNativeToken(t.tokenAddress)
+                        ? getNativeTokenSymbol(t.chain)
+                        : (price?.symbol ?? "UNKNOWN");
+                      // Sanitize symbol to handle cases where price provider returns address as symbol
+                      const tokenSymbol = await this.sanitizeTokenSymbol(
+                        rawSymbol,
+                        t.tokenAddress,
+                        t.chain,
+                        provider,
+                      );
+                      const amountUsd = price
+                        ? (t.amount * price.price).toString()
+                        : null;
+
+                      return {
+                        agentId,
+                        competitionId,
+                        type: t.type,
+                        specificChain: t.chain, // Already typed as SpecificChain from SpotTransfer
+                        tokenAddress: t.tokenAddress,
+                        tokenSymbol,
+                        amount: t.amount.toString(),
+                        amountUsd,
+                        fromAddress: t.from,
+                        toAddress: t.to,
+                        txHash: t.txHash,
+                        blockNumber: t.blockNumber,
+                        transferTimestamp: t.timestamp,
+                      };
+                    },
+                  ),
+                );
+
+              const savedTransfers =
+                await this.spotLiveRepo.batchSaveSpotLiveTransfers(
+                  enrichedTransferRecords,
+                );
+              transfersRecorded = savedTransfers.length;
+
+              if (transfersRecorded > 0) {
+                const unpricedCount = enrichedTransferRecords.filter(
+                  (t) => t.tokenSymbol === "UNKNOWN",
+                ).length;
+                const warningMsg =
+                  `[SpotDataProcessor] Recorded ${transfersRecorded} transfers for agent ${agentId} (potential violations)` +
+                  (unpricedCount > 0
+                    ? `. ${unpricedCount} transfers could not be priced`
+                    : "");
+
+                this.logger.warn(warningMsg);
+              }
             }
           }
         } catch (error) {
