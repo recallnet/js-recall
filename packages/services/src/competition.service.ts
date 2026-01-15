@@ -5293,7 +5293,8 @@ export class CompetitionService {
 
     // Security check: Verify alert belongs to the specified competition
     if (existingAlert.competitionId !== competitionId) {
-      throw new Error(
+      throw new ApiError(
+        403,
         `Alert ${alertId} does not belong to competition ${competitionId}`,
       );
     }
@@ -5366,7 +5367,8 @@ export class CompetitionService {
 
     // Security check: Verify alert belongs to the specified competition
     if (existingAlert.competitionId !== competitionId) {
-      throw new Error(
+      throw new ApiError(
+        403,
         `Alert ${alertId} does not belong to competition ${competitionId}`,
       );
     }
