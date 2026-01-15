@@ -31,7 +31,7 @@ export const resetPrivyUser = adminBase
       "Reset user Privy-related fields and delete from Privy. Accepts either emails or wallet addresses.",
     tags: ["admin"],
   })
-  .handler(async ({ input, context, errors }) => {
+  .handler(async ({ input, context }) => {
     const { emails, wallets } = input;
     const results: ResetResult[] = [];
     let resetCount = 0;
@@ -97,14 +97,6 @@ export const resetPrivyUser = adminBase
           error: errorMessage,
         });
       }
-    }
-
-    // Check if all failed
-    if (resetCount === 0 && identifiers.length > 0) {
-      throw errors.BAD_REQUEST({
-        message: "No users were reset",
-        cause: results,
-      });
     }
 
     return {
