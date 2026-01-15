@@ -79,6 +79,7 @@ export interface PerpsSelfFundingAlertReview {
   reviewedBy: string | null;
   reviewNote: string | null;
   actionTaken: string | null;
+  reviewedAt: Date;
 }
 
 export interface RiskMetricsTimeSeriesOptions {
