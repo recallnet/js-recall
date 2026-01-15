@@ -22,7 +22,7 @@ export const ConvictionRewards: React.FunctionComponent = () => {
   const { claims, totalFormatted, isLoading, error } = useConvictionClaims();
 
   const sortedClaims = useMemo(() => {
-    return [...claims].sort((a, b) => a.season - b.season);
+    return [...claims].sort((a, b) => a.airdrop - b.airdrop);
   }, [claims]);
 
   const activeClaim = useMemo(
@@ -33,7 +33,7 @@ export const ConvictionRewards: React.FunctionComponent = () => {
   const handleClaim = (claimToClaim: FormattedConvictionClaim) => {
     if (claimToClaim.type !== "available") return;
 
-    if (claimToClaim.season === 0) {
+    if (claimToClaim.airdrop === 0) {
       window.open("https://claim.recall.network/", "_blank");
       return;
     }
@@ -104,7 +104,7 @@ export const ConvictionRewards: React.FunctionComponent = () => {
               <tbody>
                 {sortedClaims.map((claim, index) => (
                   <ConvictionRewardRow
-                    key={`${claim.season}-${index}`}
+                    key={`${claim.airdrop}-${index}`}
                     claim={claim}
                     onClaim={() => handleClaim(claim)}
                     isProcessing={false}
@@ -120,7 +120,7 @@ export const ConvictionRewards: React.FunctionComponent = () => {
           <div className="bg-gray-3 border-gray-4 flex items-center justify-between rounded-xl border p-3">
             <div className="flex items-center gap-2">
               <span className="text-gray-5 text-xl font-semibold">
-                {activeClaim.seasonName}
+                {activeClaim.airdropName}
               </span>
               <span
                 className={`text-xl ${
@@ -194,7 +194,7 @@ const ConvictionRewardRow: React.FunctionComponent<
   return (
     <tr>
       <td className="text-gray-5 px-4 py-2">
-        <span className="text-sm">{claim.seasonName}</span>
+        <span className="text-sm">{claim.airdropName}</span>
       </td>
       <td className="text-gray-5 px-4 py-2">
         <span className={`text-sm ${actionTextColor}`}>{claim.actionText}</span>
