@@ -867,3 +867,42 @@ export const AdminRevokeBonusBoostSchema = z.object({
     .min(1, "At least one boost ID is required")
     .max(100, "Cannot revoke more than 100 boosts at once"),
 });
+
+/**
+ * Admin reset Privy user schema
+ * Resets user Privy-related fields and deletes user from Privy
+ * Accepts either an array of emails or an array of wallet addresses (not both)
+ */
+export const AdminResetPrivyUserSchema = z
+  .object({
+    emails: z
+      .array(z.email("Invalid email format").transform((e) => e.toLowerCase()))
+      .min(1, "At least one email is required")
+      .max(100, "Cannot process more than 100 users at once")
+      .optional(),
+    wallets: z
+      .array(WalletAddressSchema)
+      .min(1, "At least one wallet address is required")
+      .max(100, "Cannot process more than 100 users at once")
+      .optional(),
+  })
+  .refine(
+    (data) => {
+      const hasEmails = data.emails && data.emails.length > 0;
+      const hasWallets = data.wallets && data.wallets.length > 0;
+      return (hasEmails && !hasWallets) || (!hasEmails && hasWallets);
+    },
+    {
+      message: "Must provide exactly one of emails or wallets, not both",
+    },
+  )
+  .refine(
+    (data) => {
+      const items = data.emails ?? data.wallets ?? [];
+      const normalizedItems = items.map((item) => item.toLowerCase());
+      return items.length === new Set(normalizedItems).size;
+    },
+    {
+      message: "Duplicate identifiers found in request",
+    },
+  );

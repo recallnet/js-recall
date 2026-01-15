@@ -61,6 +61,16 @@ export class MockPrivyClient {
   }
 
   /**
+   * Mock deleteUser method for testing
+   * In tests, this is a no-op that simulates successful deletion
+   */
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  async deleteUser(userId: string): Promise<void> {
+    // No-op for testing - simulates successful deletion
+    return;
+  }
+
+  /**
    * Format linked accounts for a test user
    * @param user - The test user
    * @param provider - The authentication provider of the user
