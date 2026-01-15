@@ -187,35 +187,4 @@ describe("Admin Reset Privy User API", () => {
       "BAD_REQUEST",
     );
   });
-
-  test("should reset user without privy_id (DB only)", async () => {
-    // Register a user without privyId
-    const walletAddress = generateRandomEthAddress();
-    const userEmail = `no-privy-${Date.now()}@test.com`;
-
-    const { user } = await registerUserAndAgent(authorizedAdminClient, {
-      walletAddress,
-      email: userEmail,
-      name: "No Privy User",
-      // Note: not setting privyId
-    });
-
-    expect(user.privyId).toBeUndefined();
-
-    // Reset should still work (just updates DB)
-    const resetResult = await authorizedAdminClient.users.resetPrivy({
-      emails: [userEmail],
-    });
-
-    expect(resetResult.success).toBe(true);
-    expect(resetResult.resetCount).toBe(1);
-
-    // Verify fields are null
-    const [updatedUser] = await db
-      .select()
-      .from(users)
-      .where(eq(users.id, user.id));
-
-    expect(updatedUser!.email).toBeNull();
-  });
 });

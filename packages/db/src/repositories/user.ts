@@ -238,8 +238,12 @@ export class UserRepository {
     try {
       const now = new Date();
       const normalizedWalletAddress = user.walletAddress?.toLowerCase();
+      // Preserve null for embeddedWalletAddress (null?.toLowerCase() returns undefined,
+      // which doesn't update the field in Drizzle)
       const normalizedEmbeddedWalletAddress =
-        user.embeddedWalletAddress?.toLowerCase();
+        user.embeddedWalletAddress === null
+          ? null
+          : user.embeddedWalletAddress?.toLowerCase();
       const data = {
         ...user,
         walletAddress: normalizedWalletAddress,
