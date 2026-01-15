@@ -3673,8 +3673,8 @@
             "name": "reviewed",
             "schema": {
               "type": "string",
-              "enum": [true, false, "all"],
-              "default": false
+              "enum": ["true", "false", "all"],
+              "default": "false"
             },
             "description": "Filter by review status"
           },
@@ -3823,8 +3823,8 @@
             "name": "reviewed",
             "schema": {
               "type": "string",
-              "enum": [true, false, "all"],
-              "default": false
+              "enum": ["true", "false", "all"],
+              "default": "false"
             },
             "description": "Filter by reviewed status"
           },

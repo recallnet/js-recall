@@ -2565,8 +2565,8 @@ export function configureAdminRoutes(
    *         name: reviewed
    *         schema:
    *           type: string
-   *           enum: [true, false, all]
-   *           default: false
+   *           enum: ["true", "false", "all"]
+   *           default: "false"
    *         description: Filter by review status
    *       - in: query
    *         name: violationType
@@ -2683,8 +2683,8 @@ export function configureAdminRoutes(
    *         name: reviewed
    *         schema:
    *           type: string
-   *           enum: [true, false, all]
-   *           default: false
+   *           enum: ["true", "false", "all"]
+   *           default: "false"
    *         description: Filter by reviewed status
    *       - in: query
    *         name: detectionMethod
