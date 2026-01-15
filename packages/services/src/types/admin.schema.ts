@@ -876,7 +876,7 @@ export const AdminRevokeBonusBoostSchema = z.object({
 export const AdminResetPrivyUserSchema = z
   .object({
     emails: z
-      .array(z.email("Invalid email format"))
+      .array(z.email("Invalid email format").transform((e) => e.toLowerCase()))
       .min(1, "At least one email is required")
       .max(100, "Cannot process more than 100 users at once")
       .optional(),

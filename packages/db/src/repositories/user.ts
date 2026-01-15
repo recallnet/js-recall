@@ -196,10 +196,11 @@ export class UserRepository {
    */
   async findByEmail(email: string): Promise<SelectUser | undefined> {
     try {
+      const normalizedEmail = email.toLowerCase();
       const [result] = await this.#db
         .select()
         .from(users)
-        .where(eq(users.email, email));
+        .where(eq(users.email, normalizedEmail));
 
       return result;
     } catch (error) {
