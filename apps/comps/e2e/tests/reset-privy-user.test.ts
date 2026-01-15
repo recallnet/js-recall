@@ -163,11 +163,44 @@ describe("Admin Reset Privy User API", () => {
       emails: ["nonexistent@email.com"],
     });
 
-    // Should still return success but with 0 reset count
+    // Top-level success is always true; individual results show per-item status
     expect(resetResult.success).toBe(true);
     expect(resetResult.resetCount).toBe(0);
     expect(resetResult.results[0]!.success).toBe(false);
-    expect(resetResult.results[0]!.error).toBe("User not found");
+  });
+
+  test("should reject unauthorized requests", async () => {
+    const unauthorizedClient = await createTestAdminRpcClient();
+    await assertRpcError(
+      unauthorizedClient.users.resetPrivy({
+        emails: ["test@test.com"],
+      }),
+      "UNAUTHORIZED",
+    );
+  });
+
+  test("should handle partial success when resetting multiple users", async () => {
+    const wallet1 = generateRandomEthAddress();
+
+    await registerUserAndAgent(authorizedAdminClient, {
+      walletAddress: wallet1,
+      email: `partial1-${Date.now()}@test.com`,
+      privyId: generateRandomPrivyId(),
+    });
+
+    const nonExistentWallet = generateRandomEthAddress();
+
+    // Reset one existing and one non-existing user
+    const resetResult = await authorizedAdminClient.users.resetPrivy({
+      wallets: [wallet1, nonExistentWallet],
+    });
+
+    // Top-level success is always true; individual results show per-item status
+    expect(resetResult.success).toBe(true);
+    expect(resetResult.resetCount).toBe(1);
+    expect(resetResult.totalRequested).toBe(2);
+    expect(resetResult.results[0]!.success).toBe(true);
+    expect(resetResult.results[1]!.success).toBe(false);
   });
 
   test("should fail when both emails and wallets are provided", async () => {

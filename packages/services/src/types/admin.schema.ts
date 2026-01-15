@@ -895,4 +895,14 @@ export const AdminResetPrivyUserSchema = z
     {
       message: "Must provide exactly one of emails or wallets, not both",
     },
+  )
+  .refine(
+    (data) => {
+      const items = data.emails ?? data.wallets ?? [];
+      const normalizedItems = items.map((item) => item.toLowerCase());
+      return items.length === new Set(normalizedItems).size;
+    },
+    {
+      message: "Duplicate identifiers found in request",
+    },
   );
