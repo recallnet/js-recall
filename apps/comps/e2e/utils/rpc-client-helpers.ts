@@ -121,11 +121,18 @@ export async function createTestAdminRpcClient(options?: {
     headers.set("authorization", `Bearer ${options.apiKey}`);
   }
 
+  // Use MockPrivyClient for tests instead of real PrivyClient
+  const mockPrivyClient = new MockPrivyClient(
+    process.env.PRIVY_APP_ID || "test-app-id",
+    process.env.PRIVY_APP_SECRET || "test-app-secret",
+  );
+
   return createRouterClient(adminRouter, {
     context: {
       cookies: createMockCookies("dummy-token"),
       headers: headers,
       params: {},
+      privyClient: mockPrivyClient as unknown as PrivyClient,
       adminService,
       boostBonusService,
       userService,
