@@ -22,6 +22,7 @@ import {
 import { SelectGame } from "@recallnet/db/schema/sports/types";
 import {
   PerpetualPositionWithAgent,
+  SelectPerpsSelfFundingAlert,
   SelectSpotLiveSelfFundingAlert,
   SelectTrade,
 } from "@recallnet/db/schema/trading/types";
@@ -5292,7 +5293,8 @@ export class CompetitionService {
 
     // Security check: Verify alert belongs to the specified competition
     if (existingAlert.competitionId !== competitionId) {
-      throw new Error(
+      throw new ApiError(
+        403,
         `Alert ${alertId} does not belong to competition ${competitionId}`,
       );
     }
@@ -5301,5 +5303,76 @@ export class CompetitionService {
       alertId,
       reviewData,
     );
+  }
+
+  // =============================================================================
+  // PERPS SELF-FUNDING ALERTS
+  // =============================================================================
+
+  /**
+   * Get self-funding alerts for a perps competition
+   * @param competitionId Competition ID
+   * @param filters Optional filters for reviewed status and detection method
+   * @returns Array of alerts
+   */
+  async getPerpsSelfFundingAlerts(
+    competitionId: string,
+    filters?: {
+      reviewed?: boolean;
+      detectionMethod?: string;
+    },
+  ): Promise<SelectPerpsSelfFundingAlert[]> {
+    // Validate competition type
+    const competition = await this.competitionRepo.findById(competitionId);
+
+    if (!competition) {
+      throw new ApiError(404, "Competition not found");
+    }
+
+    if (competition.type !== "perpetual_futures") {
+      throw new ApiError(
+        400,
+        "This endpoint is only available for perpetual futures competitions",
+      );
+    }
+
+    return this.perpsRepo.getPerpsAlerts(competitionId, filters);
+  }
+
+  /**
+   * Review a perps self-funding alert
+   * @param competitionId Competition ID (for validation)
+   * @param alertId Alert ID
+   * @param reviewData Review information
+   * @returns Updated alert or null if not found
+   * @throws Error if alert doesn't belong to specified competition
+   */
+  async reviewPerpsSelfFundingAlert(
+    competitionId: string,
+    alertId: string,
+    reviewData: {
+      reviewed: boolean;
+      reviewedBy: string;
+      reviewNote: string;
+      actionTaken: string;
+      reviewedAt: Date;
+    },
+  ): Promise<SelectPerpsSelfFundingAlert | null> {
+    // First, fetch the alert to verify it belongs to this competition
+    const existingAlert = await this.perpsRepo.getPerpsAlertById(alertId);
+
+    if (!existingAlert) {
+      return null;
+    }
+
+    // Security check: Verify alert belongs to the specified competition
+    if (existingAlert.competitionId !== competitionId) {
+      throw new ApiError(
+        403,
+        `Alert ${alertId} does not belong to competition ${competitionId}`,
+      );
+    }
+
+    return this.perpsRepo.reviewPerpsSelfFundingAlert(alertId, reviewData);
   }
 }

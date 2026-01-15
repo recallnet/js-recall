@@ -1018,4 +1018,176 @@ describe("CompetitionService", () => {
       expect(result.agents[1]?.active).toBe(true);
     });
   });
+
+  describe("getPerpsSelfFundingAlerts", () => {
+    const mockPerpsCompetition: SelectCompetition & SelectTradingCompetition = {
+      ...mockCompetition,
+      type: "perpetual_futures",
+    };
+
+    const mockAlert = {
+      id: randomUUID(),
+      agentId: randomUUID(),
+      competitionId: mockPerpsCompetition.id,
+      expectedEquity: "1000.00",
+      actualEquity: "1050.00",
+      unexplainedAmount: "50.00",
+      accountSnapshot: { equity: 1050 },
+      detectionMethod: "transfer_history" as const,
+      detectedAt: new Date(),
+      reviewed: false,
+      reviewNote: null,
+      actionTaken: null,
+      reviewedAt: null,
+      reviewedBy: null,
+    };
+
+    it("should return alerts for a perpetual futures competition", async () => {
+      competitionRepo.findById.mockResolvedValue(mockPerpsCompetition);
+      perpsRepo.getPerpsAlerts.mockResolvedValue([mockAlert]);
+
+      const result = await competitionService.getPerpsSelfFundingAlerts(
+        mockPerpsCompetition.id,
+      );
+
+      expect(result).toHaveLength(1);
+      expect(result[0]).toEqual(mockAlert);
+      expect(perpsRepo.getPerpsAlerts).toHaveBeenCalledWith(
+        mockPerpsCompetition.id,
+        undefined,
+      );
+    });
+
+    it("should pass filters to repository", async () => {
+      competitionRepo.findById.mockResolvedValue(mockPerpsCompetition);
+      perpsRepo.getPerpsAlerts.mockResolvedValue([mockAlert]);
+
+      const filters = {
+        reviewed: false,
+        detectionMethod: "transfer_history",
+      };
+
+      await competitionService.getPerpsSelfFundingAlerts(
+        mockPerpsCompetition.id,
+        filters,
+      );
+
+      expect(perpsRepo.getPerpsAlerts).toHaveBeenCalledWith(
+        mockPerpsCompetition.id,
+        filters,
+      );
+    });
+
+    it("should throw 404 for non-existent competition", async () => {
+      competitionRepo.findById.mockResolvedValue(undefined);
+
+      await expect(
+        competitionService.getPerpsSelfFundingAlerts("non-existent-id"),
+      ).rejects.toThrow("Competition not found");
+    });
+
+    it("should throw 400 for non-perps competition", async () => {
+      const tradingCompetition = {
+        ...mockCompetition,
+        type: "trading" as const,
+      };
+      competitionRepo.findById.mockResolvedValue(tradingCompetition);
+
+      await expect(
+        competitionService.getPerpsSelfFundingAlerts(tradingCompetition.id),
+      ).rejects.toThrow(
+        "This endpoint is only available for perpetual futures competitions",
+      );
+    });
+
+    it("should return empty array when no alerts exist", async () => {
+      competitionRepo.findById.mockResolvedValue(mockPerpsCompetition);
+      perpsRepo.getPerpsAlerts.mockResolvedValue([]);
+
+      const result = await competitionService.getPerpsSelfFundingAlerts(
+        mockPerpsCompetition.id,
+      );
+
+      expect(result).toHaveLength(0);
+    });
+  });
+
+  describe("reviewPerpsSelfFundingAlert", () => {
+    const mockCompetitionId = randomUUID();
+    const mockAlertId = randomUUID();
+
+    const mockAlert = {
+      id: mockAlertId,
+      agentId: randomUUID(),
+      competitionId: mockCompetitionId,
+      expectedEquity: "1000.00",
+      actualEquity: "1050.00",
+      unexplainedAmount: "50.00",
+      accountSnapshot: { equity: 1050 },
+      detectionMethod: "transfer_history" as const,
+      detectedAt: new Date(),
+      reviewed: false,
+      reviewNote: null,
+      actionTaken: null,
+      reviewedAt: null,
+      reviewedBy: null,
+    };
+
+    const reviewData = {
+      reviewed: true,
+      reviewedBy: randomUUID(),
+      reviewNote: "Valid deposit detected",
+      actionTaken: "acknowledged",
+      reviewedAt: new Date(),
+    };
+
+    it("should successfully review an alert", async () => {
+      const reviewedAlert = { ...mockAlert, ...reviewData };
+      perpsRepo.getPerpsAlertById.mockResolvedValue(mockAlert);
+      perpsRepo.reviewPerpsSelfFundingAlert.mockResolvedValue(reviewedAlert);
+
+      const result = await competitionService.reviewPerpsSelfFundingAlert(
+        mockCompetitionId,
+        mockAlertId,
+        reviewData,
+      );
+
+      expect(result).toEqual(reviewedAlert);
+      expect(perpsRepo.reviewPerpsSelfFundingAlert).toHaveBeenCalledWith(
+        mockAlertId,
+        reviewData,
+      );
+    });
+
+    it("should return null when alert is not found", async () => {
+      perpsRepo.getPerpsAlertById.mockResolvedValue(null);
+
+      const result = await competitionService.reviewPerpsSelfFundingAlert(
+        mockCompetitionId,
+        "non-existent-alert",
+        reviewData,
+      );
+
+      expect(result).toBeNull();
+      expect(perpsRepo.reviewPerpsSelfFundingAlert).not.toHaveBeenCalled();
+    });
+
+    it("should throw error when alert belongs to different competition", async () => {
+      const alertFromDifferentComp = {
+        ...mockAlert,
+        competitionId: randomUUID(), // Different competition
+      };
+      perpsRepo.getPerpsAlertById.mockResolvedValue(alertFromDifferentComp);
+
+      await expect(
+        competitionService.reviewPerpsSelfFundingAlert(
+          mockCompetitionId,
+          mockAlertId,
+          reviewData,
+        ),
+      ).rejects.toThrow(/does not belong to competition/);
+
+      expect(perpsRepo.reviewPerpsSelfFundingAlert).not.toHaveBeenCalled();
+    });
+  });
 });

@@ -633,6 +633,32 @@ export const AdminReviewSpotLiveAlertBodySchema = z.object({
 });
 
 /**
+ * Admin get perps self-funding alerts query schema
+ */
+export const AdminGetPerpsAlertsQuerySchema = z.object({
+  reviewed: z.enum(["true", "false", "all"]).optional().default("false"),
+  detectionMethod: z
+    .enum(["transfer_history", "balance_reconciliation", "all"])
+    .optional(),
+});
+
+/**
+ * Admin review perps self-funding alert params schema
+ */
+export const AdminReviewPerpsAlertParamsSchema = z.object({
+  competitionId: UuidSchema,
+  alertId: UuidSchema,
+});
+
+/**
+ * Admin review perps self-funding alert body schema
+ */
+export const AdminReviewPerpsAlertBodySchema = z.object({
+  reviewNote: z.string().min(1, "Review note is required"),
+  actionTaken: z.enum(["dismissed", "disqualified", "warning"]),
+});
+
+/**
  * Admin rewards allocation schema
  */
 export const AdminRewardsAllocationSchema = z.object({

@@ -75,6 +75,7 @@ import {
   ListPartnersResponse,
   LoginResponse,
   PerpsAccountResponse,
+  PerpsAlertsResponse,
   PerpsPositionsResponse,
   PriceResponse,
   PublicAgentResponse,
@@ -82,6 +83,7 @@ import {
   RemovePartnerFromCompetitionResponse,
   ReplaceCompetitionPartnersResponse,
   ResetApiKeyResponse,
+  ReviewPerpsAlertResponse,
   ReviewSpotLiveAlertResponse,
   RevokeBonusBoostsResponse,
   SpecificChain,
@@ -2418,6 +2420,34 @@ export class ApiClient {
   }
 
   /**
+   * Get perps self-funding alerts for a competition (admin only)
+   * @param competitionId Competition ID
+   * @param params Optional filters for reviewed status and detection method
+   * @returns Perps alerts response
+   */
+  async getPerpsSelfFundingAlerts(
+    competitionId: string,
+    params?: {
+      reviewed?: string;
+      detectionMethod?: string;
+    },
+  ): Promise<PerpsAlertsResponse | ErrorResponse> {
+    try {
+      const queryParams = new URLSearchParams();
+      if (params?.reviewed) queryParams.append("reviewed", params.reviewed);
+      if (params?.detectionMethod)
+        queryParams.append("detectionMethod", params.detectionMethod);
+
+      const response = await this.axiosInstance.get(
+        `/admin/competition/${competitionId}/perps/alerts?${queryParams.toString()}`,
+      );
+      return response.data;
+    } catch (error) {
+      return this.handleApiError(error, "get perps self-funding alerts");
+    }
+  }
+
+  /**
    * NFL API Methods
    */
 
@@ -2462,6 +2492,32 @@ export class ApiClient {
       return response.data;
     } catch (error) {
       return this.handleApiError(error, "review spot live self-funding alert");
+    }
+  }
+
+  /**
+   * Review a perps self-funding alert (admin only)
+   * @param competitionId Competition ID
+   * @param alertId Alert ID
+   * @param reviewData Review note and action taken
+   * @returns Updated alert
+   */
+  async reviewPerpsSelfFundingAlert(
+    competitionId: string,
+    alertId: string,
+    reviewData: {
+      reviewNote: string;
+      actionTaken: string;
+    },
+  ): Promise<ReviewPerpsAlertResponse | ErrorResponse> {
+    try {
+      const response = await this.axiosInstance.put(
+        `/admin/competition/${competitionId}/perps/alerts/${alertId}/review`,
+        reviewData,
+      );
+      return response.data;
+    } catch (error) {
+      return this.handleApiError(error, "review perps self-funding alert");
     }
   }
 

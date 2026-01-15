@@ -124,12 +124,6 @@ export class PerpsMonitoringService {
       `[PerpsMonitoringService] Starting monitoring for ${agents.length} agents in competition ${competitionId}`,
     );
 
-    // Batch fetch existing alerts for all agents
-    const existingAlerts = await this.batchGetExistingAlerts(
-      agents.map((a) => a.agentId),
-      competitionId,
-    );
-
     // DECISION: Using Promise.allSettled for monitoring multiple agents because:
     // 1. Monitoring one agent should never prevent monitoring others
     // 2. Self-funding detection is independent per agent
@@ -144,7 +138,6 @@ export class PerpsMonitoringService {
           competitionStartDate,
           initialCapital,
           selfFundingThreshold,
-          existingAlerts.get(agent.agentId) ?? [],
         ),
       ),
     );
@@ -248,19 +241,13 @@ export class PerpsMonitoringService {
     competitionStartDate: Date,
     initialCapital: number,
     selfFundingThreshold: number,
-    existingAlerts: Array<{ reviewed: boolean | null }>,
   ): Promise<AgentMonitoringResult> {
     const alerts: SelfFundingAlert[] = [];
 
     try {
-      // Skip if we already have unreviewed alerts (treat null as unreviewed)
-      const hasUnreviewedAlerts = existingAlerts.some((a) => !a.reviewed);
-      if (hasUnreviewedAlerts) {
-        this.logger.debug(
-          `[PerpsMonitoringService] Agent ${agent.agentId} already has unreviewed alerts, skipping`,
-        );
-        return { ...agent, alerts: [] };
-      }
+      // Continue monitoring regardless of existing alerts to capture all violations.
+      // Transfer history is deduplicated by txHash in the database, and admins need
+      // visibility into all violations (not just the first one detected).
 
       // DECISION: Account summary is required - if it fails, the entire agent monitoring fails.
       // This is intentional because we cannot calculate equity or detect self-funding without it.

@@ -348,7 +348,7 @@ describe("PerpsMonitoringService", () => {
     });
 
     describe("existing alerts handling", () => {
-      it("should skip agents with unreviewed alerts (reviewed: false)", async () => {
+      it("should continue monitoring agents with unreviewed alerts to capture all violations", async () => {
         const unreviewedAlert: SelectPerpsSelfFundingAlert = {
           id: "alert-1",
           agentId: "agent-1",
@@ -383,14 +383,14 @@ describe("PerpsMonitoringService", () => {
           selfFundingThreshold,
         );
 
-        // Should not fetch account summary since agent is skipped
+        // Should still process the agent to capture any new violations
         expect(
           mockProviderWithTransfers.getAccountSummary,
-        ).not.toHaveBeenCalled();
-        expect(result.successful[0]?.alerts).toHaveLength(0);
+        ).toHaveBeenCalledWith("0x123");
+        expect(result.successful).toHaveLength(1);
       });
 
-      it("should skip agents with unreviewed alerts (reviewed: null)", async () => {
+      it("should continue monitoring agents even with null reviewed status", async () => {
         const unreviewedAlert: SelectPerpsSelfFundingAlert = {
           id: "alert-1",
           agentId: "agent-1",
@@ -401,7 +401,7 @@ describe("PerpsMonitoringService", () => {
           accountSnapshot: {},
           detectionMethod: "balance_reconciliation",
           detectedAt: new Date(),
-          reviewed: null, // Null is also treated as unreviewed
+          reviewed: null, // Null reviewed status
           reviewedAt: null,
           reviewedBy: null,
           reviewNote: null,
@@ -425,13 +425,14 @@ describe("PerpsMonitoringService", () => {
           selfFundingThreshold,
         );
 
+        // Should still process the agent regardless of existing alerts
         expect(
           mockProviderWithTransfers.getAccountSummary,
-        ).not.toHaveBeenCalled();
-        expect(result.successful[0]?.alerts).toHaveLength(0);
+        ).toHaveBeenCalledWith("0x123");
+        expect(result.successful).toHaveLength(1);
       });
 
-      it("should process agents with all reviewed alerts", async () => {
+      it("should process agents with reviewed alerts", async () => {
         const reviewedAlert: SelectPerpsSelfFundingAlert = {
           id: "alert-1",
           agentId: "agent-1",
@@ -466,7 +467,7 @@ describe("PerpsMonitoringService", () => {
           selfFundingThreshold,
         );
 
-        // Should process the agent since all alerts are reviewed
+        // Should process the agent
         expect(
           mockProviderWithTransfers.getAccountSummary,
         ).toHaveBeenCalledWith("0x123");
@@ -1687,7 +1688,7 @@ describe("PerpsMonitoringService", () => {
         expect(result.totalAlertsCreated).toBe(0); // Failed to create
       });
 
-      it("should batch fetch existing alerts efficiently", async () => {
+      it("should process all agents in parallel", async () => {
         const agents = [
           { agentId: "agent-1", walletAddress: "0x111" },
           { agentId: "agent-2", walletAddress: "0x222" },
@@ -1703,13 +1704,10 @@ describe("PerpsMonitoringService", () => {
           selfFundingThreshold,
         );
 
-        // Should batch fetch alerts for all agents in one call
+        // Should process each agent
         expect(
-          mockPerpsRepo.batchGetAgentsSelfFundingAlerts,
-        ).toHaveBeenCalledTimes(1);
-        expect(
-          mockPerpsRepo.batchGetAgentsSelfFundingAlerts,
-        ).toHaveBeenCalledWith(["agent-1", "agent-2", "agent-3"], "comp-1");
+          mockProviderWithTransfers.getAccountSummary,
+        ).toHaveBeenCalledTimes(3);
       });
 
       it("should handle alert fetch failures gracefully", async () => {
@@ -1739,8 +1737,8 @@ describe("PerpsMonitoringService", () => {
         expect(result.successful).toHaveLength(3);
       });
 
-      it("should handle mixed existing alerts scenario", async () => {
-        // Agent 1: Has unreviewed alert (skip)
+      it("should process all agents regardless of existing alert status", async () => {
+        // Agent 1: Has unreviewed alert
         const unreviewedAlert: SelectPerpsSelfFundingAlert = {
           id: "alert-1",
           agentId: "agent-1",
@@ -1758,7 +1756,7 @@ describe("PerpsMonitoringService", () => {
           actionTaken: null,
         };
 
-        // Agent 3: Has reviewed alert (process)
+        // Agent 3: Has reviewed alert
         const reviewedAlert: SelectPerpsSelfFundingAlert = {
           ...unreviewedAlert,
           id: "alert-3",
@@ -1792,19 +1790,19 @@ describe("PerpsMonitoringService", () => {
           selfFundingThreshold,
         );
 
-        // Should only process agents 2 and 3 (agent 1 skipped)
+        // Should process ALL agents regardless of existing alert status
         expect(
           mockProviderWithTransfers.getAccountSummary,
-        ).toHaveBeenCalledTimes(2);
+        ).toHaveBeenCalledTimes(3);
+        expect(
+          mockProviderWithTransfers.getAccountSummary,
+        ).toHaveBeenCalledWith("0x111");
         expect(
           mockProviderWithTransfers.getAccountSummary,
         ).toHaveBeenCalledWith("0x222");
         expect(
           mockProviderWithTransfers.getAccountSummary,
         ).toHaveBeenCalledWith("0x333");
-        expect(
-          mockProviderWithTransfers.getAccountSummary,
-        ).not.toHaveBeenCalledWith("0x111");
         expect(result.successful).toHaveLength(3);
       });
 

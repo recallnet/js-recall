@@ -79,6 +79,7 @@ export interface PerpsSelfFundingAlertReview {
   reviewedBy: string | null;
   reviewNote: string | null;
   actionTaken: string | null;
+  reviewedAt: Date;
 }
 
 export interface RiskMetricsTimeSeriesOptions {
@@ -556,6 +557,69 @@ export class PerpsRepository {
       return alerts;
     } catch (error) {
       this.#logger.error({ error }, "Error in getUnreviewedPerpsAlerts");
+      throw error;
+    }
+  }
+
+  /**
+   * Get self-funding alerts for a competition with optional filters
+   * @param competitionId Competition ID
+   * @param filters Optional filters for reviewed status and detection method
+   * @returns Array of alerts matching filters
+   */
+  async getPerpsAlerts(
+    competitionId: string,
+    filters?: {
+      reviewed?: boolean;
+      detectionMethod?: string;
+    },
+  ): Promise<SelectPerpsSelfFundingAlert[]> {
+    try {
+      const conditions = [
+        eq(perpsSelfFundingAlerts.competitionId, competitionId),
+      ];
+
+      if (filters?.reviewed !== undefined) {
+        conditions.push(eq(perpsSelfFundingAlerts.reviewed, filters.reviewed));
+      }
+
+      if (filters?.detectionMethod) {
+        conditions.push(
+          eq(perpsSelfFundingAlerts.detectionMethod, filters.detectionMethod),
+        );
+      }
+
+      const alerts = await this.#dbRead
+        .select()
+        .from(perpsSelfFundingAlerts)
+        .where(and(...conditions))
+        .orderBy(desc(perpsSelfFundingAlerts.detectedAt));
+
+      return alerts;
+    } catch (error) {
+      this.#logger.error({ error }, "Error in getPerpsAlerts");
+      throw error;
+    }
+  }
+
+  /**
+   * Get a single self-funding alert by ID
+   * @param alertId Alert ID
+   * @returns Alert or null if not found
+   */
+  async getPerpsAlertById(
+    alertId: string,
+  ): Promise<SelectPerpsSelfFundingAlert | null> {
+    try {
+      const [alert] = await this.#dbRead
+        .select()
+        .from(perpsSelfFundingAlerts)
+        .where(eq(perpsSelfFundingAlerts.id, alertId))
+        .limit(1);
+
+      return alert || null;
+    } catch (error) {
+      this.#logger.error({ error }, "Error in getPerpsAlertById");
       throw error;
     }
   }

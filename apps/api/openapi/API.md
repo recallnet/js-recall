@@ -786,6 +786,74 @@ Mark an alert as reviewed with admin decision and notes
 | 404  | Alert not found             |
 | 500  | Server error                |
 
+### /api/admin/competition/{competitionId}/perps/alerts
+
+#### GET
+
+##### Summary:
+
+Get perps self-funding alerts
+
+##### Description:
+
+Get self-funding alerts for a perpetual futures competition
+
+##### Parameters
+
+| Name            | Located in | Description                | Required | Schema |
+| --------------- | ---------- | -------------------------- | -------- | ------ |
+| competitionId   | path       | ID of the competition      | Yes      | string |
+| reviewed        | query      | Filter by reviewed status  | No       | string |
+| detectionMethod | query      | Filter by detection method | No       | string |
+
+##### Responses
+
+| Code | Description              |
+| ---- | ------------------------ |
+| 200  | List of alerts           |
+| 400  | Invalid competition type |
+| 404  | Competition not found    |
+| 500  | Server error             |
+
+##### Security
+
+| Security Schema | Scopes |
+| --------------- | ------ |
+| BearerAuth      |        |
+
+### /api/admin/competition/{competitionId}/perps/alerts/{alertId}/review
+
+#### PUT
+
+##### Summary:
+
+Review a perps self-funding alert
+
+##### Description:
+
+Mark a perps self-funding alert as reviewed with a note and action
+
+##### Parameters
+
+| Name          | Located in | Description           | Required | Schema |
+| ------------- | ---------- | --------------------- | -------- | ------ |
+| competitionId | path       | ID of the competition | Yes      | string |
+| alertId       | path       | ID of the alert       | Yes      | string |
+
+##### Responses
+
+| Code | Description                 |
+| ---- | --------------------------- |
+| 200  | Alert reviewed successfully |
+| 404  | Alert not found             |
+| 500  | Server error                |
+
+##### Security
+
+| Security Schema | Scopes |
+| --------------- | ------ |
+| BearerAuth      |        |
+
 ### /api/admin/reports/performance
 
 #### GET
@@ -1751,26 +1819,6 @@ Requires agent authentication via API key.
 | Security Schema | Scopes |
 | --------------- | ------ |
 | AgentApiKey     |        |
-
-### /api/auth/login
-
-#### POST
-
-##### Summary:
-
-Log in with Privy JWT
-
-##### Description:
-
-Verifies the SIWE message and signature, creates a session, and returns user info
-
-##### Responses
-
-| Code | Description                                |
-| ---- | ------------------------------------------ |
-| 200  | Authentication successful, session created |
-| 401  | Authentication failed                      |
-| 500  | Internal server error                      |
 
 ### /api/auth/verify
 
