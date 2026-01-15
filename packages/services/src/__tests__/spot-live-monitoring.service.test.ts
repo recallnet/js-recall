@@ -153,7 +153,7 @@ describe("SpotLiveMonitoringService", () => {
     });
 
     describe("existing alerts handling", () => {
-      it("should skip agents with unreviewed alerts (reviewed: false)", async () => {
+      it("should continue monitoring agents with unreviewed alerts to capture all violations", async () => {
         const unreviewedAlert: SelectSpotLiveSelfFundingAlert = {
           id: "alert-1",
           agentId: "agent-1",
@@ -188,14 +188,17 @@ describe("SpotLiveMonitoringService", () => {
           competitionEndDate,
         );
 
-        // Should not fetch transfers since agent is skipped
-        expect(
-          mockSpotLiveRepo.getAgentSpotLiveTransfers,
-        ).not.toHaveBeenCalled();
-        expect(result.successful[0]?.alerts).toHaveLength(0);
+        // Should still fetch transfers to capture any new violations
+        expect(mockSpotLiveRepo.getAgentSpotLiveTransfers).toHaveBeenCalledWith(
+          "agent-1",
+          "comp-1",
+          competitionStartDate,
+          competitionEndDate,
+        );
+        expect(result.successful).toHaveLength(1);
       });
 
-      it("should skip agents with unreviewed alerts (reviewed: null)", async () => {
+      it("should continue monitoring agents even with null reviewed status", async () => {
         const unreviewedAlert: SelectSpotLiveSelfFundingAlert = {
           id: "alert-1",
           agentId: "agent-1",
@@ -230,13 +233,17 @@ describe("SpotLiveMonitoringService", () => {
           competitionEndDate,
         );
 
-        expect(
-          mockSpotLiveRepo.getAgentSpotLiveTransfers,
-        ).not.toHaveBeenCalled();
-        expect(result.successful[0]?.alerts).toHaveLength(0);
+        // Should still process the agent regardless of existing alerts
+        expect(mockSpotLiveRepo.getAgentSpotLiveTransfers).toHaveBeenCalledWith(
+          "agent-1",
+          "comp-1",
+          competitionStartDate,
+          competitionEndDate,
+        );
+        expect(result.successful).toHaveLength(1);
       });
 
-      it("should process agents with all reviewed alerts", async () => {
+      it("should process agents with reviewed alerts", async () => {
         const reviewedAlert: SelectSpotLiveSelfFundingAlert = {
           id: "alert-1",
           agentId: "agent-1",
@@ -271,7 +278,7 @@ describe("SpotLiveMonitoringService", () => {
           competitionEndDate,
         );
 
-        // Should process the agent since all alerts are reviewed
+        // Should process the agent
         expect(mockSpotLiveRepo.getAgentSpotLiveTransfers).toHaveBeenCalledWith(
           "agent-1",
           "comp-1",
@@ -612,14 +619,6 @@ describe("SpotLiveMonitoringService", () => {
           competitionStartDate,
           competitionEndDate,
         );
-
-        // Should batch fetch alerts for all agents
-        expect(
-          mockSpotLiveRepo.batchGetAgentsSpotLiveSelfFundingAlerts,
-        ).toHaveBeenCalledTimes(1);
-        expect(
-          mockSpotLiveRepo.batchGetAgentsSpotLiveSelfFundingAlerts,
-        ).toHaveBeenCalledWith(["agent-1", "agent-2", "agent-3"], "comp-1");
 
         // Should process each agent's transfers
         expect(

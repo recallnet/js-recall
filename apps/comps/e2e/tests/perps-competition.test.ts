@@ -19,6 +19,7 @@ import {
   type CreateCompetitionResponse,
   type ErrorResponse,
   type PerpsAccountResponse,
+  type PerpsAlertsResponse,
   type PerpsPositionsResponse,
 } from "@recallnet/test-utils";
 import { getBaseUrl } from "@recallnet/test-utils";
@@ -4916,5 +4917,203 @@ describe("Perps Competition", () => {
     // Clean up - end both competitions
     await adminClient.endCompetition(comp1Id);
     await adminClient.endCompetition(comp2Id);
+  });
+
+  test("should detect deposit violation and create perps self-funding alert", async () => {
+    const adminClient = createTestClient(getBaseUrl());
+    await adminClient.loginAsAdmin(adminApiKey);
+
+    // Register agent with transfers configured in mock Hyperliquid server
+    // 0x8888 has a deposit transfer configured that triggers transfer_history alerts
+    const { agent: agentWithDeposit } = await registerUserAndAgentAndGetClient({
+      adminApiKey,
+      agentName: "Perps Agent With Deposit Violation",
+      agentWalletAddress: "0x8888888888888888888888888888888888888888",
+    });
+
+    // Start Hyperliquid competition
+    const response = await startPerpsTestCompetition({
+      adminClient,
+      name: `Perps Self-Funding Alert Test ${Date.now()}`,
+      agentIds: [agentWithDeposit.id],
+      perpsProvider: {
+        provider: "hyperliquid",
+        apiUrl: "http://localhost:4568",
+      },
+    });
+
+    expect(response.success).toBe(true);
+    const competition = response.competition;
+
+    // Process competition to detect transfers and create alerts
+    await perpsDataProcessor.processPerpsCompetition(competition.id);
+
+    // Get self-funding alerts via admin API - filter to transfer_history only
+    const alertsResponse = await adminClient.getPerpsSelfFundingAlerts(
+      competition.id,
+      { detectionMethod: "transfer_history" },
+    );
+
+    expect(alertsResponse.success).toBe(true);
+    const typedAlertsResponse = alertsResponse as PerpsAlertsResponse;
+    expect(typedAlertsResponse.alerts).toBeDefined();
+    expect(typedAlertsResponse.alerts.length).toBeGreaterThan(0);
+
+    // Find the transfer_history alert for our deposit agent
+    const depositAlert = typedAlertsResponse.alerts.find(
+      (a) =>
+        a.agentId === agentWithDeposit.id &&
+        a.detectionMethod === "transfer_history",
+    );
+    expect(depositAlert).toBeDefined();
+    expect(depositAlert?.reviewed).toBe(false);
+    expect(depositAlert?.detectionMethod).toBe("transfer_history");
+  });
+
+  test("should allow admin to review perps self-funding alert", async () => {
+    const adminClient = createTestClient(getBaseUrl());
+    await adminClient.loginAsAdmin(adminApiKey);
+
+    // Register agent with deposit
+    const { agent } = await registerUserAndAgentAndGetClient({
+      adminApiKey,
+      agentName: "Perps Agent For Review Test",
+      agentWalletAddress: "0x8888888888888888888888888888888888888888",
+    });
+
+    // Start competition
+    const response = await startPerpsTestCompetition({
+      adminClient,
+      name: `Perps Alert Review Test ${Date.now()}`,
+      agentIds: [agent.id],
+      perpsProvider: {
+        provider: "hyperliquid",
+        apiUrl: "http://localhost:4568",
+      },
+    });
+
+    expect(response.success).toBe(true);
+    const competition = response.competition;
+
+    // Process to create alerts
+    await perpsDataProcessor.processPerpsCompetition(competition.id);
+
+    // Get unreviewed alerts
+    const alertsResponse = await adminClient.getPerpsSelfFundingAlerts(
+      competition.id,
+      { reviewed: "false" },
+    );
+
+    expect(alertsResponse.success).toBe(true);
+    const typedAlertsResponse = alertsResponse as PerpsAlertsResponse;
+    expect(typedAlertsResponse.alerts.length).toBeGreaterThan(0);
+
+    const alert = typedAlertsResponse.alerts[0];
+    expect(alert).toBeDefined();
+
+    // Review the alert
+    const reviewResponse = await adminClient.reviewPerpsSelfFundingAlert(
+      competition.id,
+      alert!.id,
+      {
+        reviewNote: "Reviewed - warning issued for deposit violation",
+        actionTaken: "warning",
+      },
+    );
+
+    expect(reviewResponse.success).toBe(true);
+
+    // Verify alert was marked as reviewed
+    const updatedAlertsResponse = await adminClient.getPerpsSelfFundingAlerts(
+      competition.id,
+      { reviewed: "true" },
+    );
+
+    expect(updatedAlertsResponse.success).toBe(true);
+    const typedUpdatedResponse = updatedAlertsResponse as PerpsAlertsResponse;
+
+    const reviewedAlert = typedUpdatedResponse.alerts.find(
+      (a) => a.id === alert!.id,
+    );
+    expect(reviewedAlert).toBeDefined();
+    expect(reviewedAlert?.reviewed).toBe(true);
+    expect(reviewedAlert?.reviewNote).toBe(
+      "Reviewed - warning issued for deposit violation",
+    );
+    expect(reviewedAlert?.actionTaken).toBe("warning");
+  });
+
+  test("should filter perps alerts by detection method", async () => {
+    const adminClient = createTestClient(getBaseUrl());
+    await adminClient.loginAsAdmin(adminApiKey);
+
+    // Register agent with deposit
+    const { agent } = await registerUserAndAgentAndGetClient({
+      adminApiKey,
+      agentName: "Perps Detection Method Filter Test Agent",
+      agentWalletAddress: "0x8888888888888888888888888888888888888888",
+    });
+
+    // Start competition
+    const response = await startPerpsTestCompetition({
+      adminClient,
+      name: `Perps Alert Filter Test ${Date.now()}`,
+      agentIds: [agent.id],
+      perpsProvider: {
+        provider: "hyperliquid",
+        apiUrl: "http://localhost:4568",
+      },
+    });
+
+    expect(response.success).toBe(true);
+    const competition = response.competition;
+
+    // Process to create alerts
+    await perpsDataProcessor.processPerpsCompetition(competition.id);
+
+    // Filter by transfer_history detection method
+    const transferHistoryAlerts = await adminClient.getPerpsSelfFundingAlerts(
+      competition.id,
+      { reviewed: "all", detectionMethod: "transfer_history" },
+    );
+
+    expect(transferHistoryAlerts.success).toBe(true);
+    const typedTransferHistoryResponse =
+      transferHistoryAlerts as PerpsAlertsResponse;
+
+    // All returned alerts should have transfer_history detection method
+    typedTransferHistoryResponse.alerts.forEach((alert) => {
+      expect(alert.detectionMethod).toBe("transfer_history");
+    });
+  });
+
+  test("should return 400 for non-perps competition on perps alerts endpoint", async () => {
+    const adminClient = createTestClient(getBaseUrl());
+    await adminClient.loginAsAdmin(adminApiKey);
+
+    // Register an agent
+    const { agent } = await registerUserAndAgentAndGetClient({
+      adminApiKey,
+      agentName: "Paper Trading Agent for Perps Alert Test",
+    });
+
+    // Start a PAPER TRADING competition (not perps)
+    const response = await startTestCompetition({
+      adminClient,
+      name: `Paper Trading Competition ${Date.now()}`,
+      agentIds: [agent.id],
+    });
+
+    expect(response.success).toBe(true);
+    const competition = response.competition;
+
+    // Try to get perps alerts for paper trading competition
+    const alertsResponse = await adminClient.getPerpsSelfFundingAlerts(
+      competition.id,
+    );
+
+    expect(alertsResponse.success).toBe(false);
+    const errorResponse = alertsResponse as ErrorResponse;
+    expect(errorResponse.status).toBe(400);
   });
 });

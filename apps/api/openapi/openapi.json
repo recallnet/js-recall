@@ -3798,6 +3798,194 @@
         }
       }
     },
+    "/api/admin/competition/{competitionId}/perps/alerts": {
+      "get": {
+        "tags": ["Admin"],
+        "summary": "Get perps self-funding alerts",
+        "description": "Get self-funding alerts for a perpetual futures competition",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "competitionId",
+            "schema": {
+              "type": "string"
+            },
+            "required": true,
+            "description": "ID of the competition"
+          },
+          {
+            "in": "query",
+            "name": "reviewed",
+            "schema": {
+              "type": "string",
+              "enum": [true, false, "all"],
+              "default": false
+            },
+            "description": "Filter by reviewed status"
+          },
+          {
+            "in": "query",
+            "name": "detectionMethod",
+            "schema": {
+              "type": "string",
+              "enum": ["transfer_history", "balance_reconciliation", "all"]
+            },
+            "description": "Filter by detection method"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "List of alerts",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean"
+                    },
+                    "alerts": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "string"
+                          },
+                          "agentId": {
+                            "type": "string"
+                          },
+                          "competitionId": {
+                            "type": "string"
+                          },
+                          "expectedEquity": {
+                            "type": "string"
+                          },
+                          "actualEquity": {
+                            "type": "string"
+                          },
+                          "unexplainedAmount": {
+                            "type": "string"
+                          },
+                          "detectionMethod": {
+                            "type": "string",
+                            "enum": [
+                              "transfer_history",
+                              "balance_reconciliation"
+                            ]
+                          },
+                          "reviewed": {
+                            "type": "boolean"
+                          },
+                          "detectedAt": {
+                            "type": "string",
+                            "format": "date-time"
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid competition type"
+          },
+          "404": {
+            "description": "Competition not found"
+          },
+          "500": {
+            "description": "Server error"
+          }
+        }
+      }
+    },
+    "/api/admin/competition/{competitionId}/perps/alerts/{alertId}/review": {
+      "put": {
+        "tags": ["Admin"],
+        "summary": "Review a perps self-funding alert",
+        "description": "Mark a perps self-funding alert as reviewed with a note and action",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "competitionId",
+            "schema": {
+              "type": "string"
+            },
+            "required": true,
+            "description": "ID of the competition"
+          },
+          {
+            "in": "path",
+            "name": "alertId",
+            "schema": {
+              "type": "string"
+            },
+            "required": true,
+            "description": "ID of the alert"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["reviewNote", "actionTaken"],
+                "properties": {
+                  "reviewNote": {
+                    "type": "string",
+                    "description": "Note from the reviewer"
+                  },
+                  "actionTaken": {
+                    "type": "string",
+                    "enum": ["dismissed", "disqualified", "warning"],
+                    "description": "Action taken on the alert"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Alert reviewed successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean"
+                    },
+                    "alert": {
+                      "type": "object"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Alert not found"
+          },
+          "500": {
+            "description": "Server error"
+          }
+        }
+      }
+    },
     "/api/admin/reports/performance": {
       "get": {
         "tags": ["Admin"],

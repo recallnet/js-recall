@@ -106,12 +106,6 @@ export class SpotLiveMonitoringService {
       `[SpotLiveMonitoringService] Starting monitoring for ${agents.length} agents in competition ${competitionId}`,
     );
 
-    // Batch fetch existing alerts for all agents
-    const existingAlerts = await this.batchGetExistingAlerts(
-      agents.map((a) => a.agentId),
-      competitionId,
-    );
-
     // DECISION: Using Promise.allSettled for monitoring multiple agents because:
     // 1. Monitoring one agent should never prevent monitoring others
     // 2. Self-funding detection is independent per agent
@@ -124,7 +118,6 @@ export class SpotLiveMonitoringService {
           competitionId,
           competitionStartDate,
           competitionEndDate,
-          existingAlerts.get(agent.agentId) ?? [],
         ),
       ),
     );
@@ -227,19 +220,13 @@ export class SpotLiveMonitoringService {
     competitionId: string,
     competitionStartDate: Date,
     competitionEndDate: Date | null,
-    existingAlerts: Array<{ reviewed: boolean | null }>,
   ): Promise<AgentMonitoringResult> {
     const alerts: SelfFundingAlert[] = [];
 
     try {
-      // Skip if we already have unreviewed alerts (treat null as unreviewed)
-      const hasUnreviewedAlerts = existingAlerts.some((a) => !a.reviewed);
-      if (hasUnreviewedAlerts) {
-        this.logger.debug(
-          `[SpotLiveMonitoringService] Agent ${agent.agentId} already has unreviewed alerts, skipping`,
-        );
-        return { ...agent, alerts: [] };
-      }
+      // Continue monitoring regardless of existing alerts to capture all violations.
+      // Transfer history is deduplicated by txHash in the database, and admins need
+      // visibility into all violations (not just the first one detected).
 
       // 1. Check transfer history (read from database)
       const transferAlert = await this.checkTransferHistory(

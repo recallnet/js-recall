@@ -1146,6 +1146,36 @@ export interface ReviewSpotLiveAlertResponse extends ApiResponse {
  * PERPETUAL FUTURES TYPES
  */
 
+// Perps self-funding alert type
+export interface PerpsSelfFundingAlert {
+  id: string;
+  agentId: string;
+  competitionId: string;
+  expectedEquity: string;
+  actualEquity: string;
+  unexplainedAmount: string;
+  accountSnapshot: unknown;
+  detectionMethod: string | null;
+  detectedAt: string | null;
+  reviewed: boolean | null;
+  reviewNote: string | null;
+  actionTaken: string | null;
+  reviewedAt: string | null;
+  reviewedBy: string | null;
+}
+
+// Perps alerts response
+export interface PerpsAlertsResponse extends ApiResponse {
+  success: true;
+  alerts: PerpsSelfFundingAlert[];
+}
+
+// Review perps alert response
+export interface ReviewPerpsAlertResponse extends ApiResponse {
+  success: true;
+  alert: PerpsSelfFundingAlert;
+}
+
 // Perps position
 export interface PerpsPosition {
   id: string;

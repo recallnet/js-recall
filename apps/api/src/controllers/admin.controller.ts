@@ -29,6 +29,7 @@ import {
   AdminGetCompetitionSnapshotsQuerySchema,
   AdminGetCompetitionTransferViolationsParamsSchema,
   AdminGetPerformanceReportsQuerySchema,
+  AdminGetPerpsAlertsQuerySchema,
   AdminGetSpotLiveAlertsQuerySchema,
   AdminListAllAgentsQuerySchema,
   AdminListArenasQuerySchema,
@@ -40,6 +41,8 @@ import {
   AdminRemoveAgentFromCompetitionBodySchema,
   AdminRemoveAgentFromCompetitionParamsSchema,
   AdminReplaceCompetitionPartnersSchema,
+  AdminReviewPerpsAlertBodySchema,
+  AdminReviewPerpsAlertParamsSchema,
   AdminReviewSpotLiveAlertBodySchema,
   AdminReviewSpotLiveAlertParamsSchema,
   AdminRevokeBonusBoostSchema,
@@ -1978,6 +1981,106 @@ export function makeAdminController(services: ServiceRegistry) {
         const adminId = req.adminId as string;
         const updatedAlert =
           await services.competitionService.reviewSpotLiveSelfFundingAlert(
+            competitionId,
+            alertId,
+            {
+              reviewed: true,
+              reviewedAt: new Date(),
+              reviewNote,
+              actionTaken,
+              reviewedBy: adminId,
+            },
+          );
+
+        if (!updatedAlert) {
+          return res.status(404).json({
+            success: false,
+            error: "Alert not found",
+          });
+        }
+
+        res.json({
+          success: true,
+          alert: updatedAlert,
+        });
+      } catch (error) {
+        next(error);
+      }
+    },
+
+    /**
+     * Get self-funding alerts for a perps competition
+     * @param req Express request
+     * @param res Express response
+     * @param next Express next function
+     */
+    async getPerpsSelfFundingAlerts(
+      req: Request,
+      res: Response,
+      next: NextFunction,
+    ) {
+      try {
+        const { competitionId } = flatParse(
+          AdminGetCompetitionTransferViolationsParamsSchema,
+          req.params,
+        );
+        const query = flatParse(AdminGetPerpsAlertsQuerySchema, req.query);
+
+        // Build filters for repository query
+        const filters: {
+          reviewed?: boolean;
+          detectionMethod?: string;
+        } = {};
+
+        if (query.reviewed !== "all") {
+          filters.reviewed = query.reviewed === "true";
+        }
+
+        if (query.detectionMethod && query.detectionMethod !== "all") {
+          filters.detectionMethod = query.detectionMethod;
+        }
+
+        // Get alerts from service with SQL filtering
+        const alerts =
+          await services.competitionService.getPerpsSelfFundingAlerts(
+            competitionId,
+            filters,
+          );
+
+        res.json({
+          success: true,
+          alerts,
+        });
+      } catch (error) {
+        next(error);
+      }
+    },
+
+    /**
+     * Review a perps self-funding alert
+     * @param req Express request
+     * @param res Express response
+     * @param next Express next function
+     */
+    async reviewPerpsSelfFundingAlert(
+      req: Request,
+      res: Response,
+      next: NextFunction,
+    ) {
+      try {
+        const { competitionId, alertId } = flatParse(
+          AdminReviewPerpsAlertParamsSchema,
+          req.params,
+        );
+        const { reviewNote, actionTaken } = flatParse(
+          AdminReviewPerpsAlertBodySchema,
+          req.body,
+        );
+
+        // Update alert (service validates alert belongs to competition)
+        const adminId = req.adminId as string;
+        const updatedAlert =
+          await services.competitionService.reviewPerpsSelfFundingAlert(
             competitionId,
             alertId,
             {
