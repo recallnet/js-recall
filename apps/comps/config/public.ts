@@ -1,13 +1,13 @@
-import { Chain, base, baseSepolia } from "viem/chains";
+import { Chain, base, baseSepolia, foundry } from "viem/chains";
 import z from "zod/v4";
 
 export const configSchema = z
   .strictObject({
     frontendUrl: z.union([z.url(), z.literal("")]).default(""),
     blockchain: z.object({
-      chainId: z.coerce.number().default(84532),
-      chain: z.custom<Chain>().default(baseSepolia),
-      rpcUrl: z.url().optional(),
+      chainId: z.coerce.number().default(31337),
+      chain: z.custom<Chain>().default(foundry),
+      rpcUrl: z.string().optional(),
       tokenContractAddress: z
         .string()
         .default("0x7323CC5c18DEcCD3e918bbccff80333961d85a88"),
@@ -32,6 +32,8 @@ export const configSchema = z
       chain = base;
     } else if (config.blockchain.chainId === baseSepolia.id) {
       chain = baseSepolia;
+    } else if (config.blockchain.chainId === foundry.id) {
+      chain = foundry;
     } else {
       ctx.addIssue({
         code: "custom",

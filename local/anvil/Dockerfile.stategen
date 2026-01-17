@@ -1,0 +1,32 @@
+FROM ghcr.io/foundry-rs/foundry:latest AS foundry
+
+FROM node:22
+
+# Install procps for ps command
+RUN apt-get update && apt-get install -y procps && rm -rf /var/lib/apt/lists/*
+
+# Copy foundry binaries from foundry image
+COPY --from=foundry /usr/local/bin/forge /usr/local/bin/forge
+COPY --from=foundry /usr/local/bin/cast /usr/local/bin/cast
+COPY --from=foundry /usr/local/bin/anvil /usr/local/bin/anvil
+COPY --from=foundry /usr/local/bin/chisel /usr/local/bin/chisel
+
+# Enable corepack for pnpm
+RUN corepack enable
+
+# Set working directory
+WORKDIR /workspace
+
+# Copy contract files
+COPY packages/staking-contracts/contracts /contracts
+
+# Install dependencies
+WORKDIR /contracts
+RUN pnpm install --frozen-lockfile
+
+# Copy the state generation script
+COPY local/anvil/generate-state.sh /generate-state.sh
+RUN chmod +x /generate-state.sh
+
+# Run the state generation script
+CMD ["/generate-state.sh"]
