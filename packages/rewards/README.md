@@ -19,24 +19,35 @@ pnpm add @recallnet/rewards
 ## Usage
 
 ```typescript
-import { calculateRewards, validateRewardConfig } from "@recallnet/rewards";
+import {
+  calculateRewardsForCompetitors,
+  calculateRewardsForUsers,
+} from "@recallnet/rewards";
 
-const rewards = calculateRewards({
-  totalPool: 10000,
-  participants: rankings,
-  tierConfig: config,
-});
+// Calculate rewards for users based on their boost allocations
+const userRewards = calculateRewardsForUsers(
+  prizePool, // bigint - Total prize pool in WEI
+  boostAllocations, // BoostAllocation[] - User boost allocations
+  leaderBoard, // Leaderboard - Competition rankings
+  window, // BoostAllocationWindow - Time window for allocations
+);
+
+// Calculate rewards for competitors based on rankings
+const competitorRewards = calculateRewardsForCompetitors(
+  prizePool, // bigint - Total prize pool in WEI
+  leaderBoard, // Leaderboard - Competition rankings
+);
 ```
 
 ## API
 
-### `calculateRewards(config)`
+### `calculateRewardsForUsers(prizePool, boostAllocations, leaderBoard, window, prizePoolDecayRate?, boostTimeDecayRate?, hook?)`
 
-Calculate reward distribution for a set of participants.
+Calculate reward distribution for users based on their boost allocations to competitors.
 
-### `validateRewardConfig(config)`
+### `calculateRewardsForCompetitors(prizePool, leaderBoard, prizePoolDecayRate?, hook?)`
 
-Validate a reward configuration.
+Calculate reward distribution directly to competitors based on leaderboard rankings.
 
 ## Development
 

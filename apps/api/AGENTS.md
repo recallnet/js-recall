@@ -15,7 +15,7 @@ src/
 ├── controllers/      # Request/response handling with Zod validation
 ├── middleware/       # Auth, logging, rate limiting, error handling
 ├── services/         # Business logic (imported from @recallnet/services)
-└── database/         # Repository pattern for data access
+└── database/         # Database connections (repositories via @recallnet/db)
 ```
 
 **Layered Architecture:** Controllers → Services → Repositories → Database
