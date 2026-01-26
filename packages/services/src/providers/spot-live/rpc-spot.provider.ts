@@ -543,6 +543,13 @@ export class RpcSpotProvider implements ISpotLiveDataProvider {
                   { txHash, token: swap.fromToken, amount },
                   "[RpcSpotProvider] Calculated fromAmount from receipt log (Alchemy returned null)",
                 );
+              } else {
+                // Cannot determine decimals for unknown token - reject swap to prevent incorrect amounts
+                this.logger.warn(
+                  { txHash, chain, token: swap.fromToken },
+                  "[RpcSpotProvider] Cannot determine decimals for outbound token - rejecting swap",
+                );
+                continue;
               }
             }
           }
@@ -567,6 +574,13 @@ export class RpcSpotProvider implements ISpotLiveDataProvider {
                   { txHash, token: swap.toToken, amount },
                   "[RpcSpotProvider] Calculated toAmount from receipt log (Alchemy returned null)",
                 );
+              } else {
+                // Cannot determine decimals for unknown token - reject swap to prevent incorrect amounts
+                this.logger.warn(
+                  { txHash, chain, token: swap.toToken },
+                  "[RpcSpotProvider] Cannot determine decimals for inbound token - rejecting swap",
+                );
+                continue;
               }
             }
           }
