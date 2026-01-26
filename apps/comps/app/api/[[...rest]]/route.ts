@@ -4,6 +4,7 @@ import { ZodToJsonSchemaConverter } from "@orpc/zod/zod4";
 import { cookies, headers } from "next/headers";
 
 import { createLogger } from "@/lib/logger";
+import { privyClient } from "@/lib/privy-client";
 import { competitionRepository } from "@/lib/repositories";
 import {
   adminService,
@@ -122,6 +123,7 @@ async function handleRequest(
       cookies: await cookies(),
       headers: await headers(),
       params: await params,
+      privyClient,
       adminService,
       boostBonusService,
       userService,

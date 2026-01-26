@@ -196,10 +196,11 @@ export class UserRepository {
    */
   async findByEmail(email: string): Promise<SelectUser | undefined> {
     try {
+      const normalizedEmail = email.toLowerCase();
       const [result] = await this.#db
         .select()
         .from(users)
-        .where(eq(users.email, email));
+        .where(eq(users.email, normalizedEmail));
 
       return result;
     } catch (error) {
@@ -238,8 +239,12 @@ export class UserRepository {
     try {
       const now = new Date();
       const normalizedWalletAddress = user.walletAddress?.toLowerCase();
+      // Preserve null for embeddedWalletAddress (null?.toLowerCase() returns undefined,
+      // which doesn't update the field in Drizzle)
       const normalizedEmbeddedWalletAddress =
-        user.embeddedWalletAddress?.toLowerCase();
+        user.embeddedWalletAddress === null
+          ? null
+          : user.embeddedWalletAddress?.toLowerCase();
       const data = {
         ...user,
         walletAddress: normalizedWalletAddress,

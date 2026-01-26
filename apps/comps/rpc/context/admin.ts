@@ -13,6 +13,7 @@
  * It also standardizes common error types for use in RPC responses.
  */
 import { os } from "@orpc/server";
+import { PrivyClient } from "@privy-io/server-auth";
 import { RequestCookie } from "next/dist/compiled/@edge-runtime/cookies";
 import { Logger } from "pino";
 
@@ -41,6 +42,7 @@ export interface CookieStore {
  * @property cookies - HTTP cookies from the request (Next.js)
  * @property headers - HTTP headers from the request
  * @property params - Route parameters
+ * @property privyClient - Privy client for user management
  * @property adminService - Service for admin operations
  * @property boostBonusService - Service for boost bonus management
  * @property userService - Service for user-related operations
@@ -68,6 +70,7 @@ export const adminBase = os
     cookies: CookieStore;
     headers: Headers;
     params: Record<string, string | string[]>;
+    privyClient: PrivyClient;
     adminService: AdminService;
     boostBonusService: BoostBonusService;
     userService: UserService;
