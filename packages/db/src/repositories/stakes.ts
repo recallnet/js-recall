@@ -1,4 +1,5 @@
 import { and, asc, eq, getTableColumns, gt, isNull, sql } from "drizzle-orm";
+import type { Logger } from "pino";
 
 import {
   BlockHashCoder,
@@ -110,8 +111,11 @@ type WithdrawArgs = {
  */
 class StakesRepository {
   readonly #db: Database;
-  constructor(database: Database) {
+  readonly #logger?: Logger;
+
+  constructor(database: Database, logger?: Logger) {
     this.#db = database;
+    this.#logger = logger;
   }
 
   /**
@@ -269,7 +273,14 @@ class StakesRepository {
       const wallet = rows[0]?.wallet;
       const walletAddress = rows[0]?.walletAddress;
       if (!wallet || !walletAddress) {
-        // Stake not found or already partially unstaked - skip for idempotency
+        this.#logger?.warn(
+          {
+            stakeId: args.stakeId.toString(),
+            txHash: args.txHash,
+            logIndex: args.logIndex,
+          },
+          "partialUnstake skipped: stake not found or amount mismatch (idempotent retry)",
+        );
         return;
       }
       const txHash = TxHashCoder.encode(args.txHash);
@@ -332,7 +343,14 @@ class StakesRepository {
       const wallet = rows[0]?.wallet;
       const walletAddress = rows[0]?.walletAddress;
       if (!wallet || !walletAddress) {
-        // Stake not found or already fully unstaked - skip for idempotency
+        this.#logger?.warn(
+          {
+            stakeId: args.stakeId.toString(),
+            txHash: args.txHash,
+            logIndex: args.logIndex,
+          },
+          "fullUnstake skipped: stake not found or already unstaked (idempotent retry)",
+        );
         return;
       }
       const txHash = TxHashCoder.encode(args.txHash);
@@ -406,7 +424,14 @@ class StakesRepository {
           amount: schema.stakes.amount,
         });
       if (!row || !row.amount || !row.wallet || !row.walletAddress) {
-        // Stake already relocked or doesn't exist - skip for idempotency
+        this.#logger?.warn(
+          {
+            stakeId: args.stakeId.toString(),
+            txHash: args.txHash,
+            logIndex: args.logIndex,
+          },
+          "fullRelock skipped: stake not found or already relocked (idempotent retry)",
+        );
         return;
       }
       const wallet = row.wallet;
@@ -456,7 +481,14 @@ class StakesRepository {
         .for("update");
       const prevRow = prevRows[0];
       if (!prevRow) {
-        // Stake doesn't exist - skip for idempotency
+        this.#logger?.warn(
+          {
+            stakeId: args.stakeId.toString(),
+            txHash: args.txHash,
+            logIndex: args.logIndex,
+          },
+          "partialRelock skipped: stake not found (idempotent retry)",
+        );
         return;
       }
       const amountBefore = prevRow.amountBefore;
@@ -481,7 +513,17 @@ class StakesRepository {
           amount: schema.stakes.amount,
         });
       if (!row) {
-        // Stake already relocked - skip for idempotency
+        // Row was locked but update failed - this indicates the stake was already
+        // relocked (idempotent retry) or a serious DB inconsistency
+        this.#logger?.error(
+          {
+            stakeId: args.stakeId.toString(),
+            txHash: args.txHash,
+            logIndex: args.logIndex,
+            amountBefore: amountBefore.toString(),
+          },
+          "partialRelock: impossible state - row locked but update failed (likely idempotent retry or DB issue)",
+        );
         return;
       }
       const wallet = row.wallet;
@@ -536,7 +578,14 @@ class StakesRepository {
           walletAddress: schema.stakes.walletAddress,
         });
       if (!row) {
-        // Stake already withdrawn or doesn't exist - skip for idempotency
+        this.#logger?.warn(
+          {
+            stakeId: args.stakeId.toString(),
+            txHash: args.txHash,
+            logIndex: args.logIndex,
+          },
+          "withdraw skipped: stake not found or already withdrawn (idempotent retry)",
+        );
         return;
       }
       const wallet = row.wallet;

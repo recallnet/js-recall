@@ -483,4 +483,185 @@ describe("StakesRepository integration", () => {
     const page2 = await repo.allStaked(10n, 2);
     expect(page2.map((r) => r.id)).toEqual([12n]);
   });
+
+  // True idempotency tests - verify that calling an operation twice
+  // results in exactly one state change and one journal entry
+
+  test("fullUnstake() is idempotent - second call is noop", async () => {
+    // Set up a stake
+    const stakeTx = makeTx(1100);
+    await repo.stake({
+      stakeId: 100n,
+      wallet,
+      amount: 1000n,
+      duration: 60,
+      ...stakeTx,
+    });
+
+    // First call succeeds
+    const unstakeTx = makeTx(1101);
+    const unstakeArgs: UnstakeArgs = {
+      stakeId: 100n,
+      remainingAmount: 1000n, // Full unstake (remainingAmount equals staked amount)
+      canWithdrawAfter: new Date(unstakeTx.blockTimestamp.getTime() + 60000),
+      ...unstakeTx,
+    };
+    await repo.fullUnstake(unstakeArgs, 1000n);
+
+    const changesAfterFirst = await db
+      .select()
+      .from(schema.stakeChanges)
+      .where(eq(schema.stakeChanges.stakeId, 100n));
+
+    // Second call - should be noop (stake already has unstakedAt set)
+    await repo.fullUnstake(unstakeArgs, 1000n);
+
+    const changesAfterSecond = await db
+      .select()
+      .from(schema.stakeChanges)
+      .where(eq(schema.stakeChanges.stakeId, 100n));
+
+    // No duplicate journal entry
+    expect(changesAfterSecond.length).toBe(changesAfterFirst.length);
+    // Should have exactly 2 entries: initial stake + full unstake
+    expect(changesAfterSecond.length).toBe(2);
+  });
+
+  test("fullRelock() is idempotent - second call is noop", async () => {
+    // Set up a stake
+    const stakeTx = makeTx(1200);
+    await repo.stake({
+      stakeId: 101n,
+      wallet,
+      amount: 1000n,
+      duration: 60,
+      ...stakeTx,
+    });
+
+    // First call succeeds
+    const relockTx = makeTx(1201);
+    const relockArgs: RelockArgs = {
+      stakeId: 101n,
+      updatedAmount: 0n, // Full relock
+      ...relockTx,
+    };
+    await repo.fullRelock(relockArgs);
+
+    const changesAfterFirst = await db
+      .select()
+      .from(schema.stakeChanges)
+      .where(eq(schema.stakeChanges.stakeId, 101n));
+
+    // Verify first call worked
+    const [stakeAfterFirst] = await db
+      .select()
+      .from(schema.stakes)
+      .where(eq(schema.stakes.id, 101n));
+    expect(stakeAfterFirst?.relockedAt).toEqual(relockTx.blockTimestamp);
+
+    // Second call - should be noop (stake already has relockedAt set)
+    await repo.fullRelock(relockArgs);
+
+    const changesAfterSecond = await db
+      .select()
+      .from(schema.stakeChanges)
+      .where(eq(schema.stakeChanges.stakeId, 101n));
+
+    // No duplicate journal entry
+    expect(changesAfterSecond.length).toBe(changesAfterFirst.length);
+    // Should have exactly 2 entries: initial stake + full relock
+    expect(changesAfterSecond.length).toBe(2);
+  });
+
+  test("withdraw() is idempotent - second call is noop", async () => {
+    // Set up a stake
+    const stakeTx = makeTx(1300);
+    await repo.stake({
+      stakeId: 102n,
+      wallet,
+      amount: 1000n,
+      duration: 60,
+      ...stakeTx,
+    });
+
+    // First call succeeds
+    const withdrawTx = makeTx(1301);
+    const withdrawArgs: WithdrawArgs = {
+      stakeId: 102n,
+      ...withdrawTx,
+    };
+    await repo.withdraw(withdrawArgs);
+
+    const changesAfterFirst = await db
+      .select()
+      .from(schema.stakeChanges)
+      .where(eq(schema.stakeChanges.stakeId, 102n));
+
+    // Verify first call worked
+    const [stakeAfterFirst] = await db
+      .select()
+      .from(schema.stakes)
+      .where(eq(schema.stakes.id, 102n));
+    expect(stakeAfterFirst?.withdrawnAt).toEqual(withdrawTx.blockTimestamp);
+
+    // Second call - should be noop (stake already has withdrawnAt set)
+    await repo.withdraw(withdrawArgs);
+
+    const changesAfterSecond = await db
+      .select()
+      .from(schema.stakeChanges)
+      .where(eq(schema.stakeChanges.stakeId, 102n));
+
+    // No duplicate journal entry
+    expect(changesAfterSecond.length).toBe(changesAfterFirst.length);
+    // Should have exactly 2 entries: initial stake + withdraw
+    expect(changesAfterSecond.length).toBe(2);
+  });
+
+  test("partialRelock() is idempotent - second call is noop when already relocked", async () => {
+    // Set up a stake
+    const stakeTx = makeTx(1400);
+    await repo.stake({
+      stakeId: 103n,
+      wallet,
+      amount: 1000n,
+      duration: 60,
+      ...stakeTx,
+    });
+
+    // First call succeeds
+    const relockTx = makeTx(1401);
+    const relockArgs: RelockArgs = {
+      stakeId: 103n,
+      updatedAmount: 500n, // Partial relock
+      ...relockTx,
+    };
+    await repo.partialRelock(relockArgs);
+
+    const changesAfterFirst = await db
+      .select()
+      .from(schema.stakeChanges)
+      .where(eq(schema.stakeChanges.stakeId, 103n));
+
+    // Verify first call worked
+    const [stakeAfterFirst] = await db
+      .select()
+      .from(schema.stakes)
+      .where(eq(schema.stakes.id, 103n));
+    expect(stakeAfterFirst?.relockedAt).toEqual(relockTx.blockTimestamp);
+    expect(stakeAfterFirst?.amount).toBe(500n);
+
+    // Second call - should be noop (stake already has relockedAt set)
+    await repo.partialRelock(relockArgs);
+
+    const changesAfterSecond = await db
+      .select()
+      .from(schema.stakeChanges)
+      .where(eq(schema.stakeChanges.stakeId, 103n));
+
+    // No duplicate journal entry
+    expect(changesAfterSecond.length).toBe(changesAfterFirst.length);
+    // Should have exactly 2 entries: initial stake + partial relock
+    expect(changesAfterSecond.length).toBe(2);
+  });
 });
