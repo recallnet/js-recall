@@ -1,4 +1,5 @@
 import { and, asc, eq, getTableColumns, gt, isNull, sql } from "drizzle-orm";
+import { Logger } from "pino";
 
 import {
   BlockHashCoder,
@@ -110,8 +111,11 @@ type WithdrawArgs = {
  */
 class StakesRepository {
   readonly #db: Database;
-  constructor(database: Database) {
+  readonly #logger: Logger;
+
+  constructor(database: Database, logger: Logger) {
     this.#db = database;
+    this.#logger = logger;
   }
 
   /**
@@ -269,7 +273,15 @@ class StakesRepository {
       const wallet = rows[0]?.wallet;
       const walletAddress = rows[0]?.walletAddress;
       if (!wallet || !walletAddress) {
-        throw new Error("Stake not found or stale amount (concurrent update)");
+        this.#logger.warn(
+          {
+            stakeId: args.stakeId.toString(),
+            txHash: args.txHash,
+            logIndex: args.logIndex,
+          },
+          "partialUnstake skipped: stake not found or amount mismatch (idempotent retry)",
+        );
+        return;
       }
       const txHash = TxHashCoder.encode(args.txHash);
       const blockHash = BlockHashCoder.encode(args.blockHash);
@@ -279,7 +291,7 @@ class StakesRepository {
         wallet: wallet,
         walletAddress: walletAddress,
         deltaAmount: deltaAmount,
-        kind: "stake",
+        kind: "unstake",
         txHash: txHash,
         logIndex: args.logIndex,
         blockNumber: args.blockNumber,
@@ -331,7 +343,15 @@ class StakesRepository {
       const wallet = rows[0]?.wallet;
       const walletAddress = rows[0]?.walletAddress;
       if (!wallet || !walletAddress) {
-        throw new Error("Stake not found or stale amount (concurrent update)");
+        this.#logger.warn(
+          {
+            stakeId: args.stakeId.toString(),
+            txHash: args.txHash,
+            logIndex: args.logIndex,
+          },
+          "fullUnstake skipped: stake not found or already unstaked (idempotent retry)",
+        );
+        return;
       }
       const txHash = TxHashCoder.encode(args.txHash);
       const blockHash = BlockHashCoder.encode(args.blockHash);
@@ -404,7 +424,15 @@ class StakesRepository {
           amount: schema.stakes.amount,
         });
       if (!row || !row.amount || !row.wallet || !row.walletAddress) {
-        throw new Error("Stake not found or stale (concurrent update)");
+        this.#logger.warn(
+          {
+            stakeId: args.stakeId.toString(),
+            txHash: args.txHash,
+            logIndex: args.logIndex,
+          },
+          "fullRelock skipped: stake not found or already relocked (idempotent retry)",
+        );
+        return;
       }
       const wallet = row.wallet;
       const walletAddress = row.walletAddress;
@@ -453,7 +481,15 @@ class StakesRepository {
         .for("update");
       const prevRow = prevRows[0];
       if (!prevRow) {
-        throw new Error("Stake not found or stale (concurrent update)");
+        this.#logger.warn(
+          {
+            stakeId: args.stakeId.toString(),
+            txHash: args.txHash,
+            logIndex: args.logIndex,
+          },
+          "partialRelock skipped: stake not found (idempotent retry)",
+        );
+        return;
       }
       const amountBefore = prevRow.amountBefore;
 
@@ -477,8 +513,18 @@ class StakesRepository {
           amount: schema.stakes.amount,
         });
       if (!row) {
-        // Impossible situation: we locked the row, but the update failed.
-        throw new Error("Stake not found or stale (concurrent update)");
+        // Row was locked but update failed - this indicates the stake was already
+        // relocked (idempotent retry) or a serious DB inconsistency
+        this.#logger.error(
+          {
+            stakeId: args.stakeId.toString(),
+            txHash: args.txHash,
+            logIndex: args.logIndex,
+            amountBefore: amountBefore.toString(),
+          },
+          "partialRelock: impossible state - row locked but update failed (likely idempotent retry or DB issue)",
+        );
+        return;
       }
       const wallet = row.wallet;
       const walletAddress = row.walletAddress;
@@ -532,7 +578,15 @@ class StakesRepository {
           walletAddress: schema.stakes.walletAddress,
         });
       if (!row) {
-        throw new Error("Stake not found or stale (concurrent update)");
+        this.#logger.warn(
+          {
+            stakeId: args.stakeId.toString(),
+            txHash: args.txHash,
+            logIndex: args.logIndex,
+          },
+          "withdraw skipped: stake not found or already withdrawn (idempotent retry)",
+        );
+        return;
       }
       const wallet = row.wallet;
       const walletAddress = row.walletAddress;

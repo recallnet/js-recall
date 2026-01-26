@@ -94,7 +94,10 @@ export const spotLiveRepository = new SpotLiveRepository(
   createLogger("SpotLiveRepository"),
 );
 
-export const stakesRepository = new StakesRepository(db);
+export const stakesRepository = new StakesRepository(
+  db,
+  createLogger("StakesRepository"),
+);
 
 export const tradingConstraintsRepository = new TradingConstraintsRepository(
   db,

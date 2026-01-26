@@ -1,4 +1,5 @@
 import { asc, desc, eq } from "drizzle-orm";
+import pino from "pino";
 import {
   afterEach,
   beforeAll,
@@ -53,11 +54,12 @@ describe("StakesRepository integration", () => {
     await apply();
   });
 
+  const logger = pino({ level: "silent" });
   let repo: StakesRepository;
   let wallet: string;
 
   beforeEach(async () => {
-    repo = new StakesRepository(db);
+    repo = new StakesRepository(db, logger);
     wallet = randomWallet();
   });
 
@@ -144,8 +146,7 @@ describe("StakesRepository integration", () => {
       .orderBy(desc(schema.stakeChanges.createdAt))
       .limit(1);
     expect(change1?.deltaAmount).toBe(-300n);
-    // Note: partialUnstake currently writes kind "stake"; assert current behavior
-    expect(change1?.kind).toBe("stake");
+    expect(change1?.kind).toBe("unstake");
 
     // Full unstake: remaining equals current amount (700 -> 700), delta 0
     const tx2 = makeTx(12);
@@ -227,7 +228,7 @@ describe("StakesRepository integration", () => {
     );
   });
 
-  test("partialUnstake() throws error when stake not found", async () => {
+  test("partialUnstake() skips silently when stake not found (idempotent)", async () => {
     const unstakeTx = makeTx(301);
     const unstakeArgs: UnstakeArgs = {
       stakeId: 6n,
@@ -236,9 +237,10 @@ describe("StakesRepository integration", () => {
       ...unstakeTx,
     };
 
-    await expect(repo.partialUnstake(unstakeArgs, 500n)).rejects.toThrow(
-      "Stake not found or stale amount (concurrent update)",
-    );
+    // Should not throw - returns silently for idempotency
+    await expect(
+      repo.partialUnstake(unstakeArgs, 500n),
+    ).resolves.toBeUndefined();
   });
 
   test("fullUnstake() throws error when deltaAmount !== 0", async () => {
@@ -258,8 +260,8 @@ describe("StakesRepository integration", () => {
     );
   });
 
-  test("fullUnstake() throws error when stake not found or stale amount", async () => {
-    // Test with non-existent stake ID to trigger wallet validation
+  test("fullUnstake() skips silently when stake not found (idempotent)", async () => {
+    // Test with non-existent stake ID
     const unstakeTx = makeTx(501);
     const unstakeArgs: UnstakeArgs = {
       stakeId: 999n, // Non-existent stake ID
@@ -270,10 +272,8 @@ describe("StakesRepository integration", () => {
 
     // Call fullUnstake with non-existent stake ID
     // deltaAmount = 0 - 0 = 0, which passes the first validation
-    // But the update affects 0 rows because the stake doesn't exist, leading to no wallet returned
-    await expect(repo.fullUnstake(unstakeArgs, 0n)).rejects.toThrow(
-      "Stake not found or stale amount (concurrent update)",
-    );
+    // The update affects 0 rows - now returns silently for idempotency
+    await expect(repo.fullUnstake(unstakeArgs, 0n)).resolves.toBeUndefined();
   });
 
   test("fullRelock() throws error when updatedAmount !== 0", async () => {
@@ -291,8 +291,8 @@ describe("StakesRepository integration", () => {
     );
   });
 
-  test("fullRelock() throws error when stake not found or stale", async () => {
-    // Test with non-existent stake ID to trigger wallet validation
+  test("fullRelock() skips silently when stake not found (idempotent)", async () => {
+    // Test with non-existent stake ID
     const relockTx = makeTx(700);
     const relockArgs: RelockArgs = {
       stakeId: 999n, // Non-existent stake ID
@@ -302,10 +302,8 @@ describe("StakesRepository integration", () => {
 
     // Call fullRelock with non-existent stake ID
     // updatedAmount = 0, which passes the first validation
-    // But the update affects 0 rows because the stake doesn't exist, leading to no row returned
-    await expect(repo.fullRelock(relockArgs)).rejects.toThrow(
-      "Stake not found or stale (concurrent update)",
-    );
+    // The update affects 0 rows - now returns silently for idempotency
+    await expect(repo.fullRelock(relockArgs)).resolves.toBeUndefined();
   });
 
   test("partialRelock() throws error when updatedAmount <= 0", async () => {
@@ -323,8 +321,8 @@ describe("StakesRepository integration", () => {
     );
   });
 
-  test("partialRelock() throws error when stake not found during select for update", async () => {
-    // Test with non-existent stake ID to trigger validation during select for update
+  test("partialRelock() skips silently when stake not found (idempotent)", async () => {
+    // Test with non-existent stake ID
     const relockTx = makeTx(900);
     const relockArgs: RelockArgs = {
       stakeId: 999n, // Non-existent stake ID
@@ -334,14 +332,12 @@ describe("StakesRepository integration", () => {
 
     // Call partialRelock with non-existent stake ID
     // updatedAmount = 500, which passes the first validation
-    // But the select for update finds no rows, leading to no prevRow returned
-    await expect(repo.partialRelock(relockArgs)).rejects.toThrow(
-      "Stake not found or stale (concurrent update)",
-    );
+    // The select for update finds no rows - now returns silently for idempotency
+    await expect(repo.partialRelock(relockArgs)).resolves.toBeUndefined();
   });
 
-  test("withdraw() throws error when stake not found or already withdrawn", async () => {
-    // Test with non-existent stake ID to trigger validation
+  test("withdraw() skips silently when stake not found (idempotent)", async () => {
+    // Test with non-existent stake ID
     const withdrawTx = makeTx(1000);
     const withdrawArgs: WithdrawArgs = {
       stakeId: 999n, // Non-existent stake ID
@@ -349,10 +345,8 @@ describe("StakesRepository integration", () => {
     };
 
     // Call withdraw with non-existent stake ID
-    // The update affects 0 rows because the stake doesn't exist, leading to no row returned
-    await expect(repo.withdraw(withdrawArgs)).rejects.toThrow(
-      "Stake not found or stale (concurrent update)",
-    );
+    // The update affects 0 rows - now returns silently for idempotency
+    await expect(repo.withdraw(withdrawArgs)).resolves.toBeUndefined();
   });
 
   test("relock() supports full and partial flows", async () => {
@@ -490,5 +484,186 @@ describe("StakesRepository integration", () => {
     expect(page1.map((r) => r.id)).toEqual([10n, 12n]);
     const page2 = await repo.allStaked(10n, 2);
     expect(page2.map((r) => r.id)).toEqual([12n]);
+  });
+
+  // True idempotency tests - verify that calling an operation twice
+  // results in exactly one state change and one journal entry
+
+  test("fullUnstake() is idempotent - second call is noop", async () => {
+    // Set up a stake
+    const stakeTx = makeTx(1100);
+    await repo.stake({
+      stakeId: 100n,
+      wallet,
+      amount: 1000n,
+      duration: 60,
+      ...stakeTx,
+    });
+
+    // First call succeeds
+    const unstakeTx = makeTx(1101);
+    const unstakeArgs: UnstakeArgs = {
+      stakeId: 100n,
+      remainingAmount: 1000n, // Full unstake (remainingAmount equals staked amount)
+      canWithdrawAfter: new Date(unstakeTx.blockTimestamp.getTime() + 60000),
+      ...unstakeTx,
+    };
+    await repo.fullUnstake(unstakeArgs, 1000n);
+
+    const changesAfterFirst = await db
+      .select()
+      .from(schema.stakeChanges)
+      .where(eq(schema.stakeChanges.stakeId, 100n));
+
+    // Second call - should be noop (stake already has unstakedAt set)
+    await repo.fullUnstake(unstakeArgs, 1000n);
+
+    const changesAfterSecond = await db
+      .select()
+      .from(schema.stakeChanges)
+      .where(eq(schema.stakeChanges.stakeId, 100n));
+
+    // No duplicate journal entry
+    expect(changesAfterSecond.length).toBe(changesAfterFirst.length);
+    // Should have exactly 2 entries: initial stake + full unstake
+    expect(changesAfterSecond.length).toBe(2);
+  });
+
+  test("fullRelock() is idempotent - second call is noop", async () => {
+    // Set up a stake
+    const stakeTx = makeTx(1200);
+    await repo.stake({
+      stakeId: 101n,
+      wallet,
+      amount: 1000n,
+      duration: 60,
+      ...stakeTx,
+    });
+
+    // First call succeeds
+    const relockTx = makeTx(1201);
+    const relockArgs: RelockArgs = {
+      stakeId: 101n,
+      updatedAmount: 0n, // Full relock
+      ...relockTx,
+    };
+    await repo.fullRelock(relockArgs);
+
+    const changesAfterFirst = await db
+      .select()
+      .from(schema.stakeChanges)
+      .where(eq(schema.stakeChanges.stakeId, 101n));
+
+    // Verify first call worked
+    const [stakeAfterFirst] = await db
+      .select()
+      .from(schema.stakes)
+      .where(eq(schema.stakes.id, 101n));
+    expect(stakeAfterFirst?.relockedAt).toEqual(relockTx.blockTimestamp);
+
+    // Second call - should be noop (stake already has relockedAt set)
+    await repo.fullRelock(relockArgs);
+
+    const changesAfterSecond = await db
+      .select()
+      .from(schema.stakeChanges)
+      .where(eq(schema.stakeChanges.stakeId, 101n));
+
+    // No duplicate journal entry
+    expect(changesAfterSecond.length).toBe(changesAfterFirst.length);
+    // Should have exactly 2 entries: initial stake + full relock
+    expect(changesAfterSecond.length).toBe(2);
+  });
+
+  test("withdraw() is idempotent - second call is noop", async () => {
+    // Set up a stake
+    const stakeTx = makeTx(1300);
+    await repo.stake({
+      stakeId: 102n,
+      wallet,
+      amount: 1000n,
+      duration: 60,
+      ...stakeTx,
+    });
+
+    // First call succeeds
+    const withdrawTx = makeTx(1301);
+    const withdrawArgs: WithdrawArgs = {
+      stakeId: 102n,
+      ...withdrawTx,
+    };
+    await repo.withdraw(withdrawArgs);
+
+    const changesAfterFirst = await db
+      .select()
+      .from(schema.stakeChanges)
+      .where(eq(schema.stakeChanges.stakeId, 102n));
+
+    // Verify first call worked
+    const [stakeAfterFirst] = await db
+      .select()
+      .from(schema.stakes)
+      .where(eq(schema.stakes.id, 102n));
+    expect(stakeAfterFirst?.withdrawnAt).toEqual(withdrawTx.blockTimestamp);
+
+    // Second call - should be noop (stake already has withdrawnAt set)
+    await repo.withdraw(withdrawArgs);
+
+    const changesAfterSecond = await db
+      .select()
+      .from(schema.stakeChanges)
+      .where(eq(schema.stakeChanges.stakeId, 102n));
+
+    // No duplicate journal entry
+    expect(changesAfterSecond.length).toBe(changesAfterFirst.length);
+    // Should have exactly 2 entries: initial stake + withdraw
+    expect(changesAfterSecond.length).toBe(2);
+  });
+
+  test("partialRelock() is idempotent - second call is noop when already relocked", async () => {
+    // Set up a stake
+    const stakeTx = makeTx(1400);
+    await repo.stake({
+      stakeId: 103n,
+      wallet,
+      amount: 1000n,
+      duration: 60,
+      ...stakeTx,
+    });
+
+    // First call succeeds
+    const relockTx = makeTx(1401);
+    const relockArgs: RelockArgs = {
+      stakeId: 103n,
+      updatedAmount: 500n, // Partial relock
+      ...relockTx,
+    };
+    await repo.partialRelock(relockArgs);
+
+    const changesAfterFirst = await db
+      .select()
+      .from(schema.stakeChanges)
+      .where(eq(schema.stakeChanges.stakeId, 103n));
+
+    // Verify first call worked
+    const [stakeAfterFirst] = await db
+      .select()
+      .from(schema.stakes)
+      .where(eq(schema.stakes.id, 103n));
+    expect(stakeAfterFirst?.relockedAt).toEqual(relockTx.blockTimestamp);
+    expect(stakeAfterFirst?.amount).toBe(500n);
+
+    // Second call - should be noop (stake already has relockedAt set)
+    await repo.partialRelock(relockArgs);
+
+    const changesAfterSecond = await db
+      .select()
+      .from(schema.stakeChanges)
+      .where(eq(schema.stakeChanges.stakeId, 103n));
+
+    // No duplicate journal entry
+    expect(changesAfterSecond.length).toBe(changesAfterFirst.length);
+    // Should have exactly 2 entries: initial stake + partial relock
+    expect(changesAfterSecond.length).toBe(2);
   });
 });

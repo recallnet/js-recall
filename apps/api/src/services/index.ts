@@ -137,7 +137,7 @@ class ServiceRegistry {
   private _transactionProcessor?: TransactionProcessor;
 
   constructor() {
-    this._stakesRepository = new StakesRepository(db);
+    this._stakesRepository = new StakesRepository(db, repositoryLogger);
     this._eventsRepository = new EventsRepository(db);
     this._boostRepository = new BoostRepository(db);
     this._userRepository = new UserRepository(db, repositoryLogger);
