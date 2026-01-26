@@ -147,10 +147,18 @@ export const resetPrivyUser = adminBase
       }
     }
 
-    context.logger.info(
-      { resetCount, totalRequested: identifiers.length },
-      "Completed Privy user reset operation",
-    );
+    const failedCount = identifiers.length - resetCount;
+    if (failedCount > 0) {
+      context.logger.warn(
+        { resetCount, failedCount, totalRequested: identifiers.length },
+        "Privy user reset operation completed with failures",
+      );
+    } else {
+      context.logger.info(
+        { resetCount, totalRequested: identifiers.length },
+        "Privy user reset operation completed successfully",
+      );
+    }
 
     return {
       success: true,
