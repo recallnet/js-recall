@@ -1,5 +1,5 @@
 import { and, asc, eq, getTableColumns, gt, isNull, sql } from "drizzle-orm";
-import type { Logger } from "pino";
+import { Logger } from "pino";
 
 import {
   BlockHashCoder,
@@ -111,9 +111,9 @@ type WithdrawArgs = {
  */
 class StakesRepository {
   readonly #db: Database;
-  readonly #logger?: Logger;
+  readonly #logger: Logger;
 
-  constructor(database: Database, logger?: Logger) {
+  constructor(database: Database, logger: Logger) {
     this.#db = database;
     this.#logger = logger;
   }
@@ -273,7 +273,7 @@ class StakesRepository {
       const wallet = rows[0]?.wallet;
       const walletAddress = rows[0]?.walletAddress;
       if (!wallet || !walletAddress) {
-        this.#logger?.warn(
+        this.#logger.warn(
           {
             stakeId: args.stakeId.toString(),
             txHash: args.txHash,
@@ -343,7 +343,7 @@ class StakesRepository {
       const wallet = rows[0]?.wallet;
       const walletAddress = rows[0]?.walletAddress;
       if (!wallet || !walletAddress) {
-        this.#logger?.warn(
+        this.#logger.warn(
           {
             stakeId: args.stakeId.toString(),
             txHash: args.txHash,
@@ -424,7 +424,7 @@ class StakesRepository {
           amount: schema.stakes.amount,
         });
       if (!row || !row.amount || !row.wallet || !row.walletAddress) {
-        this.#logger?.warn(
+        this.#logger.warn(
           {
             stakeId: args.stakeId.toString(),
             txHash: args.txHash,
@@ -481,7 +481,7 @@ class StakesRepository {
         .for("update");
       const prevRow = prevRows[0];
       if (!prevRow) {
-        this.#logger?.warn(
+        this.#logger.warn(
           {
             stakeId: args.stakeId.toString(),
             txHash: args.txHash,
@@ -515,7 +515,7 @@ class StakesRepository {
       if (!row) {
         // Row was locked but update failed - this indicates the stake was already
         // relocked (idempotent retry) or a serious DB inconsistency
-        this.#logger?.error(
+        this.#logger.error(
           {
             stakeId: args.stakeId.toString(),
             txHash: args.txHash,
@@ -578,7 +578,7 @@ class StakesRepository {
           walletAddress: schema.stakes.walletAddress,
         });
       if (!row) {
-        this.#logger?.warn(
+        this.#logger.warn(
           {
             stakeId: args.stakeId.toString(),
             txHash: args.txHash,

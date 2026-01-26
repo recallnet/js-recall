@@ -1,4 +1,5 @@
 import { asc, desc, eq } from "drizzle-orm";
+import pino from "pino";
 import {
   afterEach,
   beforeAll,
@@ -53,11 +54,12 @@ describe("StakesRepository integration", () => {
     await apply();
   });
 
+  const logger = pino({ level: "silent" });
   let repo: StakesRepository;
   let wallet: string;
 
   beforeEach(async () => {
-    repo = new StakesRepository(db);
+    repo = new StakesRepository(db, logger);
     wallet = randomWallet();
   });
 
