@@ -207,18 +207,18 @@ describe("AlchemyRpcProvider", () => {
       expect(decimals).toBe(18);
     });
 
-    it("should return 18 for native ETH address", async () => {
+    it("should throw for native ETH address (not an ERC20 contract)", async () => {
       if (!process.env.ALCHEMY_API_KEY) {
         console.log("Skipping test - no API key");
         return;
       }
 
+      // Native token address is not an ERC20 contract - calling decimals() is invalid
+      // Production code (spot-data-processor) checks isNative BEFORE calling getTokenDecimals
       const ethAddress = "0x0000000000000000000000000000000000000000";
-      const decimals = await provider.getTokenDecimals(
-        ethAddress,
-        "eth" as SpecificChain,
-      );
-      expect(decimals).toBe(18);
+      await expect(
+        provider.getTokenDecimals(ethAddress, "eth" as SpecificChain),
+      ).rejects.toThrow();
     });
   });
 
