@@ -2,6 +2,77 @@
 
 This file provides guidance to AI coding agents when working with code in this repository.
 
+## Distributed Documentation
+
+This repository uses a three-tier documentation structure:
+
+- **README.md** - Human-focused project overview and usage documentation
+- **AGENTS.md** - AI agent guidance (tool-agnostic patterns and commands)
+- **CLAUDE.md** - Claude-specific context that points to AGENTS.md
+
+Each app and package has its own documentation files for detailed context:
+
+| Location                      | Purpose                                |
+| ----------------------------- | -------------------------------------- |
+| `apps/api/`                   | Multi-chain trading simulator API      |
+| `apps/comps/`                 | Competitions web application (Next.js) |
+| `packages/db/`                | Database schema and repositories       |
+| `packages/services/`          | Business logic services                |
+| `packages/rewards/`           | Rewards calculation system             |
+| `packages/conversions/`       | Unit conversion utilities              |
+| `packages/test-utils/`        | E2E test utilities                     |
+| `packages/ui2/`               | UI component library (shadcn/ui)       |
+| `packages/staking-contracts/` | Staking contract interfaces            |
+| `packages/eslint-config/`     | Shared ESLint configuration            |
+| `packages/typescript-config/` | Shared TypeScript configuration        |
+| `packages/fonts/`             | Shared font resources                  |
+| `packages/load-test/`         | Load testing suite                     |
+
+When working in a specific area, check for local AGENTS.md files for detailed context.
+
+## Agent Workflow Requirements
+
+When working as an AI agent in this repo, follow these practices:
+
+### 1. Plan Before Implementation
+
+- Create explicit plans or task breakdowns before editing code
+- Read existing code and TSDoc before making changes
+- Use the TodoWrite tool to track multi-step tasks
+
+### 2. Commit Frequently
+
+- Make small, focused commits after each logical change
+- Never bypass pre-commit hooks with `--no-verify`
+- Fix issues reported by hooks before committing
+
+### 3. Verify Before Claiming Completion
+
+Before marking work as complete, ensure:
+
+```bash
+pnpm lint           # ESLint passes
+pnpm build          # TypeScript compiles
+pnpm --filter api test  # Tests pass (when applicable)
+```
+
+### 4. TDD for Bug Fixes
+
+When fixing bugs, always use Test-Driven Development:
+
+1. Write a failing test that reproduces the bug
+2. Verify the test fails before any code changes
+3. Fix the bug with minimal code changes
+4. Verify the test passes after the fix
+
+### 5. Prefer Detection Over Direct Fixes
+
+When a bug is found:
+
+1. First identify why it escaped detection (missing tests, weak validation)
+2. Add or strengthen the detection system (tests, lint rules, runtime checks)
+3. Only fix the bug after the detection system is in place
+
 ## Code Philosophy
 
 ### Database-First Architecture
