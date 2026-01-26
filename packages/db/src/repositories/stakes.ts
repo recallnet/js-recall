@@ -269,7 +269,8 @@ class StakesRepository {
       const wallet = rows[0]?.wallet;
       const walletAddress = rows[0]?.walletAddress;
       if (!wallet || !walletAddress) {
-        throw new Error("Stake not found or stale amount (concurrent update)");
+        // Stake not found or already partially unstaked - skip for idempotency
+        return;
       }
       const txHash = TxHashCoder.encode(args.txHash);
       const blockHash = BlockHashCoder.encode(args.blockHash);
@@ -331,7 +332,8 @@ class StakesRepository {
       const wallet = rows[0]?.wallet;
       const walletAddress = rows[0]?.walletAddress;
       if (!wallet || !walletAddress) {
-        throw new Error("Stake not found or stale amount (concurrent update)");
+        // Stake not found or already fully unstaked - skip for idempotency
+        return;
       }
       const txHash = TxHashCoder.encode(args.txHash);
       const blockHash = BlockHashCoder.encode(args.blockHash);
@@ -404,7 +406,8 @@ class StakesRepository {
           amount: schema.stakes.amount,
         });
       if (!row || !row.amount || !row.wallet || !row.walletAddress) {
-        throw new Error("Stake not found or stale (concurrent update)");
+        // Stake already relocked or doesn't exist - skip for idempotency
+        return;
       }
       const wallet = row.wallet;
       const walletAddress = row.walletAddress;
@@ -453,7 +456,8 @@ class StakesRepository {
         .for("update");
       const prevRow = prevRows[0];
       if (!prevRow) {
-        throw new Error("Stake not found or stale (concurrent update)");
+        // Stake doesn't exist - skip for idempotency
+        return;
       }
       const amountBefore = prevRow.amountBefore;
 
@@ -477,8 +481,8 @@ class StakesRepository {
           amount: schema.stakes.amount,
         });
       if (!row) {
-        // Impossible situation: we locked the row, but the update failed.
-        throw new Error("Stake not found or stale (concurrent update)");
+        // Stake already relocked - skip for idempotency
+        return;
       }
       const wallet = row.wallet;
       const walletAddress = row.walletAddress;
@@ -532,7 +536,8 @@ class StakesRepository {
           walletAddress: schema.stakes.walletAddress,
         });
       if (!row) {
-        throw new Error("Stake not found or stale (concurrent update)");
+        // Stake already withdrawn or doesn't exist - skip for idempotency
+        return;
       }
       const wallet = row.wallet;
       const walletAddress = row.walletAddress;

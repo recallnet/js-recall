@@ -227,7 +227,7 @@ describe("StakesRepository integration", () => {
     );
   });
 
-  test("partialUnstake() throws error when stake not found", async () => {
+  test("partialUnstake() skips silently when stake not found (idempotent)", async () => {
     const unstakeTx = makeTx(301);
     const unstakeArgs: UnstakeArgs = {
       stakeId: 6n,
@@ -236,9 +236,10 @@ describe("StakesRepository integration", () => {
       ...unstakeTx,
     };
 
-    await expect(repo.partialUnstake(unstakeArgs, 500n)).rejects.toThrow(
-      "Stake not found or stale amount (concurrent update)",
-    );
+    // Should not throw - returns silently for idempotency
+    await expect(
+      repo.partialUnstake(unstakeArgs, 500n),
+    ).resolves.toBeUndefined();
   });
 
   test("fullUnstake() throws error when deltaAmount !== 0", async () => {
@@ -258,8 +259,8 @@ describe("StakesRepository integration", () => {
     );
   });
 
-  test("fullUnstake() throws error when stake not found or stale amount", async () => {
-    // Test with non-existent stake ID to trigger wallet validation
+  test("fullUnstake() skips silently when stake not found (idempotent)", async () => {
+    // Test with non-existent stake ID
     const unstakeTx = makeTx(501);
     const unstakeArgs: UnstakeArgs = {
       stakeId: 999n, // Non-existent stake ID
@@ -270,10 +271,8 @@ describe("StakesRepository integration", () => {
 
     // Call fullUnstake with non-existent stake ID
     // deltaAmount = 0 - 0 = 0, which passes the first validation
-    // But the update affects 0 rows because the stake doesn't exist, leading to no wallet returned
-    await expect(repo.fullUnstake(unstakeArgs, 0n)).rejects.toThrow(
-      "Stake not found or stale amount (concurrent update)",
-    );
+    // The update affects 0 rows - now returns silently for idempotency
+    await expect(repo.fullUnstake(unstakeArgs, 0n)).resolves.toBeUndefined();
   });
 
   test("fullRelock() throws error when updatedAmount !== 0", async () => {
@@ -291,8 +290,8 @@ describe("StakesRepository integration", () => {
     );
   });
 
-  test("fullRelock() throws error when stake not found or stale", async () => {
-    // Test with non-existent stake ID to trigger wallet validation
+  test("fullRelock() skips silently when stake not found (idempotent)", async () => {
+    // Test with non-existent stake ID
     const relockTx = makeTx(700);
     const relockArgs: RelockArgs = {
       stakeId: 999n, // Non-existent stake ID
@@ -302,10 +301,8 @@ describe("StakesRepository integration", () => {
 
     // Call fullRelock with non-existent stake ID
     // updatedAmount = 0, which passes the first validation
-    // But the update affects 0 rows because the stake doesn't exist, leading to no row returned
-    await expect(repo.fullRelock(relockArgs)).rejects.toThrow(
-      "Stake not found or stale (concurrent update)",
-    );
+    // The update affects 0 rows - now returns silently for idempotency
+    await expect(repo.fullRelock(relockArgs)).resolves.toBeUndefined();
   });
 
   test("partialRelock() throws error when updatedAmount <= 0", async () => {
@@ -323,8 +320,8 @@ describe("StakesRepository integration", () => {
     );
   });
 
-  test("partialRelock() throws error when stake not found during select for update", async () => {
-    // Test with non-existent stake ID to trigger validation during select for update
+  test("partialRelock() skips silently when stake not found (idempotent)", async () => {
+    // Test with non-existent stake ID
     const relockTx = makeTx(900);
     const relockArgs: RelockArgs = {
       stakeId: 999n, // Non-existent stake ID
@@ -334,14 +331,12 @@ describe("StakesRepository integration", () => {
 
     // Call partialRelock with non-existent stake ID
     // updatedAmount = 500, which passes the first validation
-    // But the select for update finds no rows, leading to no prevRow returned
-    await expect(repo.partialRelock(relockArgs)).rejects.toThrow(
-      "Stake not found or stale (concurrent update)",
-    );
+    // The select for update finds no rows - now returns silently for idempotency
+    await expect(repo.partialRelock(relockArgs)).resolves.toBeUndefined();
   });
 
-  test("withdraw() throws error when stake not found or already withdrawn", async () => {
-    // Test with non-existent stake ID to trigger validation
+  test("withdraw() skips silently when stake not found (idempotent)", async () => {
+    // Test with non-existent stake ID
     const withdrawTx = makeTx(1000);
     const withdrawArgs: WithdrawArgs = {
       stakeId: 999n, // Non-existent stake ID
@@ -349,10 +344,8 @@ describe("StakesRepository integration", () => {
     };
 
     // Call withdraw with non-existent stake ID
-    // The update affects 0 rows because the stake doesn't exist, leading to no row returned
-    await expect(repo.withdraw(withdrawArgs)).rejects.toThrow(
-      "Stake not found or stale (concurrent update)",
-    );
+    // The update affects 0 rows - now returns silently for idempotency
+    await expect(repo.withdraw(withdrawArgs)).resolves.toBeUndefined();
   });
 
   test("relock() supports full and partial flows", async () => {
