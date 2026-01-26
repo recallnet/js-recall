@@ -144,8 +144,7 @@ describe("StakesRepository integration", () => {
       .orderBy(desc(schema.stakeChanges.createdAt))
       .limit(1);
     expect(change1?.deltaAmount).toBe(-300n);
-    // Note: partialUnstake currently writes kind "stake"; assert current behavior
-    expect(change1?.kind).toBe("stake");
+    expect(change1?.kind).toBe("unstake");
 
     // Full unstake: remaining equals current amount (700 -> 700), delta 0
     const tx2 = makeTx(12);

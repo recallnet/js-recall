@@ -280,7 +280,7 @@ class StakesRepository {
         wallet: wallet,
         walletAddress: walletAddress,
         deltaAmount: deltaAmount,
-        kind: "stake",
+        kind: "unstake",
         txHash: txHash,
         logIndex: args.logIndex,
         blockNumber: args.blockNumber,
