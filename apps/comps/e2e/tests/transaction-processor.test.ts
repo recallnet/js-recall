@@ -32,8 +32,8 @@ describe("TransactionProcessor", () => {
     await db
       .insert(seasons)
       .values({
-        startsWithAirdrop: 0,
-        name: "Season 1",
+        startsWithAirdrop: 1,
+        name: "Season 2",
         startDate,
         endDate,
       })
