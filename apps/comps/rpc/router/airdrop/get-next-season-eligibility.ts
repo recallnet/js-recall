@@ -14,13 +14,13 @@ import { base } from "@/rpc/context/base";
  * - Eligibility reasons (boosted/competed competition IDs, total unique competitions)
  * - Pool statistics (total stakes, available rewards, forfeited amounts)
  */
-export const getNextSeasonEligibility = base
+export const getNextAirdropEligibility = base
   .input(
     z.object({
       address: z
         .string()
         .regex(/^0x[a-fA-F0-9]{40}$/, "Invalid Ethereum address"),
-      season: z.number().int().positive().optional(),
+      airdrop: z.number().int().positive().optional(),
     }),
   )
   .handler(async ({ input, context, errors }) => {
@@ -29,16 +29,16 @@ export const getNextSeasonEligibility = base
         `Getting next season eligibility for address: ${input.address}`,
       );
 
-      const eligibility = await context.airdropService.getNextSeasonEligibility(
-        input.address,
-        input.season,
-      );
+      const eligibility =
+        await context.airdropService.getNextAirdropEligibility(
+          input.address,
+          input.airdrop,
+        );
 
       // Convert bigint values to strings for JSON serialization
       return {
         isEligible: eligibility.isEligible,
-        season: eligibility.season,
-        seasonName: eligibility.seasonName,
+        airdrop: eligibility.airdrop,
         activitySeason: {
           number: eligibility.activitySeason.number,
           name: eligibility.activitySeason.name,

@@ -34,15 +34,15 @@ describe("AirdropService", () => {
 
       mockAirdropRepository.getSeasons.mockResolvedValue([
         {
-          id: 1,
-          number: 0,
+          startsWithAirdrop: 0,
+          number: 1,
           name: "Genesis",
           startDate: season0Start,
           endDate: new Date(season0Start.getTime() + 30 * 24 * 60 * 60 * 1000),
         },
         {
-          id: 2,
-          number: 1,
+          startsWithAirdrop: 1,
+          number: 2,
           name: "Season 1",
           startDate: season1Start,
           endDate: new Date(season1Start.getTime() + 30 * 24 * 60 * 60 * 1000),
@@ -53,7 +53,7 @@ describe("AirdropService", () => {
         {
           address: mockAddress.toLowerCase(),
           amount: BigInt("1000000000000000000"),
-          season: 0,
+          airdrop: 0,
           proof: ["0xproof1", "0xproof2"],
           category: "early",
           sybilClassification: "approved",
@@ -71,7 +71,7 @@ describe("AirdropService", () => {
         {
           address: mockAddress.toLowerCase(),
           amount: BigInt("2000000000000000000"),
-          season: 1,
+          airdrop: 1,
           proof: ["0xproof3", "0xproof4"],
           category: "regular",
           sybilClassification: "approved",
@@ -96,8 +96,8 @@ describe("AirdropService", () => {
 
       const firstClaim = result[0]!;
       expect(firstClaim.type).toBe("available");
-      expect(firstClaim.season).toBe(1);
-      expect(firstClaim.seasonName).toBe("Season 1");
+      expect(firstClaim.airdrop).toBe(1);
+      expect(firstClaim.airdropName).toBe("Airdrop 1");
       if (firstClaim.type === "available") {
         expect(firstClaim.eligibleAmount).toBe(BigInt("2000000000000000000"));
         expect(firstClaim.proof).toEqual(["0xproof3", "0xproof4"]);
@@ -107,8 +107,8 @@ describe("AirdropService", () => {
       // Season 0 is now available during Season 1 (following season has not ended)
       const secondClaim = result[1]!;
       expect(secondClaim.type).toBe("available");
-      expect(secondClaim.season).toBe(0);
-      expect(secondClaim.seasonName).toBe("Genesis");
+      expect(secondClaim.airdrop).toBe(0);
+      expect(secondClaim.airdropName).toBe("Genesis");
       if (secondClaim.type === "available") {
         expect(secondClaim.eligibleAmount).toBe(BigInt("1000000000000000000"));
         expect(secondClaim.proof).toEqual([]); // Season 0 has empty proof array
@@ -121,8 +121,8 @@ describe("AirdropService", () => {
 
       mockAirdropRepository.getSeasons.mockResolvedValue([
         {
-          id: 1,
-          number: 0,
+          startsWithAirdrop: 0,
+          number: 1,
           name: "Genesis",
           startDate: new Date("2024-01-01"),
           endDate: new Date("2024-01-31"),
@@ -133,7 +133,7 @@ describe("AirdropService", () => {
         {
           address: mockAddress.toLowerCase(),
           amount: BigInt("1000000000000000000"),
-          season: 0,
+          airdrop: 0,
           proof: ["0xproof1", "0xproof2"],
           category: "early",
           sybilClassification: "sybil",
@@ -167,8 +167,8 @@ describe("AirdropService", () => {
 
       mockAirdropRepository.getSeasons.mockResolvedValue([
         {
-          id: 1,
-          number: 0,
+          startsWithAirdrop: 0,
+          number: 1,
           name: "Genesis",
           startDate: new Date("2024-01-01"),
           endDate: new Date("2024-01-31"),
@@ -179,7 +179,7 @@ describe("AirdropService", () => {
         {
           address: mockAddress.toLowerCase(),
           amount: BigInt("1000000000000000000"),
-          season: 0,
+          airdrop: 0,
           proof: ["0xproof1", "0xproof2"],
           category: "early",
           sybilClassification: "maybe-sybil",
@@ -220,22 +220,22 @@ describe("AirdropService", () => {
 
       mockAirdropRepository.getSeasons.mockResolvedValue([
         {
-          id: 1,
-          number: 0,
+          startsWithAirdrop: 0,
+          number: 1,
           name: "Genesis",
           startDate: season0Start,
           endDate: new Date(season0Start.getTime() + 30 * 24 * 60 * 60 * 1000),
         },
         {
-          id: 2,
-          number: 1,
+          startsWithAirdrop: 1,
+          number: 2,
           name: "Season 1",
           startDate: season1Start,
           endDate: new Date(season1Start.getTime() + 30 * 24 * 60 * 60 * 1000),
         },
         {
-          id: 3,
-          number: 2,
+          startsWithAirdrop: 2,
+          number: 3,
           name: "Season 2",
           startDate: season2Start,
           endDate: new Date(season2Start.getTime() + 30 * 24 * 60 * 60 * 1000),
@@ -246,7 +246,7 @@ describe("AirdropService", () => {
         {
           address: mockAddress.toLowerCase(),
           amount: BigInt("1000000000000000000"),
-          season: 0,
+          airdrop: 0,
           proof: ["0xproof1"],
           category: "early",
           sybilClassification: "approved",
@@ -264,7 +264,7 @@ describe("AirdropService", () => {
         {
           address: mockAddress.toLowerCase(),
           amount: BigInt("2000000000000000000"),
-          season: 1,
+          airdrop: 1,
           proof: ["0xproof2"],
           category: "regular",
           sybilClassification: "approved",
@@ -282,7 +282,7 @@ describe("AirdropService", () => {
         {
           address: mockAddress.toLowerCase(),
           amount: BigInt("3000000000000000000"),
-          season: 2,
+          airdrop: 2,
           proof: ["0xproof3"],
           category: "bonus",
           sybilClassification: "sybil",
@@ -321,9 +321,9 @@ describe("AirdropService", () => {
       expect(result).toHaveLength(3);
 
       // Check sorting (most recent season first)
-      expect(result[0]!.season).toBe(2);
-      expect(result[1]!.season).toBe(1);
-      expect(result[2]!.season).toBe(0);
+      expect(result[0]!.airdrop).toBe(2);
+      expect(result[1]!.airdrop).toBe(1);
+      expect(result[2]!.airdrop).toBe(0);
 
       // Season 2 - Sybil flagged
       const season2Claim = result[0]!;
@@ -357,8 +357,8 @@ describe("AirdropService", () => {
 
       mockAirdropRepository.getSeasons.mockResolvedValue([
         {
-          id: 1,
-          number: 0,
+          startsWithAirdrop: 0,
+          number: 1,
           name: "Genesis",
           startDate: new Date("2024-01-01"),
           endDate: new Date("2025-12-31"),
@@ -369,7 +369,7 @@ describe("AirdropService", () => {
         {
           address: mockAddress.toLowerCase(),
           amount: BigInt("1000000000000000000"),
-          season: 0,
+          airdrop: 0,
           proof: ["0xproof1"],
           category: "early",
           sybilClassification: "approved",
@@ -408,8 +408,8 @@ describe("AirdropService", () => {
       expect(result).toHaveLength(1);
       const claim = result[0]!;
       expect(claim.type).toBe("claimed-and-staked");
-      expect(claim.season).toBe(0);
-      expect(claim.seasonName).toBe("Genesis");
+      expect(claim.airdrop).toBe(0);
+      expect(claim.airdropName).toBe("Genesis");
       if (claim.type === "claimed-and-staked") {
         expect(claim.eligibleAmount).toBe(BigInt("1000000000000000000"));
         expect(claim.claimedAmount).toBe(BigInt("1000000000000000000"));
@@ -443,8 +443,8 @@ describe("AirdropService", () => {
 
       mockAirdropRepository.getSeasons.mockResolvedValue([
         {
-          id: 1,
-          number: 0,
+          startsWithAirdrop: 0,
+          number: 1,
           name: "Genesis",
           startDate: new Date("2024-01-01"),
           endDate: new Date("2024-01-31"),
@@ -470,22 +470,22 @@ describe("AirdropService", () => {
 
       mockAirdropRepository.getSeasons.mockResolvedValue([
         {
-          id: 1,
-          number: 0,
+          startsWithAirdrop: 0,
+          number: 1,
           name: "Genesis",
           startDate: new Date("2024-01-01"),
           endDate: new Date("2025-01-01"),
         },
         {
-          id: 2,
-          number: 1,
+          startsWithAirdrop: 1,
+          number: 2,
           name: "Season 1",
           startDate: new Date("2025-01-01"),
           endDate: new Date("2026-01-01"),
         },
         {
-          id: 3,
-          number: 2,
+          startsWithAirdrop: 2,
+          number: 3,
           name: "Season 2",
           startDate: new Date("2026-01-01"),
           endDate: new Date("2026-01-31"),
@@ -496,7 +496,7 @@ describe("AirdropService", () => {
         {
           address: mockAddress.toLowerCase(),
           amount: BigInt("1000"),
-          season: 0,
+          airdrop: 0,
           proof: [],
           category: "",
           sybilClassification: "approved",
@@ -514,7 +514,7 @@ describe("AirdropService", () => {
         {
           address: mockAddress.toLowerCase(),
           amount: BigInt("1000"),
-          season: 1,
+          airdrop: 1,
           proof: [],
           category: "",
           sybilClassification: "approved",
@@ -532,7 +532,7 @@ describe("AirdropService", () => {
         {
           address: mockAddress.toLowerCase(),
           amount: BigInt("1000"),
-          season: 2,
+          airdrop: 2,
           proof: [],
           category: "",
           sybilClassification: "approved",
@@ -553,14 +553,14 @@ describe("AirdropService", () => {
 
       const result = await service.getAccountClaimsData(mockAddress);
 
-      expect(result.find((c: ClaimData) => c.season === 0)?.seasonName).toBe(
+      expect(result.find((c: ClaimData) => c.airdrop === 0)?.airdropName).toBe(
         "Genesis",
       );
-      expect(result.find((c: ClaimData) => c.season === 1)?.seasonName).toBe(
-        "Season 1",
+      expect(result.find((c: ClaimData) => c.airdrop === 1)?.airdropName).toBe(
+        "Airdrop 1",
       );
-      expect(result.find((c: ClaimData) => c.season === 2)?.seasonName).toBe(
-        "Season 2",
+      expect(result.find((c: ClaimData) => c.airdrop === 2)?.airdropName).toBe(
+        "Airdrop 2",
       );
     });
 
@@ -571,8 +571,8 @@ describe("AirdropService", () => {
 
       mockAirdropRepository.getSeasons.mockResolvedValue([
         {
-          id: 1,
-          number: 0,
+          startsWithAirdrop: 0,
+          number: 1,
           name: "Genesis",
           startDate: seasonStartDate,
           endDate: new Date(
@@ -585,7 +585,7 @@ describe("AirdropService", () => {
         {
           address: mockAddress.toLowerCase(),
           amount: BigInt("1000000000000000000"),
-          season: 0,
+          airdrop: 0,
           proof: [],
           category: "early",
           sybilClassification: "approved",
@@ -609,8 +609,8 @@ describe("AirdropService", () => {
       expect(result).toHaveLength(1);
       const claim = result[0]!;
       expect(claim.type).toBe("expired");
-      expect(claim.season).toBe(0);
-      expect(claim.seasonName).toBe("Genesis");
+      expect(claim.airdrop).toBe(0);
+      expect(claim.airdropName).toBe("Genesis");
       if (claim.type === "expired") {
         expect(claim.eligibleAmount).toBe(BigInt("1000000000000000000"));
         expect(claim.expiredAt).toEqual(expectedExpiryDate);
@@ -624,8 +624,8 @@ describe("AirdropService", () => {
 
       mockAirdropRepository.getSeasons.mockResolvedValue([
         {
-          id: 2,
-          number: 1,
+          startsWithAirdrop: 1,
+          number: 2,
           name: "Season 1",
           startDate: seasonStartDate,
           endDate: new Date(
@@ -638,7 +638,7 @@ describe("AirdropService", () => {
         {
           address: mockAddress.toLowerCase(),
           amount: BigInt("1000000000000000000"),
-          season: 1,
+          airdrop: 1,
           proof: ["0xproof1", "0xproof2"],
           category: "early",
           sybilClassification: "approved",
@@ -662,8 +662,8 @@ describe("AirdropService", () => {
       expect(result).toHaveLength(1);
       const claim = result[0]!;
       expect(claim.type).toBe("expired");
-      expect(claim.season).toBe(1);
-      expect(claim.seasonName).toBe("Season 1");
+      expect(claim.airdrop).toBe(1);
+      expect(claim.airdropName).toBe("Airdrop 1");
       if (claim.type === "expired") {
         expect(claim.eligibleAmount).toBe(BigInt("1000000000000000000"));
         expect(claim.expiredAt).toEqual(expectedExpiryDate);
@@ -682,8 +682,8 @@ describe("AirdropService", () => {
 
       mockAirdropRepository.getSeasons.mockResolvedValue([
         {
-          id: 1,
-          number: 0,
+          startsWithAirdrop: 0,
+          number: 1,
           name: "Genesis",
           startDate: seasonStartDate,
           endDate: new Date(
@@ -696,7 +696,7 @@ describe("AirdropService", () => {
         {
           address: mockAddress.toLowerCase(),
           amount: BigInt("1000000000000000000"),
-          season: 0,
+          airdrop: 0,
           proof: [],
           category: "early",
           sybilClassification: "approved",
@@ -720,8 +720,8 @@ describe("AirdropService", () => {
       expect(result).toHaveLength(1);
       const claim = result[0]!;
       expect(claim.type).toBe("available");
-      expect(claim.season).toBe(0);
-      expect(claim.seasonName).toBe("Genesis");
+      expect(claim.airdrop).toBe(0);
+      expect(claim.airdropName).toBe("Genesis");
       if (claim.type === "available") {
         expect(claim.eligibleAmount).toBe(BigInt("1000000000000000000"));
         expect(claim.expiresAt).toEqual(expectedExpiryDate);
@@ -740,8 +740,8 @@ describe("AirdropService", () => {
 
       mockAirdropRepository.getSeasons.mockResolvedValue([
         {
-          id: 2,
-          number: 1,
+          startsWithAirdrop: 1,
+          number: 2,
           name: "Season 1",
           startDate: seasonStartDate,
           endDate: new Date(
@@ -754,7 +754,7 @@ describe("AirdropService", () => {
         {
           address: mockAddress.toLowerCase(),
           amount: BigInt("1000000000000000000"),
-          season: 1,
+          airdrop: 1,
           proof: ["0xproof1", "0xproof2"],
           category: "early",
           sybilClassification: "approved",
@@ -778,8 +778,8 @@ describe("AirdropService", () => {
       expect(result).toHaveLength(1);
       const claim = result[0]!;
       expect(claim.type).toBe("available");
-      expect(claim.season).toBe(1);
-      expect(claim.seasonName).toBe("Season 1");
+      expect(claim.airdrop).toBe(1);
+      expect(claim.airdropName).toBe("Airdrop 1");
       if (claim.type === "available") {
         expect(claim.eligibleAmount).toBe(BigInt("1000000000000000000"));
         expect(claim.expiresAt).toEqual(expectedExpiryDate);

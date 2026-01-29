@@ -26,8 +26,7 @@ describe("ConvictionClaimsRepository", () => {
     await db
       .insert(seasons)
       .values({
-        id: 0,
-        number: 0,
+        startsWithAirdrop: 0,
         name: "Genesis",
         startDate,
         endDate,

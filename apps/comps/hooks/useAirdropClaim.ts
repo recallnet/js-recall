@@ -129,11 +129,11 @@ export function useAirdropClaim(): AirdropClaimOperationResult {
 
       const proof = target.proof as Hex[];
       const amount = target.eligibleAmount;
-      const season = target.season as number;
+      const airdrop = target.airdrop;
 
-      if (season < 0 || season > 255) {
+      if (airdrop < 0 || airdrop > 255) {
         const err = new Error(
-          `Invalid season value: ${season}. Must be between 0 and 255.`,
+          `Invalid airdrop value: ${airdrop}. Must be between 0 and 255.`,
         );
         setSimulationError(err);
         throw err;
@@ -158,7 +158,7 @@ export function useAirdropClaim(): AirdropClaimOperationResult {
           address: airdropContractAddress as Hex,
           abi: AirdropABI,
           functionName: "claim",
-          args: [proof, address as Hex, amount, season, duration, signature],
+          args: [proof, address as Hex, amount, airdrop, duration, signature],
           account: address,
           value: valueToSend,
         });
