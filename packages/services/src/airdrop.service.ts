@@ -54,9 +54,9 @@ export type ClaimData =
   | IneligibleClaim;
 
 /**
- * Minimum number of distinct competitions required for eligibility
+ * Default minimum number of distinct competitions required for eligibility
  */
-export const MIN_COMPETITIONS_FOR_ELIGIBILITY = 3;
+export const DEFAULT_MIN_COMPETITIONS_FOR_ELIGIBILITY = 3;
 
 /**
  * Eligibility reasons explaining why a user qualifies for conviction rewards
@@ -119,6 +119,7 @@ export class AirdropService {
   private readonly boostRepository: BoostRepository;
   private readonly competitionRepository: CompetitionRepository;
   private readonly logger: Logger;
+  private readonly minCompetitionsForEligibility: number;
 
   constructor(
     airdropRepository: AirdropRepository,
@@ -126,12 +127,14 @@ export class AirdropService {
     convictionClaimsRepository: ConvictionClaimsRepository,
     boostRepository?: BoostRepository,
     competitionRepository?: CompetitionRepository,
+    minCompetitionsForEligibility: number = DEFAULT_MIN_COMPETITIONS_FOR_ELIGIBILITY,
   ) {
     this.airdropRepository = airdropRepository;
     this.convictionClaimsRepository = convictionClaimsRepository;
     this.boostRepository = boostRepository!;
     this.competitionRepository = competitionRepository!;
     this.logger = logger;
+    this.minCompetitionsForEligibility = minCompetitionsForEligibility;
   }
 
   /**
@@ -358,10 +361,10 @@ export class AirdropService {
         currentSeason,
       );
 
-      // User is eligible if they have active stakes AND participated in at least 3 competitions
+      // User is eligible if they have active stakes AND participated in minimum competitions
       const hasActivityEligibility =
         eligibilityReasons.totalUniqueCompetitions >=
-        MIN_COMPETITIONS_FOR_ELIGIBILITY;
+        this.minCompetitionsForEligibility;
       const isEligible = activeStake > 0n && hasActivityEligibility;
 
       // Calculate potential reward
@@ -438,7 +441,7 @@ export class AirdropService {
     const totalAlreadyClaimed =
       await this.convictionClaimsRepository.getTotalConvictionRewardsClaimedBySeason(
         1,
-        season.number,
+        season.startsWithAirdrop,
       );
 
     // Available pool = total forfeited - already claimed

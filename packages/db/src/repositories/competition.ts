@@ -3389,4 +3389,59 @@ export class CompetitionRepository {
       throw error;
     }
   }
+
+  /**
+   * Get all wallet addresses and their competed competition IDs during a time period.
+   *
+   * This is a batch version of getCompetitionIdsCompetedDuringSeason that returns
+   * data for all users at once, useful for eligibility calculations.
+   *
+   * @param startDate - Start of the time period
+   * @param endDate - End of the time period
+   * @param tx - Optional transaction
+   * @returns Map of wallet addresses to arrays of competition IDs where they competed
+   */
+  async getAllCompetitionIdsCompetedDuringSeason(
+    startDate: Date,
+    endDate: Date,
+    tx?: Transaction,
+  ): Promise<Map<string, string[]>> {
+    const executor = tx || this.#db;
+
+    try {
+      const results = await executor
+        .select({
+          address: users.walletAddress,
+          competitionIds: sql<
+            string[]
+          >`array_agg(DISTINCT ${competitions.id})`.as("competitionIds"),
+        })
+        .from(users)
+        .innerJoin(agents, eq(users.id, agents.ownerId))
+        .innerJoin(competitionAgents, eq(agents.id, competitionAgents.agentId))
+        .innerJoin(
+          competitions,
+          eq(competitionAgents.competitionId, competitions.id),
+        )
+        .where(
+          and(
+            gte(competitions.startDate, startDate),
+            lte(competitions.startDate, endDate),
+            eq(competitionAgents.status, "active"),
+          ),
+        )
+        .groupBy(users.walletAddress);
+
+      return results.reduce(
+        (acc, row) => acc.set(row.address, row.competitionIds),
+        new Map<string, string[]>(),
+      );
+    } catch (error) {
+      this.#logger.error(
+        { error },
+        "Error getting all competition IDs competed during season",
+      );
+      throw error;
+    }
+  }
 }

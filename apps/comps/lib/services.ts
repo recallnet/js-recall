@@ -93,6 +93,7 @@ export const airdropService = new AirdropService(
   convictionClaimsRepository,
   boostRepository,
   competitionRepository,
+  config.airdrop.minCompetitionsForEligibility,
 );
 
 export const balanceService = new BalanceService(

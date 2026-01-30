@@ -1,4 +1,4 @@
-import { and, desc, eq, gte, inArray, lte, sql, sum } from "drizzle-orm";
+import { and, desc, eq, gte, inArray, lt, lte, sql, sum } from "drizzle-orm";
 import { Logger } from "pino";
 
 import { TxHashCoder } from "../coders/index.js";
@@ -535,8 +535,8 @@ export class ConvictionClaimsRepository {
   /**
    * Get total conviction rewards claimed across seasons.
    *
-   * @param fromSeason - Start season (inclusive)
-   * @param toSeason - End season (inclusive)
+   * @param fromSeason - Start season (inclusive), corresponds to the app's concept of "airdrop number"
+   * @param toSeason - End season (exclusive), corresponds  to the app's concept of "airdrop number"
    * @param tx - Optional transaction
    * @returns Total claimed amount from conviction reward seasons
    */
@@ -556,7 +556,7 @@ export class ConvictionClaimsRepository {
         .where(
           and(
             gte(convictionClaims.season, fromSeason),
-            lte(convictionClaims.season, toSeason),
+            lt(convictionClaims.season, toSeason),
           ),
         );
 
