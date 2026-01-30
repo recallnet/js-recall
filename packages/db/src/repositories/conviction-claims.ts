@@ -1,4 +1,4 @@
-import { and, desc, eq, gte, inArray, lt, lte, sql, sum } from "drizzle-orm";
+import { and, desc, eq, gte, inArray, lte, sql, sum } from "drizzle-orm";
 import { Logger } from "pino";
 
 import { TxHashCoder } from "../coders/index.js";
