@@ -125,14 +125,14 @@ export class AirdropService {
     airdropRepository: AirdropRepository,
     logger: Logger,
     convictionClaimsRepository: ConvictionClaimsRepository,
-    boostRepository?: BoostRepository,
-    competitionRepository?: CompetitionRepository,
+    boostRepository: BoostRepository,
+    competitionRepository: CompetitionRepository,
     minCompetitionsForEligibility: number = DEFAULT_MIN_COMPETITIONS_FOR_ELIGIBILITY,
   ) {
     this.airdropRepository = airdropRepository;
     this.convictionClaimsRepository = convictionClaimsRepository;
-    this.boostRepository = boostRepository!;
-    this.competitionRepository = competitionRepository!;
+    this.boostRepository = boostRepository;
+    this.competitionRepository = competitionRepository;
     this.logger = logger;
     this.minCompetitionsForEligibility = minCompetitionsForEligibility;
   }

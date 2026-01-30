@@ -536,7 +536,7 @@ export class ConvictionClaimsRepository {
    * Get total conviction rewards claimed across seasons.
    *
    * @param fromSeason - Start season (inclusive), corresponds to the app's concept of "airdrop number"
-   * @param toSeason - End season (exclusive), corresponds  to the app's concept of "airdrop number"
+   * @param toSeason - End season (inclusive), corresponds  to the app's concept of "airdrop number"
    * @param tx - Optional transaction
    * @returns Total claimed amount from conviction reward seasons
    */
@@ -556,7 +556,7 @@ export class ConvictionClaimsRepository {
         .where(
           and(
             gte(convictionClaims.season, fromSeason),
-            lt(convictionClaims.season, toSeason),
+            lte(convictionClaims.season, toSeason),
           ),
         );
 
