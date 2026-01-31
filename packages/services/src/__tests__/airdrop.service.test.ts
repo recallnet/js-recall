@@ -3,6 +3,8 @@ import { beforeEach, describe, expect, it } from "vitest";
 import { DeepMockProxy, mockDeep } from "vitest-mock-extended";
 
 import { AirdropRepository } from "@recallnet/db/repositories/airdrop";
+import { BoostRepository } from "@recallnet/db/repositories/boost";
+import { CompetitionRepository } from "@recallnet/db/repositories/competition";
 import { ConvictionClaimsRepository } from "@recallnet/db/repositories/conviction-claims";
 
 import { AirdropService, ClaimData } from "../airdrop.service.js";
@@ -11,17 +13,23 @@ describe("AirdropService", () => {
   let service: AirdropService;
   let mockAirdropRepository: DeepMockProxy<AirdropRepository>;
   let mockConvictionClaimsRepository: DeepMockProxy<ConvictionClaimsRepository>;
+  let mockBoostRepository: DeepMockProxy<BoostRepository>;
+  let mockCompetitionRepository: DeepMockProxy<CompetitionRepository>;
   let mockLogger: DeepMockProxy<Logger>;
 
   beforeEach(() => {
     mockLogger = mockDeep<Logger>();
     mockAirdropRepository = mockDeep<AirdropRepository>();
     mockConvictionClaimsRepository = mockDeep<ConvictionClaimsRepository>();
+    mockBoostRepository = mockDeep<BoostRepository>();
+    mockCompetitionRepository = mockDeep<CompetitionRepository>();
 
     service = new AirdropService(
       mockAirdropRepository,
       mockLogger,
       mockConvictionClaimsRepository,
+      mockBoostRepository,
+      mockCompetitionRepository,
     );
   });
 

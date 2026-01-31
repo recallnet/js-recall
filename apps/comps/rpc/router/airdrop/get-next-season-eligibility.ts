@@ -1,7 +1,6 @@
 import { z } from "zod";
 
-import { MIN_COMPETITIONS_FOR_ELIGIBILITY } from "@recallnet/services";
-
+import { config } from "@/config/private";
 import { base } from "@/rpc/context/base";
 
 /**
@@ -66,7 +65,7 @@ export const getNextAirdropEligibility = base
           totalAlreadyClaimed:
             eligibility.poolStats.totalAlreadyClaimed.toString(),
         },
-        minCompetitionsRequired: MIN_COMPETITIONS_FOR_ELIGIBILITY,
+        minCompetitionsRequired: config.airdrop.minCompetitionsForEligibility,
       };
     } catch (error) {
       context.logger.error({ error }, "Error fetching next season eligibility");

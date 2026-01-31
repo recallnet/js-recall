@@ -1,26 +1,17 @@
 #!/usr/bin/env tsx
-import { and, eq, gte, lt, lte, sql } from "drizzle-orm";
 import * as fs from "fs";
 import * as path from "path";
 import { parseArgs } from "util";
 
 import { attoValueToStringValue } from "@recallnet/conversions/atto-conversions";
-import { seasons } from "@recallnet/db/schema/airdrop/defs";
-import {
-  agentBoostTotals,
-  agentBoosts,
-  boostBalances,
-  boostChanges,
-} from "@recallnet/db/schema/boost/defs";
-import { convictionClaims } from "@recallnet/db/schema/conviction-claims/defs";
-import {
-  agents,
-  competitionAgents,
-  competitions,
-  users,
-} from "@recallnet/db/schema/core/defs";
+import { AirdropRepository } from "@recallnet/db/repositories/airdrop";
+import { BoostRepository } from "@recallnet/db/repositories/boost";
+import { CompetitionRepository } from "@recallnet/db/repositories/competition";
+import { ConvictionClaimsRepository } from "@recallnet/db/repositories/conviction-claims";
+import { DEFAULT_MIN_COMPETITIONS_FOR_ELIGIBILITY } from "@recallnet/services";
 
-import { db } from "@/database/db.js";
+import { db, dbRead } from "@/database/db.js";
+import { createLogger } from "@/lib/logger.js";
 
 // Colors for console output
 const colors = {
@@ -32,6 +23,12 @@ const colors = {
   magenta: "\x1b[35m",
   reset: "\x1b[0m",
 };
+
+const logger = createLogger("CalculateNextSeasonEligibility");
+const airdropRepository = new AirdropRepository(db, logger);
+const convictionClaimsRepository = new ConvictionClaimsRepository(db, logger);
+const boostRepository = new BoostRepository(db);
+const competitionRepository = new CompetitionRepository(db, dbRead, logger);
 
 interface EligibleAccount {
   address: string;
@@ -81,6 +78,12 @@ async function calculateNextSeasonEligibility() {
         description:
           "Prepend existing data from the specified file to the new csv file",
       },
+      "min-competitions": {
+        type: "string",
+        short: "m",
+        description:
+          "Minimum number of competitions for eligibility (default: 3, or MIN_COMPETITIONS_FOR_ELIGIBILITY env var)",
+      },
       help: {
         type: "boolean",
         short: "h",
@@ -93,16 +96,18 @@ async function calculateNextSeasonEligibility() {
     console.log(`
 ${colors.cyan}Calculate Next Season Eligibility for Conviction Claims Airdrop${colors.reset}
 
-Usage: pnpm tsx calculate-next-season-eligibility.ts --airdrop <number> [--prepend <file>]
+Usage: pnpm tsx calculate-next-season-eligibility.ts --airdrop <number> [--prepend <file>] [--min-competitions <number>]
 
 Options:
-  -a, --airdrop   Airdrop number for the output (required)
-  -p, --prepend   Prepend existing data from the specified file to the new csv file
-  -h, --help      Show this help message
+  -a, --airdrop          Airdrop number for the output (required)
+  -p, --prepend          Prepend existing data from the specified file to the new csv file
+  -m, --min-competitions Minimum competitions for eligibility (default: ${DEFAULT_MIN_COMPETITIONS_FOR_ELIGIBILITY}, or MIN_COMPETITIONS_FOR_ELIGIBILITY env var)
+  -h, --help             Show this help message
 
 Examples:
   pnpm tsx calculate-next-season-eligibility.ts --airdrop 2
   pnpm tsx calculate-next-season-eligibility.ts --airdrop 2 --prepend airdrop_1_2024-11-29T00:00:00.000Z.csv
+  pnpm tsx calculate-next-season-eligibility.ts --airdrop 2 --min-competitions 5
 `);
     process.exit(0);
   }
@@ -119,136 +124,96 @@ Examples:
     process.exit(1);
   }
 
+  // Determine minimum competitions for eligibility: flag > env var > default
+  const minCompetitionsRaw =
+    values["min-competitions"] ??
+    process.env.MIN_COMPETITIONS_FOR_ELIGIBILITY ??
+    String(DEFAULT_MIN_COMPETITIONS_FOR_ELIGIBILITY);
+  const minCompetitionsForEligibility = parseInt(minCompetitionsRaw, 10);
+  if (
+    isNaN(minCompetitionsForEligibility) ||
+    minCompetitionsForEligibility < 0
+  ) {
+    console.error(
+      `${colors.red}Error: Invalid min-competitions value${colors.reset}`,
+    );
+    process.exit(1);
+  }
+
   console.log(
     `${colors.cyan}🔍 Calculating eligibility for airdrop ${airdropNumber}${colors.reset}`,
   );
+  console.log(
+    `${colors.cyan}   Minimum competitions for eligibility: ${minCompetitionsForEligibility}${colors.reset}`,
+  );
 
   try {
-    // Step 1: Find all accounts with active stakes
+    // Step 1: Find the activity season (the season before the target airdrop)
     console.log(
-      `${colors.blue}Step 1: Finding accounts with active stakes...${colors.reset}`,
+      `${colors.blue}Step 1: Finding activity season...${colors.reset}`,
     );
-    const [currentSeason] = await db
-      .select()
-      .from(seasons)
-      .where(eq(seasons.startsWithAirdrop, airdropNumber - 1));
+    const currentSeason = await airdropRepository.getSeasonStartingWithAirdrop(
+      airdropNumber - 1,
+    );
     if (!currentSeason) {
       console.error(`Season for airdrop ${airdropNumber - 1} not found`);
       process.exit(1);
     }
-
-    // Actively locked stakes that came from an airdrop are those where
-    // blockTimestamp + duration > season end time
-    const activeStakesQuery = await db
-      .select({
-        account: convictionClaims.account,
-        claimedAmount: convictionClaims.claimedAmount,
-        blockTimestamp: convictionClaims.blockTimestamp,
-        duration: convictionClaims.duration,
-        season: convictionClaims.season,
-      })
-      .from(convictionClaims)
-      .where(
-        and(
-          // Only claims with duration > 0 (actual stakes)
-          gte(convictionClaims.duration, 1n),
-          // get stakes from claims before the end of the current season
-          lte(convictionClaims.blockTimestamp, currentSeason.endDate),
-          // and with durations that lasted at least until the end of the current season
-          sql`${convictionClaims.blockTimestamp} + (${convictionClaims.duration} * interval '1 second') > ${currentSeason.endDate}`,
-        ),
-      );
-
-    // Group active stakes by account, to get the sum for each address
-    const accountStakes = new Map<string, bigint>();
-    for (const stake of activeStakesQuery) {
-      const current = accountStakes.get(stake.account) || 0n;
-      accountStakes.set(stake.account, current + stake.claimedAmount);
-    }
-
-    console.log(`✅ Found ${accountStakes.size} accounts with active stakes\n`);
-
-    // Step 2: Calculate total active stakes
     console.log(
-      `${colors.blue}Step 2: Calculating total active stakes...${colors.reset}`,
+      `✅ Found season ${currentSeason.number} (${currentSeason.name})\n`,
     );
 
-    let totalActiveStakes = 0n;
-    for (const stakeAmount of accountStakes.values()) {
-      totalActiveStakes += stakeAmount;
-    }
+    // Step 2: Find all accounts with active stakes using repository
+    console.log(
+      `${colors.blue}Step 2: Finding accounts with active stakes...${colors.reset}`,
+    );
+    const accountStakes =
+      await convictionClaimsRepository.getActiveStakesForSeason(
+        currentSeason.endDate,
+      );
+    console.log(`✅ Found ${accountStakes.size} accounts with active stakes\n`);
 
+    // Step 3: Calculate total active stakes
+    console.log(
+      `${colors.blue}Step 3: Calculating total active stakes...${colors.reset}`,
+    );
+    const totalActiveStakes =
+      await convictionClaimsRepository.getTotalActiveStakesForSeason(
+        currentSeason.endDate,
+      );
     console.log(
       `📊 Total active stakes: ${attoValueToStringValue(totalActiveStakes)}\n`,
     );
 
-    // Step 3: Calculate total forfeited amounts
+    // Step 4: Calculate total forfeited amounts
     console.log(
-      `${colors.blue}Step 3: Calculating total forfeited amounts...${colors.reset}`,
+      `${colors.blue}Step 4: Calculating total forfeited amounts...${colors.reset}`,
+    );
+    const totalForfeited =
+      await convictionClaimsRepository.getTotalForfeitedUpToDate(
+        currentSeason.endDate,
+      );
+    console.log(
+      `💰 Total forfeited: ${attoValueToStringValue(totalForfeited)}\n`,
     );
 
-    // Get all claims, up to the end of the current season, to calculate
-    // the total forfeited amount.  We will can use this with the total amount
-    // of completed conviction claims to get the current conviction reward pool
-    const allClaims = await db
-      .select({
-        eligibleAmount: convictionClaims.eligibleAmount,
-        claimedAmount: convictionClaims.claimedAmount,
-        season: convictionClaims.season,
-      })
-      .from(convictionClaims)
-      .where(lte(convictionClaims.blockTimestamp, currentSeason.endDate));
-
-    // Calculate total forfeited (eligibleAmount - claimedAmount for each claim)
-    let totalForfeited = 0n;
-    // Also collect season information for logging
-    const forfeitedBySeason = new Map<number, bigint>();
-
-    for (const claim of allClaims) {
-      const forfeited = claim.eligibleAmount - claim.claimedAmount;
-      totalForfeited += forfeited;
-
-      const currentSeasonForfeited = forfeitedBySeason.get(claim.season) || 0n;
-      forfeitedBySeason.set(claim.season, currentSeasonForfeited + forfeited);
-    }
-
-    // Step 4: Calculate claims from seasons after 0, these are the conviction
-    //         rewards claims
+    // Step 5: Calculate conviction rewards already claimed
     console.log(
-      `\n${colors.blue}Step 4: Calculating conviction rewards claims...${colors.reset}`,
+      `${colors.blue}Step 5: Calculating conviction rewards already claimed...${colors.reset}`,
+    );
+    const totalConvictionRewardsClaimed =
+      await convictionClaimsRepository.getTotalConvictionRewardsClaimedBySeason(
+        1,
+        airdropNumber - 1,
+      );
+    console.log(
+      `📤 Total conviction rewards already claimed: ${attoValueToStringValue(totalConvictionRewardsClaimed)}\n`,
     );
 
-    // Get all claims from airdrop 1 and forward, so we can subtract that value
-    // from the total forfeited amount to get the remaining conviction pool.
-    const convictionClaimsBySeason = await db
-      .select({
-        season: convictionClaims.season,
-        totalClaimed: sql<string>`SUM(${convictionClaims.claimedAmount})`.as(
-          "totalClaimed",
-        ),
-      })
-      .from(convictionClaims)
-      // everything up to the end of this season, exclude season 0
-      .where(
-        and(
-          // season 1 up to the airdrop being calculated
-          gte(convictionClaims.season, 1),
-          lt(convictionClaims.season, airdropNumber),
-        ),
-      )
-      .groupBy(convictionClaims.season);
-
-    let totalConvictionRewardsClaimed = 0n;
-    for (const seasonData of convictionClaimsBySeason) {
-      const claimed = BigInt(seasonData.totalClaimed || "0");
-      totalConvictionRewardsClaimed += claimed;
-    }
-
-    // Step 5: Calculate remaining available conviction rewards pool
+    // Step 6: Calculate remaining available conviction rewards pool
     console.log(
-      `\n${colors.blue}Step 5: Calculating conviction rewards pool...${colors.reset}`,
+      `${colors.blue}Step 6: Calculating conviction rewards pool...${colors.reset}`,
     );
-
     const availableRewards = totalForfeited - totalConvictionRewardsClaimed;
     console.log(
       `🎁 Available rewards: ${attoValueToStringValue(availableRewards)}`,
@@ -257,72 +222,34 @@ Examples:
       `   (${attoValueToStringValue(totalForfeited)} forfeited - ${attoValueToStringValue(totalConvictionRewardsClaimed)} already claimed)\n`,
     );
 
-    // Step 6: Query for all agent boosters during the season.
-    const userAgentBoosts = await db
-      .select({
-        address: users.walletAddress,
-        competitionIds: sql<
-          string[]
-        >`array_agg(DISTINCT ${agentBoostTotals.competitionId})`.as(
-          "competitionIds",
-        ),
-      })
-      .from(agentBoosts)
-      .innerJoin(
-        agentBoostTotals,
-        eq(agentBoosts.agentBoostTotalId, agentBoostTotals.id),
-      )
-      .innerJoin(boostChanges, eq(agentBoosts.changeId, boostChanges.id))
-      .innerJoin(boostBalances, eq(boostChanges.balanceId, boostBalances.id))
-      .innerJoin(users, eq(boostBalances.userId, users.id))
-      .where(
-        and(
-          gte(agentBoosts.createdAt, currentSeason.startDate),
-          lte(agentBoosts.createdAt, currentSeason.endDate),
-        ),
-      )
-      .groupBy(users.walletAddress);
-
-    const userBoostedCompsMap = userAgentBoosts.reduce(
-      (acc, boost) => acc.set(boost.address, boost.competitionIds),
-      new Map<string, string[]>(),
-    );
-
-    // Step 7: Query for all users that had an agent compete in a competition during the season.
-    const userCompetitions = await db
-      .select({
-        address: users.walletAddress,
-        competitionIds: sql<
-          string[]
-        >`array_agg(DISTINCT ${competitions.id})`.as("competitionIds"),
-      })
-      .from(users)
-      .innerJoin(agents, eq(users.id, agents.ownerId))
-      .innerJoin(competitionAgents, eq(agents.id, competitionAgents.agentId))
-      .innerJoin(
-        competitions,
-        eq(competitionAgents.competitionId, competitions.id),
-      )
-      .where(
-        and(
-          gte(competitions.startDate, currentSeason.startDate),
-          lte(competitions.startDate, currentSeason.endDate),
-          eq(competitionAgents.status, "active"),
-        ),
-      )
-      .groupBy(users.walletAddress);
-
-    const userCompetedCompsMap = userCompetitions.reduce(
-      (acc, userCompetition) =>
-        acc.set(userCompetition.address, userCompetition.competitionIds),
-      new Map<string, string[]>(),
-    );
-
-    // Step 8: Calculate individual rewards
+    // Step 7: Query for all agent boosters during the season using repository
     console.log(
-      `${colors.blue}Step 8: Calculating individual rewards...${colors.reset}`,
+      `${colors.blue}Step 7: Finding users who boosted agents...${colors.reset}`,
+    );
+    const userBoostedCompsMap =
+      await boostRepository.getAllCompetitionIdsBoostedDuringSeason(
+        currentSeason.startDate,
+        currentSeason.endDate,
+      );
+    console.log(`✅ Found ${userBoostedCompsMap.size} users who boosted\n`);
+
+    // Step 8: Query for all users that had an agent compete during the season using repository
+    console.log(
+      `${colors.blue}Step 8: Finding users who competed...${colors.reset}`,
+    );
+    const userCompetedCompsMap =
+      await competitionRepository.getAllCompetitionIdsCompetedDuringSeason(
+        currentSeason.startDate,
+        currentSeason.endDate,
+      );
+    console.log(`✅ Found ${userCompetedCompsMap.size} users who competed\n`);
+
+    // Step 9: Calculate individual rewards
+    console.log(
+      `${colors.blue}Step 9: Calculating individual rewards...${colors.reset}`,
     );
 
+    // Merge boosted and competed competitions per user
     const allUserCompsMap = new Map<string, Set<string>>();
 
     // Add boosted competitions
@@ -348,7 +275,7 @@ Examples:
     if (totalActiveStakes > 0n && availableRewards > 0n) {
       for (const [address, activeStake] of accountStakes.entries()) {
         const numEligibilityComps = allUserCompsMap.get(address)?.size || 0;
-        const isEligible = numEligibilityComps >= 3;
+        const isEligible = numEligibilityComps >= minCompetitionsForEligibility;
 
         if (isEligible) {
           // Calculate proportional reward: (account_stake / total_stakes) * available_rewards
@@ -372,9 +299,9 @@ Examples:
       return 0;
     });
 
-    // Step 9: Generate CSV output
+    // Step 10: Generate CSV output
     console.log(
-      `${colors.blue}Step 9: Generating CSV output...${colors.reset}`,
+      `${colors.blue}Step 10: Generating CSV output...${colors.reset}`,
     );
 
     const csvFileName = `airdrop_${airdropNumber}_${currentSeason.endDate.toISOString()}.csv`;
@@ -385,10 +312,10 @@ Examples:
       "address,amount,season,category,sybilClassification,flaggedAt,flaggingReason,powerUser,recallSnapper,aiBuilder,aiExplorer",
     ];
 
-    // Step 10: Prepend lines from the specified file to the new file if --prepend flag is set
+    // Step 11: Prepend lines from the specified file to the new file if --prepend flag is set
     if (values.prepend) {
       console.log(
-        `${colors.blue}Step 10: Prepending from ${values.prepend} to ${csvFileName}...${colors.reset}`,
+        `${colors.blue}Step 11: Prepending from ${values.prepend} to ${csvFileName}...${colors.reset}`,
       );
 
       const prependSourceCsvPath = path.join(
@@ -463,13 +390,8 @@ Examples:
       `✅ Calculated rewards for ${eligibleAccounts.length} accounts\n`,
     );
     console.log(
-      `💰 Total forfeited across all seasons: ${attoValueToStringValue(totalForfeited)}`,
+      `💰 Total forfeited: ${attoValueToStringValue(totalForfeited)}`,
     );
-
-    // Show breakdown by season
-    for (const [season, amount] of forfeitedBySeason.entries()) {
-      console.log(`   Season ${season}: ${attoValueToStringValue(amount)}`);
-    }
 
     // Calculate and display reward statistics for eligible entries
     if (eligibleAccounts.length > 0) {
