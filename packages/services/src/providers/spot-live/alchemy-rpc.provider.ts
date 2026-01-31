@@ -849,8 +849,12 @@ export class AlchemyRpcProvider implements IRpcProvider {
               }
             }
 
-            // Default to 18 if call fails (common for ETH/WETH)
-            return 18;
+            // Throw error to trigger retry - empty/invalid response suggests transient issue
+            // Previously this defaulted to 18, which caused incorrect amounts for
+            // non-18 decimal tokens (e.g., USDC with 6 decimals)
+            throw new Error(
+              `Invalid decimals response from RPC: ${result || "empty"}`,
+            );
           },
           {
             maxRetries: this.maxRetries,
@@ -862,14 +866,12 @@ export class AlchemyRpcProvider implements IRpcProvider {
       return result;
     } catch (error) {
       this.logger.warn(
-        `[AlchemyRpcProvider] Failed to fetch decimals for token ${tokenAddress} on ${chain}, defaulting to 18`,
+        { tokenAddress, chain, error },
+        `[AlchemyRpcProvider] Failed to fetch decimals after retries`,
       );
-      if (error instanceof Error) {
-        this.logger.debug(
-          `[AlchemyRpcProvider] Decimals fetch error: ${error.message}`,
-        );
-      }
-      return 18;
+      // Re-throw so calling code can use KNOWN_TOKEN_DECIMALS fallback
+      // or reject the operation for unknown tokens
+      throw error;
     }
   }
 

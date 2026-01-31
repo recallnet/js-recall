@@ -1619,4 +1619,131 @@ describe("RpcSpotProvider", () => {
       expect(mockRpcProvider.getTransactionReceipt).not.toHaveBeenCalled();
     });
   });
+
+  describe("decimals fallback and rejection", () => {
+    const TRANSFER_TOPIC =
+      "0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef";
+    const WALLET = "0xwallet0000000000000000000000000000000000";
+    const ROUTER = "0xrouter0000000000000000000000000000000000";
+    // Unknown token addresses NOT in KNOWN_TOKEN_DECIMALS
+    const UNKNOWN_TOKEN_A = "0xunknowntokena00000000000000000000000000";
+    const UNKNOWN_TOKEN_B = "0xunknowntokenb00000000000000000000000000";
+
+    beforeEach(() => {
+      provider = new RpcSpotProvider(mockRpcProvider, [], mockLogger);
+      mockRpcProvider.getBlockNumber.mockResolvedValue(1000000);
+    });
+
+    it("should reject swap when decimals cannot be determined for unknown tokens", async () => {
+      // Setup: Alchemy returns null values (can't determine decimals)
+      const unknownTokenTransfers = [
+        createMockTransfer({
+          from: WALLET,
+          to: ROUTER,
+          value: null, // Alchemy couldn't determine value
+          asset: "UNKNOWN_A",
+          hash: "0xtxhash_unknown",
+          blockNum: "0xf4240",
+          metadata: { blockTimestamp: "2025-01-15T10:00:00.000Z" },
+          rawContract: {
+            address: UNKNOWN_TOKEN_A,
+            decimal: null, // Alchemy couldn't determine decimals
+            value: "0x5f5e100", // Raw value exists
+          },
+          category: AssetTransfersCategory.ERC20,
+          uniqueId: "unique1",
+        }),
+        createMockTransfer({
+          from: ROUTER,
+          to: WALLET,
+          value: null, // Alchemy couldn't determine value
+          asset: "UNKNOWN_B",
+          hash: "0xtxhash_unknown",
+          blockNum: "0xf4240",
+          metadata: { blockTimestamp: "2025-01-15T10:00:00.000Z" },
+          rawContract: {
+            address: UNKNOWN_TOKEN_B,
+            decimal: null,
+            value: "0x2540be400", // Raw value exists
+          },
+          category: AssetTransfersCategory.ERC20,
+          uniqueId: "unique2",
+        }),
+      ];
+
+      mockRpcProvider.getAssetTransfers.mockResolvedValue({
+        transfers: unknownTokenTransfers,
+        pageKey: undefined,
+      });
+
+      // RPC getTokenDecimals fails for unknown tokens
+      mockRpcProvider.getTokenDecimals.mockRejectedValue(
+        new Error("Invalid decimals response from RPC: 0x"),
+      );
+
+      // Provide receipt with transfer logs
+      mockRpcProvider.getTransactionReceipt.mockResolvedValue({
+        transactionHash: "0xtxhash_unknown",
+        blockNumber: 1000000,
+        gasUsed: "100000",
+        effectiveGasPrice: "50000000000",
+        status: true,
+        from: WALLET,
+        to: ROUTER,
+        logs: [
+          {
+            address: UNKNOWN_TOKEN_A,
+            topics: [
+              TRANSFER_TOPIC,
+              "0x" + WALLET.slice(2).padStart(64, "0"),
+              "0x" + ROUTER.slice(2).padStart(64, "0"),
+            ],
+            data: "0x" + BigInt("100000000").toString(16).padStart(64, "0"),
+            logIndex: 0,
+            blockNumber: 1000000,
+            blockHash: "0xblockhash",
+            transactionIndex: 0,
+            transactionHash: "0xtxhash_unknown",
+            removed: false,
+          },
+          {
+            address: UNKNOWN_TOKEN_B,
+            topics: [
+              TRANSFER_TOPIC,
+              "0x" + ROUTER.slice(2).padStart(64, "0"),
+              "0x" + WALLET.slice(2).padStart(64, "0"),
+            ],
+            data: "0x" + BigInt("10000000000").toString(16).padStart(64, "0"),
+            logIndex: 1,
+            blockNumber: 1000000,
+            blockHash: "0xblockhash",
+            transactionIndex: 0,
+            transactionHash: "0xtxhash_unknown",
+            removed: false,
+          },
+        ],
+      });
+
+      const result = await provider.getTradesSince(WALLET, 999990, ["base"]);
+
+      // Swap should be rejected because decimals couldn't be determined
+      expect(result.trades).toHaveLength(0);
+
+      // Verify that getTokenDecimals was called (attempted to fetch)
+      expect(mockRpcProvider.getTokenDecimals).toHaveBeenCalled();
+
+      // Verify warning was logged about missing decimals for the token that caused rejection
+      expect(mockLogger.warn).toHaveBeenCalledWith(
+        expect.objectContaining({
+          txHash: expect.any(String),
+          chain: "base",
+          token: expect.any(String),
+        }),
+        expect.stringContaining("Cannot determine decimals"),
+      );
+    });
+
+    // Note: The KNOWN_TOKEN_DECIMALS fallback behavior is tested by the integration test
+    // in rpc-spot-integration.test.ts which verifies all 25 known tokens against on-chain data
+  });
 });
