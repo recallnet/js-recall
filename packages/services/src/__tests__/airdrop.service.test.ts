@@ -794,4 +794,661 @@ describe("AirdropService", () => {
       }
     });
   });
+
+  describe("getNextAirdropEligibility", () => {
+    const mockAddress = "0x1234567890123456789012345678901234567890";
+    const mockSeason = {
+      startsWithAirdrop: 1,
+      number: 2,
+      name: "Season 2",
+      startDate: new Date("2025-01-01T00:00:00Z"),
+      endDate: new Date("2025-03-31T23:59:59Z"),
+    };
+
+    it("should return eligibility data when user has active stake and meets competition requirement", async () => {
+      mockAirdropRepository.getCurrentSeason.mockResolvedValue(mockSeason);
+
+      // Mock pool stats dependencies
+      mockConvictionClaimsRepository.getTotalActiveStakesForSeason.mockResolvedValue(
+        10000n,
+      );
+      mockConvictionClaimsRepository.getTotalForfeitedUpToDate.mockResolvedValue(
+        5000n,
+      );
+      mockConvictionClaimsRepository.getTotalConvictionRewardsClaimedBySeason.mockResolvedValue(
+        1000n,
+      );
+
+      // User has active stake
+      mockConvictionClaimsRepository.getActiveStakeForAccount.mockResolvedValue(
+        1000n,
+      );
+
+      // User has participated in 3+ competitions
+      mockBoostRepository.getCompetitionIdsBoostedDuringSeason.mockResolvedValue(
+        ["comp-1", "comp-2"],
+      );
+      mockCompetitionRepository.getCompetitionIdsCompetedDuringSeason.mockResolvedValue(
+        ["comp-2", "comp-3"],
+      );
+
+      const result = await service.getNextAirdropEligibility(mockAddress);
+
+      expect(result.isEligible).toBe(true);
+      expect(result.airdrop).toBe(2); // startsWithAirdrop + 1
+      expect(result.activeStake).toBe(1000n);
+      expect(result.eligibilityReasons.totalUniqueCompetitions).toBe(3);
+      expect(result.eligibilityReasons.hasBoostedAgents).toBe(true);
+      expect(result.eligibilityReasons.hasCompetedInCompetitions).toBe(true);
+      expect(result.poolStats.totalActiveStakes).toBe(10000n);
+      expect(result.poolStats.availableRewardsPool).toBe(4000n); // 5000 - 1000
+      expect(result.activitySeason.number).toBe(2);
+    });
+
+    it("should return ineligible when user has no active stake", async () => {
+      mockAirdropRepository.getCurrentSeason.mockResolvedValue(mockSeason);
+
+      mockConvictionClaimsRepository.getTotalActiveStakesForSeason.mockResolvedValue(
+        10000n,
+      );
+      mockConvictionClaimsRepository.getTotalForfeitedUpToDate.mockResolvedValue(
+        5000n,
+      );
+      mockConvictionClaimsRepository.getTotalConvictionRewardsClaimedBySeason.mockResolvedValue(
+        1000n,
+      );
+
+      // User has NO active stake
+      mockConvictionClaimsRepository.getActiveStakeForAccount.mockResolvedValue(
+        0n,
+      );
+
+      // User has participated in 3+ competitions
+      mockBoostRepository.getCompetitionIdsBoostedDuringSeason.mockResolvedValue(
+        ["comp-1", "comp-2", "comp-3"],
+      );
+      mockCompetitionRepository.getCompetitionIdsCompetedDuringSeason.mockResolvedValue(
+        [],
+      );
+
+      const result = await service.getNextAirdropEligibility(mockAddress);
+
+      expect(result.isEligible).toBe(false);
+      expect(result.activeStake).toBe(0n);
+      expect(result.potentialReward).toBe(0n);
+      expect(result.eligibilityReasons.totalUniqueCompetitions).toBe(3);
+    });
+
+    it("should return ineligible when user has insufficient competitions", async () => {
+      mockAirdropRepository.getCurrentSeason.mockResolvedValue(mockSeason);
+
+      mockConvictionClaimsRepository.getTotalActiveStakesForSeason.mockResolvedValue(
+        10000n,
+      );
+      mockConvictionClaimsRepository.getTotalForfeitedUpToDate.mockResolvedValue(
+        5000n,
+      );
+      mockConvictionClaimsRepository.getTotalConvictionRewardsClaimedBySeason.mockResolvedValue(
+        1000n,
+      );
+
+      // User has active stake
+      mockConvictionClaimsRepository.getActiveStakeForAccount.mockResolvedValue(
+        1000n,
+      );
+
+      // User has participated in only 2 competitions (below threshold of 3)
+      mockBoostRepository.getCompetitionIdsBoostedDuringSeason.mockResolvedValue(
+        ["comp-1"],
+      );
+      mockCompetitionRepository.getCompetitionIdsCompetedDuringSeason.mockResolvedValue(
+        ["comp-2"],
+      );
+
+      const result = await service.getNextAirdropEligibility(mockAddress);
+
+      expect(result.isEligible).toBe(false);
+      expect(result.activeStake).toBe(1000n);
+      expect(result.potentialReward).toBe(0n);
+      expect(result.eligibilityReasons.totalUniqueCompetitions).toBe(2);
+    });
+
+    it("should calculate potential reward correctly based on stake proportion", async () => {
+      mockAirdropRepository.getCurrentSeason.mockResolvedValue(mockSeason);
+
+      // Total pool: 10000, Available rewards: 4000 (5000 forfeited - 1000 claimed)
+      mockConvictionClaimsRepository.getTotalActiveStakesForSeason.mockResolvedValue(
+        10000n,
+      );
+      mockConvictionClaimsRepository.getTotalForfeitedUpToDate.mockResolvedValue(
+        5000n,
+      );
+      mockConvictionClaimsRepository.getTotalConvictionRewardsClaimedBySeason.mockResolvedValue(
+        1000n,
+      );
+
+      // User has 2500 stake (25% of total)
+      mockConvictionClaimsRepository.getActiveStakeForAccount.mockResolvedValue(
+        2500n,
+      );
+
+      // User meets competition requirement
+      mockBoostRepository.getCompetitionIdsBoostedDuringSeason.mockResolvedValue(
+        ["comp-1", "comp-2", "comp-3"],
+      );
+      mockCompetitionRepository.getCompetitionIdsCompetedDuringSeason.mockResolvedValue(
+        [],
+      );
+
+      const result = await service.getNextAirdropEligibility(mockAddress);
+
+      expect(result.isEligible).toBe(true);
+      // Potential reward = (2500 * 4000) / 10000 = 1000
+      expect(result.potentialReward).toBe(1000n);
+    });
+
+    it("should use specified airdrop number when provided", async () => {
+      const activitySeason = {
+        startsWithAirdrop: 2,
+        number: 3,
+        name: "Season 3",
+        startDate: new Date("2025-04-01T00:00:00Z"),
+        endDate: new Date("2025-06-30T23:59:59Z"),
+      };
+
+      // When airdrop 3 is specified, activity is checked for season with airdrop 2
+      mockAirdropRepository.getSeasonStartingWithAirdrop.mockResolvedValue(
+        activitySeason,
+      );
+
+      mockConvictionClaimsRepository.getTotalActiveStakesForSeason.mockResolvedValue(
+        10000n,
+      );
+      mockConvictionClaimsRepository.getTotalForfeitedUpToDate.mockResolvedValue(
+        5000n,
+      );
+      mockConvictionClaimsRepository.getTotalConvictionRewardsClaimedBySeason.mockResolvedValue(
+        1000n,
+      );
+      mockConvictionClaimsRepository.getActiveStakeForAccount.mockResolvedValue(
+        1000n,
+      );
+      mockBoostRepository.getCompetitionIdsBoostedDuringSeason.mockResolvedValue(
+        ["comp-1", "comp-2", "comp-3"],
+      );
+      mockCompetitionRepository.getCompetitionIdsCompetedDuringSeason.mockResolvedValue(
+        [],
+      );
+
+      const result = await service.getNextAirdropEligibility(mockAddress, 3);
+
+      expect(result.airdrop).toBe(3);
+      expect(result.activitySeason.number).toBe(3);
+      expect(
+        mockAirdropRepository.getSeasonStartingWithAirdrop,
+      ).toHaveBeenCalledWith(2); // airdrop - 1
+    });
+
+    it("should throw error when no current season found", async () => {
+      mockAirdropRepository.getCurrentSeason.mockResolvedValue(null);
+
+      await expect(
+        service.getNextAirdropEligibility(mockAddress),
+      ).rejects.toThrow(
+        "No current season found based on current date. Check that season date ranges cover the current time.",
+      );
+    });
+
+    it("should throw error when specified activity season not found", async () => {
+      mockAirdropRepository.getSeasonStartingWithAirdrop.mockResolvedValue(
+        null,
+      );
+
+      await expect(
+        service.getNextAirdropEligibility(mockAddress, 5),
+      ).rejects.toThrow("Activity season airdrop 4 not found");
+    });
+
+    it("should handle zero available rewards pool", async () => {
+      mockAirdropRepository.getCurrentSeason.mockResolvedValue(mockSeason);
+
+      mockConvictionClaimsRepository.getTotalActiveStakesForSeason.mockResolvedValue(
+        10000n,
+      );
+      // Already claimed more than forfeited
+      mockConvictionClaimsRepository.getTotalForfeitedUpToDate.mockResolvedValue(
+        1000n,
+      );
+      mockConvictionClaimsRepository.getTotalConvictionRewardsClaimedBySeason.mockResolvedValue(
+        2000n,
+      );
+
+      mockConvictionClaimsRepository.getActiveStakeForAccount.mockResolvedValue(
+        1000n,
+      );
+      mockBoostRepository.getCompetitionIdsBoostedDuringSeason.mockResolvedValue(
+        ["comp-1", "comp-2", "comp-3"],
+      );
+      mockCompetitionRepository.getCompetitionIdsCompetedDuringSeason.mockResolvedValue(
+        [],
+      );
+
+      const result = await service.getNextAirdropEligibility(mockAddress);
+
+      expect(result.isEligible).toBe(true);
+      expect(result.poolStats.availableRewardsPool).toBe(0n); // Capped at 0
+      expect(result.potentialReward).toBe(0n);
+    });
+
+    it("should normalize address to lowercase", async () => {
+      const upperCaseAddress = "0xABCDEF1234567890123456789012345678901234";
+
+      mockAirdropRepository.getCurrentSeason.mockResolvedValue(mockSeason);
+      mockConvictionClaimsRepository.getTotalActiveStakesForSeason.mockResolvedValue(
+        10000n,
+      );
+      mockConvictionClaimsRepository.getTotalForfeitedUpToDate.mockResolvedValue(
+        5000n,
+      );
+      mockConvictionClaimsRepository.getTotalConvictionRewardsClaimedBySeason.mockResolvedValue(
+        1000n,
+      );
+      mockConvictionClaimsRepository.getActiveStakeForAccount.mockResolvedValue(
+        0n,
+      );
+      mockBoostRepository.getCompetitionIdsBoostedDuringSeason.mockResolvedValue(
+        [],
+      );
+      mockCompetitionRepository.getCompetitionIdsCompetedDuringSeason.mockResolvedValue(
+        [],
+      );
+
+      await service.getNextAirdropEligibility(upperCaseAddress);
+
+      expect(
+        mockConvictionClaimsRepository.getActiveStakeForAccount,
+      ).toHaveBeenCalledWith(
+        upperCaseAddress.toLowerCase(),
+        mockSeason.endDate,
+      );
+      expect(
+        mockBoostRepository.getCompetitionIdsBoostedDuringSeason,
+      ).toHaveBeenCalledWith(
+        upperCaseAddress.toLowerCase(),
+        mockSeason.startDate,
+        mockSeason.endDate,
+      );
+    });
+
+    it("should handle errors gracefully", async () => {
+      const error = new Error("Database connection failed");
+      mockAirdropRepository.getCurrentSeason.mockRejectedValue(error);
+
+      await expect(
+        service.getNextAirdropEligibility(mockAddress),
+      ).rejects.toThrow("Database connection failed");
+
+      expect(mockLogger.error).toHaveBeenCalledWith(
+        { error },
+        `Error calculating eligibility for address ${mockAddress}`,
+      );
+    });
+  });
+
+  describe("calculatePoolStats (via getNextAirdropEligibility)", () => {
+    const mockAddress = "0x1234567890123456789012345678901234567890";
+    const mockSeason = {
+      startsWithAirdrop: 2,
+      number: 3,
+      name: "Season 3",
+      startDate: new Date("2025-01-01T00:00:00Z"),
+      endDate: new Date("2025-03-31T23:59:59Z"),
+    };
+
+    it("should calculate pool stats correctly", async () => {
+      mockAirdropRepository.getCurrentSeason.mockResolvedValue(mockSeason);
+
+      mockConvictionClaimsRepository.getTotalActiveStakesForSeason.mockResolvedValue(
+        50000n,
+      );
+      mockConvictionClaimsRepository.getTotalForfeitedUpToDate.mockResolvedValue(
+        20000n,
+      );
+      mockConvictionClaimsRepository.getTotalConvictionRewardsClaimedBySeason.mockResolvedValue(
+        5000n,
+      );
+      mockConvictionClaimsRepository.getActiveStakeForAccount.mockResolvedValue(
+        0n,
+      );
+      mockBoostRepository.getCompetitionIdsBoostedDuringSeason.mockResolvedValue(
+        [],
+      );
+      mockCompetitionRepository.getCompetitionIdsCompetedDuringSeason.mockResolvedValue(
+        [],
+      );
+
+      const result = await service.getNextAirdropEligibility(mockAddress);
+
+      expect(result.poolStats.totalActiveStakes).toBe(50000n);
+      expect(result.poolStats.totalForfeited).toBe(20000n);
+      expect(result.poolStats.totalAlreadyClaimed).toBe(5000n);
+      expect(result.poolStats.availableRewardsPool).toBe(15000n); // 20000 - 5000
+    });
+
+    it("should call getTotalConvictionRewardsClaimedBySeason with correct season range", async () => {
+      mockAirdropRepository.getCurrentSeason.mockResolvedValue(mockSeason);
+
+      mockConvictionClaimsRepository.getTotalActiveStakesForSeason.mockResolvedValue(
+        10000n,
+      );
+      mockConvictionClaimsRepository.getTotalForfeitedUpToDate.mockResolvedValue(
+        5000n,
+      );
+      mockConvictionClaimsRepository.getTotalConvictionRewardsClaimedBySeason.mockResolvedValue(
+        1000n,
+      );
+      mockConvictionClaimsRepository.getActiveStakeForAccount.mockResolvedValue(
+        0n,
+      );
+      mockBoostRepository.getCompetitionIdsBoostedDuringSeason.mockResolvedValue(
+        [],
+      );
+      mockCompetitionRepository.getCompetitionIdsCompetedDuringSeason.mockResolvedValue(
+        [],
+      );
+
+      await service.getNextAirdropEligibility(mockAddress);
+
+      // Should query from season 1 to current startsWithAirdrop (2)
+      expect(
+        mockConvictionClaimsRepository.getTotalConvictionRewardsClaimedBySeason,
+      ).toHaveBeenCalledWith(1, mockSeason.startsWithAirdrop);
+    });
+
+    it("should use season end date for active stakes query", async () => {
+      mockAirdropRepository.getCurrentSeason.mockResolvedValue(mockSeason);
+
+      mockConvictionClaimsRepository.getTotalActiveStakesForSeason.mockResolvedValue(
+        10000n,
+      );
+      mockConvictionClaimsRepository.getTotalForfeitedUpToDate.mockResolvedValue(
+        5000n,
+      );
+      mockConvictionClaimsRepository.getTotalConvictionRewardsClaimedBySeason.mockResolvedValue(
+        1000n,
+      );
+      mockConvictionClaimsRepository.getActiveStakeForAccount.mockResolvedValue(
+        0n,
+      );
+      mockBoostRepository.getCompetitionIdsBoostedDuringSeason.mockResolvedValue(
+        [],
+      );
+      mockCompetitionRepository.getCompetitionIdsCompetedDuringSeason.mockResolvedValue(
+        [],
+      );
+
+      await service.getNextAirdropEligibility(mockAddress);
+
+      expect(
+        mockConvictionClaimsRepository.getTotalActiveStakesForSeason,
+      ).toHaveBeenCalledWith(mockSeason.endDate);
+      expect(
+        mockConvictionClaimsRepository.getTotalForfeitedUpToDate,
+      ).toHaveBeenCalledWith(mockSeason.endDate);
+    });
+
+    it("should cap available rewards pool at zero when negative", async () => {
+      mockAirdropRepository.getCurrentSeason.mockResolvedValue(mockSeason);
+
+      mockConvictionClaimsRepository.getTotalActiveStakesForSeason.mockResolvedValue(
+        10000n,
+      );
+      // Forfeited less than already claimed
+      mockConvictionClaimsRepository.getTotalForfeitedUpToDate.mockResolvedValue(
+        3000n,
+      );
+      mockConvictionClaimsRepository.getTotalConvictionRewardsClaimedBySeason.mockResolvedValue(
+        5000n,
+      );
+      mockConvictionClaimsRepository.getActiveStakeForAccount.mockResolvedValue(
+        0n,
+      );
+      mockBoostRepository.getCompetitionIdsBoostedDuringSeason.mockResolvedValue(
+        [],
+      );
+      mockCompetitionRepository.getCompetitionIdsCompetedDuringSeason.mockResolvedValue(
+        [],
+      );
+
+      const result = await service.getNextAirdropEligibility(mockAddress);
+
+      // 3000 - 5000 = -2000, but should be capped at 0
+      expect(result.poolStats.availableRewardsPool).toBe(0n);
+    });
+
+    it("should handle large numbers correctly", async () => {
+      mockAirdropRepository.getCurrentSeason.mockResolvedValue(mockSeason);
+
+      const largeStakes = BigInt("999999999999999999999999999999");
+      const largeForfeited = BigInt("500000000000000000000000000000");
+      const largeClaimed = BigInt("100000000000000000000000000000");
+
+      mockConvictionClaimsRepository.getTotalActiveStakesForSeason.mockResolvedValue(
+        largeStakes,
+      );
+      mockConvictionClaimsRepository.getTotalForfeitedUpToDate.mockResolvedValue(
+        largeForfeited,
+      );
+      mockConvictionClaimsRepository.getTotalConvictionRewardsClaimedBySeason.mockResolvedValue(
+        largeClaimed,
+      );
+      mockConvictionClaimsRepository.getActiveStakeForAccount.mockResolvedValue(
+        0n,
+      );
+      mockBoostRepository.getCompetitionIdsBoostedDuringSeason.mockResolvedValue(
+        [],
+      );
+      mockCompetitionRepository.getCompetitionIdsCompetedDuringSeason.mockResolvedValue(
+        [],
+      );
+
+      const result = await service.getNextAirdropEligibility(mockAddress);
+
+      expect(result.poolStats.totalActiveStakes).toBe(largeStakes);
+      expect(result.poolStats.totalForfeited).toBe(largeForfeited);
+      expect(result.poolStats.totalAlreadyClaimed).toBe(largeClaimed);
+      expect(result.poolStats.availableRewardsPool).toBe(
+        largeForfeited - largeClaimed,
+      );
+    });
+  });
+
+  describe("checkEligibilityReasons (via getNextAirdropEligibility)", () => {
+    const mockAddress = "0x1234567890123456789012345678901234567890";
+    const mockSeason = {
+      startsWithAirdrop: 1,
+      number: 2,
+      name: "Season 2",
+      startDate: new Date("2025-01-01T00:00:00Z"),
+      endDate: new Date("2025-03-31T23:59:59Z"),
+    };
+
+    beforeEach(() => {
+      mockAirdropRepository.getCurrentSeason.mockResolvedValue(mockSeason);
+      mockConvictionClaimsRepository.getTotalActiveStakesForSeason.mockResolvedValue(
+        10000n,
+      );
+      mockConvictionClaimsRepository.getTotalForfeitedUpToDate.mockResolvedValue(
+        5000n,
+      );
+      mockConvictionClaimsRepository.getTotalConvictionRewardsClaimedBySeason.mockResolvedValue(
+        1000n,
+      );
+      mockConvictionClaimsRepository.getActiveStakeForAccount.mockResolvedValue(
+        1000n,
+      );
+    });
+
+    it("should count unique competitions from both boosting and competing", async () => {
+      mockBoostRepository.getCompetitionIdsBoostedDuringSeason.mockResolvedValue(
+        ["comp-1", "comp-2"],
+      );
+      mockCompetitionRepository.getCompetitionIdsCompetedDuringSeason.mockResolvedValue(
+        ["comp-3", "comp-4"],
+      );
+
+      const result = await service.getNextAirdropEligibility(mockAddress);
+
+      expect(result.eligibilityReasons.totalUniqueCompetitions).toBe(4);
+      expect(result.eligibilityReasons.boostedCompetitionIds).toEqual([
+        "comp-1",
+        "comp-2",
+      ]);
+      expect(result.eligibilityReasons.competedCompetitionIds).toEqual([
+        "comp-3",
+        "comp-4",
+      ]);
+    });
+
+    it("should deduplicate competitions that appear in both boosting and competing", async () => {
+      // Overlapping competitions
+      mockBoostRepository.getCompetitionIdsBoostedDuringSeason.mockResolvedValue(
+        ["comp-1", "comp-2", "comp-3"],
+      );
+      mockCompetitionRepository.getCompetitionIdsCompetedDuringSeason.mockResolvedValue(
+        ["comp-2", "comp-3", "comp-4"],
+      );
+
+      const result = await service.getNextAirdropEligibility(mockAddress);
+
+      // Total unique: comp-1, comp-2, comp-3, comp-4 = 4
+      expect(result.eligibilityReasons.totalUniqueCompetitions).toBe(4);
+      expect(result.eligibilityReasons.hasBoostedAgents).toBe(true);
+      expect(result.eligibilityReasons.hasCompetedInCompetitions).toBe(true);
+    });
+
+    it("should set hasBoostedAgents to true when user has boosted", async () => {
+      mockBoostRepository.getCompetitionIdsBoostedDuringSeason.mockResolvedValue(
+        ["comp-1"],
+      );
+      mockCompetitionRepository.getCompetitionIdsCompetedDuringSeason.mockResolvedValue(
+        [],
+      );
+
+      const result = await service.getNextAirdropEligibility(mockAddress);
+
+      expect(result.eligibilityReasons.hasBoostedAgents).toBe(true);
+      expect(result.eligibilityReasons.hasCompetedInCompetitions).toBe(false);
+    });
+
+    it("should set hasCompetedInCompetitions to true when user has competed", async () => {
+      mockBoostRepository.getCompetitionIdsBoostedDuringSeason.mockResolvedValue(
+        [],
+      );
+      mockCompetitionRepository.getCompetitionIdsCompetedDuringSeason.mockResolvedValue(
+        ["comp-1"],
+      );
+
+      const result = await service.getNextAirdropEligibility(mockAddress);
+
+      expect(result.eligibilityReasons.hasBoostedAgents).toBe(false);
+      expect(result.eligibilityReasons.hasCompetedInCompetitions).toBe(true);
+    });
+
+    it("should set both flags to false when user has no activity", async () => {
+      mockBoostRepository.getCompetitionIdsBoostedDuringSeason.mockResolvedValue(
+        [],
+      );
+      mockCompetitionRepository.getCompetitionIdsCompetedDuringSeason.mockResolvedValue(
+        [],
+      );
+
+      const result = await service.getNextAirdropEligibility(mockAddress);
+
+      expect(result.eligibilityReasons.hasBoostedAgents).toBe(false);
+      expect(result.eligibilityReasons.hasCompetedInCompetitions).toBe(false);
+      expect(result.eligibilityReasons.totalUniqueCompetitions).toBe(0);
+    });
+
+    it("should query boost and competition repos with correct season dates", async () => {
+      mockBoostRepository.getCompetitionIdsBoostedDuringSeason.mockResolvedValue(
+        [],
+      );
+      mockCompetitionRepository.getCompetitionIdsCompetedDuringSeason.mockResolvedValue(
+        [],
+      );
+
+      await service.getNextAirdropEligibility(mockAddress);
+
+      expect(
+        mockBoostRepository.getCompetitionIdsBoostedDuringSeason,
+      ).toHaveBeenCalledWith(
+        mockAddress.toLowerCase(),
+        mockSeason.startDate,
+        mockSeason.endDate,
+      );
+      expect(
+        mockCompetitionRepository.getCompetitionIdsCompetedDuringSeason,
+      ).toHaveBeenCalledWith(
+        mockAddress.toLowerCase(),
+        mockSeason.startDate,
+        mockSeason.endDate,
+      );
+    });
+
+    it("should be eligible with exactly minimum competitions required", async () => {
+      // Default minimum is 3
+      mockBoostRepository.getCompetitionIdsBoostedDuringSeason.mockResolvedValue(
+        ["comp-1", "comp-2"],
+      );
+      mockCompetitionRepository.getCompetitionIdsCompetedDuringSeason.mockResolvedValue(
+        ["comp-3"],
+      );
+
+      const result = await service.getNextAirdropEligibility(mockAddress);
+
+      expect(result.eligibilityReasons.totalUniqueCompetitions).toBe(3);
+      expect(result.isEligible).toBe(true);
+    });
+
+    it("should be ineligible with one less than minimum competitions", async () => {
+      // Default minimum is 3, so 2 competitions should be ineligible
+      mockBoostRepository.getCompetitionIdsBoostedDuringSeason.mockResolvedValue(
+        ["comp-1"],
+      );
+      mockCompetitionRepository.getCompetitionIdsCompetedDuringSeason.mockResolvedValue(
+        ["comp-2"],
+      );
+
+      const result = await service.getNextAirdropEligibility(mockAddress);
+
+      expect(result.eligibilityReasons.totalUniqueCompetitions).toBe(2);
+      expect(result.isEligible).toBe(false);
+    });
+
+    it("should respect custom minCompetitionsForEligibility", async () => {
+      // Create service with custom minimum of 5
+      const customService = new AirdropService(
+        mockAirdropRepository,
+        mockLogger,
+        mockConvictionClaimsRepository,
+        mockBoostRepository,
+        mockCompetitionRepository,
+        5, // Custom minimum
+      );
+
+      mockBoostRepository.getCompetitionIdsBoostedDuringSeason.mockResolvedValue(
+        ["comp-1", "comp-2", "comp-3"],
+      );
+      mockCompetitionRepository.getCompetitionIdsCompetedDuringSeason.mockResolvedValue(
+        ["comp-4"],
+      );
+
+      const result = await customService.getNextAirdropEligibility(mockAddress);
+
+      // 4 competitions, but need 5
+      expect(result.eligibilityReasons.totalUniqueCompetitions).toBe(4);
+      expect(result.isEligible).toBe(false);
+    });
+  });
 });
