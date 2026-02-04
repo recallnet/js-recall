@@ -105,8 +105,6 @@ export class UserService {
         embeddedWalletAddress?.toLowerCase();
 
       // Create user record with subscription status
-      // Note: the `newUserId` could be different than the `savedUserId` because registering a new
-      // user will update on conflict—so the `id` will be original `user.id` in the database.
       const newUserId = randomUUID();
       const user: InsertUser = {
         id: newUserId,
