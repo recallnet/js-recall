@@ -147,7 +147,7 @@ describe("Spot Live Competition", () => {
       (a) => a.id === agent2.id,
     );
     expect(agent2Entry).toBeDefined();
-    expect(agent2Entry?.portfolioValue).toBeCloseTo(3000, 0); // ~$3000 (USDC at $1, 0 decimals = ±1)
+    expect(agent2Entry?.portfolioValue).toBeCloseTo(3000, -1); // ~$3000 (USDC at ~$1, precision -1 = ±5 tolerance for price variance)
 
     // Now force a sync to process swaps that happened since competition start
     await spotDataProcessor.processSpotLiveCompetition(competition.id);

@@ -2510,6 +2510,9 @@ describe("User API", () => {
 
     const agentClients = userAgents.map((ua) => ua.agentClient);
 
+    // Note: With $5000 starting portfolio and 15% max trade limit ($750 max per trade),
+    // all trade amounts must be <= $750 to succeed.
+
     // Alpha Agent: (3 small bad trades)
     for (let i = 0; i < 3; i++) {
       await agentClients[0]?.executeTrade({
@@ -2538,17 +2541,17 @@ describe("User API", () => {
     await agentClients[2]?.executeTrade({
       fromToken: specificChainTokens.eth.usdc,
       toToken: "0x000000000000000000000000000000000000dead",
-      amount: "1000",
+      amount: "500",
       competitionId,
       reason: "Charlie Agent trade",
     });
     await wait(50);
 
-    // Delta Agent: (1 large bad trade)
+    // Delta Agent: (1 bad trade)
     await agentClients[3]?.executeTrade({
       fromToken: specificChainTokens.eth.usdc,
       toToken: "0x000000000000000000000000000000000000dead", // Burn address
-      amount: "2000",
+      amount: "600",
       competitionId,
       reason: "Delta Agent bad trade - burning tokens",
     });
@@ -2559,7 +2562,7 @@ describe("User API", () => {
       await agentClients[4]?.executeTrade({
         fromToken: specificChainTokens.eth.usdc,
         toToken: "0x000000000000000000000000000000000000dead",
-        amount: "2000",
+        amount: "700",
         competitionId,
         reason: `Echo Agent terrible trade ${i + 1} - burning tokens`,
       });

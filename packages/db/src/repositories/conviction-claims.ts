@@ -535,8 +535,8 @@ export class ConvictionClaimsRepository {
   /**
    * Get total conviction rewards claimed across seasons.
    *
-   * @param fromSeason - Start season (inclusive)
-   * @param toSeason - End season (inclusive)
+   * @param fromSeason - Start season (inclusive), corresponds to the app's concept of "airdrop number"
+   * @param toSeason - End season (inclusive), corresponds to the app's concept of "airdrop number"
    * @param tx - Optional transaction
    * @returns Total claimed amount from conviction reward seasons
    */

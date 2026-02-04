@@ -1505,4 +1505,62 @@ class BoostRepository {
     // deltaAmount is negative for spending, so negate to get positive total
     return BigInt(result?.totalBoost || "0") * -1n;
   }
+
+  /**
+   * Get all wallet addresses and their boosted competition IDs during a time period.
+   *
+   * This is a batch version of getCompetitionIdsBoostedDuringSeason that returns
+   * data for all users at once, useful for eligibility calculations.
+   *
+   * @param startDate - Start of the time period
+   * @param endDate - End of the time period
+   * @param tx - Optional transaction
+   * @returns Map of wallet addresses to arrays of competition IDs they boosted
+   */
+  async getAllCompetitionIdsBoostedDuringSeason(
+    startDate: Date,
+    endDate: Date,
+    tx?: Transaction,
+  ): Promise<Map<string, string[]>> {
+    const executor = tx || this.#db;
+
+    const results = await executor
+      .select({
+        address: coreSchema.users.walletAddress,
+        competitionIds: sql<
+          string[]
+        >`array_agg(DISTINCT ${schema.agentBoostTotals.competitionId})`.as(
+          "competitionIds",
+        ),
+      })
+      .from(schema.agentBoosts)
+      .innerJoin(
+        schema.agentBoostTotals,
+        eq(schema.agentBoosts.agentBoostTotalId, schema.agentBoostTotals.id),
+      )
+      .innerJoin(
+        schema.boostChanges,
+        eq(schema.agentBoosts.changeId, schema.boostChanges.id),
+      )
+      .innerJoin(
+        schema.boostBalances,
+        eq(schema.boostChanges.balanceId, schema.boostBalances.id),
+      )
+      .innerJoin(
+        coreSchema.users,
+        eq(schema.boostBalances.userId, coreSchema.users.id),
+      )
+      .where(
+        and(
+          gte(schema.agentBoosts.createdAt, startDate),
+          lte(schema.agentBoosts.createdAt, endDate),
+        ),
+      )
+      .groupBy(coreSchema.users.walletAddress);
+
+    return results.reduce(
+      (acc, row) => acc.set(row.address, row.competitionIds),
+      new Map<string, string[]>(),
+    );
+  }
 }

@@ -115,6 +115,13 @@ const configSchema = z.strictObject({
     slackWebhookUrl: z.string().default(""),
   }),
   stakeIndexingEnabled: z.coerce.boolean().default(false),
+  airdrop: z.object({
+    minCompetitionsForEligibility: z.coerce
+      .number()
+      .int()
+      .nonnegative()
+      .default(3),
+  }),
 });
 
 const rawConfig = {
@@ -197,6 +204,9 @@ const rawConfig = {
     slackWebhookUrl: process.env.REWARDS_SLACK_WEBHOOK_URL,
   },
   stakeIndexingEnabled: process.env.INDEXING_ENABLED,
+  airdrop: {
+    minCompetitionsForEligibility: process.env.MIN_COMPETITIONS_FOR_ELIGIBILITY,
+  },
 };
 
 const StakingIndexConfig = z.object({
