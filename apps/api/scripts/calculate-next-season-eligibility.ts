@@ -127,11 +127,10 @@ Examples:
   // Determine minimum competitions for eligibility: flag > env var > default
   const minCompetitionsRaw =
     values["min-competitions"] ??
-    process.env.MIN_COMPETITIONS_FOR_ELIGIBILITY ??
     String(DEFAULT_MIN_COMPETITIONS_FOR_ELIGIBILITY);
-  const minCompetitionsForEligibility = parseInt(minCompetitionsRaw, 10);
+  const minCompetitionsForEligibility = Number(minCompetitionsRaw);
   if (
-    isNaN(minCompetitionsForEligibility) ||
+    !Number.isInteger(minCompetitionsForEligibility) ||
     minCompetitionsForEligibility < 0
   ) {
     console.error(

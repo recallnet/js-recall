@@ -119,7 +119,7 @@ const configSchema = z.strictObject({
     minCompetitionsForEligibility: z.coerce
       .number()
       .int()
-      .positive()
+      .nonnegative()
       .default(3),
   }),
 });

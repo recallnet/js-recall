@@ -361,7 +361,8 @@ export class AirdropService {
         currentSeason,
       );
 
-      // User is eligible if they have active stakes AND participated in minimum competitions
+      // User is eligible if they have active stakes AND have participated in at least
+      // `minCompetitionsForEligibility` distinct competitions.
       const hasActivityEligibility =
         eligibilityReasons.totalUniqueCompetitions >=
         this.minCompetitionsForEligibility;
