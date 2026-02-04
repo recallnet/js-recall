@@ -203,15 +203,19 @@ export async function createMockPrivyToken(
   // Import the private key for ES256 signing
   const privateKey = await importPKCS8(TEST_PRIVY_PRIVATE_KEY, "ES256");
 
-  // Always add embedded wallet (required by Privy)
-  const hash = userData.privyId.split(":").pop() || "default";
-  let hexString = "";
-  for (let i = 0; i < hash.length && hexString.length < 40; i++) {
-    const charCode = hash.charCodeAt(i);
-    hexString += charCode.toString(16).padStart(2, "0");
+  // For wallet-first users (provider === "wallet"), don't create an embedded wallet
+  // For email/social users, always create an embedded wallet
+  let embeddedWalletAddress: string | undefined;
+  if (userData.provider !== "wallet") {
+    const hash = userData.privyId.split(":").pop() || "default";
+    let hexString = "";
+    for (let i = 0; i < hash.length && hexString.length < 40; i++) {
+      const charCode = hash.charCodeAt(i);
+      hexString += charCode.toString(16).padStart(2, "0");
+    }
+    hexString = hexString.padEnd(40, "0").slice(0, 40);
+    embeddedWalletAddress = `0x${hexString}`.toLowerCase();
   }
-  hexString = hexString.padEnd(40, "0").slice(0, 40);
-  const embeddedWalletAddress = `0x${hexString}`.toLowerCase();
 
   // Build linked accounts array to match real Privy JWT format
   const linkedAccounts = formatLinkedAccounts({

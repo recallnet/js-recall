@@ -86,7 +86,8 @@ describe("Rewards API", () => {
       userEmail: `test-user-${Date.now()}@test.com`,
     });
 
-    testUserAddress = user.walletAddress || user.embeddedWalletAddress;
+    // walletAddress is always defined for email provider users
+    testUserAddress = user.walletAddress;
     testUserId = user.id;
     testRpcClient = rpcClient;
 

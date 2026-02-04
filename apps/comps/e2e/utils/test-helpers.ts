@@ -91,6 +91,9 @@ export async function registerUserAndAgentAndGetRpcClient(params: {
 /**
  * Create a Privy-authenticated RPC client for testing user routes
  * Generates a unique test user and returns an RPC client with an active Privy session
+ *
+ * For wallet-first users, pass `provider: "wallet"` and a `walletAddress`.
+ * This simulates a user logging in with their external wallet (no email, no embedded wallet).
  */
 export async function createPrivyAuthenticatedRpcClient(params: {
   userName?: string;
@@ -98,22 +101,33 @@ export async function createPrivyAuthenticatedRpcClient(params: {
   walletAddress?: string;
   embeddedWalletAddress?: string;
   privyId?: string;
+  provider?: "email" | "google" | "github" | "wallet";
 }) {
+  const provider = params.provider || "email";
+  const isWalletFirst = provider === "wallet";
+
   // Generate unique wallet and IDs
-  const testEmbeddedWallet =
-    params.embeddedWalletAddress || generateRandomEthAddress();
+  const testEmbeddedWallet = isWalletFirst
+    ? undefined
+    : params.embeddedWalletAddress || generateRandomEthAddress();
   const uniquePrivyId = params.privyId || generateRandomPrivyId();
   const timestamp = Date.now();
-  const uniqueUserEmail =
-    params.userEmail || `privy-user-${timestamp}@test.com`;
+  // Wallet-first users don't have emails
+  const uniqueUserEmail = isWalletFirst
+    ? undefined
+    : params.userEmail || `privy-user-${timestamp}@test.com`;
+  // Wallet-first users must have a wallet address
+  const walletAddress = isWalletFirst
+    ? params.walletAddress || generateRandomEthAddress()
+    : params.walletAddress || testEmbeddedWallet;
 
   // Create Privy user and token
   const privyUser = createTestPrivyUser({
     privyId: uniquePrivyId,
     name: params.userName ?? undefined,
     email: uniqueUserEmail,
-    walletAddress: params.walletAddress || testEmbeddedWallet,
-    provider: "email",
+    walletAddress,
+    provider,
   });
   const privyToken = await createMockPrivyToken(privyUser);
 
@@ -130,20 +144,28 @@ export async function createPrivyAuthenticatedRpcClient(params: {
     });
   }
 
-  // Link custom wallet if provided. Note: we call `linkWallet` for test convenience. In reality,
+  // Link custom wallet if provided (only for non-wallet-first users)
+  // Note: we call `linkWallet` for test convenience. In reality,
   // creating a user and linking a wallet are two separate operations.
-  if (params.walletAddress && params.walletAddress !== testEmbeddedWallet) {
+  if (
+    !isWalletFirst &&
+    params.walletAddress &&
+    params.walletAddress !== testEmbeddedWallet
+  ) {
     MockPrivyClient.linkWallet(uniquePrivyId, params.walletAddress);
     user = await rpcClient.user.linkWallet({
       walletAddress: params.walletAddress,
     });
   }
 
+  // walletAddress is guaranteed to be defined (we generate one if not provided)
+  const finalWalletAddress = user.walletAddress || walletAddress!;
+
   return {
     rpcClient,
     user: {
       id: user.id,
-      walletAddress: user.walletAddress || testEmbeddedWallet,
+      walletAddress: finalWalletAddress,
       embeddedWalletAddress: user.embeddedWalletAddress || testEmbeddedWallet,
       walletLastVerifiedAt: user.walletLastVerifiedAt,
       privyId: user.privyId,
@@ -156,6 +178,6 @@ export async function createPrivyAuthenticatedRpcClient(params: {
       updatedAt: user.updatedAt,
       lastLoginAt: user.lastLoginAt || new Date().toISOString(),
     },
-    wallet: user.walletAddress || testEmbeddedWallet,
+    wallet: finalWalletAddress,
   };
 }
