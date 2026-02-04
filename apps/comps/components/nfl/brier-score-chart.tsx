@@ -124,7 +124,7 @@ export function BrierScoreChart({
     const predictionsWithTimestamps = predictionsData
       .map((prediction) => ({
         ...prediction,
-        timestamp: new Date(prediction.createdAt).getTime(),
+        timestamp: prediction.createdAt.getTime(),
       }))
       .sort((a, b) => a.timestamp - b.timestamp);
 
