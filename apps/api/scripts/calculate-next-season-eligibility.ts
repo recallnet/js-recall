@@ -127,6 +127,7 @@ Examples:
   // Determine minimum competitions for eligibility: flag > env var > default
   const minCompetitionsRaw =
     values["min-competitions"] ??
+    process.env.MIN_COMPETITIONS_FOR_ELIGIBILITY ??
     String(DEFAULT_MIN_COMPETITIONS_FOR_ELIGIBILITY);
   const minCompetitionsForEligibility = Number(minCompetitionsRaw);
   if (
