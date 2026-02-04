@@ -78,11 +78,21 @@ export function getCustomLinkedWallets(
   privyUser: PrivyUser,
 ): WalletWithMetadata[] {
   const customWallets = privyUser.linkedAccounts.filter(isCustomLinkedWallet);
-  // Transform wallet address to lowercase for db comparison reasons
-  return customWallets.map((wallet) => ({
-    ...wallet,
-    address: wallet.address.toLowerCase(),
-  }));
+  // Sort by firstVerifiedAt (most recent first) and transform wallet address to lowercase
+  return customWallets
+    .sort((a, b) => {
+      const timeA = a.firstVerifiedAt
+        ? new Date(a.firstVerifiedAt).getTime()
+        : 0;
+      const timeB = b.firstVerifiedAt
+        ? new Date(b.firstVerifiedAt).getTime()
+        : 0;
+      return timeB - timeA;
+    })
+    .map((wallet) => ({
+      ...wallet,
+      address: wallet.address.toLowerCase(),
+    }));
 }
 
 /**
@@ -124,10 +134,10 @@ export function extractPrivyUserInfo(privyUser: PrivyUser): PrivyUserInfo {
   const privyId = privyUser.id;
 
   // Determine loginWallet: for wallet-first users without embedded wallet,
-  // use the most recent custom wallet (sorted by linkedAt, most recent first)
+  // use the most recent custom wallet (sorted by firstVerifiedAt, most recent first)
   let loginWallet: WalletWithMetadata | undefined;
   if (!embeddedWallet && customWallets.length > 0) {
-    // Custom wallets are already sorted by linkedAt in getCustomLinkedWallets,
+    // Custom wallets are sorted by firstVerifiedAt in getCustomLinkedWallets,
     // so take the first one (most recent)
     loginWallet = customWallets[0];
   }

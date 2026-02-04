@@ -429,6 +429,8 @@ export class UserService {
 
       // 2. For wallet-first login: check if wallet is already linked to existing user
       //    (handles: email signup -> link wallet -> login with wallet)
+      //    Also serves as account recovery: if user loses email access, they can still
+      //    log in with their linked wallet and we'll update their privyId.
       const walletToCheck = loginWallet?.address ?? customWallets[0]?.address;
       if (walletToCheck) {
         const existingUserWithWallet =
@@ -447,6 +449,7 @@ export class UserService {
       // 3. New user registration
       let walletAddress: string;
       let embeddedWalletAddress: string | undefined;
+      let isWalletFirstUser = false;
 
       if (embeddedWallet) {
         // Email/social login path
@@ -456,11 +459,12 @@ export class UserService {
         // Wallet-first login path
         walletAddress = loginWallet.address;
         embeddedWalletAddress = undefined;
+        isWalletFirstUser = true;
       } else {
         throw new Error(`No wallet found for Privy user: ${privyId}`);
       }
 
-      return await this.registerUser(
+      const newUser = await this.registerUser(
         walletAddress,
         name,
         email, // May be undefined for wallet-first users
@@ -469,6 +473,16 @@ export class UserService {
         privyId,
         embeddedWalletAddress,
       );
+
+      // Wallet-first users have proven ownership by logging in with their wallet
+      if (isWalletFirstUser) {
+        return await this.updateUser({
+          id: newUser.id,
+          walletLastVerifiedAt: now,
+        });
+      }
+
+      return newUser;
     } catch (error) {
       const violatedField = checkUserUniqueConstraintViolation(error);
       if (violatedField) {
