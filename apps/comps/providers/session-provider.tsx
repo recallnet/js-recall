@@ -171,17 +171,25 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
 
   const { login: loginInner } = useLogin({
     onComplete: async ({ user, isNewUser }) => {
+      // Check if user has external wallet (wallet-first login)
+      const hasExternalWallet = user.linkedAccounts?.some(
+        (account) =>
+          account.type === "wallet" &&
+          (account as WalletWithMetadata).walletClientType !== "privy",
+      );
+
       // Note: Privy has a known issue where embedded wallets are, sometimes, not created for a
-      // user. If an embedded wallet exists, it'll always be available in the `user.wallet`
-      // property. Thus, we can simply check if it exists, else, trigger its creation explicitly.
-      if (!user.wallet) {
+      // user. Only create embedded wallet for email users who don't have one - wallet-first users
+      // don't need embedded wallets.
+      if (!user.wallet && !hasExternalWallet) {
         const message = `Privy failed to create embedded wallet. Creating wallet for user DID: ${user.id}`;
         console.warn(message);
         Sentry.captureMessage(message, "warning");
         await createWallet();
       }
 
-      setShouldLinkWallet(isNewUser);
+      // Only prompt wallet linking for email users, not wallet-first users
+      setShouldLinkWallet(isNewUser && !hasExternalWallet);
 
       if (isNewUser && !onboardingCompleteRef.current) {
         setShowOnboarding(true);

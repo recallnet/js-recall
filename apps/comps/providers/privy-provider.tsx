@@ -28,7 +28,7 @@ const privyConfig: PrivyClientConfig = {
   supportedChains: [chainWithRpcUrl],
 
   // Login methods configuration
-  loginMethods: ["email", "google"],
+  loginMethods: ["email", "google", "wallet"],
 
   // Appearance configuration
   appearance: {
