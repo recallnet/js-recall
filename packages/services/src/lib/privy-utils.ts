@@ -125,20 +125,14 @@ export function extractPrivyUserInfo(privyUser: PrivyUser): PrivyUserInfo {
     throw new Error(`Privy wallet address not found for user: ${privyUser.id}`);
   }
 
-  // Email is optional for wallet-first users
   const email = privyUser.google?.email ?? privyUser.email?.address;
-
-  // Embedded wallet may not exist for wallet-first users
   const embeddedWallet = getEmbeddedLinkedWallet(privyUser);
   const customWallets = getCustomLinkedWallets(privyUser);
   const privyId = privyUser.id;
 
-  // Determine loginWallet: for wallet-first users without embedded wallet,
-  // use the most recent custom wallet (sorted by firstVerifiedAt, most recent first)
+  // For wallet-first users, use the most recent custom wallet
   let loginWallet: WalletWithMetadata | undefined;
   if (!embeddedWallet && customWallets.length > 0) {
-    // Custom wallets are sorted by firstVerifiedAt in getCustomLinkedWallets,
-    // so take the first one (most recent)
     loginWallet = customWallets[0];
   }
 

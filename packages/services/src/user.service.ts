@@ -418,7 +418,6 @@ export class UserService {
       const name = generateRandomUsername();
       const now = new Date();
 
-      // 1. Check for existing user by privyId (handles re-login)
       const existingUserWithPrivyId = await this.getUserByPrivyId(privyId);
       if (existingUserWithPrivyId) {
         return await this.updateUser({
@@ -427,26 +426,22 @@ export class UserService {
         });
       }
 
-      // 2. For wallet-first login: check if wallet is already linked to existing user
-      //    (handles: email signup -> link wallet -> login with wallet)
-      //    Also serves as account recovery: if user loses email access, they can still
-      //    log in with their linked wallet and we'll update their privyId.
+      // Check if wallet is already linked to existing user (account recovery path)
       const walletToCheck = loginWallet?.address ?? customWallets[0]?.address;
       if (walletToCheck) {
         const existingUserWithWallet =
           await this.getUserByWalletAddress(walletToCheck);
         if (existingUserWithWallet) {
-          // Link this Privy account to existing user, auto-verify wallet ownership
           return await this.updateUser({
             id: existingUserWithWallet.id,
             privyId,
             lastLoginAt: now,
-            walletLastVerifiedAt: now, // Auto-verify: logging in with wallet proves ownership
+            walletLastVerifiedAt: now,
           });
         }
       }
 
-      // 3. New user registration
+      // New user registration
       let walletAddress: string;
       let embeddedWalletAddress: string | undefined;
       let isWalletFirstUser = false;
@@ -467,14 +462,13 @@ export class UserService {
       const newUser = await this.registerUser(
         walletAddress,
         name,
-        email, // May be undefined for wallet-first users
+        email,
         undefined,
         undefined,
         privyId,
         embeddedWalletAddress,
       );
 
-      // Wallet-first users have proven ownership by logging in with their wallet
       if (isWalletFirstUser) {
         return await this.updateUser({
           id: newUser.id,

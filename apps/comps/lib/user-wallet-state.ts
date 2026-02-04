@@ -15,8 +15,7 @@ export function userWalletState(
 ): UserWalletState {
   const { walletAddress, embeddedWalletAddress, walletLastVerifiedAt } = user;
 
-  // Wallet-first user: no embedded wallet, treat as external-linked
-  // These users signed up with their external wallet, so it's already verified
+  // Wallet-first user: no embedded wallet
   if (!embeddedWalletAddress) {
     return {
       type: "external-linked",
@@ -26,7 +25,6 @@ export function userWalletState(
     };
   }
 
-  // Existing logic for email-first users
   if (walletAddress !== embeddedWalletAddress && !walletLastVerifiedAt) {
     return {
       type: "external-not-linked",
