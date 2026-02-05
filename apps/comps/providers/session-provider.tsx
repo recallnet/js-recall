@@ -108,7 +108,6 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
   const { setActiveWallet } = useSetActiveWallet();
 
   const [loginError, setLoginError] = useState<Error | null>(null);
-  const [shouldLinkWallet, setShouldLinkWallet] = useState(false);
   const [isWalletConnected, setIsWalletConnected] = useState(false);
   const [linkOrConnectWalletError, setLinkOrConnectWalletError] =
     useState<Error | null>(null);
@@ -187,9 +186,6 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
         Sentry.captureMessage(message, "warning");
         await createWallet();
       }
-
-      // Only prompt wallet linking for email users, not wallet-first users
-      setShouldLinkWallet(isNewUser && !hasExternalWallet);
 
       if (isNewUser && !onboardingCompleteRef.current) {
         setShowOnboarding(true);
@@ -374,13 +370,6 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
       // syncActiveWallet();
     }
   }, [backendUser?.walletAddress, syncActiveWallet, readyWallets]);
-
-  useEffect(() => {
-    if (backendUser && shouldLinkWallet) {
-      linkOrConnectWallet();
-      setShouldLinkWallet(false);
-    }
-  }, [backendUser, shouldLinkWallet, linkOrConnectWallet]);
 
   // Mutation for updating user data
   const {
