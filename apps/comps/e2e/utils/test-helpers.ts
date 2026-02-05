@@ -92,8 +92,8 @@ export async function registerUserAndAgentAndGetRpcClient(params: {
  * Create a Privy-authenticated RPC client for testing user routes
  * Generates a unique test user and returns an RPC client with an active Privy session
  *
- * For wallet-first users, pass `provider: "wallet"` and a `walletAddress`.
- * This simulates a user logging in with their external wallet (no email, no embedded wallet).
+ * For wallet-first users, pass `provider: "wallet"`.
+ * This simulates a user logging in with their external wallet (no email).
  */
 export async function createPrivyAuthenticatedRpcClient(params: {
   userName?: string;
