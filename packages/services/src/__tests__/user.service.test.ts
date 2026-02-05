@@ -514,5 +514,315 @@ describe("UserManager", () => {
         userManager.loginWithPrivyToken("mock-identity-token", mockPrivyClient),
       ).rejects.toThrow("A user with this privyId already exists");
     });
+
+    describe("wallet-first login", () => {
+      const testExternalWalletAddress =
+        "0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa";
+
+      it("should register wallet-first user with external wallet as primary", async () => {
+        const newUser = {
+          id: "wallet-first-user-id",
+          privyId: testPrivyId,
+          walletAddress: testExternalWalletAddress,
+          embeddedWalletAddress: testEmbeddedWalletAddress,
+          status: "active",
+          isSubscribed: false,
+        } as SelectUser;
+
+        vi.mocked(verifyAndGetPrivyUserInfo).mockResolvedValue({
+          privyId: testPrivyId,
+          embeddedWallet: {
+            address: testEmbeddedWalletAddress,
+            chainType: "ethereum",
+            walletClientType: "privy",
+            connectorType: "embedded",
+            verifiedAt: new Date(),
+            firstVerifiedAt: new Date(),
+            latestVerifiedAt: new Date(),
+          },
+          customWallets: [
+            {
+              type: "wallet",
+              address: testExternalWalletAddress,
+              chainType: "ethereum",
+              walletClientType: "injected",
+              connectorType: "injected",
+              verifiedAt: new Date(),
+              firstVerifiedAt: new Date(),
+              latestVerifiedAt: new Date(),
+            },
+          ],
+          loginWallet: {
+            type: "wallet",
+            address: testExternalWalletAddress,
+            chainType: "ethereum",
+            walletClientType: "injected",
+            connectorType: "injected",
+            verifiedAt: new Date(),
+            firstVerifiedAt: new Date(),
+            latestVerifiedAt: new Date(),
+          },
+        });
+
+        mockUserRepo.findByPrivyId = vi.fn().mockResolvedValue(null);
+        mockUserRepo.findByWalletAddress = vi.fn().mockResolvedValue(null);
+        mockUserRepo.create = vi.fn().mockResolvedValue(newUser);
+        mockUserRepo.findById = vi.fn().mockResolvedValue(newUser);
+        mockUserRepo.findDuplicateByWalletAddress = vi
+          .fn()
+          .mockResolvedValue(undefined);
+        mockUserRepo.update = vi.fn().mockResolvedValue({
+          ...newUser,
+          walletLastVerifiedAt: new Date(),
+        });
+
+        const result = await userManager.loginWithPrivyToken(
+          "mock-identity-token",
+          mockPrivyClient,
+        );
+
+        expect(result.id).toBe(newUser.id);
+        expect(mockUserRepo.create).toHaveBeenCalledWith(
+          expect.objectContaining({
+            walletAddress: testExternalWalletAddress,
+            embeddedWalletAddress: testEmbeddedWalletAddress,
+          }),
+        );
+        // Should update walletLastVerifiedAt after registration
+        expect(mockUserRepo.update).toHaveBeenCalled();
+      });
+
+      it("should register wallet-first user without embedded wallet", async () => {
+        const newUser = {
+          id: "wallet-first-user-id",
+          privyId: testPrivyId,
+          walletAddress: testExternalWalletAddress,
+          status: "active",
+          isSubscribed: false,
+        } as SelectUser;
+
+        vi.mocked(verifyAndGetPrivyUserInfo).mockResolvedValue({
+          privyId: testPrivyId,
+          customWallets: [
+            {
+              type: "wallet",
+              address: testExternalWalletAddress,
+              chainType: "ethereum",
+              walletClientType: "injected",
+              connectorType: "injected",
+              verifiedAt: new Date(),
+              firstVerifiedAt: new Date(),
+              latestVerifiedAt: new Date(),
+            },
+          ],
+          loginWallet: {
+            type: "wallet",
+            address: testExternalWalletAddress,
+            chainType: "ethereum",
+            walletClientType: "injected",
+            connectorType: "injected",
+            verifiedAt: new Date(),
+            firstVerifiedAt: new Date(),
+            latestVerifiedAt: new Date(),
+          },
+        });
+
+        mockUserRepo.findByPrivyId = vi.fn().mockResolvedValue(null);
+        mockUserRepo.findByWalletAddress = vi.fn().mockResolvedValue(null);
+        mockUserRepo.create = vi.fn().mockResolvedValue(newUser);
+        mockUserRepo.findById = vi.fn().mockResolvedValue(newUser);
+        mockUserRepo.findDuplicateByWalletAddress = vi
+          .fn()
+          .mockResolvedValue(undefined);
+        mockUserRepo.update = vi.fn().mockResolvedValue({
+          ...newUser,
+          walletLastVerifiedAt: new Date(),
+        });
+
+        await userManager.loginWithPrivyToken(
+          "mock-identity-token",
+          mockPrivyClient,
+        );
+
+        expect(mockUserRepo.create).toHaveBeenCalledWith(
+          expect.objectContaining({
+            walletAddress: testExternalWalletAddress,
+            embeddedWalletAddress: undefined,
+          }),
+        );
+      });
+    });
+
+    describe("wallet recovery", () => {
+      const testExternalWalletAddress =
+        "0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa";
+      const newPrivyId = "did:privy:newuser456";
+
+      it("should recover account when wallet matches and privyId is null", async () => {
+        const existingUser = {
+          id: "existing-user-id",
+          privyId: null,
+          walletAddress: testExternalWalletAddress,
+          status: "active",
+        } as unknown as SelectUser;
+
+        const updatedUser = {
+          ...existingUser,
+          privyId: newPrivyId,
+          lastLoginAt: new Date(),
+          walletLastVerifiedAt: new Date(),
+        } as unknown as SelectUser;
+
+        vi.mocked(verifyAndGetPrivyUserInfo).mockResolvedValue({
+          privyId: newPrivyId,
+          customWallets: [
+            {
+              type: "wallet",
+              address: testExternalWalletAddress,
+              chainType: "ethereum",
+              walletClientType: "injected",
+              connectorType: "injected",
+              verifiedAt: new Date(),
+              firstVerifiedAt: new Date(),
+              latestVerifiedAt: new Date(),
+            },
+          ],
+          loginWallet: {
+            type: "wallet",
+            address: testExternalWalletAddress,
+            chainType: "ethereum",
+            walletClientType: "injected",
+            connectorType: "injected",
+            verifiedAt: new Date(),
+            firstVerifiedAt: new Date(),
+            latestVerifiedAt: new Date(),
+          },
+        });
+
+        mockUserRepo.findByPrivyId = vi.fn().mockResolvedValue(null);
+        mockUserRepo.findByWalletAddress = vi
+          .fn()
+          .mockResolvedValue(existingUser);
+        mockUserRepo.findById = vi.fn().mockResolvedValue(existingUser);
+        mockUserRepo.findDuplicateByWalletAddress = vi
+          .fn()
+          .mockResolvedValue(undefined);
+        mockUserRepo.update = vi.fn().mockResolvedValue(updatedUser);
+
+        const result = await userManager.loginWithPrivyToken(
+          "mock-identity-token",
+          mockPrivyClient,
+        );
+
+        expect(result.id).toBe(existingUser.id);
+        const updateCall = vi.mocked(mockUserRepo.update).mock.calls[0];
+        expect(updateCall?.[0]).toMatchObject({
+          id: existingUser.id,
+          privyId: newPrivyId,
+        });
+        expect(updateCall?.[0]).toHaveProperty("walletLastVerifiedAt");
+      });
+
+      it("should throw 409 when wallet matches but privyId differs", async () => {
+        const existingUser = {
+          id: "existing-user-id",
+          privyId: "did:privy:originalowner",
+          walletAddress: testExternalWalletAddress,
+          status: "active",
+        } as SelectUser;
+
+        vi.mocked(verifyAndGetPrivyUserInfo).mockResolvedValue({
+          privyId: newPrivyId,
+          customWallets: [
+            {
+              type: "wallet",
+              address: testExternalWalletAddress,
+              chainType: "ethereum",
+              walletClientType: "injected",
+              connectorType: "injected",
+              verifiedAt: new Date(),
+              firstVerifiedAt: new Date(),
+              latestVerifiedAt: new Date(),
+            },
+          ],
+          loginWallet: {
+            type: "wallet",
+            address: testExternalWalletAddress,
+            chainType: "ethereum",
+            walletClientType: "injected",
+            connectorType: "injected",
+            verifiedAt: new Date(),
+            firstVerifiedAt: new Date(),
+            latestVerifiedAt: new Date(),
+          },
+        });
+
+        mockUserRepo.findByPrivyId = vi.fn().mockResolvedValue(null);
+        mockUserRepo.findByWalletAddress = vi
+          .fn()
+          .mockResolvedValue(existingUser);
+
+        await expect(
+          userManager.loginWithPrivyToken(
+            "mock-identity-token",
+            mockPrivyClient,
+          ),
+        ).rejects.toThrow("Wallet is already linked to another account");
+      });
+
+      it("should not trigger recovery for email users with custom wallets", async () => {
+        const newUser = {
+          id: "new-email-user-id",
+          privyId: testPrivyId,
+          email: testEmail,
+          walletAddress: testEmbeddedWalletAddress,
+          embeddedWalletAddress: testEmbeddedWalletAddress,
+          status: "active",
+          isSubscribed: true,
+        } as SelectUser;
+
+        vi.mocked(verifyAndGetPrivyUserInfo).mockResolvedValue({
+          privyId: testPrivyId,
+          email: testEmail,
+          embeddedWallet: {
+            address: testEmbeddedWalletAddress,
+            chainType: "ethereum",
+            walletClientType: "privy",
+            connectorType: "embedded",
+            verifiedAt: new Date(),
+            firstVerifiedAt: new Date(),
+            latestVerifiedAt: new Date(),
+          },
+          customWallets: [
+            {
+              type: "wallet",
+              address: testExternalWalletAddress,
+              chainType: "ethereum",
+              walletClientType: "injected",
+              connectorType: "injected",
+              verifiedAt: new Date(),
+              firstVerifiedAt: new Date(),
+              latestVerifiedAt: new Date(),
+            },
+          ],
+          // loginWallet is undefined because email is present
+        });
+
+        mockUserRepo.findByPrivyId = vi.fn().mockResolvedValue(null);
+        mockUserRepo.findByEmail = vi.fn().mockResolvedValue(null);
+        mockUserRepo.create = vi.fn().mockResolvedValue(newUser);
+        mockUserRepo.update = vi.fn().mockResolvedValue(newUser);
+
+        await userManager.loginWithPrivyToken(
+          "mock-identity-token",
+          mockPrivyClient,
+        );
+
+        // Should NOT have checked wallet recovery
+        expect(mockUserRepo.findByWalletAddress).not.toHaveBeenCalled();
+        // Should have created a new user instead
+        expect(mockUserRepo.create).toHaveBeenCalled();
+      });
+    });
   });
 });

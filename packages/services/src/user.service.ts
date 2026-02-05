@@ -413,7 +413,7 @@ export class UserService {
     privyClient: PrivyClient,
   ): Promise<SelectUser> {
     try {
-      const { privyId, email, embeddedWallet, customWallets, loginWallet } =
+      const { privyId, email, embeddedWallet, loginWallet } =
         await verifyAndGetPrivyUserInfo(identityToken, privyClient);
       const name = generateRandomUsername();
       const now = new Date();
@@ -426,12 +426,22 @@ export class UserService {
         });
       }
 
-      // Check if wallet is already linked to existing user (account recovery path)
-      const walletToCheck = loginWallet?.address ?? customWallets[0]?.address;
-      if (walletToCheck) {
-        const existingUserWithWallet =
-          await this.getUserByWalletAddress(walletToCheck);
+      // Account recovery: wallet-first login where wallet is already linked to existing user
+      // (e.g., email signup -> link wallet -> login with wallet after privyId reset)
+      if (loginWallet) {
+        const existingUserWithWallet = await this.getUserByWalletAddress(
+          loginWallet.address,
+        );
         if (existingUserWithWallet) {
+          if (
+            existingUserWithWallet.privyId &&
+            existingUserWithWallet.privyId !== privyId
+          ) {
+            throw new ApiError(
+              409,
+              "Wallet is already linked to another account",
+            );
+          }
           return await this.updateUser({
             id: existingUserWithWallet.id,
             privyId,
