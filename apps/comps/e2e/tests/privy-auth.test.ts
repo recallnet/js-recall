@@ -24,7 +24,6 @@ describe("Privy Authentication", () => {
   });
 
   test("should authenticate user with wallet provider", async () => {
-    // Authenticate with Privy using RPC - wallet-first login (no email, no embedded wallet)
     const { user } = await createPrivyAuthenticatedRpcClient({
       userName: "Bob Wallet",
       provider: "wallet",
@@ -32,9 +31,11 @@ describe("Privy Authentication", () => {
 
     expect(user.id).toBeDefined();
     expect(user.walletAddress).toBeDefined();
-    // Wallet-first users should not have an email or embedded wallet
+    expect(user.embeddedWalletAddress).toBeDefined();
+    // Wallet-first: external wallet is primary, embedded is different
+    expect(user.walletAddress).not.toBe(user.embeddedWalletAddress);
+    // Wallet-first users don't have email
     expect(user.email).toBeUndefined();
-    expect(user.embeddedWalletAddress).toBeUndefined();
   });
 
   test("should create user client with Privy authentication", async () => {

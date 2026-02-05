@@ -15,16 +15,6 @@ export function userWalletState(
 ): UserWalletState {
   const { walletAddress, embeddedWalletAddress, walletLastVerifiedAt } = user;
 
-  // Wallet-first user: no embedded wallet
-  if (!embeddedWalletAddress) {
-    return {
-      type: "external-linked",
-      address: walletAddress,
-      lastVerifiedAt:
-        walletLastVerifiedAt?.toISOString() ?? new Date().toISOString(),
-    };
-  }
-
   if (walletAddress !== embeddedWalletAddress && !walletLastVerifiedAt) {
     return {
       type: "external-not-linked",

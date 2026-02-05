@@ -130,9 +130,9 @@ export function extractPrivyUserInfo(privyUser: PrivyUser): PrivyUserInfo {
   const customWallets = getCustomLinkedWallets(privyUser);
   const privyId = privyUser.id;
 
-  // For wallet-first users, use the most recent custom wallet
+  // Wallet-first users: no email but have custom wallet
   let loginWallet: WalletWithMetadata | undefined;
-  if (!embeddedWallet && customWallets.length > 0) {
+  if (!email && customWallets.length > 0) {
     loginWallet = customWallets[0];
   }
 

@@ -446,15 +446,15 @@ export class UserService {
       let embeddedWalletAddress: string | undefined;
       let isWalletFirstUser = false;
 
-      if (embeddedWallet) {
-        // Email/social login path
+      if (loginWallet) {
+        // Wallet-first login: use external wallet as primary
+        walletAddress = loginWallet.address;
+        embeddedWalletAddress = embeddedWallet?.address;
+        isWalletFirstUser = true;
+      } else if (embeddedWallet) {
+        // Email/social login: use embedded wallet as primary
         walletAddress = embeddedWallet.address;
         embeddedWalletAddress = embeddedWallet.address;
-      } else if (loginWallet) {
-        // Wallet-first login path
-        walletAddress = loginWallet.address;
-        embeddedWalletAddress = undefined;
-        isWalletFirstUser = true;
       } else {
         throw new Error(`No wallet found for Privy user: ${privyId}`);
       }

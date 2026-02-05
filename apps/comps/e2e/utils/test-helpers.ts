@@ -105,39 +105,31 @@ export async function createPrivyAuthenticatedRpcClient(params: {
 }) {
   const provider = params.provider || "email";
   const isWalletFirst = provider === "wallet";
-
-  // Generate unique wallet and IDs
-  const testEmbeddedWallet = isWalletFirst
-    ? undefined
-    : params.embeddedWalletAddress || generateRandomEthAddress();
   const uniquePrivyId = params.privyId || generateRandomPrivyId();
   const timestamp = Date.now();
+
   // Wallet-first users don't have emails
   const uniqueUserEmail = isWalletFirst
     ? undefined
     : params.userEmail || `privy-user-${timestamp}@test.com`;
-  // Wallet-first users must have a wallet address
-  const walletAddress = isWalletFirst
-    ? params.walletAddress || generateRandomEthAddress()
-    : params.walletAddress || testEmbeddedWallet;
 
-  // Create Privy user and token
+  // For wallet-first, walletAddress is their external wallet
+  // For email-first, walletAddress defaults to embedded (unless linking external)
+  const externalWallet = isWalletFirst
+    ? params.walletAddress || generateRandomEthAddress()
+    : params.walletAddress;
+
   const privyUser = createTestPrivyUser({
     privyId: uniquePrivyId,
     name: params.userName ?? undefined,
     email: uniqueUserEmail,
-    walletAddress,
+    walletAddress: externalWallet,
     provider,
   });
   const privyToken = await createMockPrivyToken(privyUser);
-
-  // Create RPC client with Privy auth
   const rpcClient = await createTestRpcClient(privyToken);
-
-  // Login to create user
   let user = await rpcClient.user.login();
 
-  // Update name if provided
   if (params.userName) {
     user = await rpcClient.user.updateProfile({
       name: params.userName,
@@ -145,28 +137,21 @@ export async function createPrivyAuthenticatedRpcClient(params: {
   }
 
   // Link custom wallet if provided (only for non-wallet-first users)
-  // Note: we call `linkWallet` for test convenience. In reality,
-  // creating a user and linking a wallet are two separate operations.
-  if (
-    !isWalletFirst &&
-    params.walletAddress &&
-    params.walletAddress !== testEmbeddedWallet
-  ) {
+  if (!isWalletFirst && params.walletAddress) {
     MockPrivyClient.linkWallet(uniquePrivyId, params.walletAddress);
     user = await rpcClient.user.linkWallet({
       walletAddress: params.walletAddress,
     });
   }
 
-  // walletAddress is guaranteed to be defined (we generate one if not provided)
-  const finalWalletAddress = user.walletAddress || walletAddress!;
+  const finalWalletAddress = user.walletAddress!;
 
   return {
     rpcClient,
     user: {
       id: user.id,
       walletAddress: finalWalletAddress,
-      embeddedWalletAddress: user.embeddedWalletAddress || testEmbeddedWallet,
+      embeddedWalletAddress: user.embeddedWalletAddress,
       walletLastVerifiedAt: user.walletLastVerifiedAt,
       privyId: user.privyId,
       name: user.name || params.userName,
