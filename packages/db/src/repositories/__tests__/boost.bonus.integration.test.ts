@@ -1,4 +1,4 @@
-import { and, eq } from "drizzle-orm";
+import { and, eq, sql } from "drizzle-orm";
 import { randomUUID } from "node:crypto";
 import {
   afterEach,
@@ -60,40 +60,19 @@ describe("BoostRepository Bonus Boost Methods Integration Tests", () => {
   });
 
   afterEach(async () => {
-    try {
-      const balances = await db
-        .select({ id: schema.boostBalances.id })
-        .from(schema.boostBalances)
-        .where(eq(schema.boostBalances.userId, testUserId));
-
-      for (const balance of balances) {
-        await db
-          .delete(schema.boostChanges)
-          .where(eq(schema.boostChanges.balanceId, balance.id));
-      }
-
-      await db
-        .delete(schema.boostBalances)
-        .where(eq(schema.boostBalances.userId, testUserId));
-
-      await db
-        .delete(schema.boostBonus)
-        .where(eq(schema.boostBonus.userId, testUserId));
-
-      await db
-        .delete(coreSchema.competitions)
-        .where(eq(coreSchema.competitions.id, testCompetitionId));
-
-      await db
-        .delete(coreSchema.users)
-        .where(eq(coreSchema.users.id, testUserId));
-
-      await db
-        .delete(coreSchema.admins)
-        .where(eq(coreSchema.admins.id, testAdminId));
-    } catch (error) {
-      console.warn("Cleanup error:", error);
-    }
+    // Truncate all tables to ensure complete test isolation
+    // Order matters due to FK constraints, but CASCADE handles it
+    await db.execute(sql`TRUNCATE TABLE
+      boost_changes,
+      boost_balances,
+      boost_bonus,
+      agent_boosts,
+      agent_boost_totals,
+      stake_boost_awards,
+      competitions,
+      admins,
+      users
+      CASCADE`);
   });
 
   describe("createBoostBonus()", () => {
@@ -487,10 +466,6 @@ describe("BoostRepository Bonus Boost Methods Integration Tests", () => {
 
       expect(results).toHaveLength(1);
       expect(results[0]!.id).toBe(testUserBoost.id);
-
-      await db
-        .delete(coreSchema.users)
-        .where(eq(coreSchema.users.id, otherUserId));
     });
   });
 
@@ -535,10 +510,6 @@ describe("BoostRepository Bonus Boost Methods Integration Tests", () => {
       expect(ids).toContain(boost1.id);
       expect(ids).toContain(boost2.id);
       expect(ids).not.toContain(inactive.id);
-
-      await db
-        .delete(coreSchema.users)
-        .where(eq(coreSchema.users.id, otherUserId));
     });
 
     test("should return empty array when no active boosts exist", async () => {
@@ -939,26 +910,6 @@ describe("BoostRepository Bonus Boost Methods Integration Tests", () => {
       const competitionIds = results.map((r) => r.competitionId);
       expect(competitionIds).toContain(testCompetitionId);
       expect(competitionIds).toContain(competition2Id);
-
-      const balance2 = await db
-        .select()
-        .from(schema.boostBalances)
-        .where(
-          and(
-            eq(schema.boostBalances.userId, testUserId),
-            eq(schema.boostBalances.competitionId, competition2Id),
-          ),
-        )
-        .limit(1);
-      if (balance2[0]) {
-        await db
-          .delete(schema.boostChanges)
-          .where(eq(schema.boostChanges.balanceId, balance2[0].id));
-      }
-
-      await db
-        .delete(coreSchema.competitions)
-        .where(eq(coreSchema.competitions.id, competition2Id));
     });
 
     test("should not return changes without boostBonusId in meta", async () => {
@@ -1104,26 +1055,6 @@ describe("BoostRepository Bonus Boost Methods Integration Tests", () => {
         await repository.findBoostChangesByCompetitionId(testCompetitionId);
 
       expect(results).toHaveLength(0);
-
-      const balance2 = await db
-        .select()
-        .from(schema.boostBalances)
-        .where(
-          and(
-            eq(schema.boostBalances.userId, testUserId),
-            eq(schema.boostBalances.competitionId, competition2Id),
-          ),
-        )
-        .limit(1);
-      if (balance2[0]) {
-        await db
-          .delete(schema.boostChanges)
-          .where(eq(schema.boostChanges.balanceId, balance2[0].id));
-      }
-
-      await db
-        .delete(coreSchema.competitions)
-        .where(eq(coreSchema.competitions.id, competition2Id));
     });
   });
 });
