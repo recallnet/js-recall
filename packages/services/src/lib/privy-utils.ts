@@ -31,14 +31,16 @@ export function extractPrivyIdentityToken(request: {
 export const PRIVY_ISSUER = "privy.io";
 
 /**
- * A subset of user profile data extracted from Privy user object that matches our database schema,
- * and guaranteed to be present in the Privy user object or through parsing logic.
+ * A subset of user profile data extracted from Privy user object that matches our database schema.
+ * For email/social logins: email and embeddedWallet are present.
+ * For wallet-first logins: loginWallet is present, email and embeddedWallet may be absent.
  */
 export type PrivyUserInfo = {
   privyId: string;
-  email: string;
-  embeddedWallet: Omit<WalletWithMetadata, "type">;
+  email?: string; // Optional for wallet-first users
+  embeddedWallet?: Omit<WalletWithMetadata, "type">; // Optional for wallet-first users
   customWallets: WalletWithMetadata[];
+  loginWallet?: WalletWithMetadata; // Wallet used for wallet-first login
 };
 
 /**
@@ -76,11 +78,21 @@ export function getCustomLinkedWallets(
   privyUser: PrivyUser,
 ): WalletWithMetadata[] {
   const customWallets = privyUser.linkedAccounts.filter(isCustomLinkedWallet);
-  // Transform wallet address to lowercase for db comparison reasons
-  return customWallets.map((wallet) => ({
-    ...wallet,
-    address: wallet.address.toLowerCase(),
-  }));
+  // Sort by firstVerifiedAt (most recent first) and transform wallet address to lowercase
+  return customWallets
+    .sort((a, b) => {
+      const timeA = a.firstVerifiedAt
+        ? new Date(a.firstVerifiedAt).getTime()
+        : 0;
+      const timeB = b.firstVerifiedAt
+        ? new Date(b.firstVerifiedAt).getTime()
+        : 0;
+      return timeB - timeA;
+    })
+    .map((wallet) => ({
+      ...wallet,
+      address: wallet.address.toLowerCase(),
+    }));
 }
 
 /**
@@ -100,8 +112,8 @@ export function getEmbeddedLinkedWallet(
 }
 
 /**
- * Extract comprehensive profile data from Privy user object. Per our Privy configuration, we can
- * guarantee an email and embedded wallet address, and (potentially) a linked wallet.
+ * Extract comprehensive profile data from Privy user object.
+ * Supports both email/social logins (with embedded wallet) and wallet-first logins.
  *
  * @param privyUser - The Privy user object.
  * @returns The user profile data.
@@ -112,25 +124,23 @@ export function extractPrivyUserInfo(privyUser: PrivyUser): PrivyUserInfo {
     // or may not be the embedded Privy wallet.
     throw new Error(`Privy wallet address not found for user: ${privyUser.id}`);
   }
-  const email = privyUser.google?.email ?? privyUser.email?.address;
-  if (!email) {
-    throw new Error(`Privy user email not found for user: ${privyUser.id}`);
-  }
 
-  // If the user has a linked wallet, use that address instead of the embedded Privy wallet address
+  const email = privyUser.google?.email ?? privyUser.email?.address;
   const embeddedWallet = getEmbeddedLinkedWallet(privyUser);
-  if (!embeddedWallet) {
-    throw new Error(
-      `Privy embedded wallet not found for user: ${privyUser.id}`,
-    );
-  }
   const customWallets = getCustomLinkedWallets(privyUser);
   const privyId = privyUser.id;
+
+  // Wallet-first users: no email but have custom wallet
+  let loginWallet: WalletWithMetadata | undefined;
+  if (!email && customWallets.length > 0) {
+    loginWallet = customWallets[0];
+  }
 
   return {
     privyId,
     email,
     embeddedWallet,
     customWallets,
+    loginWallet,
   };
 }

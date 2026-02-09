@@ -95,9 +95,7 @@ export class UserService {
           "Invalid Ethereum address format. Must be 0x followed by 40 hex characters.",
         );
       }
-      if (!email) {
-        throw new Error("Email is required");
-      }
+      // Email is no longer required - wallet-first users may not have an email
 
       // Convert to lowercase for consistency
       const normalizedWalletAddress = walletAddress.toLowerCase();
@@ -125,37 +123,39 @@ export class UserService {
       let savedUser = await this.userRepo.create(user);
       const savedUserId = savedUser.id;
 
-      // Attempt to subscribe to the email list after persistence
-      try {
-        const emailSubscriptionResult = await this.emailService.subscribeUser(
-          email,
-          {
-            userId: savedUserId,
-            name: name ?? undefined,
-          },
-        );
-        if (
-          emailSubscriptionResult?.success &&
-          savedUser.isSubscribed !== true
-        ) {
-          // Persist subscription status to DB
-          savedUser = await this.userRepo.update({
-            id: savedUserId,
-            isSubscribed: true,
-          });
-        } else if (
-          emailSubscriptionResult &&
-          !emailSubscriptionResult.success
-        ) {
+      // Attempt to subscribe to the email list after persistence (only if email provided)
+      if (email) {
+        try {
+          const emailSubscriptionResult = await this.emailService.subscribeUser(
+            email,
+            {
+              userId: savedUserId,
+              name: name ?? undefined,
+            },
+          );
+          if (
+            emailSubscriptionResult?.success &&
+            savedUser.isSubscribed !== true
+          ) {
+            // Persist subscription status to DB
+            savedUser = await this.userRepo.update({
+              id: savedUserId,
+              isSubscribed: true,
+            });
+          } else if (
+            emailSubscriptionResult &&
+            !emailSubscriptionResult.success
+          ) {
+            this.logger.error(
+              `[UserManager] Error subscribing user ${savedUser.id} to email list: ${emailSubscriptionResult.error}`,
+            );
+          }
+        } catch (subErr) {
           this.logger.error(
-            `[UserManager] Error subscribing user ${savedUser.id} to email list: ${emailSubscriptionResult.error}`,
+            { error: subErr },
+            `[UserManager] Unexpected error during email subscription for ${savedUser.id}:`,
           );
         }
-      } catch (subErr) {
-        this.logger.error(
-          { error: subErr },
-          `[UserManager] Unexpected error during email subscription for ${savedUser.id}:`,
-        );
       }
 
       // Update cache
@@ -401,6 +401,8 @@ export class UserService {
 
   /**
    * Authenticate user with Privy identity token and/or create a new user.
+   * Supports both email/social logins and wallet-first logins.
+   *
    * @param identityToken - The Privy identity token to verify
    * @param privyClient - The Privy client instance for user verification
    * @returns The authenticated or created user
@@ -411,10 +413,9 @@ export class UserService {
     privyClient: PrivyClient,
   ): Promise<SelectUser> {
     try {
-      const { privyId, email, embeddedWallet } =
+      const { privyId, email, embeddedWallet, loginWallet } =
         await verifyAndGetPrivyUserInfo(identityToken, privyClient);
       const name = generateRandomUsername();
-      const embeddedWalletAddress = embeddedWallet.address;
       const now = new Date();
 
       const existingUserWithPrivyId = await this.getUserByPrivyId(privyId);
@@ -425,10 +426,51 @@ export class UserService {
         });
       }
 
-      // Note: we create a new user with the embedded wallet address as the primary wallet address;
-      // a custom `walletAddress` is only linked through the explicit `linkWallet` user action.
-      return await this.registerUser(
-        embeddedWalletAddress,
+      // Account recovery: wallet-first login where wallet is already linked to existing user
+      // (e.g., email signup -> link wallet -> login with wallet after privyId reset)
+      if (loginWallet) {
+        const existingUserWithWallet = await this.getUserByWalletAddress(
+          loginWallet.address,
+        );
+        if (existingUserWithWallet) {
+          if (
+            existingUserWithWallet.privyId &&
+            existingUserWithWallet.privyId !== privyId
+          ) {
+            throw new ApiError(
+              409,
+              "Wallet is already linked to another account",
+            );
+          }
+          return await this.updateUser({
+            id: existingUserWithWallet.id,
+            privyId,
+            lastLoginAt: now,
+            walletLastVerifiedAt: now,
+          });
+        }
+      }
+
+      // New user registration
+      let walletAddress: string;
+      let embeddedWalletAddress: string | undefined;
+      let isWalletFirstUser = false;
+
+      if (loginWallet) {
+        // Wallet-first login: use external wallet as primary
+        walletAddress = loginWallet.address;
+        embeddedWalletAddress = embeddedWallet?.address;
+        isWalletFirstUser = true;
+      } else if (embeddedWallet) {
+        // Email/social login: use embedded wallet as primary
+        walletAddress = embeddedWallet.address;
+        embeddedWalletAddress = embeddedWallet.address;
+      } else {
+        throw new Error(`No wallet found for Privy user: ${privyId}`);
+      }
+
+      const newUser = await this.registerUser(
+        walletAddress,
         name,
         email,
         undefined,
@@ -436,6 +478,15 @@ export class UserService {
         privyId,
         embeddedWalletAddress,
       );
+
+      if (isWalletFirstUser) {
+        return await this.updateUser({
+          id: newUser.id,
+          walletLastVerifiedAt: now,
+        });
+      }
+
+      return newUser;
     } catch (error) {
       const violatedField = checkUserUniqueConstraintViolation(error);
       if (violatedField) {

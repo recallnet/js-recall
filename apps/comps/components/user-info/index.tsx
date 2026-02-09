@@ -194,7 +194,7 @@ export default function UserInfoSection({
 
             <div className="grid w-full auto-rows-[minmax(theme(spacing.8),auto)] grid-cols-[auto_minmax(0,1fr)] gap-x-4 gap-y-2">
               <FieldLabel>Email</FieldLabel>
-              <FieldValue>{user?.email}</FieldValue>
+              <FieldValue>{user?.email ?? "N/A"}</FieldValue>
 
               <FieldLabel>Website</FieldLabel>
               {editField === "website" ? (

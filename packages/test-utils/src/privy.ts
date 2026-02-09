@@ -203,7 +203,7 @@ export async function createMockPrivyToken(
   // Import the private key for ES256 signing
   const privateKey = await importPKCS8(TEST_PRIVY_PRIVATE_KEY, "ES256");
 
-  // Always add embedded wallet (required by Privy)
+  // Privy always creates an embedded wallet for all users
   const hash = userData.privyId.split(":").pop() || "default";
   let hexString = "";
   for (let i = 0; i < hash.length && hexString.length < 40; i++) {
