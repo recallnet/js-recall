@@ -95,9 +95,7 @@ export class UserService {
           "Invalid Ethereum address format. Must be 0x followed by 40 hex characters.",
         );
       }
-      if (!email) {
-        throw new Error("Email is required");
-      }
+      // Email is no longer required - wallet-first users may not have an email
 
       // Convert to lowercase for consistency
       const normalizedWalletAddress = walletAddress.toLowerCase();
@@ -105,8 +103,6 @@ export class UserService {
         embeddedWalletAddress?.toLowerCase();
 
       // Create user record with subscription status
-      // Note: the `newUserId` could be different than the `savedUserId` because registering a new
-      // user will update on conflict—so the `id` will be original `user.id` in the database.
       const newUserId = randomUUID();
       const user: InsertUser = {
         id: newUserId,
@@ -127,37 +123,39 @@ export class UserService {
       let savedUser = await this.userRepo.create(user);
       const savedUserId = savedUser.id;
 
-      // Attempt to subscribe to the email list after persistence
-      try {
-        const emailSubscriptionResult = await this.emailService.subscribeUser(
-          email,
-          {
-            userId: savedUserId,
-            name: name ?? undefined,
-          },
-        );
-        if (
-          emailSubscriptionResult?.success &&
-          savedUser.isSubscribed !== true
-        ) {
-          // Persist subscription status to DB
-          savedUser = await this.userRepo.update({
-            id: savedUserId,
-            isSubscribed: true,
-          });
-        } else if (
-          emailSubscriptionResult &&
-          !emailSubscriptionResult.success
-        ) {
+      // Attempt to subscribe to the email list after persistence (only if email provided)
+      if (email) {
+        try {
+          const emailSubscriptionResult = await this.emailService.subscribeUser(
+            email,
+            {
+              userId: savedUserId,
+              name: name ?? undefined,
+            },
+          );
+          if (
+            emailSubscriptionResult?.success &&
+            savedUser.isSubscribed !== true
+          ) {
+            // Persist subscription status to DB
+            savedUser = await this.userRepo.update({
+              id: savedUserId,
+              isSubscribed: true,
+            });
+          } else if (
+            emailSubscriptionResult &&
+            !emailSubscriptionResult.success
+          ) {
+            this.logger.error(
+              `[UserManager] Error subscribing user ${savedUser.id} to email list: ${emailSubscriptionResult.error}`,
+            );
+          }
+        } catch (subErr) {
           this.logger.error(
-            `[UserManager] Error subscribing user ${savedUser.id} to email list: ${emailSubscriptionResult.error}`,
+            { error: subErr },
+            `[UserManager] Unexpected error during email subscription for ${savedUser.id}:`,
           );
         }
-      } catch (subErr) {
-        this.logger.error(
-          { error: subErr },
-          `[UserManager] Unexpected error during email subscription for ${savedUser.id}:`,
-        );
       }
 
       // Update cache
@@ -257,45 +255,18 @@ export class UserService {
         user.walletAddress &&
         user.walletAddress !== currentUser.walletAddress
       ) {
-        // Note: this could happen if, e.g., a user tries to link a custom wallet to their account
         const isSanctioned = await this.walletWatchlist.isAddressSanctioned(
           user.walletAddress,
         );
         if (isSanctioned) {
           throw new Error(
-            "This wallet address is not permitted for use on this platform",
+            `Wallet address ${user.walletAddress} is not permitted for use on this platform`,
           );
         }
       }
 
-      // Check if another account exists with this wallet address
-      const duplicateAccount = user.walletAddress
-        ? await this.userRepo.findDuplicateByWalletAddress(
-            user.walletAddress,
-            user.id,
-          )
-        : undefined;
-
       const updatedUser = await this.db.transaction(async (tx) => {
-        if (duplicateAccount) {
-          await this.agentRepo.updateAgentsOwner(
-            duplicateAccount.id,
-            user.id,
-            tx,
-          );
-          const mergeRes = await this.boostRepo.mergeBoost(
-            duplicateAccount.id,
-            user.id,
-            tx,
-          );
-          this.logger.info(
-            mergeRes,
-            `Merged boost balances from duplicate user ${duplicateAccount.id} into ${user.id}`,
-          );
-          await this.deleteUser(duplicateAccount.id, tx);
-        }
-        const updatedUser = await this.userRepo.update({ ...user }, tx);
-        return updatedUser;
+        return await this.userRepo.update({ ...user }, tx);
       });
 
       // Update cache
@@ -311,9 +282,15 @@ export class UserService {
         { error },
         `[UserManager] Error updating user ${user.id}`,
       );
-      throw new Error(
-        `Failed to update user: ${error instanceof Error ? error.message : error}`,
-      );
+
+      const violatedField = checkUserUniqueConstraintViolation(error);
+      if (violatedField) {
+        throw new Error(`A user with this ${violatedField} already exists`);
+      }
+      if (error instanceof Error) {
+        throw error;
+      }
+      throw new Error(`Failed to update user: ${error}`);
     }
   }
 
@@ -403,8 +380,6 @@ export class UserService {
    */
   async getUserByPrivyId(privyId: string): Promise<SelectUser | null> {
     try {
-      // Note: We don't cache by Privy ID yet as this is a new feature
-      // and we expect most lookups to be by user ID or wallet address
       const user = await this.userRepo.findByPrivyId(privyId);
 
       // Update profile cache if found
@@ -425,17 +400,12 @@ export class UserService {
   }
 
   /**
-   * Authenticate user with Privy identity token and update/create user record.
-   *
-   * Handles the following scenarios:
-   * 1. Post-Privy users with existing privyId in database
-   * 2. Post-legacy but pre-Privy users (email exists)
-   * 3. Legacy users (only wallet address exists)
-   * 4. Brand new users (creates new record)
+   * Authenticate user with Privy identity token and/or create a new user.
+   * Supports both email/social logins and wallet-first logins.
    *
    * @param identityToken - The Privy identity token to verify
    * @param privyClient - The Privy client instance for user verification
-   * @returns The authenticated user record
+   * @returns The authenticated or created user
    * @throws {ApiError} 409 if unique constraint is violated (duplicate email/wallet/privyId)
    */
   async loginWithPrivyToken(
@@ -443,13 +413,11 @@ export class UserService {
     privyClient: PrivyClient,
   ): Promise<SelectUser> {
     try {
-      const { privyId, email, embeddedWallet, customWallets } =
+      const { privyId, email, embeddedWallet, loginWallet } =
         await verifyAndGetPrivyUserInfo(identityToken, privyClient);
       const name = generateRandomUsername();
-      const embeddedWalletAddress = embeddedWallet.address;
       const now = new Date();
 
-      // 1. Handle post-Privy migration users
       const existingUserWithPrivyId = await this.getUserByPrivyId(privyId);
       if (existingUserWithPrivyId) {
         return await this.updateUser({
@@ -458,36 +426,51 @@ export class UserService {
         });
       }
 
-      // 2. Handle post-legacy but pre-Privy users (an `email` always exists via legacy Loops emails)
-      // Note: we skip the explicit email branch and rely on repository UPSERT (email idempotency)
-      // in `registerUser` (called in the fallback below) to handle this case.
-
-      // 3. Handle legacy users (only a `walletAddress` exists, but it might not be connected to Privy)
-      // This is an edge case where a user never logged in nor set up an email, so our best guess is to
-      // use the "latest" connected wallet as the primary wallet address and see if the user exists.
-      const customWalletAddress = customWallets.sort(
-        (a, b) =>
-          (b.latestVerifiedAt?.getTime() ?? 0) -
-          (a.latestVerifiedAt?.getTime() ?? 0),
-      )[0]?.address;
-      if (customWalletAddress) {
-        const existingUserWithWallet =
-          await this.getUserByWalletAddress(customWalletAddress);
+      // Account recovery: wallet-first login where wallet is already linked to existing user
+      // (e.g., email signup -> link wallet -> login with wallet after privyId reset)
+      if (loginWallet) {
+        const existingUserWithWallet = await this.getUserByWalletAddress(
+          loginWallet.address,
+        );
         if (existingUserWithWallet) {
+          if (
+            existingUserWithWallet.privyId &&
+            existingUserWithWallet.privyId !== privyId
+          ) {
+            throw new ApiError(
+              409,
+              "Wallet is already linked to another account",
+            );
+          }
           return await this.updateUser({
             id: existingUserWithWallet.id,
-            name: existingUserWithWallet.name ?? name,
-            email,
             privyId,
-            embeddedWalletAddress,
             lastLoginAt: now,
+            walletLastVerifiedAt: now,
           });
         }
       }
 
-      // 4. Create completely new user, using the embedded wallet address as the primary wallet address
-      return await this.registerUser(
-        embeddedWalletAddress,
+      // New user registration
+      let walletAddress: string;
+      let embeddedWalletAddress: string | undefined;
+      let isWalletFirstUser = false;
+
+      if (loginWallet) {
+        // Wallet-first login: use external wallet as primary
+        walletAddress = loginWallet.address;
+        embeddedWalletAddress = embeddedWallet?.address;
+        isWalletFirstUser = true;
+      } else if (embeddedWallet) {
+        // Email/social login: use embedded wallet as primary
+        walletAddress = embeddedWallet.address;
+        embeddedWalletAddress = embeddedWallet.address;
+      } else {
+        throw new Error(`No wallet found for Privy user: ${privyId}`);
+      }
+
+      const newUser = await this.registerUser(
+        walletAddress,
         name,
         email,
         undefined,
@@ -495,8 +478,16 @@ export class UserService {
         privyId,
         embeddedWalletAddress,
       );
+
+      if (isWalletFirstUser) {
+        return await this.updateUser({
+          id: newUser.id,
+          walletLastVerifiedAt: now,
+        });
+      }
+
+      return newUser;
     } catch (error) {
-      // Check for unique constraint violations
       const violatedField = checkUserUniqueConstraintViolation(error);
       if (violatedField) {
         throw new ApiError(
@@ -504,8 +495,6 @@ export class UserService {
           `A user with this ${violatedField} already exists`,
         );
       }
-
-      // Re-throw other errors
       throw error;
     }
   }

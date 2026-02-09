@@ -108,7 +108,6 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
   const { setActiveWallet } = useSetActiveWallet();
 
   const [loginError, setLoginError] = useState<Error | null>(null);
-  const [shouldLinkWallet, setShouldLinkWallet] = useState(false);
   const [isWalletConnected, setIsWalletConnected] = useState(false);
   const [linkOrConnectWalletError, setLinkOrConnectWalletError] =
     useState<Error | null>(null);
@@ -171,17 +170,22 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
 
   const { login: loginInner } = useLogin({
     onComplete: async ({ user, isNewUser }) => {
+      // Check if user has external wallet (wallet-first login)
+      const hasExternalWallet = user.linkedAccounts?.some(
+        (account) =>
+          account.type === "wallet" &&
+          (account as WalletWithMetadata).walletClientType !== "privy",
+      );
+
       // Note: Privy has a known issue where embedded wallets are, sometimes, not created for a
-      // user. If an embedded wallet exists, it'll always be available in the `user.wallet`
-      // property. Thus, we can simply check if it exists, else, trigger its creation explicitly.
-      if (!user.wallet) {
+      // user. Only create embedded wallet for email users who don't have one - wallet-first users
+      // don't need embedded wallets.
+      if (!user.wallet && !hasExternalWallet) {
         const message = `Privy failed to create embedded wallet. Creating wallet for user DID: ${user.id}`;
         console.warn(message);
         Sentry.captureMessage(message, "warning");
         await createWallet();
       }
-
-      setShouldLinkWallet(isNewUser);
 
       if (isNewUser && !onboardingCompleteRef.current) {
         setShowOnboarding(true);
@@ -243,7 +247,7 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
       onSuccess: () => {
         refetchBackendUser();
 
-        // Invalidate boost-related queries (mergeBoost happens during wallet link)
+        // Invalidate boost-related queries
         queryClient.invalidateQueries({
           queryKey: tanstackClient.boost.balance.key(),
         });
@@ -366,13 +370,6 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
       // syncActiveWallet();
     }
   }, [backendUser?.walletAddress, syncActiveWallet, readyWallets]);
-
-  useEffect(() => {
-    if (backendUser && shouldLinkWallet) {
-      linkOrConnectWallet();
-      setShouldLinkWallet(false);
-    }
-  }, [backendUser, shouldLinkWallet, linkOrConnectWallet]);
 
   // Mutation for updating user data
   const {

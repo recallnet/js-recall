@@ -14,6 +14,7 @@ export function userWalletState(
   user: RouterOutputs["user"]["getProfile"],
 ): UserWalletState {
   const { walletAddress, embeddedWalletAddress, walletLastVerifiedAt } = user;
+
   if (walletAddress !== embeddedWalletAddress && !walletLastVerifiedAt) {
     return {
       type: "external-not-linked",
