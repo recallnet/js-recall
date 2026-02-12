@@ -124,9 +124,13 @@ export function ConvictionProvider({
     }),
   );
 
-  // Determine eligibility: non-empty response means eligible
+  // Only show conviction UI if user has actionable or active claims
   const isConvictionEligible = useMemo(() => {
-    return Boolean(claimsData && claimsData.length > 0);
+    if (!claimsData || claimsData.length === 0) return false;
+    return claimsData.some(
+      (claim) =>
+        claim.type === "available" || claim.type === "claimed-and-staked",
+    );
   }, [claimsData]);
 
   // Find claims that trigger modals
