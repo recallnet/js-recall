@@ -267,7 +267,8 @@ export const ConvictionStakeModal: React.FC<ConvictionStakeModalProps> = ({
                 onClick={handleStake}
                 className="h-12 px-6 text-base font-bold"
               >
-                STAKE <ChevronRight size={16} className="ml-1" />
+                {selectedDurationIndex === 0 ? "CLAIM" : "STAKE"}{" "}
+                <ChevronRight size={16} className="ml-1" />
               </Button>
             </div>
           </>
