@@ -100,6 +100,11 @@ function processAirdropFile(): Promise<void> {
         short: "f",
         description: "CSV filename to process",
       },
+      "dry-run": {
+        type: "boolean",
+        short: "d",
+        description: "Run without writing to database",
+      },
       help: {
         type: "boolean",
         short: "h",
@@ -116,6 +121,7 @@ Usage: pnpm generate-merkle-tree.ts --filename <filename>
 
 Options:
   -f, --filename  CSV filename, relative to ./scripts/data/, to process with format airdrop_<season-number>_<iso-timestamp>.csv (required)
+  -d, --dry-run   Run without writing to database
   -h, --help      Show this help message
 
 Examples:
@@ -276,13 +282,13 @@ Examples:
             );
           }
 
-          const values: [string, bigint, number][] = recipients.map((r) => [
+          const leaves: [string, bigint, number][] = recipients.map((r) => [
             r.address,
             r.amount,
             r.airdrop,
           ]);
 
-          const tree = StandardMerkleTree.of(values, [
+          const tree = StandardMerkleTree.of(leaves, [
             "address",
             "uint256",
             "uint8",
@@ -321,19 +327,23 @@ Examples:
           console.log(`   Total Rows: ${recipients.length}`);
           console.log(`   Unique Addresses: ${uniqueAddresses}`);
 
-          // Save to database using repository
-          console.log("💾 Saving to database...");
+          if (values["dry-run"]) {
+            console.log("🏃 Dry run mode — skipping database write.");
+          } else {
+            // Save to database using repository
+            console.log("💾 Saving to database...");
 
-          await db.transaction(async (tx) => {
-            await airdropRepository.insertAllocationsBatch(
-              allocations,
-              undefined,
-              tx,
-            );
-            await airdropRepository.upsertMetadata(metadata, tx);
-          });
+            await db.transaction(async (tx) => {
+              await airdropRepository.insertAllocationsBatch(
+                allocations,
+                undefined,
+                tx,
+              );
+              await airdropRepository.upsertMetadata(metadata, tx);
+            });
 
-          console.log("✅ Data successfully saved to database!");
+            console.log("✅ Data successfully saved to database!");
+          }
           resolve();
         } catch (e) {
           console.error("❌ Merkle tree generation failed:", e);
