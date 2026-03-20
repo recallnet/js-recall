@@ -121,7 +121,7 @@ Usage: pnpm generate-merkle-tree.ts --filename <filename>
 
 Options:
   -f, --filename  CSV filename, relative to ./scripts/data/, to process with format airdrop_<season-number>_<iso-timestamp>.csv (required)
-  -d, --dry-run   Run without writing to database
+  -d, --dry-run   Run without writing to database, but show some metadata output
   -h, --help      Show this help message
 
 Examples:
