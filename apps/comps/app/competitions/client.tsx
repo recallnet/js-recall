@@ -144,8 +144,8 @@ export default function CompetitionsPageClient() {
         ></div>
 
         <div className="flex h-full w-full items-center justify-center">
-          {/* Speed skating race - retro 8-bit style */}
-          <SpeedSkatingBanner className="absolute inset-0 z-[8] hidden sm:block" />
+          {/* F1 race - retro pixel-art style */}
+          <F1RaceBanner className="absolute inset-0 z-[8] hidden sm:block" />
 
           <div className="z-20 flex translate-y-[-50px] flex-col items-center text-center">
             <h1 className="text-primary-foreground mb-1 text-7xl font-bold sm:text-[83px]">
@@ -333,61 +333,67 @@ const HeroCarousel: React.FC<HeroCarouselProps> = ({
   );
 };
 
-// Brand colors for skater suits
-const LANE_COLORS = ["#E5342A", "#F9B700", "#38A430", "#0064C7"] as const;
+// =============================================================================
+// F1 RACE BANNER - Retro pixel-art F1 race animation
+// 4 cars race left-to-right, winner pulls ahead, checkered flag on victory
+// =============================================================================
+
+// F1 team livery colors
+const LANE_COLORS = ["#E8002D", "#FF8000", "#00594F", "#0037FF"] as const;
 
 // Timing constants (ms) - ~30s race
 const TIMING = {
-  frameDuration: 150,
+  frameDuration: 100,
   racePhase: 24000,
   victoryPhase: 4000,
   resetPhase: 1000,
   totalLoop: 29000,
   winnerEmergenceStart: 18000,
-  iceScrollDuration: 28000,
+  trackScrollDuration: 16000,
 } as const;
 
 // Layout constants (viewBox units 0-100)
 const LAYOUT = {
-  skaterBaseX: 3,
+  carBaseX: 3,
   laneYPositions: [20, 38, 56, 74],
-  skaterScale: 0.7,
+  carScale: 0.7,
   laneHeight: 2.5,
 } as const;
 
 // Race dynamics
 const RACE = {
-  baseDistance: 15, // How far all skaters move during race
-  winnerBonus: 5, // Extra distance winner pulls ahead
-  frameStagger: [0, 50, 100, 25],
+  baseDistance: 15,
+  winnerBonus: 5,
+  frameStagger: [0, 33, 66, 16],
 } as const;
 
 // Colors
 const COLORS = {
-  skin: "#E8B67C",
-  skate: "#6B7280",
+  tire: "#111318",
+  rim: "#707880",
+  rimHighlight: "#B8C0C8",
+  cockpit: "#080A0F",
   shadow: "#0A0C10",
-  iceDark: "#1A1D28",
-  iceLight: "#252A36",
+  trackDark: "#141620",
+  trackMid: "#1C1F2C",
+  trackLight: "#22263A",
 } as const;
 
-// Skater body part type - now includes shadow variants for depth
-type PartType =
-  | "suit"
-  | "suitShadow"
-  | "skin"
-  | "skinShadow"
-  | "skate"
-  | "skateBlade"
-  | "visor";
+type CarPartType =
+  | "body"
+  | "bodyShadow"
+  | "cockpit"
+  | "tire"
+  | "rim"
+  | "rimHighlight";
 
-interface SkaterPart {
+interface CarPart {
   id: string;
   x: number;
   y: number;
   w: number;
   h: number;
-  type: PartType;
+  type: CarPartType;
 }
 
 // Shadow/highlight color helpers
@@ -400,284 +406,134 @@ const darken = (hex: string, amount: number = 0.3): string => {
 };
 
 // =============================================================================
-// SPEED SKATER - 1985 Epyx Winter Games Style
+// F1 CAR SPRITE - Side profile facing right
 //
-// Reference: Winter Games (1985) by Epyx - Speed Skating event
-//
-// The skater is in a LOW RACING CROUCH - body nearly HORIZONTAL:
-// - Body forms a nearly flat horizontal line from butt to head
-// - Head is at the FRONT, facing right, at roughly same height as butt
-// - Arms swing in opposition - one back, one forward
-// - Supporting leg is bent at knee, foot under body center
-// - Pushing leg extends FAR back at an angle
-// - Skate blades are LONG and prominent
-//
-// Sprite dimensions: ~28px wide x 14px tall (at scale 1.0)
+// Bounding box: ~31 wide x 14 tall (at scale 1.0)
 // Rendered at scale 0.7 for the banner
+//
+// Layout (y increases downward):
+//   y0-2:  rear wing plate + halo arch
+//   y2-5:  cockpit surround + halo pillars
+//   y3-8:  main body + nose
+//   y7-9:  front wing
+//   y8-13: tires (stick out below body)
 // =============================================================================
 
-// Pixel unit - keep at 1 for clean integer math
-const _PX = 1;
+// Static body parts (same across all animation frames)
+const CAR_BODY_STATIC: CarPart[] = [
+  // REAR WING
+  { id: "rwPlate", x: 22, y: 0, w: 9, h: 2, type: "body" },
+  { id: "rwPillarL", x: 23, y: 2, w: 2, h: 3, type: "bodyShadow" },
+  { id: "rwPillarR", x: 26, y: 2, w: 2, h: 3, type: "bodyShadow" },
 
-// -----------------------------------------------------------------------------
-// SKATING FRAMES - 3 frame animation cycle
-// Frame 0: Left leg pushing back
-// Frame 1: Glide (both legs together)
-// Frame 2: Right leg pushing back
-// -----------------------------------------------------------------------------
+  // HALO ARCH
+  { id: "haloTop", x: 11, y: 0, w: 7, h: 2, type: "body" },
+  { id: "haloL", x: 10, y: 1, w: 2, h: 4, type: "body" },
+  { id: "haloR", x: 17, y: 1, w: 2, h: 4, type: "body" },
+  { id: "cockpitSurr", x: 10, y: 2, w: 9, h: 3, type: "body" },
+  { id: "cockpitDark", x: 11, y: 2, w: 7, h: 3, type: "cockpit" },
 
-const SKATING_FRAMES: SkaterPart[][] = [
-  // FRAME 0: Left leg pushing back, right arm back, left arm forward
-  [
-    // BODY - horizontal torso from butt (left) to head (right)
-    { id: "butt", x: 0, y: 4, w: 4, h: 3, type: "suit" },
-    { id: "back", x: 4, y: 4, w: 5, h: 3, type: "suit" },
-    { id: "backShadow", x: 4, y: 6, w: 5, h: 1, type: "suitShadow" },
-    { id: "shoulder", x: 9, y: 4, w: 3, h: 3, type: "suit" },
+  // NOSE
+  { id: "noseTip", x: 0, y: 6, w: 3, h: 1, type: "body" },
+  { id: "noseMain", x: 2, y: 5, w: 4, h: 2, type: "body" },
+  { id: "noseShadow", x: 0, y: 7, w: 6, h: 1, type: "bodyShadow" },
 
-    // HEAD - rounder helmet shape
-    { id: "helmetBack", x: 11, y: 3, w: 2, h: 4, type: "suit" },
-    { id: "helmetTop", x: 12, y: 2, w: 3, h: 2, type: "suit" },
-    { id: "helmetFront", x: 13, y: 3, w: 3, h: 3, type: "suit" },
-    { id: "visor", x: 15, y: 3, w: 2, h: 2, type: "visor" },
-    { id: "face", x: 16, y: 5, w: 2, h: 2, type: "skin" },
+  // MAIN BODY
+  { id: "bodyMain", x: 5, y: 3, w: 18, h: 5, type: "body" },
+  { id: "bodyShad", x: 5, y: 7, w: 18, h: 1, type: "bodyShadow" },
 
-    // BACK ARM - swinging up and back from shoulder (with gray inner)
-    { id: "backArmInner", x: 5, y: 0, w: 1, h: 4, type: "skate" },
-    { id: "backArmUpper", x: 6, y: 0, w: 3, h: 3, type: "suit" },
-    { id: "backArmLower", x: 3, y: -2, w: 3, h: 3, type: "suit" },
-    { id: "backHand", x: 1, y: -3, w: 2, h: 2, type: "skin" },
+  // REAR BODY SECTION
+  { id: "rearBody", x: 22, y: 3, w: 6, h: 5, type: "body" },
+  { id: "rearShad", x: 22, y: 7, w: 6, h: 1, type: "bodyShadow" },
 
-    // FRONT ARM - swinging down and forward toward ice (with gray inner)
-    { id: "frontArmUpper", x: 11, y: 6, w: 2, h: 3, type: "suit" },
-    { id: "frontArmInner", x: 13, y: 7, w: 1, h: 4, type: "skate" },
-    { id: "frontArmLower", x: 14, y: 9, w: 3, h: 2, type: "suit" },
-    { id: "frontHand", x: 16, y: 11, w: 2, h: 2, type: "skin" },
-
-    // RIGHT LEG (supporting) - bent under body (with gray inner)
-    { id: "rThighInner", x: 3, y: 7, w: 1, h: 3, type: "skate" },
-    { id: "rThigh", x: 4, y: 6, w: 3, h: 4, type: "suit" },
-    { id: "rShinInner", x: 2, y: 9, w: 1, h: 4, type: "skate" },
-    { id: "rShin", x: 3, y: 9, w: 2, h: 4, type: "suit" },
-    { id: "rBoot", x: 1, y: 12, w: 4, h: 2, type: "skate" },
-    { id: "rBladeHolder", x: 1, y: 13, w: 4, h: 1, type: "suitShadow" },
-    { id: "rBlade", x: -1, y: 14, w: 8, h: 1, type: "skateBlade" },
-
-    // LEFT LEG (pushing) - extended far back (with gray inner)
-    { id: "lThighInner", x: -2, y: 6, w: 1, h: 2, type: "skate" },
-    { id: "lThigh", x: -1, y: 5, w: 3, h: 2, type: "suit" },
-    { id: "lShinInner", x: -7, y: 7, w: 1, h: 2, type: "skate" },
-    { id: "lShin", x: -6, y: 6, w: 5, h: 2, type: "suit" },
-    { id: "lBoot", x: -11, y: 7, w: 5, h: 2, type: "skate" },
-    { id: "lBladeHolder", x: -11, y: 8, w: 5, h: 1, type: "suitShadow" },
-    { id: "lBlade", x: -13, y: 9, w: 9, h: 1, type: "skateBlade" },
-  ],
-
-  // FRAME 1: Glide - both legs together under body
-  [
-    // BODY - horizontal
-    { id: "butt", x: 0, y: 4, w: 4, h: 3, type: "suit" },
-    { id: "back", x: 4, y: 4, w: 5, h: 3, type: "suit" },
-    { id: "backShadow", x: 4, y: 6, w: 5, h: 1, type: "suitShadow" },
-    { id: "shoulder", x: 9, y: 4, w: 3, h: 3, type: "suit" },
-
-    // HEAD - rounder
-    { id: "helmetBack", x: 11, y: 3, w: 2, h: 4, type: "suit" },
-    { id: "helmetTop", x: 12, y: 2, w: 3, h: 2, type: "suit" },
-    { id: "helmetFront", x: 13, y: 3, w: 3, h: 3, type: "suit" },
-    { id: "visor", x: 15, y: 3, w: 2, h: 2, type: "visor" },
-    { id: "face", x: 16, y: 5, w: 2, h: 2, type: "skin" },
-
-    // BOTH ARMS - tucked close to body, hands slightly staggered
-    { id: "backArmInner", x: 1, y: 1, w: 1, h: 3, type: "skate" },
-    { id: "backArm", x: 2, y: 1, w: 2, h: 3, type: "suit" },
-    { id: "backHand", x: 1, y: 0, w: 2, h: 2, type: "skin" },
-    { id: "frontArm", x: 10, y: 6, w: 2, h: 3, type: "suit" },
-    { id: "frontArmInner", x: 12, y: 6, w: 1, h: 3, type: "skate" },
-    { id: "frontHand", x: 12, y: 9, w: 2, h: 2, type: "skin" },
-
-    // BOTH LEGS - together under body (with gray inners)
-    { id: "lThighInner", x: 1, y: 7, w: 1, h: 3, type: "skate" },
-    { id: "lThigh", x: 2, y: 6, w: 3, h: 4, type: "suit" },
-    { id: "lShinInner", x: 0, y: 9, w: 1, h: 4, type: "skate" },
-    { id: "lShin", x: 1, y: 9, w: 2, h: 4, type: "suit" },
-    { id: "lBoot", x: -1, y: 12, w: 4, h: 2, type: "skate" },
-    { id: "lBladeHolder", x: -1, y: 13, w: 4, h: 1, type: "suitShadow" },
-    { id: "lBlade", x: -3, y: 14, w: 8, h: 1, type: "skateBlade" },
-
-    { id: "rThighInner", x: 8, y: 7, w: 1, h: 3, type: "skate" },
-    { id: "rThigh", x: 5, y: 6, w: 3, h: 4, type: "suit" },
-    { id: "rShinInner", x: 8, y: 9, w: 1, h: 4, type: "skate" },
-    { id: "rShin", x: 6, y: 9, w: 2, h: 4, type: "suit" },
-    { id: "rBoot", x: 5, y: 12, w: 4, h: 2, type: "skate" },
-    { id: "rBladeHolder", x: 5, y: 13, w: 4, h: 1, type: "suitShadow" },
-    { id: "rBlade", x: 3, y: 14, w: 8, h: 1, type: "skateBlade" },
-  ],
-
-  // FRAME 2: Right leg pushing back (mirror of frame 0)
-  [
-    // BODY - horizontal
-    { id: "butt", x: 0, y: 4, w: 4, h: 3, type: "suit" },
-    { id: "back", x: 4, y: 4, w: 5, h: 3, type: "suit" },
-    { id: "backShadow", x: 4, y: 6, w: 5, h: 1, type: "suitShadow" },
-    { id: "shoulder", x: 9, y: 4, w: 3, h: 3, type: "suit" },
-
-    // HEAD - rounder
-    { id: "helmetBack", x: 11, y: 3, w: 2, h: 4, type: "suit" },
-    { id: "helmetTop", x: 12, y: 2, w: 3, h: 2, type: "suit" },
-    { id: "helmetFront", x: 13, y: 3, w: 3, h: 3, type: "suit" },
-    { id: "visor", x: 15, y: 3, w: 2, h: 2, type: "visor" },
-    { id: "face", x: 16, y: 5, w: 2, h: 2, type: "skin" },
-
-    // FRONT ARM - now swinging back from shoulder (with gray inner)
-    { id: "frontArmInner", x: 5, y: 0, w: 1, h: 4, type: "skate" },
-    { id: "frontArmUpper", x: 6, y: 0, w: 3, h: 3, type: "suit" },
-    { id: "frontArmLower", x: 3, y: -2, w: 3, h: 3, type: "suit" },
-    { id: "frontHand", x: 1, y: -3, w: 2, h: 2, type: "skin" },
-
-    // BACK ARM - now swinging forward toward ice (with gray inner)
-    { id: "backArmUpper", x: 11, y: 6, w: 2, h: 3, type: "suit" },
-    { id: "backArmInner", x: 13, y: 7, w: 1, h: 4, type: "skate" },
-    { id: "backArmLower", x: 14, y: 9, w: 3, h: 2, type: "suit" },
-    { id: "backHand", x: 16, y: 11, w: 2, h: 2, type: "skin" },
-
-    // LEFT LEG (now supporting) - bent under body (with gray inner)
-    { id: "lThighInner", x: 3, y: 7, w: 1, h: 3, type: "skate" },
-    { id: "lThigh", x: 4, y: 6, w: 3, h: 4, type: "suit" },
-    { id: "lShinInner", x: 2, y: 9, w: 1, h: 4, type: "skate" },
-    { id: "lShin", x: 3, y: 9, w: 2, h: 4, type: "suit" },
-    { id: "lBoot", x: 1, y: 12, w: 4, h: 2, type: "skate" },
-    { id: "lBladeHolder", x: 1, y: 13, w: 4, h: 1, type: "suitShadow" },
-    { id: "lBlade", x: -1, y: 14, w: 8, h: 1, type: "skateBlade" },
-
-    // RIGHT LEG (now pushing) - extended far back (with gray inner)
-    { id: "rThighInner", x: -2, y: 6, w: 1, h: 2, type: "skate" },
-    { id: "rThigh", x: -1, y: 5, w: 3, h: 2, type: "suit" },
-    { id: "rShinInner", x: -7, y: 7, w: 1, h: 2, type: "skate" },
-    { id: "rShin", x: -6, y: 6, w: 5, h: 2, type: "suit" },
-    { id: "rBoot", x: -11, y: 7, w: 5, h: 2, type: "skate" },
-    { id: "rBladeHolder", x: -11, y: 8, w: 5, h: 1, type: "suitShadow" },
-    { id: "rBlade", x: -13, y: 9, w: 9, h: 1, type: "skateBlade" },
-  ],
+  // FRONT WING
+  { id: "fwFlat", x: 0, y: 8, w: 9, h: 1, type: "body" },
+  { id: "fwEpL", x: 0, y: 7, w: 1, h: 2, type: "body" },
+  { id: "fwEpR", x: 8, y: 7, w: 1, h: 2, type: "body" },
+  { id: "fwSupport", x: 3, y: 7, w: 2, h: 2, type: "bodyShadow" },
 ];
 
-// -----------------------------------------------------------------------------
-// VICTORY FRAME - Standing upright with arms raised in V
-// -----------------------------------------------------------------------------
-
-const VICTORY_FRAME: SkaterPart[] = [
-  // HEAD - rounder helmet shape
-  { id: "helmetBack", x: 2, y: 0, w: 2, h: 4, type: "suit" },
-  { id: "helmetTop", x: 3, y: -1, w: 3, h: 2, type: "suit" },
-  { id: "helmetFront", x: 4, y: 0, w: 3, h: 3, type: "suit" },
-  { id: "visor", x: 6, y: 0, w: 2, h: 2, type: "visor" },
-  { id: "face", x: 7, y: 2, w: 2, h: 2, type: "skin" },
-
-  // TORSO - vertical
-  { id: "chest", x: 3, y: 4, w: 4, h: 4, type: "suit" },
-  { id: "torsoShadow", x: 3, y: 7, w: 4, h: 1, type: "suitShadow" },
-
-  // LEFT ARM - raised up diagonally (V shape) with gray inner
-  { id: "lArmInner", x: 0, y: 4, w: 1, h: 3, type: "skate" },
-  { id: "lArmUpper", x: 1, y: 4, w: 2, h: 3, type: "suit" },
-  { id: "lArmLowerInner", x: -2, y: 1, w: 1, h: 4, type: "skate" },
-  { id: "lArmLower", x: -1, y: 1, w: 3, h: 4, type: "suit" },
-  { id: "lHand", x: -2, y: -1, w: 2, h: 2, type: "skin" },
-
-  // RIGHT ARM - raised up diagonally (V shape) with gray inner
-  { id: "rArmUpper", x: 7, y: 4, w: 2, h: 3, type: "suit" },
-  { id: "rArmInner", x: 9, y: 4, w: 1, h: 3, type: "skate" },
-  { id: "rArmLower", x: 8, y: 1, w: 3, h: 4, type: "suit" },
-  { id: "rArmLowerInner", x: 11, y: 1, w: 1, h: 4, type: "skate" },
-  { id: "rHand", x: 10, y: -1, w: 2, h: 2, type: "skin" },
-
-  // LEFT LEG - standing with gray inner
-  { id: "lThighInner", x: 2, y: 8, w: 1, h: 4, type: "skate" },
-  { id: "lThigh", x: 3, y: 8, w: 2, h: 4, type: "suit" },
-  { id: "lShinInner", x: 1, y: 11, w: 1, h: 3, type: "skate" },
-  { id: "lShin", x: 2, y: 11, w: 2, h: 3, type: "suit" },
-  { id: "lBoot", x: 0, y: 13, w: 4, h: 2, type: "skate" },
-  { id: "lBladeHolder", x: 0, y: 14, w: 4, h: 1, type: "suitShadow" },
-  { id: "lBlade", x: -1, y: 15, w: 7, h: 1, type: "skateBlade" },
-
-  // RIGHT LEG - standing with gray inner
-  { id: "rThigh", x: 5, y: 8, w: 2, h: 4, type: "suit" },
-  { id: "rThighInner", x: 7, y: 8, w: 1, h: 4, type: "skate" },
-  { id: "rShin", x: 6, y: 11, w: 2, h: 3, type: "suit" },
-  { id: "rShinInner", x: 8, y: 11, w: 1, h: 3, type: "skate" },
-  { id: "rBoot", x: 5, y: 13, w: 4, h: 2, type: "skate" },
-  { id: "rBladeHolder", x: 5, y: 14, w: 4, h: 1, type: "suitShadow" },
-  { id: "rBlade", x: 4, y: 15, w: 7, h: 1, type: "skateBlade" },
+const makeTires = (): CarPart[] => [
+  { id: "fTire", x: 2, y: 8, w: 6, h: 5, type: "tire" },
+  { id: "rTire", x: 21, y: 8, w: 6, h: 5, type: "tire" },
 ];
 
-// -----------------------------------------------------------------------------
-// LOSER FRAME - Slumped forward, dejected posture
-// -----------------------------------------------------------------------------
+// Rim parts with animated spoke (3 frames = vertical / diagonal / horizontal)
+const makeRims = (frame: 0 | 1 | 2): CarPart[] => {
+  const parts: CarPart[] = [
+    { id: "fRim", x: 3, y: 9, w: 4, h: 3, type: "rim" },
+    { id: "rRim", x: 22, y: 9, w: 4, h: 3, type: "rim" },
+  ];
+  if (frame === 0) {
+    // vertical spoke
+    parts.push({ id: "fSpoke", x: 4, y: 8, w: 2, h: 5, type: "rimHighlight" });
+    parts.push({ id: "rSpoke", x: 23, y: 8, w: 2, h: 5, type: "rimHighlight" });
+  } else if (frame === 1) {
+    // diagonal spoke (approximated with two small rects)
+    parts.push({ id: "fSp1", x: 5, y: 8, w: 1, h: 2, type: "rimHighlight" });
+    parts.push({ id: "fSp2", x: 3, y: 11, w: 1, h: 2, type: "rimHighlight" });
+    parts.push({ id: "rSp1", x: 24, y: 8, w: 1, h: 2, type: "rimHighlight" });
+    parts.push({ id: "rSp2", x: 22, y: 11, w: 1, h: 2, type: "rimHighlight" });
+  } else {
+    // horizontal spoke
+    parts.push({ id: "fSpoke", x: 2, y: 10, w: 6, h: 1, type: "rimHighlight" });
+    parts.push({
+      id: "rSpoke",
+      x: 21,
+      y: 10,
+      w: 6,
+      h: 1,
+      type: "rimHighlight",
+    });
+  }
+  return parts;
+};
 
-const LOSER_FRAME: SkaterPart[] = [
-  // HEAD - drooped forward and down, rounder helmet shape
-  { id: "helmetBack", x: 6, y: 2, w: 2, h: 4, type: "suit" },
-  { id: "helmetTop", x: 7, y: 1, w: 3, h: 2, type: "suit" },
-  { id: "helmetFront", x: 8, y: 2, w: 3, h: 3, type: "suit" },
-  { id: "visor", x: 10, y: 2, w: 2, h: 2, type: "visor" },
-  { id: "face", x: 11, y: 4, w: 2, h: 2, type: "skin" },
-
-  // TORSO - slightly hunched
-  { id: "chest", x: 3, y: 3, w: 5, h: 4, type: "suit" },
-  { id: "torsoShadow", x: 3, y: 6, w: 5, h: 1, type: "suitShadow" },
-
-  // LEFT ARM - hanging down limply with gray inner
-  { id: "lArmInner", x: 1, y: 6, w: 1, h: 5, type: "skate" },
-  { id: "lArm", x: 2, y: 6, w: 2, h: 5, type: "suit" },
-  { id: "lHand", x: 1, y: 10, w: 2, h: 2, type: "skin" },
-
-  // RIGHT ARM - hanging down limply with gray inner
-  { id: "rArm", x: 7, y: 6, w: 2, h: 5, type: "suit" },
-  { id: "rArmInner", x: 9, y: 6, w: 1, h: 5, type: "skate" },
-  { id: "rHand", x: 8, y: 10, w: 2, h: 2, type: "skin" },
-
-  // LEFT LEG - standing with gray inner and blade holder
-  { id: "lThighInner", x: 2, y: 7, w: 1, h: 4, type: "skate" },
-  { id: "lThigh", x: 3, y: 7, w: 2, h: 4, type: "suit" },
-  { id: "lShinInner", x: 1, y: 10, w: 1, h: 4, type: "skate" },
-  { id: "lShin", x: 2, y: 10, w: 2, h: 4, type: "suit" },
-  { id: "lBoot", x: 0, y: 13, w: 4, h: 2, type: "skate" },
-  { id: "lBladeHolder", x: 0, y: 14, w: 4, h: 1, type: "suitShadow" },
-  { id: "lBlade", x: -1, y: 15, w: 7, h: 1, type: "skateBlade" },
-
-  // RIGHT LEG - standing with gray inner and blade holder
-  { id: "rThigh", x: 5, y: 7, w: 2, h: 4, type: "suit" },
-  { id: "rThighInner", x: 7, y: 7, w: 1, h: 4, type: "skate" },
-  { id: "rShin", x: 6, y: 10, w: 2, h: 4, type: "suit" },
-  { id: "rShinInner", x: 8, y: 10, w: 1, h: 4, type: "skate" },
-  { id: "rBoot", x: 5, y: 13, w: 4, h: 2, type: "skate" },
-  { id: "rBladeHolder", x: 5, y: 14, w: 4, h: 1, type: "suitShadow" },
-  { id: "rBlade", x: 4, y: 15, w: 7, h: 1, type: "skateBlade" },
+// 3 driving frames (tires first so body renders on top, then rims on top of everything)
+const DRIVING_FRAMES: CarPart[][] = [
+  [...makeTires(), ...CAR_BODY_STATIC, ...makeRims(0)],
+  [...makeTires(), ...CAR_BODY_STATIC, ...makeRims(1)],
+  [...makeTires(), ...CAR_BODY_STATIC, ...makeRims(2)],
 ];
 
-interface IceChunk {
+// Victory: car stopped, wheels at vertical spoke
+const VICTORY_FRAME: CarPart[] = [
+  ...makeTires(),
+  ...CAR_BODY_STATIC,
+  ...makeRims(0),
+];
+
+// Loser: car stopped, wheels at horizontal spoke
+const LOSER_FRAME: CarPart[] = [
+  ...makeTires(),
+  ...CAR_BODY_STATIC,
+  ...makeRims(2),
+];
+
+interface TrackChunk {
   x: number;
   width: number;
-  dark: boolean;
+  shade: "dark" | "mid" | "light";
 }
 
-// Generate ice chunks for a lane (deterministic) - covers exactly 100 units for seamless tiling
-const generateIceChunks = (laneIndex: number): IceChunk[] => {
-  let seed = 12345 + laneIndex * 54321;
+// Generate asphalt texture chunks for a lane (deterministic, seamless 100-unit tile)
+const generateTrackChunks = (laneIndex: number): TrackChunk[] => {
+  let seed = 11111 + laneIndex * 77777;
   const random = () => {
     seed = (seed * 9301 + 49297) % 233280;
     return seed / 233280;
   };
 
-  const chunks: IceChunk[] = [];
+  const chunks: TrackChunk[] = [];
   let x = 0;
 
-  // Generate chunks to cover exactly 100 units (the viewBox width)
   while (x < 100) {
-    const width = 3 + random() * 5;
-    const gap = 2 + random() * 4;
-    const dark = random() > 0.5;
-    chunks.push({ x, width, dark });
+    const width = 5 + random() * 12;
+    const gap = 2 + random() * 5;
+    const r = random();
+    const shade: TrackChunk["shade"] =
+      r < 0.33 ? "dark" : r < 0.66 ? "mid" : "light";
+    chunks.push({ x, width, shade });
     x += width + gap;
   }
 
@@ -692,16 +548,15 @@ interface RaceState {
   elapsed: number;
   winnerId: number;
   finishStyle: FinishStyle;
-  skaterFrame: number;
-  iceOffset: number;
-  skaterPositions: number[];
+  carFrame: number;
+  trackOffset: number;
+  carPositions: number[];
 }
 
 /**
- * Speed Skating Banner - Retro 8-bit style racing animation
- * Inspired by 1985 Epyx Winter Games
+ * F1 Race Banner - Retro pixel-art F1 race animation
  */
-const SpeedSkatingBanner: React.FC<{ className?: string }> = React.memo(
+const F1RaceBanner: React.FC<{ className?: string }> = React.memo(
   ({ className = "" }) => {
     const containerRef = React.useRef<HTMLDivElement>(null);
     const startTimeRef = React.useRef<number | null>(null);
@@ -712,9 +567,9 @@ const SpeedSkatingBanner: React.FC<{ className?: string }> = React.memo(
       elapsed: 0,
       winnerId: 0,
       finishStyle: "pullAhead",
-      skaterFrame: 0,
-      iceOffset: 0,
-      skaterPositions: [0, 0, 0, 0],
+      carFrame: 0,
+      trackOffset: 0,
+      carPositions: [0, 0, 0, 0],
     });
 
     const prefersReducedMotion =
@@ -738,14 +593,14 @@ const SpeedSkatingBanner: React.FC<{ className?: string }> = React.memo(
       return () => observer.disconnect();
     }, []);
 
-    // Pre-generate ice chunks for each lane
+    // Pre-generate track texture chunks for each lane
     const lanes = React.useMemo(
       () =>
         LAYOUT.laneYPositions.map((y, i) => ({
           id: i,
           color: LANE_COLORS[i]!,
           y,
-          chunks: generateIceChunks(i),
+          chunks: generateTrackChunks(i),
         })),
       [],
     );
@@ -857,9 +712,9 @@ const SpeedSkatingBanner: React.FC<{ className?: string }> = React.memo(
           lastWinnerRef.current = winnerId;
         }
 
-        const skaterFrame = Math.floor(elapsed / TIMING.frameDuration) % 3;
-        const iceOffset = (elapsed / TIMING.iceScrollDuration) * 100;
-        const skaterPositions = calculatePositions(
+        const carFrame = Math.floor(elapsed / TIMING.frameDuration) % 3;
+        const trackOffset = (elapsed / TIMING.trackScrollDuration) * 100;
+        const carPositions = calculatePositions(
           elapsed,
           phase,
           winnerId,
@@ -871,9 +726,9 @@ const SpeedSkatingBanner: React.FC<{ className?: string }> = React.memo(
           elapsed,
           winnerId,
           finishStyle,
-          skaterFrame,
-          iceOffset,
-          skaterPositions,
+          carFrame,
+          trackOffset,
+          carPositions,
         });
 
         animationId = requestAnimationFrame(animate);
@@ -888,83 +743,66 @@ const SpeedSkatingBanner: React.FC<{ className?: string }> = React.memo(
       state.finishStyle,
     ]);
 
-    // Get frame for a skater
-    const getSkaterFrame = (laneId: number): SkaterPart[] => {
+    // Get the correct car frame for a given lane
+    const getCarFrame = (laneId: number): CarPart[] => {
       if (state.phase === "victory") {
-        if (laneId === state.winnerId) {
-          return VICTORY_FRAME;
-        }
-        return LOSER_FRAME;
+        return laneId === state.winnerId ? VICTORY_FRAME : LOSER_FRAME;
       }
       const staggeredFrame =
-        (state.skaterFrame +
+        (state.carFrame +
           Math.floor(RACE.frameStagger[laneId]! / TIMING.frameDuration)) %
         3;
-      return SKATING_FRAMES[staggeredFrame]!;
+      return DRIVING_FRAMES[staggeredFrame]!;
     };
 
-    // Render a single skater
-    // NOTE: We use a fixed sprite scale, NOT stretched by aspect ratio
-    // This keeps the human proportions correct regardless of container shape
-    const renderSkater = (
+    // Render a single F1 car
+    // Sprite scale is fixed; horizontal dims are compensated for SVG stretch
+    const renderCar = (
       x: number,
       y: number,
       color: string,
-      frame: SkaterPart[],
+      frame: CarPart[],
     ) => {
-      const scale = LAYOUT.skaterScale;
-      // Ground shadow position - at blade level (y=14-15 depending on frame)
-      // Center it under the body (around x=4 for skating, x=4 for standing)
-      const shadowY = 15 * scale;
-      const shadowCx = 4 * scale;
-      const shadowWidth = 10 * scale;
+      const scale = LAYOUT.carScale;
+      const shadowY = 13 * scale;
+      const shadowCx = 14 * scale;
+      const shadowWidth = 26 * scale;
 
-      // Precompute shadow color for this skater
-      const suitShadowColor = darken(color, 0.35);
-      const skinShadowColor = darken(COLORS.skin, 0.25);
-      const bladeHighlight = "#C0C8D0"; // Shiny blade
-      const visorColor = "#7A8A9A"; // Reflective goggle visor
+      const bodyShadowColor = darken(color, 0.35);
 
-      // Get fill color based on part type
-      const getPartColor = (part: SkaterPart): string => {
+      const getPartColor = (part: CarPart): string => {
         switch (part.type) {
-          case "suit":
+          case "body":
             return color;
-          case "suitShadow":
-            return suitShadowColor;
-          case "skin":
-            return COLORS.skin;
-          case "skinShadow":
-            return skinShadowColor;
-          case "skate":
-            return COLORS.skate;
-          case "skateBlade":
-            return bladeHighlight;
-          case "visor":
-            return visorColor;
+          case "bodyShadow":
+            return bodyShadowColor;
+          case "cockpit":
+            return COLORS.cockpit;
+          case "tire":
+            return COLORS.tire;
+          case "rim":
+            return COLORS.rim;
+          case "rimHighlight":
+            return COLORS.rimHighlight;
           default:
             return color;
         }
       };
 
-      // Compensate for SVG aspect ratio stretching
-      // The SVG uses preserveAspectRatio="none" which stretches horizontally
-      // Divide horizontal dimensions by aspectRatio to maintain sprite proportions
       const hScale = scale / aspectRatio;
       const vScale = scale;
 
       return (
         <g transform={`translate(${x}, ${y})`}>
-          {/* Ground shadow - ellipse at ice level */}
+          {/* Ground shadow */}
           <ellipse
             cx={(shadowCx * hScale) / scale}
             cy={shadowY}
             rx={((shadowWidth / 2) * hScale) / scale}
-            ry={0.6 * vScale}
+            ry={0.4 * vScale}
             fill={COLORS.shadow}
-            opacity={0.3}
+            opacity={0.25}
           />
-          {/* Body parts - rendered in array order, with aspect ratio compensation */}
           {frame.map((part) => (
             <rect
               key={part.id}
@@ -979,16 +817,22 @@ const SpeedSkatingBanner: React.FC<{ className?: string }> = React.memo(
       );
     };
 
-    // Render ice chunks for a lane - seamless tiling with two copies
-    const renderIceChunks = (chunks: IceChunk[], y: number) => {
-      const offset = state.iceOffset % 100; // Wrap at 100 for seamless loop
+    // Render asphalt texture for a lane - seamless two-copy scrolling
+    const renderTrackChunks = (chunks: TrackChunk[], y: number) => {
+      const offset = state.trackOffset % 100;
       const elements: React.ReactNode[] = [];
 
-      // Render two copies of the pattern side-by-side for seamless scrolling
+      const shadeColor = (shade: TrackChunk["shade"]) => {
+        if (shade === "dark") return COLORS.trackDark;
+        if (shade === "mid") return COLORS.trackMid;
+        return COLORS.trackLight;
+      };
+
       chunks.forEach((chunk, i) => {
-        // First copy (offset)
+        const color = shadeColor(chunk.shade);
+
         const x1 = chunk.x - offset;
-        if (x1 > -15 && x1 < 110) {
+        if (x1 > -20 && x1 < 110) {
           elements.push(
             <rect
               key={`a${i}`}
@@ -996,14 +840,13 @@ const SpeedSkatingBanner: React.FC<{ className?: string }> = React.memo(
               y={y}
               width={chunk.width}
               height={LAYOUT.laneHeight}
-              fill={chunk.dark ? COLORS.iceDark : COLORS.iceLight}
+              fill={color}
             />,
           );
         }
 
-        // Second copy (offset - 100, wraps around)
         const x2 = chunk.x - offset + 100;
-        if (x2 > -15 && x2 < 110) {
+        if (x2 > -20 && x2 < 110) {
           elements.push(
             <rect
               key={`b${i}`}
@@ -1011,13 +854,34 @@ const SpeedSkatingBanner: React.FC<{ className?: string }> = React.memo(
               y={y}
               width={chunk.width}
               height={LAYOUT.laneHeight}
-              fill={chunk.dark ? COLORS.iceDark : COLORS.iceLight}
+              fill={color}
             />,
           );
         }
       });
 
       return elements;
+    };
+
+    // Render a small checkered flag next to the winning car during victory
+    const renderCheckeredFlag = (x: number, y: number) => {
+      const squares: React.ReactNode[] = [];
+      const s = 1.2; // square size in viewBox units
+      for (let row = 0; row < 3; row++) {
+        for (let col = 0; col < 5; col++) {
+          squares.push(
+            <rect
+              key={`${row}-${col}`}
+              x={x + col * s}
+              y={y + row * s}
+              width={s}
+              height={s}
+              fill={(row + col) % 2 === 0 ? "#FFFFFF" : "#000000"}
+            />,
+          );
+        }
+      }
+      return squares;
     };
 
     return (
@@ -1033,22 +897,32 @@ const SpeedSkatingBanner: React.FC<{ className?: string }> = React.memo(
           viewBox="0 0 100 100"
           preserveAspectRatio="none"
           role="img"
-          aria-label="Animated speed skating race"
+          aria-label="Animated F1 race"
         >
-          <title>Speed Skating Race</title>
+          <title>F1 Race</title>
 
           {lanes.map((lane) => (
             <g key={lane.id}>
-              {/* Ice lane */}
-              {renderIceChunks(lane.chunks, lane.y + 6)}
+              {/* Asphalt track surface */}
+              {renderTrackChunks(lane.chunks, lane.y + 9)}
 
-              {/* Skater */}
-              {renderSkater(
-                LAYOUT.skaterBaseX + state.skaterPositions[lane.id]!,
+              {/* F1 car */}
+              {renderCar(
+                LAYOUT.carBaseX + state.carPositions[lane.id]!,
                 lane.y,
                 lane.color,
-                getSkaterFrame(lane.id),
+                getCarFrame(lane.id),
               )}
+
+              {/* Checkered flag for winner during victory phase */}
+              {state.phase === "victory" &&
+                lane.id === state.winnerId &&
+                renderCheckeredFlag(
+                  LAYOUT.carBaseX +
+                    state.carPositions[lane.id]! +
+                    (22 * LAYOUT.carScale) / aspectRatio,
+                  lane.y + 1,
+                )}
             </g>
           ))}
         </svg>
@@ -1056,4 +930,4 @@ const SpeedSkatingBanner: React.FC<{ className?: string }> = React.memo(
     );
   },
 );
-SpeedSkatingBanner.displayName = "SpeedSkatingBanner";
+F1RaceBanner.displayName = "F1RaceBanner";
