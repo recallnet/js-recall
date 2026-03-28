@@ -10,6 +10,7 @@ import {
 } from "@envio-dev/hypersync-client";
 import * as dotenv from "dotenv";
 import * as path from "path";
+import { parseArgs } from "util";
 import { decodeEventLog, encodeEventTopics } from "viem";
 
 import { convictionClaims } from "@recallnet/db/schema/conviction-claims/defs";
@@ -32,8 +33,21 @@ const colors = {
 };
 
 // Parse command-line arguments
-const args = process.argv.slice(2);
-const shouldUpdate = args.includes("--update");
+const { values: cliArgs } = parseArgs({
+  args: process.argv.slice(2),
+  options: {
+    update: { type: "boolean" },
+    "start-block": { type: "string" },
+    "end-block": { type: "string" },
+  },
+});
+const shouldUpdate = cliArgs.update || false;
+const startBlockOverride = cliArgs["start-block"]
+  ? parseInt(cliArgs["start-block"], 10)
+  : undefined;
+const endBlockOverride = cliArgs["end-block"]
+  ? parseInt(cliArgs["end-block"], 10)
+  : undefined;
 
 /**
  * Calculate stake duration based on the claimed percentage.
@@ -129,8 +143,8 @@ async function findMissingClaims() {
   };
 
   // Start from early blocks to find missing claims
-  const startBlock = 39501000; // Sunday, December 15, 2025
-  const endBlock = 39609000; // Wednesday, December 17, 2025
+  const startBlock = startBlockOverride ?? 39501000; // default: Sunday, December 15, 2025
+  const endBlock = endBlockOverride ?? 43537402; // default: Wednesday, March 18, 2026
 
   console.log(`📦 Scanning blocks: ${startBlock} to ${endBlock}`);
 
