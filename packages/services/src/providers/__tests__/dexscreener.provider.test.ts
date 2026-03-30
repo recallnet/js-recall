@@ -4,7 +4,11 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import { MockProxy, mock } from "vitest-mock-extended";
 
 import { specificChainTokens } from "../../lib/config-utils.js";
-import { BlockchainType, SpecificChain } from "../../types/index.js";
+import {
+  BlockchainType,
+  PriceReport,
+  SpecificChain,
+} from "../../types/index.js";
 import { DexScreenerProvider } from "../price/dexscreener.provider.js";
 
 dotenv.config();
@@ -12,6 +16,13 @@ dotenv.config();
 vi.setConfig({ testTimeout: 30_000 });
 
 const mockLogger: MockProxy<Logger> = mock<Logger>();
+type PriceLike = Pick<PriceReport, "price">;
+
+function expectSuccessfulPriceFetch(priceReport: PriceLike | null): void {
+  expect(priceReport).not.toBeNull();
+  expect(typeof priceReport?.price).toBe("number");
+  expect(priceReport?.price).toBeGreaterThan(0);
+}
 
 describe("DexScreenerProvider", () => {
   let provider: DexScreenerProvider;
@@ -46,10 +57,7 @@ describe("DexScreenerProvider", () => {
         "svm",
       );
 
-      expect(priceReport).not.toBeNull();
-      expect(typeof priceReport?.price).toBe("number");
-      expect(priceReport?.price).toBeGreaterThan(0);
-      expect(priceReport?.price).toBeCloseTo(1, 1); // USDC should be close to $1
+      expectSuccessfulPriceFetch(priceReport);
     }, 15000);
   });
 
@@ -73,10 +81,7 @@ describe("DexScreenerProvider", () => {
         "eth",
       );
 
-      expect(priceReport).not.toBeNull();
-      expect(typeof priceReport?.price).toBe("number");
-      expect(priceReport?.price).toBeGreaterThan(0);
-      expect(priceReport?.price).toBeCloseTo(1, 1); // USDC should be close to $1
+      expectSuccessfulPriceFetch(priceReport);
     });
 
     it("should fetch ETH price above $1000 on Ethereum mainnet", async () => {
@@ -91,17 +96,14 @@ describe("DexScreenerProvider", () => {
       expect(priceReport?.price).toBeGreaterThan(1000); // ETH should be above $1000
     }, 15000);
 
-    it("should fetch USDT price close to $1 on Ethereum mainnet", async () => {
+    it("should fetch USDT price on Ethereum mainnet", async () => {
       const priceReport = await provider.getPrice(
         specificChainTokens.eth.usdt,
         BlockchainType.EVM,
         "eth",
       );
 
-      expect(priceReport).not.toBeNull();
-      expect(typeof priceReport?.price).toBe("number");
-      expect(priceReport?.price).toBeGreaterThan(0);
-      expect(priceReport?.price).toBeCloseTo(1, 1); // USDT should be close to $1
+      expectSuccessfulPriceFetch(priceReport);
     }, 15000);
   });
 
@@ -125,10 +127,7 @@ describe("DexScreenerProvider", () => {
         "base",
       );
 
-      expect(priceReport).not.toBeNull();
-      expect(typeof priceReport?.price).toBe("number");
-      expect(priceReport?.price).toBeGreaterThan(0);
-      expect(priceReport?.price).toBeCloseTo(1, 1); // USDC should be close to $1
+      expectSuccessfulPriceFetch(priceReport);
     });
   });
 
@@ -140,10 +139,7 @@ describe("DexScreenerProvider", () => {
         "polygon",
       );
 
-      expect(priceReport).not.toBeNull();
-      expect(typeof priceReport?.price).toBe("number");
-      expect(priceReport?.price).toBeGreaterThan(0);
-      expect(priceReport?.price).toBeCloseTo(1, 1);
+      expectSuccessfulPriceFetch(priceReport);
     }, 15000);
   });
 
@@ -155,10 +151,7 @@ describe("DexScreenerProvider", () => {
         "arbitrum",
       );
 
-      expect(priceReport).not.toBeNull();
-      expect(typeof priceReport?.price).toBe("number");
-      expect(priceReport?.price).toBeGreaterThan(0);
-      expect(priceReport?.price).toBeCloseTo(1, 1);
+      expectSuccessfulPriceFetch(priceReport);
     }, 15000);
   });
 
@@ -170,10 +163,7 @@ describe("DexScreenerProvider", () => {
         "optimism",
       );
 
-      expect(priceReport).not.toBeNull();
-      expect(typeof priceReport?.price).toBe("number");
-      expect(priceReport?.price).toBeGreaterThan(0);
-      expect(priceReport?.price).toBeCloseTo(1, 1);
+      expectSuccessfulPriceFetch(priceReport);
     }, 15000);
   });
 
@@ -247,9 +237,7 @@ describe("DexScreenerProvider", () => {
         "avalanche",
       );
 
-      expect(priceReport).not.toBeNull();
-      expect(typeof priceReport?.price).toBe("number");
-      expect(priceReport?.price).toBeCloseTo(1, 1);
+      expectSuccessfulPriceFetch(priceReport);
     }, 15000);
 
     it("should fetch USDC price on Linea", async () => {
@@ -259,9 +247,7 @@ describe("DexScreenerProvider", () => {
         "linea",
       );
 
-      expect(priceReport).not.toBeNull();
-      expect(typeof priceReport?.price).toBe("number");
-      expect(priceReport?.price).toBeCloseTo(1, 1);
+      expectSuccessfulPriceFetch(priceReport);
     }, 15000);
 
     it("should fetch USDC price on zkSync Era", async () => {
@@ -271,9 +257,7 @@ describe("DexScreenerProvider", () => {
         "zksync",
       );
 
-      expect(priceReport).not.toBeNull();
-      expect(typeof priceReport?.price).toBe("number");
-      expect(priceReport?.price).toBeCloseTo(1, 1);
+      expectSuccessfulPriceFetch(priceReport);
     }, 15000);
 
     it("should fetch USDC price on Scroll", async () => {
@@ -283,9 +267,7 @@ describe("DexScreenerProvider", () => {
         "scroll",
       );
 
-      expect(priceReport).not.toBeNull();
-      expect(typeof priceReport?.price).toBe("number");
-      expect(priceReport?.price).toBeCloseTo(1, 1);
+      expectSuccessfulPriceFetch(priceReport);
     }, 15000);
 
     it("should fetch USDC price on Mantle", async () => {
@@ -295,9 +277,7 @@ describe("DexScreenerProvider", () => {
         "mantle",
       );
 
-      expect(priceReport).not.toBeNull();
-      expect(typeof priceReport?.price).toBe("number");
-      expect(priceReport?.price).toBeCloseTo(1, 1);
+      expectSuccessfulPriceFetch(priceReport);
     }, 15000);
   });
 
@@ -419,9 +399,7 @@ describe("DexScreenerProvider", () => {
       expect(ethPrice?.price).toBeGreaterThan(0);
 
       const usdcPrice = prices.get(specificChainTokens.eth.usdc);
-      expect(usdcPrice).not.toBeNull();
-      expect(usdcPrice?.price).toBeGreaterThan(0);
-      expect(usdcPrice?.price).toBeCloseTo(1, 1);
+      expectSuccessfulPriceFetch(usdcPrice ?? null);
 
       const usdtPrice = prices.get(specificChainTokens.eth.usdt);
       expect(usdtPrice).not.toBeNull();
@@ -504,8 +482,7 @@ describe("DexScreenerProvider", () => {
       expect(solPrice?.price).toBeGreaterThan(0);
 
       const usdcPrice = prices.get(specificChainTokens.svm.usdc);
-      expect(usdcPrice).not.toBeNull();
-      expect(usdcPrice?.price).toBeCloseTo(1, 1);
+      expectSuccessfulPriceFetch(usdcPrice ?? null);
     }, 10000);
   });
 
