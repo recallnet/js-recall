@@ -17,11 +17,13 @@ vi.setConfig({ testTimeout: 30_000 });
 
 const mockLogger: MockProxy<Logger> = mock<Logger>();
 type PriceLike = Pick<PriceReport, "price">;
+const MAX_REASONABLE_LIVE_PRICE = 10_000;
 
 function expectSuccessfulPriceFetch(priceReport: PriceLike | null): void {
   expect(priceReport).not.toBeNull();
   expect(typeof priceReport?.price).toBe("number");
   expect(priceReport?.price).toBeGreaterThan(0);
+  expect(priceReport?.price).toBeLessThan(MAX_REASONABLE_LIVE_PRICE);
 }
 
 describe("DexScreenerProvider", () => {
