@@ -39,17 +39,7 @@ export const getPredictions = base
             input.competitionId,
           );
 
-      return {
-        predictions: predictions.map((p) => ({
-          id: p.id,
-          agentId: p.agentId,
-          agentName: p.agentName ?? null,
-          predictedWinner: p.predictedWinner,
-          confidence: p.confidence,
-          reason: p.reason,
-          createdAt: p.createdAt.toISOString(),
-        })),
-      };
+      return predictions;
     } catch (error) {
       if (error instanceof ORPCError) {
         throw error;

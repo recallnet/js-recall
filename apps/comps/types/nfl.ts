@@ -32,7 +32,7 @@ export interface NflPrediction
     SelectGamePrediction,
     "id" | "agentId" | "predictedWinner" | "confidence"
   > {
-  createdAt: string;
+  createdAt: Date;
   reason?: string | null;
   agentName?: string | null;
 }

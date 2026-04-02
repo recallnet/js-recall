@@ -34,37 +34,8 @@ export const getNextAirdropEligibility = base
           input.airdrop,
         );
 
-      // Convert bigint values to strings for JSON serialization
       return {
-        isEligible: eligibility.isEligible,
-        airdrop: eligibility.airdrop,
-        activitySeason: {
-          number: eligibility.activitySeason.number,
-          name: eligibility.activitySeason.name,
-          startDate: eligibility.activitySeason.startDate.toISOString(),
-          endDate: eligibility.activitySeason.endDate.toISOString(),
-        },
-        activeStake: eligibility.activeStake.toString(),
-        potentialReward: eligibility.potentialReward.toString(),
-        eligibilityReasons: {
-          hasBoostedAgents: eligibility.eligibilityReasons.hasBoostedAgents,
-          hasCompetedInCompetitions:
-            eligibility.eligibilityReasons.hasCompetedInCompetitions,
-          boostedCompetitionIds:
-            eligibility.eligibilityReasons.boostedCompetitionIds,
-          competedCompetitionIds:
-            eligibility.eligibilityReasons.competedCompetitionIds,
-          totalUniqueCompetitions:
-            eligibility.eligibilityReasons.totalUniqueCompetitions,
-        },
-        poolStats: {
-          totalActiveStakes: eligibility.poolStats.totalActiveStakes.toString(),
-          availableRewardsPool:
-            eligibility.poolStats.availableRewardsPool.toString(),
-          totalForfeited: eligibility.poolStats.totalForfeited.toString(),
-          totalAlreadyClaimed:
-            eligibility.poolStats.totalAlreadyClaimed.toString(),
-        },
+        ...eligibility,
         minCompetitionsRequired: config.airdrop.minCompetitionsForEligibility,
       };
     } catch (error) {
