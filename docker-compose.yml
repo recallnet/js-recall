@@ -7,15 +7,16 @@ networks:
 
 services:
   anvil:
-    image: ghcr.io/foundry-rs/foundry:latest
+    build:
+      context: ./local/anvil
+      dockerfile: Dockerfile
+    image: recall-anvil
     container_name: recall-anvil
     restart: always
     networks:
       - recall-network
     ports:
-      - "8545:8545"
-    entrypoint:
-      ["anvil", "--host", "0.0.0.0", "--chain-id", "31337", "--block-time", "1"]
+      - "${ANVIL_PORT:-8545}:8545"
     healthcheck:
       test:
         ["CMD", "cast", "block-number", "--rpc-url", "http://localhost:8545"]
@@ -30,7 +31,7 @@ services:
     networks:
       - recall-network
     ports:
-      - "5432:5432"
+      - "${POSTGRES_PORT:-5433}:5432"
     environment:
       POSTGRES_DB: postgres
       POSTGRES_USER: postgres
@@ -44,6 +45,9 @@ services:
       retries: 5
 
   api:
+    profiles:
+      - comps
+      - full
     build:
       context: .
       dockerfile: apps/api/trade-simulator-docker/Dockerfile
@@ -57,19 +61,43 @@ services:
       - "${METRICS_PORT:-3003}:${METRICS_PORT:-3003}"
     environment:
       DATABASE_URL: postgresql://postgres:postgres@db/postgres
-      API_PREFIX: ${API_PREFIX:-}
+      API_PREFIX: ${API_PREFIX:-backend-api}
       PORT: ${API_PORT:-3000}
       METRICS_PORT: ${METRICS_PORT:-3003}
     depends_on:
       - db
 
+  db-seed:
+    build:
+      context: .
+      dockerfile: local/seed/Dockerfile
+    image: recall-db-seed
+    container_name: recall-db-seed
+    restart: "no"
+    networks:
+      - recall-network
+    environment:
+      DATABASE_URL: postgresql://postgres:postgres@db/postgres
+    depends_on:
+      db:
+        condition: service_healthy
+
   comps:
+    profiles:
+      - api
+      - full
     build:
       context: .
       dockerfile: apps/comps/Dockerfile
       args:
-        NEXT_PUBLIC_API_BASE_URL: "http://api:${API_PORT:-3000}${API_PREFIX:+/${API_PREFIX}}/api"
+        NEXT_PUBLIC_API_BASE_URL: "http://localhost:${API_PORT:-3000}${API_PREFIX:+/${API_PREFIX}}/api"
         NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID: ${NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID:-}
+        NEXT_PUBLIC_CHAIN_ID: ${NEXT_PUBLIC_CHAIN_ID:-31337}
+        NEXT_PUBLIC_ETH_RPC_URL: ${NEXT_PUBLIC_ETH_RPC_URL:-http://anvil:8545}
+        NEXT_PUBLIC_TOKEN_CONTRACT_ADDRESS: ${NEXT_PUBLIC_TOKEN_CONTRACT_ADDRESS:-0x5FbDB2315678afecb367f032d93F642f64180aa3}
+        NEXT_PUBLIC_STAKING_CONTRACT_ADDRESS: ${NEXT_PUBLIC_STAKING_CONTRACT_ADDRESS:-0x9A676e781A523b5d0C0e43731313A708CB607508}
+        NEXT_PUBLIC_REWARD_ALLOCATION_CONTRACT_ADDRESS: ${NEXT_PUBLIC_REWARD_ALLOCATION_CONTRACT_ADDRESS:-0x68B1D87F95878fE05B998F19b66F4baba5De1aed}
+        NEXT_PUBLIC_AIRDROP_CONTRACT_ADDRESS: ${NEXT_PUBLIC_AIRDROP_CONTRACT_ADDRESS:-0x09635F643e140090A9A8Dcd712eD6285858ceBef}
     image: recall-comps
     container_name: recall-comps
     restart: always
@@ -79,8 +107,34 @@ services:
       - "${COMPS_PORT:-3001}:${COMPS_PORT:-3001}"
     environment:
       PORT: ${COMPS_PORT:-3001}
+      DATABASE_URL: postgresql://postgres:postgres@db/postgres
+      NEXT_PUBLIC_API_BASE_URL: "${COMPS_API_URL:-http://localhost:${API_PORT:-3000}}${API_PREFIX:+/${API_PREFIX}}/api"
+      NEXT_PUBLIC_CHAIN_ID: ${NEXT_PUBLIC_CHAIN_ID:-31337}
+      NEXT_PUBLIC_ETH_RPC_URL: ${NEXT_PUBLIC_ETH_RPC_URL:-http://anvil:8545}
+      NEXT_PUBLIC_TOKEN_CONTRACT_ADDRESS: ${NEXT_PUBLIC_TOKEN_CONTRACT_ADDRESS:-0x5FbDB2315678afecb367f032d93F642f64180aa3}
+      NEXT_PUBLIC_STAKING_CONTRACT_ADDRESS: ${NEXT_PUBLIC_STAKING_CONTRACT_ADDRESS:-0x9A676e781A523b5d0C0e43731313A708CB607508}
+      NEXT_PUBLIC_REWARD_ALLOCATION_CONTRACT_ADDRESS: ${NEXT_PUBLIC_REWARD_ALLOCATION_CONTRACT_ADDRESS:-0x68B1D87F95878fE05B998F19b66F4baba5De1aed}
+      NEXT_PUBLIC_AIRDROP_CONTRACT_ADDRESS: ${NEXT_PUBLIC_AIRDROP_CONTRACT_ADDRESS:-0x09635F643e140090A9A8Dcd712eD6285858ceBef}
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
     depends_on:
-      - api
+      - db-seed
+      - anvil
+
+  cron:
+    build:
+      context: ./local/cron
+      dockerfile: Dockerfile
+    image: recall-cron
+    container_name: recall-cron
+    restart: always
+    networks:
+      - recall-network
+    environment:
+      COMPS_URL: ${COMPS_URL:-http://host.docker.internal:3001}
+      CRON_SECRET: ${CRON_SECRET:-local-dev-secret}
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
 
 volumes:
   postgres-data:

@@ -1,0 +1,25 @@
+{
+  "name": "@recallnet/local",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Local development utilities",
+  "scripts": {
+    "seed": "tsx seed/src/index.ts",
+    "format": "prettier --write . --ignore-path=../.prettierignore",
+    "format:check": "prettier --check . --ignore-path=../.prettierignore",
+    "lint": "eslint . --max-warnings 0",
+    "check-types": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@recallnet/db": "workspace:*",
+    "drizzle-orm": "^0.43.1",
+    "pg": "^8.13.1"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.2",
+    "@types/pg": "^8.11.10",
+    "tsx": "^4.19.2",
+    "typescript": "^5.7.2"
+  }
+}
