@@ -568,6 +568,13 @@
       "when": 1768432489580,
       "tag": "0080_slimy_grim_reaper",
       "breakpoints": true
+    },
+    {
+      "idx": 81,
+      "version": "7",
+      "when": 1777998114931,
+      "tag": "0081_wakeful_the_santerians",
+      "breakpoints": true
     }
   ]
 }
