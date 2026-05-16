@@ -116,7 +116,7 @@ export const specificChainTokens = {
   base: {
     eth: "0x4200000000000000000000000000000000000006", // WETH on Base
     usdc: "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913", // Native USDC on Base
-    usdt: "0x50c5725949A6F0c72E6C4a641F24049A917DB0Cb", // USDT on Base
+    usdt: "0xfde4C96c8593536E31F229EA8f37b2ADa2699bb2", // Bridged USDT on Base
   },
   svm: {
     sol: "So11111111111111111111111111111111111111112",
@@ -154,6 +154,70 @@ export const specificChainTokens = {
     usdc: "0x09Bc4E0D864854c6aFB6eB9A9cdF58aC190D0dF9", // Bridged USDC (no native USDC on Mantle yet)
   },
 } as const;
+
+/**
+ * Token decimals by token type key (as used in specificChainTokens)
+ *
+ * These values are blockchain constants that don't change.
+ * The integration test suite verifies these against on-chain data.
+ */
+const TOKEN_DECIMALS_BY_TYPE = {
+  // Stablecoins - 6 decimals
+  usdc: 6,
+  usdt: 6,
+
+  // Wrapped native tokens - 18 decimals (standard for ETH-like chains)
+  eth: 18, // WETH on all EVM chains
+  matic: 18, // WMATIC on Polygon
+  avax: 18, // WAVAX on Avalanche
+  mnt: 18, // WMNT on Mantle
+
+  // Solana native - 9 decimals
+  sol: 9,
+} as const;
+
+/**
+ * Known token decimals by normalized (lowercased) address
+ *
+ * Built dynamically from specificChainTokens + TOKEN_DECIMALS_BY_TYPE
+ * to avoid address duplication and keep data in sync.
+ *
+ * Used as a reliable fallback when RPC decimals() calls fail,
+ * preventing incorrect 18-decimal assumptions for non-18 decimal tokens
+ * (e.g., USDC with 6 decimals being treated as 18 would be off by 10^12).
+ *
+ * IMPORTANT: The integration test `rpc-spot-integration.test.ts` validates
+ * all entries against actual on-chain RPC calls to ensure correctness.
+ */
+export const KNOWN_TOKEN_DECIMALS: ReadonlyMap<string, number> = (() => {
+  const map = new Map<string, number>();
+
+  for (const tokens of Object.values(specificChainTokens)) {
+    for (const [tokenType, address] of Object.entries(tokens)) {
+      const decimals =
+        TOKEN_DECIMALS_BY_TYPE[
+          tokenType as keyof typeof TOKEN_DECIMALS_BY_TYPE
+        ];
+      if (decimals !== undefined) {
+        map.set(address.toLowerCase(), decimals);
+      }
+    }
+  }
+
+  return map;
+})();
+
+/**
+ * Get known token decimals from the hardcoded map
+ *
+ * @param tokenAddress The token contract address (case-insensitive)
+ * @returns The known decimals, or undefined if token is not in the known list
+ */
+export function getKnownTokenDecimals(
+  tokenAddress: string,
+): number | undefined {
+  return KNOWN_TOKEN_DECIMALS.get(tokenAddress.toLowerCase());
+}
 
 /**
  * Parse EVM chains configuration from environment variable

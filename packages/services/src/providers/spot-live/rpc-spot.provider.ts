@@ -3,7 +3,10 @@ import { AssetTransfersWithMetadataResult } from "alchemy-sdk";
 import { Logger } from "pino";
 
 import { formatTokenAmount } from "../../lib/blockchain-math-utils.js";
-import { NATIVE_TOKEN_ADDRESS } from "../../lib/config-utils.js";
+import {
+  NATIVE_TOKEN_ADDRESS,
+  getKnownTokenDecimals,
+} from "../../lib/config-utils.js";
 import { SpecificChain } from "../../types/index.js";
 import { IRpcProvider, TransactionReceipt } from "../../types/rpc.js";
 import {
@@ -540,6 +543,13 @@ export class RpcSpotProvider implements ISpotLiveDataProvider {
                   { txHash, token: swap.fromToken, amount },
                   "[RpcSpotProvider] Calculated fromAmount from receipt log (Alchemy returned null)",
                 );
+              } else {
+                // Cannot determine decimals for unknown token - reject swap to prevent incorrect amounts
+                this.logger.warn(
+                  { txHash, chain, token: swap.fromToken },
+                  "[RpcSpotProvider] Cannot determine decimals for outbound token - rejecting swap",
+                );
+                continue;
               }
             }
           }
@@ -564,6 +574,13 @@ export class RpcSpotProvider implements ISpotLiveDataProvider {
                   { txHash, token: swap.toToken, amount },
                   "[RpcSpotProvider] Calculated toAmount from receipt log (Alchemy returned null)",
                 );
+              } else {
+                // Cannot determine decimals for unknown token - reject swap to prevent incorrect amounts
+                this.logger.warn(
+                  { txHash, chain, token: swap.toToken },
+                  "[RpcSpotProvider] Cannot determine decimals for inbound token - rejecting swap",
+                );
+                continue;
               }
             }
           }
@@ -1015,7 +1032,7 @@ export class RpcSpotProvider implements ISpotLiveDataProvider {
       return 0;
     }
 
-    // Fetch actual decimals from chain
+    // Fetch actual decimals from chain, with fallback to known token decimals
     try {
       const decimals = await this.rpcProvider.getTokenDecimals(
         tokenAddress,
@@ -1024,13 +1041,26 @@ export class RpcSpotProvider implements ISpotLiveDataProvider {
       // Use formatTokenAmount for precision-safe BigInt to decimal conversion
       return parseFloat(formatTokenAmount(rawValue.toString(), decimals));
     } catch (error) {
-      // If decimals fetch fails, fall back to 18 (most common)
-      this.logger.warn(
+      // RPC failed - try known token decimals as fallback
+      const knownDecimals = getKnownTokenDecimals(tokenAddress);
+      if (knownDecimals !== undefined) {
+        this.logger.warn(
+          { tokenAddress, chain, knownDecimals, error },
+          "[RpcSpotProvider] RPC decimals fetch failed, using known token decimals",
+        );
+        return parseFloat(
+          formatTokenAmount(rawValue.toString(), knownDecimals),
+        );
+      }
+
+      // Unknown token with failed RPC - reject to prevent incorrect amounts
+      // This is safer than guessing 18 decimals (e.g., USDC has 6 decimals,
+      // using 18 would make amounts 10^12 times too small)
+      this.logger.error(
         { tokenAddress, chain, error },
-        "[RpcSpotProvider] Failed to fetch decimals, falling back to 18",
+        "[RpcSpotProvider] Failed to fetch decimals for unknown token - rejecting",
       );
-      // Use formatTokenAmount for precision-safe BigInt to decimal conversion
-      return parseFloat(formatTokenAmount(rawValue.toString(), 18));
+      return null;
     }
   }
 
@@ -1074,8 +1104,29 @@ export class RpcSpotProvider implements ISpotLiveDataProvider {
     // 1. Validation: reject 0-value swaps before returning
     // 2. Fallback: used if getAssetTransfers doesn't have matching tokens (edge case safety net)
     // In normal flow, amounts are overridden by getAssetTransfers values which are pre-adjusted
-    const fromDecimals = tokenDecimals.get(outbound.tokenAddress) ?? 18;
-    const toDecimals = tokenDecimals.get(inbound.tokenAddress) ?? 18;
+    const fromDecimals =
+      tokenDecimals.get(outbound.tokenAddress) ??
+      getKnownTokenDecimals(outbound.tokenAddress);
+    const toDecimals =
+      tokenDecimals.get(inbound.tokenAddress) ??
+      getKnownTokenDecimals(inbound.tokenAddress);
+
+    // Reject swap if we can't determine decimals for either token
+    // This prevents incorrect amount calculations (e.g., USDC with 6 decimals
+    // being treated as 18 would be off by 10^12)
+    if (fromDecimals === undefined || toDecimals === undefined) {
+      this.logger.warn(
+        {
+          txHash: receipt.transactionHash,
+          fromToken: outbound.tokenAddress,
+          toToken: inbound.tokenAddress,
+          hasFromDecimals: fromDecimals !== undefined,
+          hasToDecimals: toDecimals !== undefined,
+        },
+        "[RpcSpotProvider] Cannot determine decimals for swap tokens - rejecting",
+      );
+      return null;
+    }
 
     // Use formatTokenAmount for precision-safe BigInt to decimal conversion
     const fromAmount = parseFloat(
