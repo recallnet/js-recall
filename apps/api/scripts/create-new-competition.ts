@@ -3,10 +3,11 @@ import * as dotenv from "dotenv";
 import { readFile } from "fs/promises";
 import * as path from "path";
 import { stdin as input, stdout as output } from "process";
-import { Interface, createInterface } from "readline/promises";
+import { createInterface } from "readline/promises";
+import type { Interface } from "readline/promises";
 import { fileURLToPath } from "url";
 import { parseArgs } from "util";
-import { z } from "zod/v4";
+import type { z } from "zod/v4";
 
 import { AdminCreateCompetitionSchema } from "@recallnet/services/types";
 
@@ -31,19 +32,19 @@ const SCRIPT_DIR = path.dirname(fileURLToPath(import.meta.url));
 const API_ROOT = path.resolve(SCRIPT_DIR, "..");
 const DEFAULT_PAYLOAD_FILE = path.join(SCRIPT_DIR, "data", "new-comp.json");
 const DEFAULT_API_BASE_URL = "https://api.competitions.recall.network";
-const FALLBACK_TEMPLATE_TIME = new Date("1970-01-01T14:00:00.000Z");
+const DEFAULT_DATE_ONLY_TIME = "14:00:00.000Z";
 
 dotenv.config({ path: path.join(API_ROOT, ".env") });
 
 function usage(): string {
   return [
     "Usage:",
-    "  pnpm comp:create -- --start-date 2026-06-10 --end-date 2026-06-16",
-    "  pnpm comp:create -- --start-date 2026-06-10T14:00:00Z --end-date 2026-06-16T14:00:00Z --yes",
+    "  pnpm --filter api comp:create -- --start-date 2026-06-10 --end-date 2026-06-16",
+    "  pnpm --filter api comp:create -- --start-date 2026-06-10T14:00:00Z --end-date 2026-06-16T14:00:00Z --yes",
     "",
     "Environment:",
     "  ADMIN_API_KEY must be set.",
-    "  API_BASE_URL may override the production API base URL.",
+    `  API_BASE_URL defaults to ${DEFAULT_API_BASE_URL}.`,
     "",
     "Options:",
     "  --start-date, -s       Competition start date. Date-only values use the template UTC time.",
@@ -57,10 +58,8 @@ function usage(): string {
 }
 
 function parseCliOptions(): ScriptOptions {
-  const args = process.argv.slice(2);
-  if (args[0] === "--") {
-    args.shift();
-  }
+  const rawArgs = process.argv.slice(2);
+  const args = rawArgs[0] === "--" ? rawArgs.slice(1) : rawArgs;
 
   const { values } = parseArgs({
     args,
@@ -125,7 +124,11 @@ async function readTemplate(
   return result.data;
 }
 
-function formatUtcTime(date: Date): string {
+function formatUtcTime(date?: Date): string {
+  if (!date) {
+    return DEFAULT_DATE_ONLY_TIME;
+  }
+
   const hours = String(date.getUTCHours()).padStart(2, "0");
   const minutes = String(date.getUTCMinutes()).padStart(2, "0");
   const seconds = String(date.getUTCSeconds()).padStart(2, "0");
@@ -136,7 +139,7 @@ function formatUtcTime(date: Date): string {
 function parseCompetitionDate(
   value: string,
   label: string,
-  templateDate: Date,
+  templateDate?: Date,
 ): Date {
   const trimmed = value.trim();
 
@@ -238,7 +241,11 @@ function parseJsonResponse(text: string): unknown {
     return undefined;
   }
 
-  return JSON.parse(text) as unknown;
+  try {
+    return JSON.parse(text) as unknown;
+  } catch {
+    return undefined;
+  }
 }
 
 async function requestJson(
@@ -265,7 +272,7 @@ async function requestJson(
   if (!response.ok) {
     throw new Error(
       `${method} ${requestPath} failed with ${response.status}: ${
-        responseError ?? text
+        (responseError ?? text) || response.statusText
       }`,
     );
   }
@@ -374,7 +381,10 @@ function printDryRun(
   );
 
   console.log("");
-  console.log(`Would register ${agentIds.length} allowlisted agent(s):`);
+  const agentLabel = agentIds.length === 1 ? "agent" : "agents";
+  console.log(
+    `Would register ${agentIds.length} ${agentLabel} from allowlist:`,
+  );
   for (const agentId of agentIds) {
     console.log(`- ${agentId}`);
   }
@@ -419,17 +429,15 @@ async function main(): Promise<void> {
       options.endDate,
     );
 
-    const templateStartDate = template.startDate ?? FALLBACK_TEMPLATE_TIME;
-    const templateEndDate = template.endDate ?? FALLBACK_TEMPLATE_TIME;
     const startDate = parseCompetitionDate(
       startInput,
       "Competition start date",
-      templateStartDate,
+      template.startDate,
     );
     const endDate = parseCompetitionDate(
       endInput,
       "Competition end date",
-      templateEndDate,
+      template.endDate,
     );
     const payload = buildPayload(template, startDate, endDate);
     const agentIds = payload.allowlist ?? [];
@@ -453,7 +461,7 @@ async function main(): Promise<void> {
       payload,
     );
     console.log(`Created competition ${competitionId}`);
-    console.log(`Registering ${agentIds.length} allowlisted agents...`);
+    console.log(`Registering ${agentIds.length} agents from allowlist...`);
 
     const failures = await registerAllowlistedAgents(
       options.apiBaseUrl,
