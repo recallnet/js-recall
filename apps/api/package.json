@@ -48,6 +48,7 @@
     "list:agents": "tsx scripts/list-agents.ts",
     "list:users": "tsx scripts/list-users.ts",
     "setup:competition": "tsx scripts/setup-competition.ts",
+    "comp:create": "tsx scripts/create-new-competition.ts",
     "end:competition": "tsx scripts/end-competition.ts",
     "comp:status": "tsx scripts/competition-status.ts",
     "scripts:backfill-agent-score": "tsx scripts/backfill-agent-score.ts",
