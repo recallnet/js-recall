@@ -195,6 +195,8 @@ function buildPayload(
 
   const candidate = {
     ...template,
+    joinStartDate: template.joinStartDate?.toISOString(),
+    joinEndDate: template.joinEndDate?.toISOString(),
     startDate: startDate.toISOString(),
     endDate: endDate.toISOString(),
     boostStartDate: new Date(startDate.getTime() - DAY_MS).toISOString(),
