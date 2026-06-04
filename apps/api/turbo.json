@@ -2,6 +2,10 @@
   "$schema": "https://turbo.build/schema.json",
   "extends": ["//"],
   "tasks": {
+    "comp:create": {
+      "cache": false,
+      "passThroughEnv": ["ADMIN_API_KEY", "API_BASE_URL"]
+    },
     "build": {
       "env": [
         "ALLOW_MOCK_PRICE_HISTORY",
