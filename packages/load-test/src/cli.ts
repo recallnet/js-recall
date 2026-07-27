@@ -21,8 +21,6 @@ interface Options {
   duration?: string;
   requestRate?: string;
   tradeAmount?: string;
-  tracesSampleRate?: string;
-  requestSampleRate?: string;
 }
 
 // Load environment variables from .env file
@@ -146,16 +144,6 @@ function parseArgs(): Options {
           options.tradeAmount = args[++i]!;
         }
         break;
-      case "--traces-sample-rate":
-        if (args[i + 1]) {
-          options.tracesSampleRate = args[++i]!;
-        }
-        break;
-      case "--request-sample-rate":
-        if (args[i + 1]) {
-          options.requestSampleRate = args[++i]!;
-        }
-        break;
       default:
         if (!arg.startsWith("-")) {
           options.profile = arg;
@@ -187,8 +175,6 @@ Options:
   -d, --duration N           Test duration in seconds (stress only)
   -r, --rate N               Request rate per second (stress only)
   -t, --trade-amount N       Trade amount in dollars (stress only)
-  --traces-sample-rate N     Sentry SDK traces sample rate 0.0-1.0 (default: 0.01)
-  --request-sample-rate N    Sentry request span sample rate 0.0-1.0 (default: 0.01)
   -h, --help                 Show this help
 
 Examples:
@@ -197,7 +183,6 @@ Examples:
   tsx src/cli.ts stress -r 20 -d 180 -t 0.05  # Custom: 20 req/s for 3 min with $0.05 trades
   tsx src/cli.ts stress -d 1800 -r 16         # 30-minute test at 16 req/s
   tsx src/cli.ts stress -d 7200 -r 8          # 2-hour endurance test
-  tsx src/cli.ts stress --request-sample-rate 1.0  # 100% span sampling for debugging
   tsx src/cli.ts tge                          # Run TGE burst test
   tsx src/cli.ts resilience                   # Run chaos engineering test
 `);
@@ -219,20 +204,6 @@ function getTimestamp(): string {
 function generateTestRunId(profile: string): string {
   const timestamp = getTimestamp();
   return `${profile}-${timestamp}`;
-}
-
-// Generate Sentry link for test run
-function getSentryLink(testRunId: string): string | null {
-  const sentryOrg = process.env.SENTRY_ORG || "recallnet";
-  const sentryProjectId = process.env.SENTRY_PROJECT_ID;
-  const sentryDsn = process.env.SENTRY_DSN;
-
-  if (!sentryDsn || !sentryProjectId) {
-    return null;
-  }
-
-  const query = encodeURIComponent(`test_run_id:${testRunId}`);
-  return `https://${sentryOrg}.sentry.io/explore/traces/?environment=perf-testing&project=${sentryProjectId}&statsPeriod=24h&query=${query}`;
 }
 
 // Run Artillery test
@@ -261,16 +232,10 @@ function runTest(options: Options): void {
   const duration = options.duration || process.env.TEST_DURATION || "60"; // Default: 1 minute
   const requestRate = options.requestRate || process.env.REQUEST_RATE || "8"; // Default: 8 req/s
   const tradeAmount = options.tradeAmount || process.env.TRADE_AMOUNT || "0.1"; // Default: $0.10
-  const tracesSampleRate =
-    options.tracesSampleRate || process.env.SENTRY_TRACES_SAMPLE_RATE || "0.01"; // Default: 1%
-  const requestSampleRate =
-    options.requestSampleRate || process.env.SENTRY_SAMPLE_REQUEST || "0.01"; // Default: 1%
 
   artilleryEnv.TEST_DURATION = duration;
   artilleryEnv.REQUEST_RATE = requestRate;
   artilleryEnv.TRADE_AMOUNT = tradeAmount;
-  artilleryEnv.SENTRY_TRACES_SAMPLE_RATE = tracesSampleRate;
-  artilleryEnv.SENTRY_SAMPLE_REQUEST = requestSampleRate;
 
   // Determine if this profile uses parameterized config or fixed phases
   const isParameterized = options.profile === "stress";
@@ -296,15 +261,6 @@ Test Parameters:
   } else {
     header += `  Configuration: Multi-phase (see ${profile.config})
   Trade Patterns: Defined by test profile
-`;
-  }
-
-  // Add Sentry config if enabled
-  if (process.env.SENTRY_DSN) {
-    header += `
-Sentry Monitoring:
-  Traces Sample Rate: ${(parseFloat(tracesSampleRate) * 100).toFixed(1)}%
-  Request Sample Rate: ${(parseFloat(requestSampleRate) * 100).toFixed(1)}%
 `;
   }
 
@@ -358,13 +314,6 @@ Config: ${profile.config}
   artillery.on("close", (code) => {
     if (code === 0) {
       console.log("\n✓ Test completed successfully!");
-
-      // Output Sentry link if available
-      const sentryLink = getSentryLink(testRunId);
-      if (sentryLink) {
-        console.log(`\n📊 View results in Sentry:`);
-        console.log(`   ${sentryLink}\n`);
-      }
     } else {
       console.error(`\n✗ Test failed with code ${code}`);
       process.exit(code);

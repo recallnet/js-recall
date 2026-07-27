@@ -36,7 +36,7 @@ config:
 
 before:
   flow:
-    # Start Sentry metrics tracking
+    # Start test metrics tracking
     - function: "startTestMetrics"
     - function: "startSetupPhase"
 
@@ -103,22 +103,12 @@ before:
     # Finish setup phase span
     - function: "finishSetupPhase"
 
-after:
-  flow:
-    # Flush Sentry spans before exit
-    - function: "cleanupSentry"
-
 scenarios:
   # Regular trading activity
   - name: "regular-trading"
     weight: 70
     flow:
-      # Track scenario execution
-      - function: "trackScenarioExecution"
       - function: "selectRandomAgent"
-
-      # Start trade flow timing
-      - function: "startTradeFlow"
 
       - get:
           url: "/api/agent/balances"
@@ -133,29 +123,18 @@ scenarios:
           json: {}
           afterResponse: "trackLoadTestMetrics"
 
-      # Finish trade flow (emit metrics)
-      - function: "finishTradeFlow"
-
       - think: 3 # Normal pause between trades
 
   # Monitoring checks (no trades)
   - name: "monitoring"
     weight: 30
     flow:
-      # Track scenario execution
-      - function: "trackScenarioExecution"
       - function: "healthCheck"
-
-      # Start trade flow timing
-      - function: "startTradeFlow"
 
       - get:
           url: "/api/agent/balances"
           headers:
             Authorization: "Bearer {{ apiKey }}"
           afterResponse: "trackLoadTestMetrics"
-
-      # Finish trade flow (emit metrics)
-      - function: "finishTradeFlow"
 
       - think: 5 # Longer pause for monitoring

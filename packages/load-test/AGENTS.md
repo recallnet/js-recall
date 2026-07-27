@@ -46,7 +46,6 @@ src/
 ## Key Patterns
 
 - **Parameterized tests**: CLI flags override config
-- **Sentry integration**: Observability and tracing
 - **Report analysis**: Post-test report generation
 
 ## Development Commands
@@ -63,8 +62,3 @@ Required:
 
 - `API_HOST` - API endpoint for testing
 - `ADMIN_API_KEY` - Admin API key
-
-Optional:
-
-- `SENTRY_DSN` - Sentry observability
-- `SENTRY_ORG`, `SENTRY_PROJECT_ID` - Trace links

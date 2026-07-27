@@ -224,10 +224,10 @@ function generateMarkdown(
   if (!passed) {
     const p95 = metrics.responseTime.p95;
     if (p95 !== undefined && p95 > 500) {
-      markdown += `- **Investigate slow endpoints**: P95 latency is high. Check Sentry traces for bottlenecks.\n`;
+      markdown += `- **Investigate slow endpoints**: P95 latency is high. Check application logs for bottlenecks.\n`;
     }
     if (metrics.errorRate > 0.01) {
-      markdown += `- **Review error logs**: High error rate detected. Check application logs and Sentry for root causes.\n`;
+      markdown += `- **Review error logs**: High error rate detected. Check application logs for root causes.\n`;
     }
     if (metrics.throughput < 5) {
       markdown += `- **Scale infrastructure**: Throughput is below target. Consider scaling or optimizing the backend.\n`;
@@ -236,11 +236,6 @@ function generateMarkdown(
     markdown += `- All performance metrics are within acceptable thresholds.\n`;
     markdown += `- Consider tightening thresholds for continuous improvement.\n`;
   }
-
-  // Sentry Integration Note
-  markdown += `\n### Distributed Tracing\n\n`;
-  markdown += `Traces from this load test have been sent to Sentry for detailed analysis.\n`;
-  markdown += `View them at: [Sentry Performance Dashboard](https://recallnet.sentry.io/performance/)\n`;
 
   return markdown;
 }
@@ -463,7 +458,7 @@ function generateConsolidatedMarkdown(
 
   if (trend.errorRateChange > 50) {
     markdown += `⚠️ **Error Rate Increasing**: Error rate increased ${trend.errorRateChange.toFixed(0)}%\n`;
-    markdown += `→ **Action Required**: Review application logs and Sentry for root causes\n\n`;
+    markdown += `→ **Action Required**: Review application logs for root causes\n\n`;
   }
 
   if (aggregates.p95.stddev > aggregates.p95.avg * 0.2) {

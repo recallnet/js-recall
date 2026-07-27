@@ -20,7 +20,7 @@ config:
 
 before:
   flow:
-    # Start Sentry metrics tracking
+    # Start test metrics tracking
     - function: "startTestMetrics"
     - function: "startSetupPhase"
 
@@ -98,23 +98,12 @@ before:
     # Finish setup phase span
     - function: "finishSetupPhase"
 
-after:
-  flow:
-    # Flush Sentry spans before exit
-    - function: "cleanupSentry"
-
 scenarios:
   - name: "test-trading"
     flow:
-      # Track scenario execution
-      - function: "trackScenarioExecution"
-
       # Select a random agent from the pool
       - function: "selectRandomAgent"
       - log: "Trading as agent {{ agentId }}"
-
-      # Start trade flow timing
-      - function: "startTradeFlow"
 
       # Check balance
       - get:
@@ -137,6 +126,3 @@ scenarios:
             fromChain: "EVM"
             toChain: "EVM"
           afterResponse: "trackLoadTestMetrics"
-
-      # Finish trade flow (emit metrics)
-      - function: "finishTradeFlow"
