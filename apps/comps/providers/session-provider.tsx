@@ -10,7 +10,6 @@ import {
   useWallets,
 } from "@privy-io/react-auth";
 import { useSetActiveWallet } from "@privy-io/wagmi";
-import * as Sentry from "@sentry/nextjs";
 import {
   QueryObserverResult,
   RefetchOptions,
@@ -152,18 +151,6 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
           privyWalletsReady: readyWallets,
           browserOnline: navigator.onLine,
         });
-
-        Sentry.captureException(
-          error instanceof Error ? error : new Error(String(error)),
-          {
-            extra: {
-              privyAuthenticated: authenticated,
-              privyReady: ready,
-              privyWalletsReady: readyWallets,
-              browserOnline: navigator.onLine,
-            },
-          },
-        );
       },
     }),
   );
@@ -183,7 +170,6 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
       if (!user.wallet && !hasExternalWallet) {
         const message = `Privy failed to create embedded wallet. Creating wallet for user DID: ${user.id}`;
         console.warn(message);
-        Sentry.captureMessage(message, "warning");
         await createWallet();
       }
 

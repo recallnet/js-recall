@@ -1,5 +1,3 @@
-import * as Sentry from "@sentry/nextjs";
-
 /**
  * Error types that can occur during airdrop claim operations
  */
@@ -197,7 +195,7 @@ interface AirdropErrorContext {
 }
 
 /**
- * Handles airdrop claim errors by categorizing them, logging to Sentry, and returning user-friendly messages
+ * Handles airdrop claim errors by categorizing them, logging them, and returning user-friendly messages
  * @param error - The error that occurred
  * @param context - Additional context about the operation that failed
  * @returns User-friendly error message
@@ -209,31 +207,24 @@ export function handleAirdropClaimError(
   const errorType = categorizeAirdropError(error);
   const userMessage = AIRDROP_ERROR_MESSAGES[errorType];
 
-  // Log full error details to Sentry with context
-  Sentry.captureException(error, {
-    tags: {
-      errorType,
-      operation: context.operation,
-      component: "ConvictionStakeModal",
-    },
-    extra: {
-      season: context.season,
-      amount: context.amount,
-      duration: context.duration,
-      userAddress: context.userAddress,
-      chainId: context.chainId,
-      originalMessage: error.message,
-      stack: error.stack,
-      ...context.additionalData,
-    },
-    level: "error",
+  // Log full error details with context
+  console.error("Airdrop claim error", {
+    error,
+    errorType,
+    operation: context.operation,
+    season: context.season,
+    amount: context.amount,
+    duration: context.duration,
+    userAddress: context.userAddress,
+    chainId: context.chainId,
+    ...context.additionalData,
   });
 
   return userMessage;
 }
 
 /**
- * Parses an airdrop claim error and returns a user-friendly message without logging to Sentry
+ * Parses an airdrop claim error and returns a user-friendly message without logging it
  * @param error - The error from the contract call
  * @returns User-friendly error message
  */
