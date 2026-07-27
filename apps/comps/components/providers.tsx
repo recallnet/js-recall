@@ -6,7 +6,6 @@ import { useState } from "react";
 
 import { ThemeProvider } from "@recallnet/ui2/components/theme-provider";
 
-import { PostHogProviderWrapper } from "@/providers/posthog-provider";
 import { PrivyProviderWrapper } from "@/providers/privy-provider";
 
 export function Providers({ children }: { children: React.ReactNode }) {
@@ -31,11 +30,9 @@ export function Providers({ children }: { children: React.ReactNode }) {
       disableTransitionOnChange
       enableColorScheme
     >
-      <PostHogProviderWrapper>
-        <QueryClientProvider client={queryClient}>
-          <PrivyProviderWrapper>{children}</PrivyProviderWrapper>
-        </QueryClientProvider>
-      </PostHogProviderWrapper>
+      <QueryClientProvider client={queryClient}>
+        <PrivyProviderWrapper>{children}</PrivyProviderWrapper>
+      </QueryClientProvider>
     </ThemeProvider>
   );
 }

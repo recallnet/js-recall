@@ -130,7 +130,7 @@ export function CookieConsentProvider({
               CookieConsent.acceptedCategory("analytics");
             setAnalyticsConsent(analyticsAccepted);
             // No page reload needed - React state update triggers re-renders
-            // of Tracking and PostHogProviderWrapper components
+            // of the Tracking component
           },
           onChange: () => {
             // User changed their consent preferences
@@ -139,7 +139,7 @@ export function CookieConsentProvider({
 
             setAnalyticsConsent(analyticsAccepted);
             // No page reload needed - React state update triggers re-renders
-            // of Tracking and PostHogProviderWrapper components
+            // of the Tracking component
           },
         });
 
