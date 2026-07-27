@@ -1,4 +1,3 @@
-import * as Sentry from "@sentry/node";
 import axios, { AxiosInstance } from "axios";
 import crypto from "crypto";
 import { Decimal } from "decimal.js";
@@ -176,14 +175,6 @@ export class HyperliquidPerpsProvider implements IPerpsDataProvider {
           { from, to },
           `[HyperliquidProvider] Circuit breaker state changed`,
         );
-
-        // Track in Sentry when circuit opens
-        if (to === "open") {
-          Sentry.captureMessage(
-            `Hyperliquid API circuit breaker opened`,
-            "warning",
-          );
-        }
       },
     });
 
@@ -243,17 +234,6 @@ export class HyperliquidPerpsProvider implements IPerpsDataProvider {
     const startTime = Date.now();
     const maskedAddress = this.maskWalletAddress(walletAddress);
 
-    // Add Sentry breadcrumb for debugging
-    Sentry.addBreadcrumb({
-      category: "hyperliquid.api",
-      message: `Account summary request`,
-      level: "info",
-      data: {
-        walletAddress: maskedAddress,
-        hasInitialCapital: initialCapital !== undefined,
-      },
-    });
-
     try {
       this.logger.debug(
         `[HyperliquidProvider] Fetching account summary for ${maskedAddress}`,
@@ -272,18 +252,11 @@ export class HyperliquidPerpsProvider implements IPerpsDataProvider {
     } catch (error) {
       const endTime = Date.now() - startTime;
 
-      Sentry.captureException(error, {
-        extra: {
-          walletAddress: maskedAddress,
-          method: "getAccountSummary",
-          processingTime: endTime,
-        },
-      });
-
       this.logger.error(
         {
           error,
           address: maskedAddress,
+          processingTime: endTime,
         },
         "[HyperliquidProvider] Error fetching account summary",
       );
@@ -396,16 +369,6 @@ export class HyperliquidPerpsProvider implements IPerpsDataProvider {
       // Store raw data for debugging
       summary.rawData = { clearinghouseState, recentFills };
 
-      // Also send to Sentry for monitoring
-      Sentry.captureMessage("Hyperliquid API Response Sample", {
-        level: "debug",
-        extra: {
-          response: { clearinghouseState, recentFills },
-          walletAddress: maskedAddress,
-          processingTime: Date.now() - startTime,
-        },
-      });
-
       this.logger.debug(
         `[HyperliquidProvider] Sampled request - storing raw data for ${maskedAddress}`,
       );
@@ -425,16 +388,6 @@ export class HyperliquidPerpsProvider implements IPerpsDataProvider {
     const startTime = Date.now();
     const maskedAddress = this.maskWalletAddress(walletAddress);
 
-    // Add Sentry breadcrumb for debugging
-    Sentry.addBreadcrumb({
-      category: "hyperliquid.api",
-      message: `Positions request`,
-      level: "info",
-      data: {
-        walletAddress: maskedAddress,
-      },
-    });
-
     try {
       this.logger.debug(
         `[HyperliquidProvider] Fetching positions for ${maskedAddress}`,
@@ -451,18 +404,11 @@ export class HyperliquidPerpsProvider implements IPerpsDataProvider {
     } catch (error) {
       const endTime = Date.now() - startTime;
 
-      Sentry.captureException(error, {
-        extra: {
-          walletAddress: maskedAddress,
-          method: "getPositions",
-          processingTime: endTime,
-        },
-      });
-
       this.logger.error(
         {
           error,
           address: maskedAddress,
+          processingTime: endTime,
         },
         "[HyperliquidProvider] Error fetching positions",
       );
@@ -568,17 +514,6 @@ export class HyperliquidPerpsProvider implements IPerpsDataProvider {
     const startTime = Date.now();
     const maskedAddress = this.maskWalletAddress(walletAddress);
 
-    // Add Sentry breadcrumb for debugging
-    Sentry.addBreadcrumb({
-      category: "hyperliquid.api",
-      message: `Account data batch request`,
-      level: "info",
-      data: {
-        walletAddress: maskedAddress,
-        hasInitialCapital: initialCapital !== undefined,
-      },
-    });
-
     try {
       this.logger.debug(
         `[HyperliquidProvider] Fetching account data batch for ${maskedAddress}`,
@@ -606,18 +541,11 @@ export class HyperliquidPerpsProvider implements IPerpsDataProvider {
     } catch (error) {
       const endTime = Date.now() - startTime;
 
-      Sentry.captureException(error, {
-        extra: {
-          walletAddress: maskedAddress,
-          method: "getAccountDataBatch",
-          processingTime: endTime,
-        },
-      });
-
       this.logger.error(
         {
           error,
           address: maskedAddress,
+          processingTime: endTime,
         },
         "[HyperliquidProvider] Error fetching account data batch",
       );
@@ -634,17 +562,6 @@ export class HyperliquidPerpsProvider implements IPerpsDataProvider {
   ): Promise<Transfer[]> {
     const startTime = Date.now();
     const maskedAddress = this.maskWalletAddress(walletAddress);
-
-    // Add Sentry breadcrumb for debugging
-    Sentry.addBreadcrumb({
-      category: "hyperliquid.api",
-      message: `Transfer history request`,
-      level: "info",
-      data: {
-        walletAddress: maskedAddress,
-        since: since.toISOString(),
-      },
-    });
 
     try {
       this.logger.debug(
@@ -714,19 +631,11 @@ export class HyperliquidPerpsProvider implements IPerpsDataProvider {
 
       return transfers;
     } catch (error) {
-      Sentry.captureException(error, {
-        extra: {
-          walletAddress: maskedAddress,
-          method: "getTransferHistory",
-          since: since.toISOString(),
-          processingTime: Date.now() - startTime,
-        },
-      });
-
       this.logger.error(
         {
           error,
           address: maskedAddress,
+          processingTime: Date.now() - startTime,
         },
         "[HyperliquidProvider] Error fetching transfers",
       );

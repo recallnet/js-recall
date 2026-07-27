@@ -15,7 +15,6 @@ import {
 } from "@recallnet/db/utils";
 
 import { config } from "@/config/index.js";
-import { wrapDatabaseWithSentry } from "@/database/sentry-wrapper.js";
 import { dbLogger as pinoDbLogger } from "@/lib/logger.js";
 import { getTraceId } from "@/lib/trace-context.js";
 
@@ -238,21 +237,17 @@ const dbLogger = {
 };
 
 // Create database instances with transparent logging
-const baseDb = drizzle({
+export const db = drizzle({
   client: pool,
   schema,
   logger: dbLogger,
 });
 
-const baseDbRead = drizzle({
+export const dbRead = drizzle({
   client: readReplicaPool,
   schema,
   logger: dbLogger,
 });
-
-// Wrap with Sentry monitoring if enabled
-export const db = wrapDatabaseWithSentry(baseDb);
-export const dbRead = wrapDatabaseWithSentry(baseDbRead);
 
 // NOTE: logDbOperation export removed - all queries now automatically logged
 
@@ -267,12 +262,12 @@ pinoDbLogger.info(
 );
 
 // Access the underlying client through the base instance
-baseDb.$client.on("error", (err: Error) => {
+db.$client.on("error", (err: Error) => {
   pinoDbLogger.error({ error: err }, "Unexpected error on idle client");
   process.exit(-1);
 });
 
-baseDbRead.$client.on("error", (err: Error) => {
+dbRead.$client.on("error", (err: Error) => {
   console.error("Unexpected error on read replica client", err);
   process.exit(-1);
 });

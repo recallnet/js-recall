@@ -1,4 +1,3 @@
-import * as Sentry from "@sentry/node";
 import axios, { AxiosInstance } from "axios";
 import { Logger } from "pino";
 
@@ -121,7 +120,6 @@ export interface SymphonyTransfer {
  * Raw Data Storage Strategy (addressing high traffic bursts):
  * - Raw API responses are only stored for 1% of requests (via sampling)
  * - This prevents database bloat during high traffic periods
- * - The same sampling decision controls both raw data storage and Sentry reporting
  * - Sampled data provides debugging capability without overwhelming storage
  * - For production issues: Can be analyzed after the fact via stored samples
  */
@@ -133,7 +131,7 @@ export class SymphonyPerpsProvider implements IPerpsDataProvider {
   private readonly MAX_RETRIES = 3;
   private readonly RETRY_DELAY = 1000; // 1 second
   private readonly REQUEST_TIMEOUT = 30000; // 30 seconds
-  private readonly SAMPLING_RATE = 0.01; // 1% of requests for both Sentry and raw data storage
+  private readonly SAMPLING_RATE = 0.01; // 1% of requests for raw data storage
   private logger: Logger;
   private readonly circuitBreaker: CircuitBreaker;
 
@@ -167,14 +165,6 @@ export class SymphonyPerpsProvider implements IPerpsDataProvider {
           { from, to },
           `[SymphonyProvider] Circuit breaker state changed`,
         );
-
-        // Track in Sentry when circuit opens
-        if (to === "open") {
-          Sentry.captureMessage(
-            `Symphony API circuit breaker opened`,
-            "warning",
-          );
-        }
       },
     });
 
@@ -308,16 +298,6 @@ export class SymphonyPerpsProvider implements IPerpsDataProvider {
       );
     }
 
-    // Add Sentry breadcrumb for debugging
-    Sentry.addBreadcrumb({
-      category: "symphony.api",
-      message: `Account summary request`,
-      level: "info",
-      data: {
-        walletAddress: maskedAddress,
-      },
-    });
-
     try {
       await this.enforceRateLimit();
 
@@ -396,23 +376,12 @@ export class SymphonyPerpsProvider implements IPerpsDataProvider {
         rawData: undefined,
       };
 
-      // Combined sampling for both Sentry and raw data storage
-      // This ensures we only store raw data when we're also sending to Sentry
+      // Sampling for raw data storage
       const shouldSample = Math.random() < this.SAMPLING_RATE;
 
       if (shouldSample) {
         // Store raw data in the response
         summary.rawData = data;
-
-        // Also send to Sentry for monitoring
-        Sentry.captureMessage("Symphony API Response Sample", {
-          level: "debug",
-          extra: {
-            response: data,
-            walletAddress: maskedAddress,
-            processingTime: Date.now() - startTime,
-          },
-        });
       }
 
       this.logger.debug(
@@ -425,19 +394,11 @@ export class SymphonyPerpsProvider implements IPerpsDataProvider {
 
       return summary;
     } catch (error) {
-      // Add error to Sentry with breadcrumb context
-      Sentry.captureException(error, {
-        extra: {
-          walletAddress: maskedAddress,
-          method: "getAccountSummary",
-          processingTime: Date.now() - startTime,
-        },
-      });
-
       this.logger.error(
         {
           walletAddress: maskedAddress,
           error: error instanceof Error ? error.message : String(error),
+          processingTime: Date.now() - startTime,
         },
         `[SymphonyProvider] Error fetching account summary`,
       );
@@ -451,16 +412,6 @@ export class SymphonyPerpsProvider implements IPerpsDataProvider {
   async getPositions(walletAddress: string): Promise<PerpsPosition[]> {
     const startTime = Date.now();
     const maskedAddress = this.maskWalletAddress(walletAddress);
-
-    // Add Sentry breadcrumb for debugging
-    Sentry.addBreadcrumb({
-      category: "symphony.api",
-      message: `Positions request`,
-      level: "info",
-      data: {
-        walletAddress: maskedAddress,
-      },
-    });
 
     try {
       await this.enforceRateLimit();
@@ -487,19 +438,11 @@ export class SymphonyPerpsProvider implements IPerpsDataProvider {
 
       return positions;
     } catch (error) {
-      // Add error to Sentry with breadcrumb context
-      Sentry.captureException(error, {
-        extra: {
-          walletAddress: maskedAddress,
-          method: "getPositions",
-          processingTime: Date.now() - startTime,
-        },
-      });
-
       this.logger.error(
         {
           walletAddress: maskedAddress,
           error: error instanceof Error ? error.message : String(error),
+          processingTime: Date.now() - startTime,
         },
         `[SymphonyProvider] Error fetching positions`,
       );
@@ -516,17 +459,6 @@ export class SymphonyPerpsProvider implements IPerpsDataProvider {
   ): Promise<Transfer[]> {
     const startTime = Date.now();
     const maskedAddress = this.maskWalletAddress(walletAddress);
-
-    // Add Sentry breadcrumb for debugging
-    Sentry.addBreadcrumb({
-      category: "symphony.api",
-      message: `Transfer history request`,
-      level: "info",
-      data: {
-        walletAddress: maskedAddress,
-        since: since.toISOString(),
-      },
-    });
 
     try {
       await this.enforceRateLimit();
@@ -579,20 +511,11 @@ export class SymphonyPerpsProvider implements IPerpsDataProvider {
 
       return transfers;
     } catch (error) {
-      // Add error to Sentry with breadcrumb context
-      Sentry.captureException(error, {
-        extra: {
-          walletAddress: maskedAddress,
-          method: "getTransferHistory",
-          since: since.toISOString(),
-          processingTime: Date.now() - startTime,
-        },
-      });
-
       this.logger.error(
         {
           walletAddress: maskedAddress,
           error: error instanceof Error ? error.message : String(error),
+          processingTime: Date.now() - startTime,
         },
         `[SymphonyProvider] Error fetching transfers`,
       );

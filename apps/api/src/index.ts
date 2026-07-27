@@ -1,4 +1,3 @@
-import * as Sentry from "@sentry/node";
 import cors from "cors";
 import express from "express";
 
@@ -18,7 +17,6 @@ import { makePriceController } from "@/controllers/price.controller.js";
 import { makeTradeController } from "@/controllers/trade.controller.js";
 import { closeDb, migrateDb } from "@/database/db.js";
 import { apiLogger } from "@/lib/logger.js";
-import { initSentry } from "@/lib/sentry.js";
 import { adminAuthMiddleware } from "@/middleware/admin-auth.middleware.js";
 import { authMiddleware } from "@/middleware/auth.middleware.js";
 import errorHandler from "@/middleware/errorHandler.js";
@@ -43,19 +41,6 @@ import { ServiceRegistry } from "@/services/index.js";
 
 import { makeBoostController } from "./controllers/boost.controller.js";
 import { configureLeaderboardRoutes } from "./routes/leaderboard.routes.js";
-
-// Sentry configuration defaults
-const SENTRY_DEFAULTS = {
-  PROFILE_SAMPLE_RATE: 0.01, // 1% - minimal tracking by default
-} as const;
-
-// Initialize Sentry before creating the Express app
-initSentry({
-  enableProfiling: process.env.ENABLE_SENTRY_PROFILING === "true",
-  profileSessionSampleRate: process.env.SENTRY_PROFILE_SAMPLE_RATE
-    ? parseFloat(process.env.SENTRY_PROFILE_SAMPLE_RATE)
-    : SENTRY_DEFAULTS.PROFILE_SAMPLE_RATE,
-});
 
 // Create Express app
 const app = express();
@@ -236,11 +221,6 @@ app.get(`${apiBasePath}/api/health`, (_req, res) => {
 app.get(`${apiBasePath}`, (_req, res) => {
   res.redirect(`${apiBasePath}/api/docs`);
 });
-
-// Apply Sentry error handler before our custom error handler
-if (config.sentry?.enabled) {
-  app.use(Sentry.expressErrorHandler());
-}
 
 // Apply error handler
 app.use(errorHandler);
