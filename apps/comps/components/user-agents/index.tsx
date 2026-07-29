@@ -14,7 +14,6 @@ import { cn } from "@recallnet/ui2/lib/utils";
 
 import { AgentCard } from "@/components/user-agents/agent-card";
 import AgentsSummary from "@/components/user-agents/agents-summary";
-import { useAnalytics } from "@/hooks/usePostHog";
 import type { RouterOutputs } from "@/rpc/router";
 
 export default function UserAgentsSection({
@@ -22,7 +21,6 @@ export default function UserAgentsSection({
 }: {
   agents: RouterOutputs["user"]["getUserAgents"]["agents"];
 }) {
-  const { trackEvent } = useAnalytics();
   const nAgents = agents.length;
 
   const bestPlacement = useMemo(
@@ -132,12 +130,7 @@ export default function UserAgentsSection({
             <span className="text-secondary-foreground">({nAgents})</span>
           </div>
           <Button asChild>
-            <Link
-              href="/create-agent"
-              onClick={() => trackEvent("UserClickedAddAgentButton")}
-            >
-              {"+ ADD AGENT"}
-            </Link>
+            <Link href="/create-agent">{"+ ADD AGENT"}</Link>
           </Button>
         </div>
       </CollapsibleTrigger>

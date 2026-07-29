@@ -4,7 +4,7 @@ import { skipToken, useQuery } from "@tanstack/react-query";
 import AutoScroll from "embla-carousel-auto-scroll";
 import useEmblaCarousel from "embla-carousel-react";
 import Link from "next/link";
-import React, { useEffect, useState } from "react";
+import React, { useState } from "react";
 
 import { Button } from "@recallnet/ui2/components/button";
 import {
@@ -23,24 +23,17 @@ import ConnectPrivyModal from "@/components/modals/connect-privy";
 import { config } from "@/config/public";
 import { getSocialLinksArray } from "@/data/social";
 import { useLeaderboards } from "@/hooks/useLeaderboards";
-import { useAnalytics } from "@/hooks/usePostHog";
 import { useSession } from "@/hooks/useSession";
 import { tanstackClient } from "@/rpc/clients/tanstack-query";
 import { mergeCompetitionsWithUserData } from "@/utils/competition-utils";
 import { toOrdinal } from "@/utils/format";
 
 export default function CompetitionsPageClient() {
-  const { trackEvent } = useAnalytics();
   const [isJoining, setIsJoining] = useState(false);
   const { data: leaderboard, isLoading: isLoadingLeaderboard } =
     useLeaderboards({ limit: 25 }, !config.publicFlags.disableLeaderboard);
   const session = useSession();
   const { isAuthenticated } = session;
-
-  // Track landing page view
-  useEffect(() => {
-    trackEvent("LandingPageViewed");
-  }, [trackEvent]);
 
   const { data: activeCompetitions, isLoading: isLoadingActiveCompetitions } =
     useQuery(
