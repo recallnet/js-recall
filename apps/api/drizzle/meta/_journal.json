@@ -575,6 +575,13 @@
       "when": 1777998114931,
       "tag": "0081_wakeful_the_santerians",
       "breakpoints": true
+    },
+    {
+      "idx": 82,
+      "version": "7",
+      "when": 1785992892146,
+      "tag": "0082_wild_shaman",
+      "breakpoints": true
     }
   ]
 }
