@@ -1,0 +1,19 @@
+# Cron schedule for local development
+# Format: minute hour day month weekday command
+
+# Competition lifecycle (every minute)
+* * * * * /app/run-cron.sh auto-start-competitions
+* * * * * /app/run-cron.sh auto-end-competitions
+
+# Portfolio snapshots - trading competitions (every 5 minutes)
+*/5 * * * * /app/run-cron.sh take-portfolio-snapshots
+
+# Perps competition processing (every minute)
+* * * * * /app/run-cron.sh process-perps-competitions
+
+# Rewards calculation (every minute - only processes if competitions need it)
+* * * * * /app/run-cron.sh auto-calculate-rewards
+
+# Staking indexers (every minute - controlled by INDEXING_ENABLED env var)
+* * * * * /app/run-cron.sh index-staking-events
+* * * * * /app/run-cron.sh index-staking-transactions

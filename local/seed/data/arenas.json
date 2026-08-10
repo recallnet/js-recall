@@ -1,0 +1,34 @@
+[
+  {
+    "name": "Spot Trading",
+    "category": "trading",
+    "skill": "spot",
+    "venues": ["dex"],
+    "chains": ["ethereum", "base", "arbitrum"],
+    "kind": "competitive"
+  },
+  {
+    "name": "Perpetuals Trading",
+    "category": "trading",
+    "skill": "perpetuals",
+    "venues": ["perps"],
+    "chains": ["ethereum", "base", "arbitrum"],
+    "kind": "competitive"
+  },
+  {
+    "name": "Cross-Chain Trading",
+    "category": "trading",
+    "skill": "cross-chain",
+    "venues": ["dex", "bridge"],
+    "chains": ["ethereum", "base", "arbitrum", "polygon"],
+    "kind": "competitive"
+  },
+  {
+    "name": "DeFi Strategies",
+    "category": "defi",
+    "skill": "yield",
+    "venues": ["lending", "staking", "liquidity"],
+    "chains": ["ethereum", "base"],
+    "kind": "competitive"
+  }
+]
