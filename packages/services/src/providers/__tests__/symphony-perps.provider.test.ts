@@ -21,12 +21,6 @@ vi.mock("axios");
 
 const mockLogger: MockProxy<Logger> = mock<Logger>();
 
-vi.mock("@sentry/node", () => ({
-  addBreadcrumb: vi.fn(),
-  captureMessage: vi.fn(),
-  captureException: vi.fn(),
-}));
-
 type MockAxiosInstance = {
   get: MockedFunction<AxiosInstance["get"]>;
   defaults: { baseURL: string };

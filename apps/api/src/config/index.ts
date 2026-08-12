@@ -12,8 +12,6 @@ import {
   PriceProvider,
 } from "@recallnet/services/types";
 
-import { createSentryConfig } from "@/lib/sentry-config.js";
-
 // Simple console logging for config initialization (before full logger setup)
 const configLogger = {
   info: (message: string) => console.log(`[Config] ${message}`),
@@ -247,8 +245,6 @@ export const config = {
         : 3000,
     }),
   },
-  // Sentry configuration (imported from shared config)
-  sentry: createSentryConfig(),
   // Rewards allocation configuration
   rewards: {
     // Whether to use the externally owned account allocator

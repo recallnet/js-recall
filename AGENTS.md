@@ -374,4 +374,3 @@ When working with AI agents on this project:
 3. TSDoc coverage requirements vary by package (see `coverage.config.json`)
 4. E2E tests run against a real database - ensure proper cleanup
 5. Metrics are exposed via Prometheus on port 3003 - alerting is handled externally
-6. Sentry is configured for error tracking with 10% sampling in production

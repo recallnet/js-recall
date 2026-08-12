@@ -1,4 +1,3 @@
-import * as Sentry from "@sentry/node";
 import {
   Alchemy,
   AssetTransfersCategory,
@@ -35,7 +34,6 @@ export class AlchemyRpcProvider implements IRpcProvider {
   private readonly retryDelayMs: number;
   private logger: Logger;
   private readonly circuitBreaker: CircuitBreaker;
-  private readonly SAMPLING_RATE = 0.01; // 1% of requests for raw data storage
 
   // Map our chain names to Alchemy Network enum
   private readonly chainToNetwork: Record<SpecificChain, Network> = {
@@ -75,14 +73,6 @@ export class AlchemyRpcProvider implements IRpcProvider {
           { from, to },
           `[AlchemyRpcProvider] Circuit breaker state changed`,
         );
-
-        // Track in Sentry when circuit opens
-        if (to === "open") {
-          Sentry.captureMessage(
-            `Alchemy RPC circuit breaker opened`,
-            "warning",
-          );
-        }
       },
     });
 
@@ -222,19 +212,6 @@ export class AlchemyRpcProvider implements IRpcProvider {
     const startTime = Date.now();
     const maskedAddress = this.maskWalletAddress(walletAddress);
 
-    // Add Sentry breadcrumb for debugging
-    Sentry.addBreadcrumb({
-      category: "alchemy.rpc",
-      message: `Asset transfers request`,
-      level: "info",
-      data: {
-        walletAddress: maskedAddress,
-        chain,
-        fromBlock: fromBlock.toString(),
-        toBlock: toBlock.toString(),
-      },
-    });
-
     try {
       this.logger.debug(
         `[AlchemyRpcProvider] Getting asset transfers for ${maskedAddress} on ${chain} from block ${fromBlock} to ${toBlock}`,
@@ -334,39 +311,6 @@ export class AlchemyRpcProvider implements IRpcProvider {
         );
       });
 
-      // Sampling for raw data storage (1% of requests)
-      const shouldSample = Math.random() < this.SAMPLING_RATE;
-
-      if (shouldSample) {
-        // Send to Sentry for monitoring (with masked addresses for privacy)
-        Sentry.captureMessage("Alchemy RPC Response Sample", {
-          level: "debug",
-          extra: {
-            response: {
-              transferCount: result.transfers.length,
-              hasPageKey: !!result.pageKey,
-              sampleTransfers: result.transfers.slice(0, 3).map((t) => ({
-                from: t.from ? this.maskWalletAddress(t.from) : null,
-                to: t.to ? this.maskWalletAddress(t.to) : null,
-                asset: t.asset,
-                value: t.value,
-                hash: t.hash,
-                blockNum: t.blockNum,
-              })),
-            },
-            walletAddress: maskedAddress,
-            chain,
-            fromBlock: fromBlock.toString(),
-            toBlock: toBlock.toString(),
-            processingTime: Date.now() - startTime,
-          },
-        });
-
-        this.logger.debug(
-          `[AlchemyRpcProvider] Sampled request - sent to Sentry for ${maskedAddress} on ${chain}`,
-        );
-      }
-
       this.logger.debug(
         `[AlchemyRpcProvider] Found ${result.transfers.length} transfers for ${maskedAddress} on ${chain} in ${Date.now() - startTime}ms`,
       );
@@ -385,22 +329,12 @@ export class AlchemyRpcProvider implements IRpcProvider {
         );
       }
 
-      Sentry.captureException(error, {
-        extra: {
-          walletAddress: maskedAddress,
-          chain,
-          fromBlock: fromBlock.toString(),
-          toBlock: toBlock.toString(),
-          method: "getAssetTransfers",
-          processingTime: endTime,
-        },
-      });
-
       this.logger.error(
         {
           error,
           address: maskedAddress,
           chain,
+          processingTime: endTime,
         },
         "[AlchemyRpcProvider] Error getting asset transfers",
       );
@@ -416,17 +350,6 @@ export class AlchemyRpcProvider implements IRpcProvider {
     chain: SpecificChain,
   ): Promise<TransactionReceipt | null> {
     const startTime = Date.now();
-
-    // Add Sentry breadcrumb for debugging
-    Sentry.addBreadcrumb({
-      category: "alchemy.rpc",
-      message: `Transaction receipt request`,
-      level: "info",
-      data: {
-        txHash,
-        chain,
-      },
-    });
 
     try {
       const result = await this.circuitBreaker.execute(async () => {
@@ -486,20 +409,12 @@ export class AlchemyRpcProvider implements IRpcProvider {
         );
       }
 
-      Sentry.captureException(error, {
-        extra: {
-          txHash,
-          chain,
-          method: "getTransactionReceipt",
-          processingTime: endTime,
-        },
-      });
-
       this.logger.error(
         {
           error,
           txHash,
           chain,
+          processingTime: endTime,
         },
         "[AlchemyRpcProvider] Error getting transaction receipt",
       );
@@ -517,16 +432,6 @@ export class AlchemyRpcProvider implements IRpcProvider {
   ): Promise<TokenBalance[]> {
     const startTime = Date.now();
     const maskedAddress = this.maskWalletAddress(walletAddress);
-
-    Sentry.addBreadcrumb({
-      category: "alchemy.rpc",
-      message: `Token balances request`,
-      level: "info",
-      data: {
-        walletAddress: maskedAddress,
-        chain,
-      },
-    });
 
     try {
       this.logger.debug(
@@ -579,32 +484,6 @@ export class AlchemyRpcProvider implements IRpcProvider {
         );
       });
 
-      // Sampling for raw data storage (1% of requests)
-      const shouldSample = Math.random() < this.SAMPLING_RATE;
-
-      if (shouldSample) {
-        // Send to Sentry for monitoring
-        Sentry.captureMessage("Alchemy RPC Response Sample", {
-          level: "debug",
-          extra: {
-            response: {
-              balanceCount: result.length,
-              sampleBalances: result.slice(0, 5).map((b) => ({
-                address: b.contractAddress,
-                balance: b.balance,
-              })), // First 5 balances as sample
-            },
-            walletAddress: maskedAddress,
-            chain,
-            processingTime: Date.now() - startTime,
-          },
-        });
-
-        this.logger.debug(
-          `[AlchemyRpcProvider] Sampled request - sent to Sentry for ${maskedAddress} on ${chain}`,
-        );
-      }
-
       this.logger.debug(
         `[AlchemyRpcProvider] Found ${result.length} non-zero token balances for ${maskedAddress} on ${chain} in ${Date.now() - startTime}ms`,
       );
@@ -622,20 +501,12 @@ export class AlchemyRpcProvider implements IRpcProvider {
         );
       }
 
-      Sentry.captureException(error, {
-        extra: {
-          walletAddress: maskedAddress,
-          chain,
-          method: "getTokenBalances",
-          processingTime: endTime,
-        },
-      });
-
       this.logger.error(
         {
           error,
           address: maskedAddress,
           chain,
+          processingTime: endTime,
         },
         "[AlchemyRpcProvider] Error getting token balances",
       );
@@ -777,17 +648,8 @@ export class AlchemyRpcProvider implements IRpcProvider {
     } catch (error) {
       const endTime = Date.now() - startTime;
 
-      Sentry.captureException(error, {
-        extra: {
-          txHashCount: txHashes.length,
-          chain,
-          method: "batchGetTransactionReceipts",
-          processingTime: endTime,
-        },
-      });
-
       this.logger.error(
-        { error, chain, count: txHashes.length },
+        { error, chain, count: txHashes.length, processingTime: endTime },
         "[AlchemyRpcProvider] Error batch getting transaction receipts",
       );
       throw error;

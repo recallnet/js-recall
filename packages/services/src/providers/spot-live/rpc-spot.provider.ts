@@ -1,4 +1,3 @@
-import * as Sentry from "@sentry/node";
 import { AssetTransfersWithMetadataResult } from "alchemy-sdk";
 import { Logger } from "pino";
 
@@ -267,18 +266,6 @@ export class RpcSpotProvider implements ISpotLiveDataProvider {
         ? since
         : await this.dateToBlockNumber(since, firstChain);
 
-    // Add Sentry breadcrumb for debugging
-    Sentry.addBreadcrumb({
-      category: "spot.rpc",
-      message: `Trades request`,
-      level: "info",
-      data: {
-        walletAddress: maskedAddress,
-        chains,
-        sinceBlock,
-      },
-    });
-
     this.logger.debug(
       {
         wallet: maskedAddress,
@@ -387,13 +374,6 @@ export class RpcSpotProvider implements ISpotLiveDataProvider {
                   },
                   "[RpcSpotProvider] Receipt fetch failed for transaction older than max age - skipping permanently",
                 );
-                Sentry.captureMessage(
-                  `Skipped old transaction ${txHash} - receipt unavailable after ${blockAge} blocks`,
-                  {
-                    level: "error",
-                    extra: { txHash, chain, blockNum, blockAge },
-                  },
-                );
               } else {
                 // Track for retry
                 if (
@@ -440,13 +420,6 @@ export class RpcSpotProvider implements ISpotLiveDataProvider {
                       maxAge: MAX_SKIP_AGE_BLOCKS,
                     },
                     "[RpcSpotProvider] Receipt not found for transaction older than max age - skipping permanently",
-                  );
-                  Sentry.captureMessage(
-                    `Skipped old transaction ${txHash} - receipt not found after ${blockAge} blocks`,
-                    {
-                      level: "error",
-                      extra: { txHash, chain, blockNum, blockAge },
-                    },
                   );
                 } else {
                   // Track for retry
@@ -605,15 +578,6 @@ export class RpcSpotProvider implements ISpotLiveDataProvider {
           allTrades.push(trade);
         }
       } catch (error) {
-        // Capture exception with context
-        Sentry.captureException(error, {
-          extra: {
-            walletAddress: maskedAddress,
-            chain,
-            method: "getTradesSince",
-          },
-        });
-
         this.logger.error(
           {
             error: error instanceof Error ? error.message : String(error),
@@ -686,19 +650,6 @@ export class RpcSpotProvider implements ISpotLiveDataProvider {
       typeof since === "number"
         ? since
         : await this.dateToBlockNumber(since, firstChain);
-
-    // Add Sentry breadcrumb for debugging
-    Sentry.addBreadcrumb({
-      category: "spot.rpc",
-      message: `Transfer history request`,
-      level: "info",
-      data: {
-        walletAddress: maskedAddress,
-        since:
-          typeof since === "number" ? `block ${since}` : since.toISOString(),
-        chains,
-      },
-    });
 
     this.logger.debug(
       {
@@ -783,19 +734,6 @@ export class RpcSpotProvider implements ISpotLiveDataProvider {
           }
         }
       } catch (error) {
-        // Capture exception with context
-        Sentry.captureException(error, {
-          extra: {
-            walletAddress: maskedAddress,
-            chain,
-            since:
-              typeof since === "number"
-                ? `block ${since}`
-                : since.toISOString(),
-            method: "getTransferHistory",
-          },
-        });
-
         this.logger.error(
           {
             error: error instanceof Error ? error.message : String(error),
@@ -1276,15 +1214,6 @@ export class RpcSpotProvider implements ISpotLiveDataProvider {
       // No filters matched - reject
       return { allowed: false };
     } catch (error) {
-      // Capture exception with context
-      Sentry.captureException(error, {
-        extra: {
-          txHash,
-          chain,
-          method: "checkProtocolFilter",
-        },
-      });
-
       this.logger.error(
         {
           error: error instanceof Error ? error.message : String(error),

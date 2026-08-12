@@ -19,13 +19,6 @@ vi.mock("axios");
 // Mock logger for the constructor
 const mockLogger: MockProxy<Logger> = mock<Logger>();
 
-// Mock Sentry to avoid errors in tests
-vi.mock("@sentry/node", () => ({
-  addBreadcrumb: vi.fn(),
-  captureMessage: vi.fn(),
-  captureException: vi.fn(),
-}));
-
 // Type for mocking axios instance
 type MockAxiosInstance = {
   post: MockedFunction<AxiosInstance["post"]>;

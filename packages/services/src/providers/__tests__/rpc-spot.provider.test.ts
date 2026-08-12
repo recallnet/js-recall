@@ -16,12 +16,6 @@ import { IRpcProvider } from "../../types/rpc.js";
 import { ProtocolFilter } from "../../types/spot-live.js";
 import { RpcSpotProvider } from "../spot-live/rpc-spot.provider.js";
 
-vi.mock("@sentry/node", () => ({
-  addBreadcrumb: vi.fn(),
-  captureMessage: vi.fn(),
-  captureException: vi.fn(),
-}));
-
 const mockLogger: MockProxy<Logger> = mock<Logger>();
 
 /**
