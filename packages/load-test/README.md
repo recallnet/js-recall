@@ -25,7 +25,6 @@ cd packages/load-test
 
 # Run default stress test (8 req/s, 60 seconds, 5 agents)
 npx tsx src/cli.ts stress
-# Displays Sentry traces link after completion (if configured)
 
 # Generate analysis report for latest test
 pnpm analyze:latest
@@ -63,11 +62,9 @@ Each virtual user (VU) executes a scenario that typically includes:
 
 - `GET /api/agent/balances` - Check current holdings
 - `POST /api/trade/execute` - Execute a trade
-- Sentry instrumentation for observability
 
-#### Teardown (after:)
+#### After the test
 
-- Flush Sentry spans for complete observability
 - Competition remains active for post-test analysis
 
 ---
@@ -370,8 +367,6 @@ Options:
   -r, --rate N               Request rate per second (stress only, default: 8)
   -t, --trade-amount N       Trade amount in dollars (stress only, default: 0.1)
   -a, --agents N             Number of agents (default: profile-specific)
-  --traces-sample-rate N     Sentry SDK traces sample rate 0.0-1.0 (default: 0.01)
-  --request-sample-rate N    Sentry request span sample rate 0.0-1.0 (default: 0.01)
   -n, --no-report            Don't save report file
   -h, --help                 Show help
 ```
@@ -405,11 +400,7 @@ The consolidated processor (`agent-trading-processor.ts`) provides:
 - `startTestMetrics()`: Initialize test-level metrics
 - `startSetupPhase()`: Track setup phase start
 - `finishSetupPhase()`: Record setup duration and metadata
-- `trackScenarioExecution()`: Track scenario execution counts
-- `startTradeFlow()`: Begin trade flow timing
-- `finishTradeFlow()`: Complete trade flow with success/failure tracking
-- `trackLoadTestMetrics()`: HTTP request performance tracking
-- `cleanupSentry()`: Flush spans before process exit
+- `trackLoadTestMetrics()`: HTTP request error logging
 - `healthCheck()`: Balance checks without trading
 
 ## Configuration
@@ -425,90 +416,11 @@ API_HOST=https://api-load-test.your-domain.com
 # Admin API key for competition/agent creation
 ADMIN_API_KEY=your_admin_key_here
 
-# Optional: Sentry observability
-SENTRY_DSN=your_sentry_dsn_here
-SENTRY_ORG=your_sentry_org_here       # For generating traces explorer links
-SENTRY_PROJECT_ID=your_project_id     # For generating traces explorer links
-SENTRY_TRACES_SAMPLE_RATE=0.01        # SDK auto-instrumentation sampling (default: 1%)
-SENTRY_SAMPLE_REQUEST=0.01            # Custom span sampling (default: 1%)
-
 # Optional: Test configuration overrides (CLI flags take precedence)
 TEST_DURATION=60                       # Test duration in seconds
 REQUEST_RATE=8                         # Requests per second
 TRADE_AMOUNT=0.1                       # Trade amount in dollars
 TEST_PROFILE=stress                    # Test profile name for tagging
-```
-
-### Sentry Observability
-
-The load test suite integrates with Sentry for real-time observability and metrics tracking.
-
-**Automatic Test Run Tracking:**
-
-Each test run generates a unique test run ID (e.g., `stress-20250930-102812`) and displays a Sentry traces explorer link after completion:
-
-```bash
-$ npx tsx src/cli.ts stress
-
-✓ Test completed successfully!
-
-📊 View results in Sentry:
-   https://recallnet.sentry.io/explore/traces/?environment=perf-testing&project=...&query=test_run_id%3Astress-20250930-102812
-```
-
-**Searchable Span Attributes:**
-
-All HTTP request spans include searchable attributes:
-
-- `test_run_id` - Unique identifier for this specific test run
-- `load_test.agent_id` - Specific agent performing the request
-- `load_test.duration_seconds` - Test duration configuration
-- `load_test.request_rate` - Configured request rate
-- `load_test.trade_amount` - Trade amount per transaction
-- `load_test.setup.competition_id` - Competition ID for the test run
-- `test_profile` - Test profile name (stress, tge, daily, etc.)
-- `environment` - API host being tested
-- `agents_count` - Number of agents in the test
-- `http.method`, `http.url`, `http.status_code` - Request details
-
-**Query Examples in Sentry:**
-
-```
-# Find spans from specific test run
-test_run_id:stress-20250930-102812
-
-# Find all load test spans
-has:load_test.agent_id
-
-# Find spans from specific test profile
-test_profile:stress
-
-# Find spans from specific competition
-load_test.setup.competition_id:YOUR_COMPETITION_ID
-
-# Find high-latency requests
-http.response_time_ms:>1000
-
-# Find errors by agent
-load_test.agent_id:YOUR_AGENT_ID http.status_code:>=400
-```
-
-**Sampling Configuration:**
-
-Control sampling rates via environment variables or CLI flags:
-
-- `SENTRY_TRACES_SAMPLE_RATE` / `--traces-sample-rate`: SDK auto-instrumentation (default 1%)
-- `SENTRY_SAMPLE_REQUEST` / `--request-sample-rate`: Custom span sampling (default 1%)
-- Set to `1.0` for 100% sampling during debugging
-- CLI flags override environment variables
-- Errors are always captured regardless of sampling rate
-
-```bash
-# 100% sampling for debugging
-tsx src/cli.ts stress --request-sample-rate 1.0
-
-# 10% sampling for production monitoring
-tsx src/cli.ts stress --rate 16 --duration 1800 --request-sample-rate 0.1
 ```
 
 ### Competition Setup
@@ -609,13 +521,12 @@ Simplified workflow with direct parameter inputs:
 
 ### Debug Mode
 
-Enable full Sentry span sampling for debugging:
+Save and analyze the Artillery report for debugging:
 
 ```bash
-npx tsx src/cli.ts stress --request-sample-rate 1.0 --traces-sample-rate 1.0
+npx tsx src/cli.ts stress
+pnpm analyze:latest
 ```
-
-This captures 100% of HTTP requests and traces, useful for debugging specific issues.
 
 ## Development
 
@@ -636,9 +547,6 @@ tsx src/cli.ts stress --rate 50 --duration 120 --agents 20
 
 # Custom endurance test
 tsx src/cli.ts stress --rate 5 --duration 14400 --agents 3
-
-# Debug test with 100% Sentry sampling
-tsx src/cli.ts stress --request-sample-rate 1.0 --traces-sample-rate 1.0
 ```
 
 ## Best Practices
@@ -649,8 +557,7 @@ tsx src/cli.ts stress --request-sample-rate 1.0 --traces-sample-rate 1.0
 4. **Clean state**: Tests handle competition cleanup automatically
 5. **Report analysis**: Always review reports for patterns
 6. **Sustainable testing**: $0.10 trade amounts prevent balance issues
-7. **Sentry monitoring**: Enable traces for debugging, use lower sampling for production
-8. **Profile selection**: Use stress for capacity, TGE for burst, resilience for chaos, daily for monitoring
+7. **Profile selection**: Use stress for capacity, TGE for burst, resilience for chaos, daily for monitoring
 
 ## Support
 

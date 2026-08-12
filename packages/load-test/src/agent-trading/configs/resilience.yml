@@ -21,7 +21,7 @@ config:
 
 before:
   flow:
-    # Start Sentry metrics tracking
+    # Start test metrics tracking
     - function: "startTestMetrics"
     - function: "startSetupPhase"
 
@@ -87,22 +87,12 @@ before:
     # Finish setup phase span
     - function: "finishSetupPhase"
 
-after:
-  flow:
-    # Flush Sentry spans before exit
-    - function: "cleanupSentry"
-
 scenarios:
   # Normal trading scenario
   - name: "normal-trading"
     weight: 50
     flow:
-      # Track scenario execution
-      - function: "trackScenarioExecution"
       - function: "selectRandomAgent"
-
-      # Start trade flow timing
-      - function: "startTradeFlow"
 
       - get:
           url: "/api/agent/balances"
@@ -117,19 +107,11 @@ scenarios:
           json: {}
           afterResponse: "trackLoadTestMetrics"
 
-      # Finish trade flow (emit metrics)
-      - function: "finishTradeFlow"
-
   # Overdraw attempts
   - name: "overdraw-attempts"
     weight: 20
     flow:
-      # Track scenario execution
-      - function: "trackScenarioExecution"
       - function: "selectRandomAgent"
-
-      # Start trade flow timing
-      - function: "startTradeFlow"
 
       - post:
           url: "/api/trade/execute"
@@ -139,19 +121,11 @@ scenarios:
           json: {}
           afterResponse: "trackLoadTestMetrics"
 
-      # Finish trade flow (emit metrics)
-      - function: "finishTradeFlow"
-
   # Malformed requests
   - name: "malformed-requests"
     weight: 15
     flow:
-      # Track scenario execution
-      - function: "trackScenarioExecution"
       - function: "selectRandomAgent"
-
-      # Start trade flow timing
-      - function: "startTradeFlow"
 
       - post:
           url: "/api/trade/execute"
@@ -161,19 +135,11 @@ scenarios:
           json: {}
           afterResponse: "trackLoadTestMetrics"
 
-      # Finish trade flow (emit metrics)
-      - function: "finishTradeFlow"
-
   # Rate limit testing
   - name: "rate-limit-test"
     weight: 15
     flow:
-      # Track scenario execution
-      - function: "trackScenarioExecution"
       - function: "selectRandomAgent"
-
-      # Start trade flow timing
-      - function: "startTradeFlow"
 
       - loop:
           - post:
@@ -189,6 +155,3 @@ scenarios:
                 toChain: "EVM"
               afterResponse: "trackLoadTestMetrics"
         count: 10
-
-      # Finish trade flow (emit metrics)
-      - function: "finishTradeFlow"

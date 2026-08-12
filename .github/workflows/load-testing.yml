@@ -63,7 +63,6 @@ jobs:
         run: |
           echo "API_HOST=${{ secrets.PERF_API_HOST }}" >> .env
           echo "ADMIN_API_KEY=${{ secrets.PERF_ADMIN_API_KEY }}" >> .env
-          echo "SENTRY_DSN=${{ secrets.SENTRY_DSN }}" >> .env
 
       - name: Run ${{ steps.params.outputs.test_name }}
         id: load-test

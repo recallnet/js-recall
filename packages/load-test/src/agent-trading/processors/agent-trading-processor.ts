@@ -8,17 +8,6 @@ import {
   createOverdrawnTrade,
 } from "../utils/error-patterns.js";
 import {
-  captureError,
-  flushSentry,
-  initializeSentry,
-  trackHttpRequest,
-  trackHttpRequestSpan,
-  trackScenarioExecution as trackScenarioMetric,
-  trackSetupDuration,
-  trackTestStart,
-  trackTradeFlow as trackTradeFlowMetric,
-} from "../utils/sentry-metrics.js";
-import {
   Balance,
   catchupTradePattern,
   normalTradePattern,
@@ -27,9 +16,6 @@ import {
   whaleTradePattern,
 } from "../utils/trade-patterns.js";
 import { generateUserAndAgent } from "../utils/user-generator.js";
-
-// Initialize Sentry on module load
-initializeSentry();
 
 // Artillery types
 type ArtilleryContext = {
@@ -54,7 +40,6 @@ export function startTestMetrics(
   done: () => void,
 ) {
   context.vars._testStartTime = Date.now();
-  trackTestStart();
   console.log(`📊 Started load test metrics tracking`);
   return done();
 }
@@ -86,20 +71,11 @@ export function finishSetupPhase(
   context.vars._setupDurationMs = setupDuration;
   context.vars._agentsCreated = agentsCreated;
 
-  trackSetupDuration();
-
   console.log(
     `✅ Finished setup phase (${setupDuration}ms, ${agentsCreated} agents, competition: ${competitionId})`,
   );
 
   return done();
-}
-
-// Cleanup: Flush Sentry spans before process exits
-export async function cleanupSentry() {
-  console.log("🧹 Flushing Sentry spans...");
-  await flushSentry();
-  console.log("✅ Sentry cleanup complete");
 }
 
 // Generate random user and agent data
@@ -204,52 +180,11 @@ export function selectRandomAgent(
   return done();
 }
 
-// Track scenario execution
-export function trackScenarioExecution(
-  context: ArtilleryContext,
-  events: unknown,
-  done: () => void,
-) {
-  const agentId = String(context.vars.agentId || "unknown");
-  trackScenarioMetric(agentId);
-  return done();
-}
-
-// Track trade flow start
-export function startTradeFlow(
-  context: ArtilleryContext,
-  events: unknown,
-  done: () => void,
-) {
-  context.vars._flowStartTime = Date.now();
-  context.vars._flowHasError = false;
-  return done();
-}
-
-// Track trade flow completion
-export function finishTradeFlow(
-  context: ArtilleryContext,
-  events: unknown,
-  done: () => void,
-) {
-  const flowDuration =
-    Date.now() - ((context.vars._flowStartTime as number) || Date.now());
-  const hasError = context.vars._flowHasError === true;
-  const agentId = String(context.vars.agentId || "unknown");
-
-  trackTradeFlowMetric(flowDuration, hasError, agentId);
-
-  delete context.vars._flowStartTime;
-  delete context.vars._flowHasError;
-
-  return done();
-}
-
 /**
- * Sentry Performance Tracking Functions
+ * Request Logging Functions
  */
 
-// Track load test metrics
+// Log request outcomes for debugging
 export function trackLoadTestMetrics(
   requestParams: { url?: string; method?: string; json?: unknown },
   response: {
@@ -263,32 +198,12 @@ export function trackLoadTestMetrics(
 ) {
   const statusCode = response.statusCode || 0;
   const isError = statusCode >= 400;
-  const responseTime = response.timings?.response || 0;
 
   // Get URL and method from requestParams
   const fullUrl = requestParams?.url || "unknown";
   const method = requestParams?.method || "GET";
   const urlPath = fullUrl.replace(/^https?:\/\/[^/]+/, "") || fullUrl;
   const agentId = String(context.vars.agentId || "unknown");
-
-  // Track errors in flow
-  if (isError) {
-    context.vars._flowHasError = true;
-  }
-
-  // Track HTTP request metrics
-  trackHttpRequest(urlPath, method, statusCode, responseTime);
-
-  // Sample HTTP request spans (1% or always on error)
-  trackHttpRequestSpan(
-    urlPath,
-    method,
-    statusCode,
-    responseTime,
-    agentId,
-    isError,
-    context,
-  );
 
   // Log errors for debugging
   if (isError) {
@@ -303,17 +218,6 @@ export function trackLoadTestMetrics(
     if (response.body) {
       console.error(`Response Body:`, JSON.stringify(response.body, null, 2));
     }
-
-    // Capture error message
-    captureError(
-      `Load Test Error: ${method} ${urlPath}`,
-      statusCode >= 500 ? "error" : "warning",
-      {
-        "http.status_code": statusCode,
-        "load_test.agent_id": agentId,
-        endpoint: urlPath,
-      },
-    );
   }
 
   return next();
