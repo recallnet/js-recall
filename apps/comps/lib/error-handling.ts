@@ -1,5 +1,3 @@
-import * as Sentry from "@sentry/nextjs";
-
 /**
  * Error types that can occur during staking operations
  */
@@ -102,7 +100,7 @@ interface ErrorContext {
 }
 
 /**
- * Handles staking-related errors by categorizing them, logging to Sentry, and returning user-friendly messages
+ * Handles staking-related errors by categorizing them, logging them, and returning user-friendly messages
  * @param error - The error that occurred
  * @param context - Additional context about the operation that failed
  * @returns User-friendly error message
@@ -114,23 +112,16 @@ export function handleStakingError(
   const errorType = categorizeError(error);
   const userMessage = ERROR_MESSAGES[errorType];
 
-  // Log full error details to Sentry with context
-  Sentry.captureException(error, {
-    tags: {
-      errorType,
-      operation: context.operation,
-      component: "StakeRecallModal",
-    },
-    extra: {
-      stakeAmount: context.stakeAmount,
-      duration: context.duration,
-      userAddress: context.userAddress,
-      chainId: context.chainId,
-      originalMessage: error.message,
-      stack: error.stack,
-      ...context.additionalData,
-    },
-    level: "error",
+  // Log full error details with context
+  console.error("Staking error", {
+    error,
+    errorType,
+    operation: context.operation,
+    stakeAmount: context.stakeAmount,
+    duration: context.duration,
+    userAddress: context.userAddress,
+    chainId: context.chainId,
+    ...context.additionalData,
   });
 
   return userMessage;
