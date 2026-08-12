@@ -9,9 +9,7 @@
     "FONTS_REPO_ACCESS_TOKEN",
     "DATABASE_URL",
     "NODE_ENV",
-    "VITE_DATABASE_URL",
-    "SENTRY_DSN",
-    "SENTRY_TRACES_SAMPLE_RATE"
+    "VITE_DATABASE_URL"
   ],
   "tasks": {
     "test": {
