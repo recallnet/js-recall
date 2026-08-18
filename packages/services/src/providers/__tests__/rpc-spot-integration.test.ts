@@ -3,7 +3,11 @@ import path from "path";
 import { Logger } from "pino";
 import { beforeEach, describe, expect, test, vi } from "vitest";
 
-import { NATIVE_TOKEN_ADDRESS } from "../../lib/config-utils.js";
+import {
+  KNOWN_TOKEN_DECIMALS,
+  NATIVE_TOKEN_ADDRESS,
+  specificChainTokens,
+} from "../../lib/config-utils.js";
 import { getDexProtocolConfig } from "../../lib/dex-protocols.js";
 import type { ProtocolFilter } from "../../types/spot-live.js";
 import { AlchemyRpcProvider } from "../spot-live/alchemy-rpc.provider.js";
@@ -1291,5 +1295,128 @@ describe("RpcSpotProvider - Integration Tests (Real Blockchain)", () => {
       expect(symbol).toBe(PONKE_TOKEN.expectedSymbol);
     },
     30000,
+  );
+
+  // ===========================================================================
+  // KNOWN_TOKEN_DECIMALS VERIFICATION TESTS
+  // These tests verify that our hardcoded decimals match on-chain reality
+  // ===========================================================================
+
+  test.skipIf(!process.env.ALCHEMY_API_KEY)(
+    "KNOWN_TOKEN_DECIMALS should match on-chain decimals for all tokens",
+    async () => {
+      console.log(
+        `\n[DECIMALS VERIFICATION] Verifying ${KNOWN_TOKEN_DECIMALS.size} tokens against on-chain data...`,
+      );
+
+      const results: {
+        address: string;
+        chain: string;
+        expected: number;
+        actual: number | null;
+        match: boolean;
+      }[] = [];
+
+      // Build a reverse lookup: address -> { chain, tokenType }
+      // We need the chain to make the RPC call
+      const addressToChain = new Map<
+        string,
+        { chain: string; tokenType: string }
+      >();
+      for (const [chain, tokens] of Object.entries(specificChainTokens)) {
+        for (const [tokenType, address] of Object.entries(tokens)) {
+          addressToChain.set(address.toLowerCase(), { chain, tokenType });
+        }
+      }
+
+      // Verify each token in KNOWN_TOKEN_DECIMALS
+      for (const [
+        address,
+        expectedDecimals,
+      ] of KNOWN_TOKEN_DECIMALS.entries()) {
+        const chainInfo = addressToChain.get(address);
+        if (!chainInfo) {
+          console.warn(`  ⚠️  No chain info for address ${address}`);
+          continue;
+        }
+
+        // Skip Solana tokens - they use a different RPC provider
+        if (chainInfo.chain === "svm") {
+          console.log(
+            `  ⏭️  Skipping ${chainInfo.tokenType} on svm (different RPC)`,
+          );
+          continue;
+        }
+
+        try {
+          const actualDecimals = await realRpcProvider.getTokenDecimals(
+            address,
+            chainInfo.chain as
+              | "eth"
+              | "base"
+              | "polygon"
+              | "arbitrum"
+              | "optimism"
+              | "avalanche"
+              | "linea"
+              | "zksync"
+              | "scroll"
+              | "mantle",
+          );
+
+          const match = actualDecimals === expectedDecimals;
+          results.push({
+            address,
+            chain: chainInfo.chain,
+            expected: expectedDecimals,
+            actual: actualDecimals,
+            match,
+          });
+
+          if (match) {
+            console.log(
+              `  ✓ ${chainInfo.tokenType.toUpperCase()} on ${chainInfo.chain}: ${actualDecimals} decimals`,
+            );
+          } else {
+            console.error(
+              `  ❌ ${chainInfo.tokenType.toUpperCase()} on ${chainInfo.chain}: expected ${expectedDecimals}, got ${actualDecimals}`,
+            );
+          }
+        } catch (error) {
+          console.error(
+            `  ❌ Failed to fetch decimals for ${chainInfo.tokenType} on ${chainInfo.chain}: ${error}`,
+          );
+          results.push({
+            address,
+            chain: chainInfo.chain,
+            expected: expectedDecimals,
+            actual: null,
+            match: false,
+          });
+        }
+      }
+
+      // Summary
+      const passed = results.filter((r) => r.match).length;
+      const failed = results.filter((r) => !r.match).length;
+      console.log(`\n  Summary: ${passed} passed, ${failed} failed`);
+
+      // Assert all tokens match
+      const mismatches = results.filter((r) => !r.match);
+      if (mismatches.length > 0) {
+        console.error("\n  Mismatched tokens:");
+        for (const m of mismatches) {
+          console.error(
+            `    ${m.address} (${m.chain}): expected ${m.expected}, got ${m.actual}`,
+          );
+        }
+      }
+
+      expect(mismatches).toHaveLength(0);
+      console.log(
+        `\n✓ All ${passed} token decimals verified against on-chain data`,
+      );
+    },
+    120000, // 2 minute timeout for multiple RPC calls
   );
 });
