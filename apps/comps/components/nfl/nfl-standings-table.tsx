@@ -138,7 +138,7 @@ export function NflStandingsTable({
 
     games.forEach((game, index) => {
       const predictionResult = predictionQueries[index];
-      const predictions = predictionResult?.data?.predictions ?? [];
+      const predictions = predictionResult?.data ?? [];
       const agentPredictionMap = new Map<
         string,
         { predictedWinner: string; confidence: number }
