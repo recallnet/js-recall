@@ -4,6 +4,7 @@ import {
   type QueryResponse,
 } from "@envio-dev/hypersync-client";
 import { drizzle } from "drizzle-orm/node-postgres";
+import { randomUUID } from "node:crypto";
 import { Pool } from "pg";
 import pino from "pino";
 import {
@@ -31,7 +32,6 @@ import { RewardsRepository } from "@recallnet/db/repositories/rewards";
 import { StakesRepository } from "@recallnet/db/repositories/stakes";
 import schema from "@recallnet/db/schema";
 
-import { dropAllSchemas } from "../../../db/src/utils/drop-all-schemas.js";
 import { pushSchema } from "../../../db/src/utils/push-schema.js";
 import type { BoostAwardService } from "../boost-award.service.js";
 import type { CompetitionService } from "../competition.service.js";
@@ -47,7 +47,13 @@ vi.mock("@envio-dev/hypersync-client", async (importOriginal) => ({
 
 if (!process.env.VITE_DATABASE_URL)
   throw new Error("VITE_DATABASE_URL is required for integration tests");
-const pool = new Pool({ connectionString: process.env.VITE_DATABASE_URL });
+const adminPool = new Pool({
+  connectionString: process.env.VITE_DATABASE_URL,
+});
+const databaseName = `indexing_test_${randomUUID().replaceAll("-", "")}`;
+const databaseUrl = new URL(process.env.VITE_DATABASE_URL);
+databaseUrl.pathname = `/${databaseName}`;
+const pool = new Pool({ connectionString: databaseUrl.toString() });
 const db = drizzle(pool, { schema });
 const logger = pino({ level: "silent" });
 const client = mock<HypersyncClient>();
@@ -144,7 +150,7 @@ function stakeLog(): Log {
 }
 
 beforeAll(async () => {
-  await dropAllSchemas(db);
+  await adminPool.query(`CREATE DATABASE "${databaseName}"`);
   const { apply } = await pushSchema(db);
   await apply();
 });
@@ -164,7 +170,12 @@ beforeEach(async () => {
   await db.delete(schema.users);
 });
 afterAll(async () => {
-  await pool.end();
+  try {
+    await pool.end();
+    await adminPool.query(`DROP DATABASE IF EXISTS "${databaseName}"`);
+  } finally {
+    await adminPool.end();
+  }
 });
 
 describe("Indexing batches with PostgreSQL", () => {

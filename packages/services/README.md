@@ -73,6 +73,11 @@ pnpm test:integration # Run integration tests
 pnpm docs:build       # Generate documentation
 ```
 
+Integration tests require `VITE_DATABASE_URL` pointing to a test PostgreSQL
+instance. The database role must have `CREATEDB` permission. The indexing suite
+creates a temporary database and drops it after the tests so it can run alongside
+the database package's integration suite.
+
 ## License
 
 MIT AND Apache-2.0

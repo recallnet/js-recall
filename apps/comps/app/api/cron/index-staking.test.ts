@@ -1,5 +1,5 @@
 // @vitest-environment node
-import { NextRequest } from "next/server";
+import { NextRequest, type NextResponse } from "next/server";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 const { runEvents, runTransactions } = vi.hoisted(() => ({
@@ -37,6 +37,8 @@ const routes = [
 
 for (const route of routes) {
   describe(`${route.name} indexing cron`, () => {
+    let GET: (request: NextRequest) => Promise<NextResponse>;
+
     function request(token?: string): NextRequest {
       return new NextRequest(
         `https://example.test/api/cron/index-staking-${route.name}`,
@@ -46,78 +48,84 @@ for (const route of routes) {
       );
     }
 
-    it.each([undefined, "wrong-secret"])(
-      "rejects unauthorized requests (%s)",
-      async (token) => {
-        const { GET } = await route.load();
-        expect((await GET(request(token))).status).toBe(401);
+    describe("when enabled", () => {
+      beforeEach(async () => {
+        ({ GET } = await route.load());
+      }, 30_000);
+
+      it.each([undefined, "wrong-secret"])(
+        "rejects unauthorized requests (%s)",
+        async (token) => {
+          expect((await GET(request(token))).status).toBe(401);
+          expect(route.run).not.toHaveBeenCalled();
+        },
+      );
+
+      it("rejects requests when CRON_SECRET is unset", async () => {
+        vi.stubEnv("CRON_SECRET", "");
+        expect((await GET(request("test-indexing-secret"))).status).toBe(401);
         expect(route.run).not.toHaveBeenCalled();
-      },
-    );
+      });
 
-    it("rejects requests when CRON_SECRET is unset", async () => {
-      vi.stubEnv("CRON_SECRET", "");
-      const { GET } = await route.load();
-      expect((await GET(request("test-indexing-secret"))).status).toBe(401);
-      expect(route.run).not.toHaveBeenCalled();
-    });
-
-    it.each(["false", "", undefined])(
-      "does not index with INDEXING_ENABLED=%s",
-      async (value) => {
-        vi.stubEnv("INDEXING_ENABLED", value);
-        const { GET } = await route.load();
+      it("reports committed scan progress for an authenticated request", async () => {
+        route.run.mockResolvedValue({
+          status: "limited",
+          fromBlock: 100,
+          nextBlock: 200,
+          archiveHeight: 299,
+          lagBlocks: 100,
+          batches: 1,
+          recordsProcessed: 4,
+          durationMs: 10,
+        });
         const response = await GET(request("test-indexing-secret"));
+        expect(response.status).toBe(200);
+        expect(await response.json()).toMatchObject({
+          success: true,
+          ran: true,
+          status: "limited",
+          nextBlock: 200,
+          lagBlocks: 100,
+        });
+        expect(route.run).toHaveBeenCalledTimes(1);
+      });
+
+      it("reports lock contention without claiming a scan ran", async () => {
+        route.run.mockResolvedValue({ status: "locked", batches: 0 });
+        expect(
+          await (await GET(request("test-indexing-secret"))).json(),
+        ).toMatchObject({ status: "locked", ran: false });
+      });
+
+      it("returns a failed request when processing fails", async () => {
+        route.run.mockRejectedValue(new Error("claim write failed"));
+        const response = await GET(request("test-indexing-secret"));
+        expect(response.status).toBe(500);
         expect(await response.json()).toMatchObject({
           success: false,
-          status: "disabled",
-          ran: false,
+          error: "claim write failed",
         });
-        expect(route.run).not.toHaveBeenCalled();
+      });
+    });
+
+    describe.each(["false", "", undefined])(
+      "with INDEXING_ENABLED=%s",
+      (value) => {
+        beforeEach(async () => {
+          vi.stubEnv("INDEXING_ENABLED", value);
+          ({ GET } = await route.load());
+        }, 30_000);
+
+        it("does not index", async () => {
+          const response = await GET(request("test-indexing-secret"));
+          expect(await response.json()).toMatchObject({
+            success: false,
+            status: "disabled",
+            ran: false,
+          });
+          expect(route.run).not.toHaveBeenCalled();
+        });
       },
     );
-
-    it("reports committed scan progress for an authenticated request", async () => {
-      route.run.mockResolvedValue({
-        status: "limited",
-        fromBlock: 100,
-        nextBlock: 200,
-        archiveHeight: 299,
-        lagBlocks: 100,
-        batches: 1,
-        recordsProcessed: 4,
-        durationMs: 10,
-      });
-      const { GET } = await route.load();
-      const response = await GET(request("test-indexing-secret"));
-      expect(response.status).toBe(200);
-      expect(await response.json()).toMatchObject({
-        success: true,
-        ran: true,
-        status: "limited",
-        nextBlock: 200,
-        lagBlocks: 100,
-      });
-      expect(route.run).toHaveBeenCalledTimes(1);
-    });
-
-    it("reports lock contention without claiming a scan ran", async () => {
-      route.run.mockResolvedValue({ status: "locked", batches: 0 });
-      const { GET } = await route.load();
-      expect(
-        await (await GET(request("test-indexing-secret"))).json(),
-      ).toMatchObject({ status: "locked", ran: false });
-    });
-
-    it("returns a failed request when processing fails", async () => {
-      route.run.mockRejectedValue(new Error("claim write failed"));
-      const { GET } = await route.load();
-      const response = await GET(request("test-indexing-secret"));
-      expect(response.status).toBe(500);
-      expect(await response.json()).toMatchObject({
-        success: false,
-        error: "claim write failed",
-      });
-    });
   });
 }
