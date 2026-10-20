@@ -144,9 +144,10 @@ export class RewardsRepository {
    */
   async findCompetitionByRootHash(
     rootHash: Uint8Array,
+    tx?: Transaction,
   ): Promise<string | undefined> {
     try {
-      const [result] = await this.#db
+      const [result] = await (tx ?? this.#db)
         .select({ competitionId: rewardsRoots.competitionId })
         .from(rewardsRoots)
         .where(eq(rewardsRoots.rootHash, rootHash))
@@ -192,10 +193,11 @@ export class RewardsRepository {
     competitionId: string,
     address: string,
     amount: bigint,
+    tx?: Transaction,
   ): Promise<SelectReward | undefined> {
     try {
       const normalizedAddress = address.toLowerCase();
-      const [updated] = await this.#db
+      const [updated] = await (tx ?? this.#db)
         .update(rewards)
         .set({
           claimed: true,

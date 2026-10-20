@@ -13,7 +13,16 @@ import {
 
 import { bytea, ethAddress, tokenAmount } from "../custom-types.js";
 
-export { indexingEvents, stakes, stakeChanges };
+export { indexingEvents, indexingCheckpoints, stakes, stakeChanges };
+
+/** Next unscanned block and last successful scan time, keyed by query identity. */
+const indexingCheckpoints = pgTable("indexing_checkpoints", {
+  key: varchar("key", { length: 64 }).primaryKey(),
+  nextBlock: bigint("next_block", { mode: "number" }).notNull(),
+  updatedAt: timestamp("updated_at", { withTimezone: true })
+    .defaultNow()
+    .notNull(),
+});
 
 /**
  * Source-of-truth feed of *raw on-chain events* we indexed (stake/unstake/relock/withdraw).
