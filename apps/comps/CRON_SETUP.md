@@ -9,8 +9,11 @@ Vercel Cron Jobs work differently from traditional cron:
 - They are HTTP endpoints triggered by Vercel's scheduler
 - Configuration is done in `vercel.json`
 - Authentication is handled via bearer tokens
-- Free tier: runs every minute maximum
-- Pro tier: runs every minute with higher limits
+- Hobby: daily schedules
+- Pro and Enterprise: minute-frequency schedules
+
+See [Vercel's cron plan limits](https://vercel.com/docs/cron-jobs/usage-and-pricing)
+and the [indexing execution and migration notes](app/api/cron/README.md#blockchain-indexing).
 
 ## Available Cron Jobs
 

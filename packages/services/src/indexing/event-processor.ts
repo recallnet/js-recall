@@ -8,11 +8,12 @@ import type {
 } from "@recallnet/db/repositories/indexing-events";
 import { RewardsRepository } from "@recallnet/db/repositories/rewards";
 import type { StakesRepository } from "@recallnet/db/repositories/stakes";
-import type { Database } from "@recallnet/db/types";
+import type { Database, Transaction } from "@recallnet/db/types";
 
 import type { BoostAwardService } from "../boost-award.service.js";
 import type { CompetitionService } from "../competition.service.js";
 import { EVENTS, EVENT_HASH_NAMES } from "./hypersync-query.js";
+import type { ProcessingContext } from "./processing-context.js";
 
 export { EventProcessor };
 
@@ -23,17 +24,10 @@ export { EventProcessor };
  *      both `stakes` and `stake_changes` atomically).
  *   2) Persists the raw event into `indexing_events` via `EventsRepository`.
  *
- * Guarantees / invariants:
- * - **Idempotency: ** Before any mutation, we check `EventsRepository.isEventPresent`
- *   using (block_number, tx_hash, log_index). If present → skip. If absent →
- *   process the event and then save it. This ensures at-most-once application even
- *   if the indexer replays or crashes mid-batch.
- * - **Ordering: ** The indexer (IndexingService.loop) streams logs in block order
- *   and advances `fromBlock = nextBlock`. Within a block, we rely on `logIndex`.
- * - **Atomic stake updates: ** Each repository method (stake/unstake/relock/withdraw)
- *   must update `stakes` and append to `stake_changes` in the **same DB transaction**.
- * - **Separation of concerns: ** This class does no SQL. It decodes ABI args and
- *   coordinates repositories. All DB invariants live in the repos + schema.
+ * Batch processing uses the supplied database transaction for stake changes,
+ * reward updates, and intake records. The indexing service commits these writes
+ * with the scan checkpoint while holding the feed's transaction lock.
+ * Recorded events are skipped on replay using their transaction hash and log index.
  *
  * Relationships:
  * - Consumed by `IndexingService`: it calls `processEvent()` per log.
@@ -46,7 +40,7 @@ export { EventProcessor };
  *   and implement `process<NAME>Event()` that calls into `StakesRepository` appropriately.
  *
  * Error handling:
- * - Unknown/malformed events are logged and skipped (no DB writes).
+ * - Unknown event signatures are skipped. Missing metadata and decoding errors throw.
  * - Repository errors bubble up; the caller (IndexingService.loop) will log/retry/abort.
  */
 class EventProcessor {
@@ -80,7 +74,10 @@ class EventProcessor {
     this.#logger = logger;
   }
 
-  async process(res: QueryResponse) {
+  async process(
+    res: QueryResponse,
+    context?: ProcessingContext,
+  ): Promise<void> {
     if (res.data && res.data.logs && res.data.logs.length > 0) {
       this.#logger.info(
         `Processing ${res.data.logs.length} logs from block ${
@@ -92,7 +89,7 @@ class EventProcessor {
       const blockTimestampMap = new Map<string, number>();
       if (res.data.blocks && res.data.blocks.length > 0) {
         for (const block of res.data.blocks) {
-          if (block.number && block.timestamp) {
+          if (block.number !== undefined && block.timestamp !== undefined) {
             blockTimestampMap.set(
               block.number.toString(),
               Number(block.timestamp),
@@ -111,7 +108,8 @@ class EventProcessor {
         } as RawLog;
       });
       for (const log of enhancedLogs) {
-        await this.processLog(log);
+        context?.checkDeadline();
+        await this.processLog(log, context?.tx);
       }
     }
   }
@@ -129,7 +127,7 @@ class EventProcessor {
    *
    * @internal
    */
-  async processLog(rawLog: RawLog): Promise<void> {
+  async processLog(rawLog: RawLog, tx?: Transaction): Promise<void> {
     const eventHash = rawLog.topics ? rawLog.topics[0] : null;
     if (!eventHash) {
       return;
@@ -152,7 +150,7 @@ class EventProcessor {
         "Preparing to store raw event with metadata:",
       );
 
-      await this.processEvent(event, eventName);
+      await this.processEvent(event, eventName, tx);
     } else {
       this.#logger.debug(`Skipped Unknown event hash: ${eventHash}`);
     }
@@ -181,12 +179,17 @@ class EventProcessor {
    * - On first-time processing, mutates `stakes` + `stake_changes` (via repo) and
    *   appends the raw event to `indexing_events`.
    */
-  async processEvent(event: EventData, eventName: string): Promise<void> {
+  async processEvent(
+    event: EventData,
+    eventName: string,
+    tx?: Transaction,
+  ): Promise<void> {
     // Step 1: Check if event already exists (to avoid reprocessing)
     const isEventPresent = await this.#eventsRepository.isEventPresent(
       event.blockNumber,
       event.transactionHash,
       event.logIndex,
+      tx,
     );
     if (isEventPresent) {
       this.#logger.warn(
@@ -205,29 +208,29 @@ class EventProcessor {
       // TODO: instead of hard coding Strings that match the config, can we use
       //       the config? i.e. foreach: if name equal use processor
       case "Stake":
-        await this.processStakeEvent(event);
+        await this.processStakeEvent(event, tx);
         break;
       case "Unstake":
-        await this.processUnstakeEvent(event);
+        await this.processUnstakeEvent(event, tx);
         break;
       case "Relock":
-        await this.processRelockEvent(event);
+        await this.processRelockEvent(event, tx);
         break;
       case "Withdraw":
-        await this.processWithdrawEvent(event);
+        await this.processWithdrawEvent(event, tx);
         break;
       case "RewardClaimed":
-        await this.processRewardClaimedEvent(event);
+        await this.processRewardClaimedEvent(event, tx);
         break;
       case "AllocationAdded":
-        await this.processAllocationAddedEvent(event);
+        await this.processAllocationAddedEvent(event, tx);
         break;
       default:
         this.#logger.warn(
           `Unknown event type for stakes processing: ${eventName}`,
         );
     }
-    const isEventAdded = await this.#eventsRepository.append(event);
+    const isEventAdded = await this.#eventsRepository.append(event, tx);
     if (isEventAdded) {
       this.#logger.info(
         `Blockchain event added to database: ${event.transactionHash}`,
@@ -249,17 +252,21 @@ class EventProcessor {
    */
   createEventData(eventName: string, rawLog: RawLog): EventData {
     const eventConfig = EVENTS[eventName as keyof typeof EVENTS];
-
-    const blockTimestamp =
-      rawLog.blockTimestamp && typeof rawLog.blockTimestamp === "number"
-        ? rawLog.blockTimestamp * 1000
-        : undefined;
+    if (
+      rawLog.blockTimestamp === undefined ||
+      rawLog.blockNumber === undefined ||
+      !rawLog.blockHash ||
+      !rawLog.transactionHash ||
+      rawLog.logIndex === undefined
+    ) {
+      throw new Error("Incomplete event metadata from HyperSync");
+    }
 
     return {
       // Blockchain metadata
       blockNumber: BigInt(rawLog.blockNumber || 0),
       blockHash: rawLog.blockHash || "",
-      blockTimestamp: blockTimestamp ? new Date(blockTimestamp) : new Date(),
+      blockTimestamp: new Date(Number(rawLog.blockTimestamp) * 1000),
       transactionHash: rawLog.transactionHash || "",
       logIndex: rawLog.logIndex || 0,
 
@@ -295,7 +302,7 @@ class EventProcessor {
    * Notes:
    * - Repository is responsible for lowercasing wallet, optimistic guards, and atomicity.
    */
-  async processStakeEvent(event: EventData): Promise<void> {
+  async processStakeEvent(event: EventData, tx?: Transaction): Promise<void> {
     const decodedEvent = decodeEventLog({
       abi: EVENTS.Stake.abi,
       data: event.raw.data,
@@ -307,7 +314,7 @@ class EventProcessor {
     const stakedAt = Math.floor(event.blockTimestamp.getTime() / 1000); // seconds;
     const lockupEndTime = Number(decodedEvent.args.lockupEndTime); // seconds;
     const duration = lockupEndTime - stakedAt;
-    const isStakeAdded = await this.#db.transaction(async (tx) => {
+    const isStakeAdded = await (tx ?? this.#db).transaction(async (tx) => {
       const stake = await this.#stakesRepository.stake(
         {
           stakeId: tokenId,
@@ -324,7 +331,7 @@ class EventProcessor {
       );
       if (stake) {
         const competitions =
-          await this.#competitionService.getOpenForBoosting();
+          await this.#competitionService.getOpenForBoosting(tx);
         this.#logger.debug(
           { compsOpenForBoosting: competitions.map((c) => c.id) },
           `Found ${competitions.length} competitions open for boosting`,
@@ -375,7 +382,7 @@ class EventProcessor {
    *   row with delta = amountStaked − amountUnstaked.
    *   `amountUnstaked` is the remaining balance for this staked position. 0 means full unstake.
    */
-  async processUnstakeEvent(event: EventData) {
+  async processUnstakeEvent(event: EventData, tx?: Transaction): Promise<void> {
     const decodedEvent = decodeEventLog({
       abi: EVENTS.Unstake.abi,
       data: event.raw.data,
@@ -386,16 +393,19 @@ class EventProcessor {
     const canWithdrawAfter = new Date(
       Number(decodedEvent.args.withdrawAllowedTime) * 1000,
     );
-    await this.#stakesRepository.unstake({
-      stakeId: tokenId,
-      remainingAmount: amountUnstaked,
-      canWithdrawAfter: canWithdrawAfter,
-      blockNumber: event.blockNumber,
-      blockHash: event.blockHash,
-      blockTimestamp: event.blockTimestamp,
-      txHash: event.transactionHash,
-      logIndex: event.logIndex,
-    });
+    await this.#stakesRepository.unstake(
+      {
+        stakeId: tokenId,
+        remainingAmount: amountUnstaked,
+        canWithdrawAfter: canWithdrawAfter,
+        blockNumber: event.blockNumber,
+        blockHash: event.blockHash,
+        blockTimestamp: event.blockTimestamp,
+        txHash: event.transactionHash,
+        logIndex: event.logIndex,
+      },
+      tx,
+    );
   }
 
   /**
@@ -411,7 +421,7 @@ class EventProcessor {
    *   (full or partial), plus appends a `stake_changes` delta (typically negative
    *   when moving active → relocked).
    */
-  async processRelockEvent(event: EventData) {
+  async processRelockEvent(event: EventData, tx?: Transaction): Promise<void> {
     const decodedEvent = decodeEventLog({
       abi: EVENTS.Relock.abi,
       data: event.raw.data,
@@ -419,15 +429,18 @@ class EventProcessor {
     });
     const tokenId = decodedEvent.args.tokenId;
     const updatedAmount = decodedEvent.args.updatedOldStakeAmount;
-    await this.#stakesRepository.relock({
-      stakeId: tokenId,
-      updatedAmount: updatedAmount,
-      blockNumber: event.blockNumber,
-      blockHash: event.blockHash,
-      blockTimestamp: event.blockTimestamp,
-      txHash: event.transactionHash,
-      logIndex: event.logIndex,
-    });
+    await this.#stakesRepository.relock(
+      {
+        stakeId: tokenId,
+        updatedAmount: updatedAmount,
+        blockNumber: event.blockNumber,
+        blockHash: event.blockHash,
+        blockTimestamp: event.blockTimestamp,
+        txHash: event.transactionHash,
+        logIndex: event.logIndex,
+      },
+      tx,
+    );
   }
 
   /**
@@ -442,21 +455,27 @@ class EventProcessor {
    *   which marks the stake as withdrawn and appends a `stake_changes` entry
    *   (delta typically 0 for a pure status change, or negative if modeled that way).
    */
-  async processWithdrawEvent(event: EventData) {
+  async processWithdrawEvent(
+    event: EventData,
+    tx?: Transaction,
+  ): Promise<void> {
     const decodedEvent = decodeEventLog({
       abi: EVENTS.Withdraw.abi,
       data: event.raw.data,
       topics: event.raw.topics,
     });
     const tokenId = decodedEvent.args.tokenId;
-    await this.#stakesRepository.withdraw({
-      stakeId: tokenId,
-      blockNumber: event.blockNumber,
-      blockHash: event.blockHash,
-      blockTimestamp: event.blockTimestamp,
-      txHash: event.transactionHash,
-      logIndex: event.logIndex,
-    });
+    await this.#stakesRepository.withdraw(
+      {
+        stakeId: tokenId,
+        blockNumber: event.blockNumber,
+        blockHash: event.blockHash,
+        blockTimestamp: event.blockTimestamp,
+        txHash: event.transactionHash,
+        logIndex: event.logIndex,
+      },
+      tx,
+    );
   }
 
   /**
@@ -471,7 +490,10 @@ class EventProcessor {
    * - Calls `findCompetitionByRootHash` to get the competition ID from the root hash
    * - Calls `markRewardAsClaimed` to update the claimed status in the rewards table
    */
-  async processRewardClaimedEvent(event: EventData) {
+  async processRewardClaimedEvent(
+    event: EventData,
+    tx?: Transaction,
+  ): Promise<void> {
     const decodedEvent = decodeEventLog({
       abi: EVENTS.RewardClaimed.abi,
       data: event.raw.data,
@@ -485,7 +507,10 @@ class EventProcessor {
     const rootHashBytes = hexToBytes(root);
 
     const competitionId =
-      await this.#rewardsRepository.findCompetitionByRootHash(rootHashBytes);
+      await this.#rewardsRepository.findCompetitionByRootHash(
+        rootHashBytes,
+        tx,
+      );
     if (!competitionId) {
       this.#logger.warn(
         `No competition found for root hash ${root} in RewardClaimed event (${event.transactionHash})`,
@@ -497,6 +522,7 @@ class EventProcessor {
       competitionId,
       user,
       amount,
+      tx,
     );
 
     if (updatedReward) {
@@ -522,7 +548,10 @@ class EventProcessor {
    * Persistence:
    * - Calls `updateRewardsRootTx` to update the transaction hash for the rewards root
    */
-  async processAllocationAddedEvent(event: EventData) {
+  async processAllocationAddedEvent(
+    event: EventData,
+    tx?: Transaction,
+  ): Promise<void> {
     const decodedEvent = decodeEventLog({
       abi: EVENTS.AllocationAdded.abi,
       data: event.raw.data,
@@ -535,6 +564,7 @@ class EventProcessor {
     const updatedRoot = await this.#rewardsRepository.updateRewardsRootTx(
       rootHashBytes,
       event.transactionHash,
+      tx,
     );
 
     if (updatedRoot) {
@@ -554,8 +584,8 @@ class EventProcessor {
    * Used by the indexing loop to set `fromBlock = lastBlock`
    * so we resume exactly where we left off after restarts.
    */
-  lastBlockNumber(): Promise<bigint | undefined> {
-    return this.#eventsRepository.lastBlockNumber();
+  lastBlockNumber(tx?: Transaction): Promise<bigint | undefined> {
+    return this.#eventsRepository.lastBlockNumber(tx);
   }
 }
 

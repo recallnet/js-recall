@@ -114,7 +114,10 @@ const configSchema = z.strictObject({
     // Slack webhook URL for rewards notifications
     slackWebhookUrl: z.string().default(""),
   }),
-  stakeIndexingEnabled: z.coerce.boolean().default(false),
+  stakeIndexingEnabled: z
+    .enum(["true", "false", ""])
+    .optional()
+    .transform((value) => value === "true"),
   airdrop: z.object({
     minCompetitionsForEligibility: z.coerce
       .number()

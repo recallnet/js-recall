@@ -3,6 +3,9 @@ import type { Logger } from "pino";
 import { type Hex, decodeFunctionData } from "viem";
 
 import type { ConvictionClaimsRepository } from "@recallnet/db/repositories/conviction-claims";
+import type { Transaction } from "@recallnet/db/types";
+
+import type { ProcessingContext } from "./processing-context.js";
 
 export { TransactionProcessor };
 
@@ -84,7 +87,10 @@ class TransactionProcessor {
    *
    * @param res - QueryResponse from Hypersync
    */
-  async process(res: QueryResponse) {
+  async process(
+    res: QueryResponse,
+    context?: ProcessingContext,
+  ): Promise<void> {
     if (res.data && res.data.transactions && res.data.transactions.length > 0) {
       this.#logger.info(
         `Processing ${res.data.transactions.length} transactions from block ${
@@ -96,7 +102,7 @@ class TransactionProcessor {
       const blockTimestampMap = new Map<string, number>();
       if (res.data.blocks && res.data.blocks.length > 0) {
         for (const block of res.data.blocks) {
-          if (block.number && block.timestamp) {
+          if (block.number !== undefined && block.timestamp !== undefined) {
             blockTimestampMap.set(
               block.number.toString(),
               Number(block.timestamp),
@@ -108,29 +114,35 @@ class TransactionProcessor {
       // Process each transaction
       let processed = 0;
       for (const tx of res.data.transactions) {
+        context?.checkDeadline();
         // Skip if no input data
-        if (!tx.input || tx.input === "0x") {
-          continue;
+        if (
+          !tx.input ||
+          tx.input === "0x" ||
+          !tx.hash ||
+          tx.blockNumber === undefined
+        ) {
+          throw new Error("Incomplete claim transaction from HyperSync");
         }
 
         // Enhance with block timestamp
         const blockNumber = tx.blockNumber?.toString() || "unknown";
         const blockTimestamp = blockTimestampMap.get(blockNumber);
 
-        if (!blockTimestamp) {
-          this.#logger.error(
-            `Missing block timestamp for transaction ${tx.hash} in block ${blockNumber}, skipping transaction`,
-          );
-          continue;
+        if (blockTimestamp === undefined) {
+          throw new Error(`Missing block timestamp in block ${blockNumber}`);
         }
-        const wasProcessed = await this.processTransaction({
-          hash: tx.hash || "",
-          from: tx.from || "",
-          to: tx.to || "",
-          input: tx.input,
-          blockNumber: BigInt(tx.blockNumber || 0),
-          blockTimestamp: new Date(blockTimestamp * 1000),
-        });
+        const wasProcessed = await this.processTransaction(
+          {
+            hash: tx.hash || "",
+            from: tx.from || "",
+            to: tx.to || "",
+            input: tx.input,
+            blockNumber: BigInt(tx.blockNumber || 0),
+            blockTimestamp: new Date(blockTimestamp * 1000),
+          },
+          context?.tx,
+        );
 
         if (wasProcessed) {
           processed++;
@@ -151,21 +163,26 @@ class TransactionProcessor {
    * @param transaction - Transaction data from Hypersync
    * @returns true if transaction was processed, false if skipped
    */
-  async processTransaction(transaction: {
-    hash: string;
-    from: string;
-    to: string;
-    input: string;
-    blockNumber: bigint;
-    blockTimestamp?: Date | undefined;
-  }): Promise<boolean> {
+  async processTransaction(
+    transaction: {
+      hash: string;
+      from: string;
+      to: string;
+      input: string;
+      blockNumber: bigint;
+      blockTimestamp?: Date | undefined;
+    },
+    tx?: Transaction,
+  ): Promise<boolean> {
     try {
-      if (!transaction.blockTimestamp) return false;
+      if (!transaction.blockTimestamp)
+        throw new Error("Missing claim block timestamp");
 
       // Check if this transaction has already been processed (to avoid reprocessing)
       const isAlreadyProcessed =
         await this.#convictionClaimsRepository.isConvictionClaimPresent(
           transaction.hash,
+          tx,
         );
       if (isAlreadyProcessed) {
         this.#logger.debug(
@@ -177,7 +194,7 @@ class TransactionProcessor {
       // Try to decode as a claim function call
       const claimData = this.decodeClaimFunction(transaction.input);
       if (!claimData) {
-        return false;
+        throw new Error("Unable to decode claim transaction");
       }
 
       this.#logger.debug(
@@ -193,6 +210,7 @@ class TransactionProcessor {
         claimData.duration, // duration will be used to calc amount claimed
         transaction.blockNumber,
         transaction.blockTimestamp,
+        tx,
       );
       return true;
     } catch (error) {
@@ -200,7 +218,7 @@ class TransactionProcessor {
         { error },
         `Failed to process transaction ${transaction.hash}`,
       );
-      return false;
+      throw error;
     }
   }
 
@@ -210,7 +228,7 @@ class TransactionProcessor {
    * @param claimedAmount - the amount being claimed
    * @param duration - the time duration of the stake
    */
-  private calculateClaimed(eligibleAmount: bigint, duration: bigint) {
+  private calculateClaimed(eligibleAmount: bigint, duration: bigint): bigint {
     for (const d of STAKING_DURATIONS) {
       if (duration !== d.durationSeconds) continue;
 
@@ -289,21 +307,25 @@ class TransactionProcessor {
     duration: bigint,
     blockNumber: bigint,
     blockTimestamp: Date,
+    tx?: Transaction,
   ): Promise<void> {
     try {
       const claimedAmount = this.calculateClaimed(eligibleAmount, duration);
 
       // Use the repository to save the conviction claim
-      const saved = await this.#convictionClaimsRepository.saveConvictionClaim({
-        account: claimer,
-        eligibleAmount,
-        claimedAmount,
-        season: season,
-        duration: duration,
-        blockNumber: blockNumber,
-        blockTimestamp: blockTimestamp,
-        transactionHash: transactionHash,
-      });
+      const saved = await this.#convictionClaimsRepository.saveConvictionClaim(
+        {
+          account: claimer,
+          eligibleAmount,
+          claimedAmount,
+          season: season,
+          duration: duration,
+          blockNumber: blockNumber,
+          blockTimestamp: blockTimestamp,
+          transactionHash: transactionHash,
+        },
+        tx,
+      );
 
       if (saved) {
         this.#logger.info(
@@ -363,7 +385,7 @@ class TransactionProcessor {
    * Used by the indexing loop to set `fromBlock = lastBlock`
    * so we resume exactly where we left off after restarts.
    */
-  lastBlockNumber(): Promise<bigint> {
-    return this.#convictionClaimsRepository.lastBlockNumber();
+  lastBlockNumber(tx?: Transaction): Promise<bigint> {
+    return this.#convictionClaimsRepository.lastBlockNumber(tx);
   }
 }

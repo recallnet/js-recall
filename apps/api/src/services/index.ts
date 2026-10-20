@@ -12,6 +12,7 @@ import { CompetitionRewardsRepository } from "@recallnet/db/repositories/competi
 import { ConvictionClaimsRepository } from "@recallnet/db/repositories/conviction-claims";
 import { EigenaiRepository } from "@recallnet/db/repositories/eigenai";
 import { EventsRepository } from "@recallnet/db/repositories/indexing-events";
+import { IndexingStateRepository } from "@recallnet/db/repositories/indexing-state";
 import { LeaderboardRepository } from "@recallnet/db/repositories/leaderboard";
 import { PaperTradingConfigRepository } from "@recallnet/db/repositories/paper-trading-config";
 import { PaperTradingInitialBalancesRepository } from "@recallnet/db/repositories/paper-trading-initial-balances";
@@ -538,6 +539,7 @@ class ServiceRegistry {
         indexingLogger,
         this.eventProcessor,
         config.stakingIndex.getConfig(),
+        new IndexingStateRepository(db),
       );
     }
     return this._eventIndexingService;
@@ -550,6 +552,7 @@ class ServiceRegistry {
           indexingLogger,
           this.transactionProcessor,
           config.stakingIndex.getConfig(),
+          new IndexingStateRepository(db),
         );
     }
     return this._transactionIndexingService;
