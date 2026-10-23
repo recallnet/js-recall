@@ -88,7 +88,28 @@ for (const route of routes) {
           lagBlocks: 100,
         });
         expect(route.run).toHaveBeenCalledTimes(1);
+        expect(route.run).toHaveBeenCalledWith({ maxBatches: 5 });
       });
+
+      it.each([0, 1])(
+        "reports a rate limit after %i committed batches",
+        async (batches) => {
+          route.run.mockResolvedValue({
+            status: "rate_limited",
+            batches,
+            nextBlock: batches ? 200 : null,
+          });
+          const response = await GET(request("test-indexing-secret"));
+          expect(response.status).toBe(200);
+          expect(await response.json()).toMatchObject({
+            success: true,
+            status: "rate_limited",
+            ran: batches > 0,
+            nextBlock: batches ? 200 : null,
+          });
+          expect(route.run).toHaveBeenCalledExactlyOnceWith({ maxBatches: 5 });
+        },
+      );
 
       it("reports lock contention without claiming a scan ran", async () => {
         route.run.mockResolvedValue({ status: "locked", batches: 0 });

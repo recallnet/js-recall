@@ -29,6 +29,7 @@
     "db:custom-migration": "NODE_OPTIONS='--import tsx' drizzle-kit generate --custom",
     "db:check": "NODE_OPTIONS='--import tsx' drizzle-kit check",
     "db:migrate": "NODE_OPTIONS='--import tsx' drizzle-kit migrate",
+    "db:migrate:vercel": "tsx scripts/migrate-vercel-db.ts",
     "db:clean": "tsx scripts/clean-db.ts",
     "db:reset": "pnpm db:clean && pnpm db:migrate",
     "db:prepare-production": "tsx scripts/prepare-production-db.ts",

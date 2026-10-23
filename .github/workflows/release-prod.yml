@@ -91,5 +91,9 @@ jobs:
       - name: Build
         run: vercel build --prod --token "$VERCEL_TOKEN"
 
+      - name: Run production database migrations
+        timeout-minutes: 15
+        run: pnpm --filter api db:migrate:vercel ../../.vercel/.env.production.local
+
       - name: Deploy to Production
         run: vercel deploy --prebuilt --prod --token "$VERCEL_TOKEN"
