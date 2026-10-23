@@ -124,6 +124,25 @@ PORT=3001 pnpm dev
 
 ## Vercel Deployment
 
+### Database migrations
+
+The `Release Prod` GitHub Actions workflow runs database migrations after
+`vercel build --prod` succeeds and before `vercel deploy --prebuilt --prod`.
+A migration failure prevents the deployment step from running.
+
+The migration command reads `DATABASE_URL` and the optional base64-encoded
+`DATABASE_CA_CERT` from `.vercel/.env.production.local`, downloaded by
+`vercel pull --environment=production`. It uses the primary database, the
+migrations in `apps/api/drizzle`, and the migration lock shared with API startup.
+The database connection must support session advisory locks, and its role must
+have permission to apply schema changes. No separate GitHub database secret is
+required.
+
+This step applies to production releases through this workflow. Vercel Git
+deployments and dashboard deployments do not run it. Migrations must remain
+compatible with the running app until the deployment completes; rolling back
+the app does not roll back database migrations.
+
 ### Cron Jobs
 
 This app uses Vercel Cron Jobs for scheduled tasks like auto-starting competitions. See [CRON_SETUP.md](./CRON_SETUP.md) for:
