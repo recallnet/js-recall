@@ -42,6 +42,8 @@ const processor = mock<TransactionProcessor>();
 const state = mock<IndexingStateRepository>();
 const tx = mock<Transaction>();
 const logger = pino({ level: "silent" });
+const rateLimitMessage =
+  "run inner query\n\nCaused by:\n    0: get data\n    1: http response status code 429 Too Many Requests, err body: Too Many Requests\n    2: ";
 let checkpoint: number | undefined;
 
 function service(): IndexingService {
@@ -119,6 +121,81 @@ describe("IndexingService", () => {
       lagBlocks: 400,
     });
     expect(client.get).toHaveBeenCalledTimes(1);
+  });
+
+  it("stops after five batches even when more blocks remain", async () => {
+    client.get.mockImplementation(async (query) =>
+      response(query.fromBlock + 100, 2000),
+    );
+    expect(await service().runOnce({ maxBatches: 5 })).toMatchObject({
+      status: "limited",
+      fromBlock: 500,
+      nextBlock: 1000,
+      lagBlocks: 1000,
+      batches: 5,
+    });
+    expect(client.get).toHaveBeenCalledTimes(5);
+    expect(checkpoint).toBe(1000);
+  });
+
+  it("returns immediately on a rate limit without committing a batch", async () => {
+    vi.useFakeTimers();
+    client.get.mockRejectedValue(new Error(rateLimitMessage));
+    expect(await service().runOnce({ maxBatches: 5 })).toMatchObject({
+      status: "rate_limited",
+      nextBlock: null,
+      batches: 0,
+      durationMs: 0,
+    });
+    expect(client.get).toHaveBeenCalledTimes(1);
+    expect(processor.process).not.toHaveBeenCalled();
+    expect(checkpoint).toBeUndefined();
+    expect(vi.getTimerCount()).toBe(0);
+  });
+
+  it("preserves committed progress on a rate limit and resumes on the next invocation", async () => {
+    client.get
+      .mockResolvedValueOnce(response(600, 800))
+      .mockRejectedValueOnce(new Error(rateLimitMessage));
+    expect(await service().runOnce({ maxBatches: 5 })).toMatchObject({
+      status: "rate_limited",
+      fromBlock: 500,
+      nextBlock: 600,
+      archiveHeight: 800,
+      lagBlocks: 200,
+      batches: 1,
+    });
+    expect(client.get).toHaveBeenCalledTimes(2);
+    expect(processor.process).toHaveBeenCalledTimes(1);
+    expect(checkpoint).toBe(600);
+
+    client.get.mockResolvedValue(response(800));
+    expect(await service().runOnce({ maxBatches: 5 })).toMatchObject({
+      status: "caught_up",
+      fromBlock: 600,
+      nextBlock: 800,
+    });
+    expect(client.get).toHaveBeenLastCalledWith(
+      expect.objectContaining({ fromBlock: 600 }),
+    );
+  });
+
+  it.each([
+    "http response status code 500 Internal Server Error, err body: 429 Too Many Requests",
+    "invalid block 429",
+  ])(
+    "does not treat other fetch failures as rate limits: %s",
+    async (message) => {
+      client.get.mockRejectedValue(new Error(message));
+      await expect(service().runOnce()).rejects.toThrow(message);
+      expect(checkpoint).toBeUndefined();
+    },
+  );
+
+  it("does not treat a processing error as a HyperSync rate limit", async () => {
+    processor.process.mockRejectedValue(new Error(rateLimitMessage));
+    await expect(service().runOnce()).rejects.toThrow(rateLimitMessage);
+    expect(checkpoint).toBeUndefined();
   });
 
   it("does not query or process while another worker holds the lock", async () => {
