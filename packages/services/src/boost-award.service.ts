@@ -132,7 +132,7 @@ export class BoostAwardService {
       stake: stake.id.toString(),
     }).toString();
     const idemKey = TEXT_ENCODER.encode(idemKeyString);
-    const user = await this.#userService.getUserByWalletAddress(wallet);
+    const user = await this.#userService.getUserByWalletAddress(wallet, tx);
     if (!user) {
       return {
         type: "noop",

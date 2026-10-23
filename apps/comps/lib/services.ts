@@ -2,6 +2,7 @@ import { Hex } from "viem";
 
 import { ConvictionClaimsRepository } from "@recallnet/db/repositories/conviction-claims";
 import { EventsRepository } from "@recallnet/db/repositories/indexing-events";
+import { IndexingStateRepository } from "@recallnet/db/repositories/indexing-state";
 import {
   AdminService,
   AgentRankService,
@@ -387,6 +388,7 @@ export function getEventsIndexingService(): IndexingService {
       logger,
       eventProcessor,
       stakingConfig,
+      new IndexingStateRepository(db),
     );
   }
   return eventsIndexingService;
@@ -405,6 +407,7 @@ export function getTransactionsIndexingService(): IndexingService {
         logger,
         transactionProcessor,
         stakingConfig,
+        new IndexingStateRepository(db),
       );
   }
   return transactionsIndexingService;

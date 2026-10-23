@@ -1,7 +1,12 @@
-import { HypersyncClient } from "@envio-dev/hypersync-client";
+import {
+  HypersyncClient,
+  type QueryResponse,
+} from "@envio-dev/hypersync-client";
+import { createHash } from "node:crypto";
 import type { Logger } from "pino";
 
-import { type Defer, defer } from "../lib/defer.js";
+import type { IndexingStateRepository } from "@recallnet/db/repositories/indexing-state";
+
 import { delay } from "../lib/delay.js";
 import { EventProcessor } from "./event-processor.js";
 import {
@@ -9,260 +14,267 @@ import {
   HypersyncQueryProvider,
   IndexingConfig,
 } from "./hypersync-query.js";
+import { IndexingDeadlineError } from "./processing-context.js";
 import { TransactionProcessor } from "./transaction-processor.js";
 
+/** Limits for a scheduled invocation. */
+export interface IndexingRunOptions {
+  maxDurationMs?: number;
+  maxBatches?: number;
+}
+
+/** Committed progress, suitable for cron responses and monitoring. */
+export interface IndexingRunResult {
+  status: "caught_up" | "limited" | "locked";
+  indexer: string;
+  fromBlock: number | null;
+  nextBlock: number | null;
+  archiveHeight: number | null;
+  lagBlocks: number | null;
+  batches: number;
+  recordsProcessed: number;
+  durationMs: number;
+}
+
+/** Result of one fully processed block range. */
+interface BatchResult {
+  fromBlock: number;
+  nextBlock: number;
+  archiveHeight: number;
+  recordsProcessed: number;
+}
+
 /**
- * IndexingService
- *
- * The main long-running process that pulls on-chain logs via Hypersync and
- * feeds them into our persistence pipeline.
- *
- * Responsibilities:
- * - Manage Hypersync client connection and polling loop.
- * - Resume from the last processed block (via EventProcessor.lastBlockNumber()).
- * - Normalize logs into `EventData` and delegate to EventProcessor
- *   (which writes into `indexing_events`, `stakes`, and `stake_changes`).
- *
- * Lifecycle:
- * - start(): begins the indexing loop (no-op if indexing disabled in config).
- * - loop(): pulls batches from Hypersync until stopped; applies backoff (delayMs).
- * - processLog(): wraps a single raw log → `EventData` → EventProcessor.
- * - close(): stops the loop gracefully (abort + await outstanding work).
- *
- * Guarantees:
- * - At-most-once application of chain events is enforced downstream by DB
- *   uniqueness on (tx_hash, log_index).
- * - AbortError is silenced for clean shutdown; all other errors bubble up.
+ * Runs bounded blockchain scans and commits each batch with its checkpoint.
+ * Both scheduled invocations and continuous workers use the same database lock.
  */
 export class IndexingService {
-  readonly #indexingQuery: HypersyncQuery;
   readonly #client: HypersyncClient;
-  readonly #delayMs: number;
-  readonly #logger: Logger;
-  // readonly #eventHashNames: Record<string, string>;
-  readonly #indexingProcessor: EventProcessor | TransactionProcessor;
-  readonly #eventStartBlock: number;
-
-  #deferStop: Defer<void> | undefined;
+  readonly #key: string;
   #abortController: AbortController | undefined;
+  #loopPromise: Promise<void> | undefined;
 
+  /** Construct an indexer for staking and competition reward events. */
   static createEventsIndexingService(
     logger: Logger,
-    eventProcessor: EventProcessor,
+    processor: EventProcessor,
     config: IndexingConfig,
+    state: IndexingStateRepository,
   ): IndexingService {
     return new IndexingService(
       logger,
-      eventProcessor,
+      processor,
       HypersyncQueryProvider.getEventsQuery(config),
       config,
+      state,
     );
   }
 
+  /** Construct an indexer for direct airdrop claim transactions. */
   static createTransactionsIndexingService(
     logger: Logger,
-    eventProcessor: TransactionProcessor,
+    processor: TransactionProcessor,
     config: IndexingConfig,
+    state: IndexingStateRepository,
   ): IndexingService {
     return new IndexingService(
       logger,
-      eventProcessor,
+      processor,
       HypersyncQueryProvider.getTransactionsQuery(config),
       config,
+      state,
     );
   }
 
   constructor(
-    logger: Logger,
-    indexingProcessor: EventProcessor | TransactionProcessor,
-    indexingQuery: HypersyncQuery,
+    private readonly logger: Logger,
+    private readonly processor: EventProcessor | TransactionProcessor,
+    private readonly query: HypersyncQuery,
     config: IndexingConfig,
+    private readonly state: IndexingStateRepository,
   ) {
-    // Hypersync query is distinct to this instance, the query
-    // might be indexing events or blocks or transactions
-    this.#indexingQuery = indexingQuery;
     this.#client = HypersyncClient.new({
       url: config.hypersyncUrl,
       bearerToken: config.hypersyncBearerToken,
+      httpReqTimeoutMillis: 10_000,
+      maxNumRetries: 0,
     });
-    this.#delayMs = indexingQuery?.delayMs || 3000;
-    this.#logger = logger;
-    this.#indexingProcessor = indexingProcessor;
-    this.#deferStop = undefined;
-    this.#abortController = undefined;
-    this.#eventStartBlock = config.eventStartBlock;
+    // Identity excludes credentials and bootstrap bounds, which do not change the feed.
+    this.#key = createHash("sha256")
+      .update(
+        JSON.stringify({
+          source: config.hypersyncUrl.replace(/\/$/, ""),
+          logs: query.logs,
+          transactions: query.transactions,
+        }).toLowerCase(),
+      )
+      .digest("hex");
   }
 
-  /**
-   * Whether the service is currently running.
-   *
-   * True if an AbortController has been created (i.e. start() was called
-   * and not yet closed). False otherwise.
-   */
+  /** Whether the continuous worker is active. */
   get isRunning(): boolean {
-    return Boolean(this.#abortController);
+    return this.#abortController !== undefined;
   }
 
-  /**
-   * Start the indexing loop.
-   *
-   * - No-op if indexing is disabled via config or if already running.
-   * - Creates an AbortController for lifecycle control.
-   * - Spawns the main loop() as a background task.
-   *
-   * Side effects:
-   * - Logs startup messages.
-   * - Will resume from last processed block number on first iteration.
-   */
+  /** Start a continuous worker that retries failed passes after the polling delay. */
   start(): void {
-    const query = this.#indexingQuery;
-    if (!query) {
-      // no work to do
-      this.#logger.info("Indexing is not enabled");
-      return;
-    }
-    this.#logger.info("Starting blockchain indexing");
     if (this.isRunning) return;
     this.#abortController = new AbortController();
-    this.#deferStop = defer();
-    void this.loop(query);
+    this.#loopPromise = this.loop();
   }
 
-  /**
-   * Main indexing loop (long-running).
-   *
-   * - Streams logs from Hypersync starting at `fromBlock`.
-   * - Resumes from last known block number (`eventProcessor.lastBlockNumber()`).
-   * - Enhances logs with block timestamps (blocks[].timestamp → logs).
-   * - For each log, calls processLog().
-   * - Advances fromBlock using `res.nextBlock`.
-   *
-   * Loop behavior:
-   * - Sleeps `delayMs` between iterations.
-   * - If tip of chain reached → sleeps, then retries.
-   * - Stops gracefully on AbortError (thrown when closed).
-   * - All other errors are logged and re-thrown.
-   *
-   * @internal
-   */
-  async loop(query: HypersyncQuery): Promise<void> {
-    const effectiveQuery = await this.#initQuery(query);
-    while (this.isRunning && !this.#abortController?.signal.aborted) {
-      await this.#runUntilTip(effectiveQuery);
-      this.#logger.info("Waiting for new events");
-      await delay(this.#delayMs, this.#abortController?.signal);
-    }
-    this.#deferStop?.resolve();
-  }
-
-  /**
-   * Run a single indexing pass until reaching the tip of the blockchain.
-   *
-   * - Initializes the query with the last processed block number.
-   * - Processes all available blockchain data until the tip is reached.
-   * - Does not loop or wait for new events (unlike `start()`).
-   * - Useful for one-time indexing tasks or testing.
-   *
-   * Usage:
-   * - Call this method when you want to index once without starting a long-running process.
-   * - The method returns when all available data has been processed.
-   */
-  async runOnce(): Promise<void> {
-    const effectiveQuery = await this.#initQuery(this.#indexingQuery);
-    await this.#runUntilTip(effectiveQuery);
-  }
-
-  /**
-   * Process blockchain data until reaching the tip.
-   *
-   * - Continuously streams and processes batches from Hypersync.
-   * - Updates `effectiveQuery.fromBlock` after each successful batch.
-   * - Returns when the tip of the blockchain is reached (no more data available).
-   * - Returns immediately on AbortError without throwing.
-   * - Re-throws all other errors after logging.
-   *
-   * @param effectiveQuery - The query object (mutated to update fromBlock)
-   *
-   * @internal
-   */
-  async #runUntilTip(effectiveQuery: HypersyncQuery): Promise<void> {
-    this.#logger.info(
-      `Starting indexing from block ${effectiveQuery.fromBlock}`,
-    );
-    while (true) {
+  /** Run passes until close is requested, retaining only committed scan progress. */
+  async loop(): Promise<void> {
+    const signal = this.#abortController?.signal;
+    while (signal && !signal.aborted) {
       try {
-        const stream = await this.#client.stream(effectiveQuery, {});
-        const res = await stream.recv();
-        if (!res) {
-          this.#logger.info("Reached the tip of the blockchain");
-          return;
-        }
-
-        await this.#indexingProcessor.process(res);
-
-        // Update query for next batch
-        if (res.nextBlock) {
-          effectiveQuery.fromBlock = res.nextBlock;
-        }
-
-        if ((res.data.blocks?.length ?? 0) == 0) {
-          this.#logger.debug("no more blocks -> done");
-          return;
-        }
-      } catch (e) {
-        if (
-          e &&
-          typeof e === "object" &&
-          "name" in e &&
-          e.name === "AbortError"
-        ) {
-          // Silence when AbortError is thrown, just return
-          return;
-        } else {
-          this.#logger.error({ error: e }, "Error in runUntilTip");
-          throw e;
-        }
+        await this.runOnce();
+      } catch (error) {
+        this.logger.error(
+          { error, indexer: this.#key },
+          "Indexing pass failed",
+        );
+      }
+      try {
+        await delay(this.query.delayMs || 3000, signal);
+      } catch (error) {
+        if (!signal.aborted) throw error;
       }
     }
   }
 
   /**
-   * Initialize the query with the starting block number.
-   *
-   * - Creates a copy of the provided query.
-   * - Retrieves the last processed block number from the indexing processor.
-   * - Falls back to the configured event start block if no events exist.
-   * - Sets the fromBlock to resume indexing from the correct position.
-   *
-   * @param query - The base query configuration
-   * @returns The initialized query with fromBlock set
-   *
-   * @internal
+   * Scan until caught up or the invocation budget is exhausted.
+   * Each batch holds a transaction-scoped lock and commits domain writes together
+   * with its next block. A failed or interrupted batch remains eligible for retry.
    */
-  async #initQuery(query: HypersyncQuery): Promise<HypersyncQuery> {
-    const effectiveQuery = {
-      ...query,
+  async runOnce(options: IndexingRunOptions = {}): Promise<IndexingRunResult> {
+    const maxDurationMs = options.maxDurationMs ?? 45_000;
+    const maxBatches = options.maxBatches ?? 20;
+    if (
+      !Number.isSafeInteger(maxDurationMs) ||
+      maxDurationMs <= 0 ||
+      maxDurationMs > 45_000 ||
+      !Number.isSafeInteger(maxBatches) ||
+      maxBatches <= 0
+    ) {
+      throw new Error("Invalid indexing run limits");
+    }
+    const started = Date.now();
+    const deadline = started + maxDurationMs;
+    const result: IndexingRunResult = {
+      status: "limited",
+      indexer: this.#key,
+      fromBlock: null,
+      nextBlock: null,
+      archiveHeight: null,
+      lagBlocks: null,
+      batches: 0,
+      recordsProcessed: 0,
+      durationMs: 0,
     };
-    const lastBlockNumber =
-      (await this.#indexingProcessor.lastBlockNumber()) ??
-      this.#eventStartBlock;
-    effectiveQuery.fromBlock = Number(lastBlockNumber);
-    return effectiveQuery;
+    const checkDeadline = (): void => {
+      if (Date.now() >= deadline || this.#abortController?.signal.aborted) {
+        throw new IndexingDeadlineError();
+      }
+    };
+    try {
+      while (result.batches < maxBatches) {
+        checkDeadline();
+        const batch = await this.state.runBatch(
+          this.#key,
+          async (tx, checkpoint) => {
+            checkDeadline();
+            const fromBlock =
+              checkpoint ??
+              Math.max(
+                this.query.fromBlock,
+                Number((await this.processor.lastBlockNumber(tx)) ?? 0n),
+              );
+            const response = await this.fetchBatch(fromBlock, deadline);
+            checkDeadline();
+            if (
+              !Number.isSafeInteger(response.nextBlock) ||
+              response.nextBlock < fromBlock ||
+              response.nextBlock > fromBlock + 10_000 ||
+              response.archiveHeight === undefined ||
+              !Number.isSafeInteger(response.archiveHeight) ||
+              response.archiveHeight < 0 ||
+              (response.nextBlock === fromBlock &&
+                fromBlock < response.archiveHeight)
+            ) {
+              throw new Error("HyperSync returned invalid scan progress");
+            }
+            await this.processor.process(response, { tx, checkDeadline });
+            checkDeadline();
+            return {
+              fromBlock,
+              nextBlock: response.nextBlock,
+              archiveHeight: response.archiveHeight,
+              recordsProcessed: this.query.transactions
+                ? response.data.transactions.length
+                : response.data.logs.length,
+            } satisfies BatchResult;
+          },
+        );
+        if (!batch) {
+          result.status = "locked";
+          break;
+        }
+        result.fromBlock ??= batch.fromBlock;
+        result.nextBlock = batch.nextBlock;
+        result.archiveHeight = batch.archiveHeight;
+        result.lagBlocks = Math.max(0, batch.archiveHeight - batch.nextBlock);
+        result.batches++;
+        result.recordsProcessed += batch.recordsProcessed;
+        if (result.lagBlocks === 0) {
+          result.status = "caught_up";
+          break;
+        }
+      }
+    } catch (error) {
+      if (!(error instanceof IndexingDeadlineError)) {
+        this.logger.error({ error, ...result }, "Indexing pass failed");
+        throw error;
+      }
+    }
+    result.durationMs = Date.now() - started;
+    this.logger.info(result, "Indexing pass finished");
+    return result;
   }
 
-  /**
-   * Stop the indexing loop gracefully.
-   *
-   * - Aborts the AbortController.
-   * - Waits for the current loop iteration to complete via #deferStop.
-   * - Resets internal state so isRunning becomes false.
-   *
-   * After close() resolves, start() can be called again to restart indexing.
-   */
+  /** Fetch a bounded range; timed-out requests cannot perform database writes. */
+  private async fetchBatch(
+    fromBlock: number,
+    deadline: number,
+  ): Promise<QueryResponse> {
+    let timer: ReturnType<typeof setTimeout> | undefined;
+    try {
+      return await Promise.race([
+        this.#client.get({
+          ...this.query,
+          fromBlock,
+          toBlock: fromBlock + 10_000,
+          maxNumLogs: 100,
+          maxNumTransactions: 100,
+        }),
+        new Promise<never>((_, reject) => {
+          timer = setTimeout(
+            () => reject(new Error("HyperSync request timed out")),
+            Math.max(1, Math.min(10_000, deadline - Date.now())),
+          );
+        }),
+      ]);
+    } finally {
+      clearTimeout(timer);
+    }
+  }
+
+  /** Wait for the current batch to finish or roll back and stop polling. */
   async close(): Promise<void> {
     this.#abortController?.abort();
-    await this.#deferStop?.promise;
-    this.#deferStop = undefined;
+    await this.#loopPromise;
     this.#abortController = undefined;
+    this.#loopPromise = undefined;
   }
 }

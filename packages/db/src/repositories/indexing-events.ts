@@ -2,7 +2,7 @@ import { and, desc, eq } from "drizzle-orm";
 
 import { BlockHashCoder, TxHashCoder } from "../coders/index.js";
 import { indexingEvents } from "../schema/indexing/defs.js";
-import type { Database } from "../types.js";
+import type { Database, Transaction } from "../types.js";
 
 /**
  * Normalized event data structure used by our indexer.
@@ -103,9 +103,10 @@ export class EventsRepository {
     blockNumber: bigint,
     transactionHash: string,
     logIndex: number,
+    tx?: Transaction,
   ): Promise<boolean> {
     const txHash = TxHashCoder.encode(transactionHash);
-    const rows = await this.#db
+    const rows = await (tx ?? this.#db)
       .select({ id: indexingEvents.blockNumber })
       .from(indexingEvents)
       .where(
@@ -136,10 +137,10 @@ export class EventsRepository {
    *   have succeeded; this preserves “apply state, then record intake” semantics.
    * - All hashes are lower-cased here; upstream code can pass mixed case.
    */
-  async append(event: EventData): Promise<boolean> {
+  async append(event: EventData, tx?: Transaction): Promise<boolean> {
     const txHash = TxHashCoder.encode(event.transactionHash);
     const blockHash = BlockHashCoder.encode(event.blockHash);
-    const rows = await this.#db
+    const rows = await (tx ?? this.#db)
       .insert(indexingEvents)
       .values({
         id: crypto.randomUUID(),
@@ -171,8 +172,8 @@ export class EventsRepository {
    * - Uses ORDER BY block_number DESC LIMIT 1; ensure an index on block_number
    *   exists (present in schema) for O(log N) retrieval.
    */
-  async lastBlockNumber(): Promise<bigint | undefined> {
-    const [row] = await this.#db
+  async lastBlockNumber(tx?: Transaction): Promise<bigint | undefined> {
+    const [row] = await (tx ?? this.#db)
       .select({ blockNumber: indexingEvents.blockNumber })
       .from(indexingEvents)
       .orderBy(desc(indexingEvents.blockNumber))

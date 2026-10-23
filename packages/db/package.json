@@ -601,6 +601,16 @@
         "types": "./dist/schema/eigenai/types.d.cts",
         "default": "./dist/schema/eigenai/types.cjs"
       }
+    },
+    "./repositories/indexing-state": {
+      "import": {
+        "types": "./dist/repositories/indexing-state.d.ts",
+        "default": "./dist/repositories/indexing-state.js"
+      },
+      "require": {
+        "types": "./dist/repositories/indexing-state.d.cts",
+        "default": "./dist/repositories/indexing-state.cjs"
+      }
     }
   },
   "files": [

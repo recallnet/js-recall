@@ -25,6 +25,7 @@ export default defineConfig({
     "src/repositories/game-plays.ts",
     "src/repositories/leaderboard.ts",
     "src/repositories/indexing-events.ts",
+    "src/repositories/indexing-state.ts",
     "src/repositories/partner.ts",
     "src/repositories/perps.ts",
     "src/repositories/spot-live.ts",

@@ -334,13 +334,23 @@ export class UserService {
   /**
    * Get a user by wallet address
    * @param walletAddress The wallet address to search for
+   * @param tx Transaction for an uncached read; database errors propagate to its caller
    * @returns The user or null if not found
    */
   async getUserByWalletAddress(
     walletAddress: string,
+    tx?: Transaction,
   ): Promise<SelectUser | null> {
     try {
       const normalizedWalletAddress = walletAddress.toLowerCase();
+      if (tx) {
+        return (
+          (await this.userRepo.findByWalletAddress(
+            normalizedWalletAddress,
+            tx,
+          )) ?? null
+        );
+      }
 
       // Check cache first
       const cachedUserId = this.userWalletCache.get(normalizedWalletAddress);
@@ -365,6 +375,7 @@ export class UserService {
 
       return null;
     } catch (error) {
+      if (tx) throw error;
       this.logger.error(
         { error },
         `[UserManager] Error retrieving user by wallet address ${walletAddress}:`,

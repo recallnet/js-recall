@@ -21,6 +21,7 @@ const sslConfig = () => {
 
 const pool = new Pool({
   connectionString: config.database.mainUrl,
+  connectionTimeoutMillis: 5_000,
   ssl: sslConfig(),
 });
 

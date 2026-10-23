@@ -117,13 +117,15 @@ export class UserRepository {
   /**
    * Find a user by wallet address
    * @param walletAddress The wallet address to search for
+   * @param tx Optional database transaction
    */
   async findByWalletAddress(
     walletAddress: string,
+    tx?: Transaction,
   ): Promise<SelectUser | undefined> {
     try {
       const normalizedWalletAddress = walletAddress.toLowerCase();
-      const [result] = await this.#db
+      const [result] = await (tx ?? this.#db)
         .select()
         .from(users)
         .where(eq(users.walletAddress, normalizedWalletAddress));

@@ -2550,10 +2550,13 @@ export class CompetitionService {
 
   /**
    * Get all competitions that are open for boosting
+   * @param tx Optional database transaction
    * @returns Competitions that are open for boosting
    */
-  async getOpenForBoosting() {
-    return this.competitionRepo.findOpenForBoosting();
+  async getOpenForBoosting(
+    tx?: DatabaseTransaction,
+  ): Promise<SelectCompetition[]> {
+    return this.competitionRepo.findOpenForBoosting(tx);
   }
 
   /**
