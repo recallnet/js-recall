@@ -1,0 +1,13 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "crons": [
+    {
+      "path": "/api/cron/index-staking-events",
+      "schedule": "*/5 * * * *"
+    },
+    {
+      "path": "/api/cron/index-staking-transactions",
+      "schedule": "2-59/5 * * * *"
+    }
+  ]
+}

@@ -15,7 +15,34 @@ Vercel Cron Jobs work differently from traditional cron:
 See [Vercel's cron plan limits](https://vercel.com/docs/cron-jobs/usage-and-pricing)
 and the [indexing execution and migration notes](app/api/cron/README.md#blockchain-indexing).
 
+## Production schedules
+
+[vercel.json](vercel.json) schedules these two indexers in production:
+
+| Endpoint                               | Schedule (UTC)   | Minutes past each hour |
+| -------------------------------------- | ---------------- | ---------------------- |
+| `/api/cron/index-staking-events`       | `*/5 * * * *`    | 0, 5, 10, ..., 55      |
+| `/api/cron/index-staking-transactions` | `2-59/5 * * * *` | 2, 7, 12, ..., 57      |
+
+Each indexer runs every five minutes, with a two-minute offset between feeds.
+Each invocation processes at most five batches. A HyperSync rate limit ends the
+pass; the next invocation resumes from committed progress. Five minutes is the
+polling interval, not a maximum freshness delay when indexing is behind.
+
+Before the production deployment, disable native Vercel crons using the project's
+cron toggle. Deploy the schedules, stop the Hetzner/Nomad indexer group and confirm
+it has stopped, then enable Vercel crons. If crons are already enabled, a production
+deployment activates these schedules immediately. Check for unnecessary staging
+indexers sharing the HyperSync token as part of the handoff.
+
+Both routes require `CRON_SECRET` and `INDEXING_ENABLED=true`, together with the
+production database and `INDEXING_*` settings. Preview deployments do not run the
+schedules. To roll back, disable Vercel crons before restarting the Nomad indexers.
+
 ## Available Cron Jobs
+
+Only the two indexing endpoints are scheduled by `vercel.json`. The other
+schedules in this catalog describe optional configurations.
 
 ### Auto-Calculate Rewards
 
@@ -38,13 +65,13 @@ and the [indexing execution and migration notes](app/api/cron/README.md#blockcha
 ### Index Staking Events
 
 **Endpoint:** `/api/cron/index-staking-events`  
-**Schedule:** Every minute (`* * * * *`)  
+**Schedule:** Every five minutes (`*/5 * * * *`)\
 **Description:** Runs the staking events indexer, which pulls on-chain event logs through Hypersync and updates stakes, rewards, and boosts when `stakeIndexingEnabled` is true (requires the `INDEXING_*` environment variables).
 
 ### Index Staking Transactions
 
 **Endpoint:** `/api/cron/index-staking-transactions`  
-**Schedule:** Every minute (`* * * * *`)  
+**Schedule:** Every five minutes, offset by two minutes (`2-59/5 * * * *`)\
 **Description:** Runs the staking transactions indexer to ingest conviction claim transactions via Hypersync when `stakeIndexingEnabled` is true, keeping transaction-derived staking data current (uses the same `INDEXING_*` environment variables as the events indexer).
 
 ### NFL Plays Ingester
@@ -88,14 +115,18 @@ openssl rand -base64 32
 
 ### 2. Vercel Cron Configuration
 
-The `vercel.json` file configures cron schedules:
+The app's [vercel.json](vercel.json) configures the production indexing schedules:
 
 ```json
 {
   "crons": [
     {
-      "path": "/api/cron/auto-start-competitions",
-      "schedule": "* * * * *"
+      "path": "/api/cron/index-staking-events",
+      "schedule": "*/5 * * * *"
+    },
+    {
+      "path": "/api/cron/index-staking-transactions",
+      "schedule": "2-59/5 * * * *"
     }
   ]
 }
@@ -187,17 +218,10 @@ curl -X POST https://your-app.vercel.app/api/cron/auto-start-competitions \
 
 ## Limitations
 
-### Vercel Free Tier
-
-- Maximum execution frequency: **every minute**
-- Execution timeout: **10 seconds** (Hobby) / **60 seconds** (Pro)
-- Cold starts: possible on serverless functions
-
-### Vercel Pro Tier
-
-- Maximum execution frequency: **every minute**
-- Execution timeout: **300 seconds** (5 minutes)
-- Better cold start performance
+The five-minute schedules require Pro or Enterprise. Hobby supports daily cron
+schedules. Both indexing routes declare a 60-second function limit and use a
+45-second processing budget. See [Vercel's cron limits](https://vercel.com/docs/cron-jobs/usage-and-pricing)
+for current plan restrictions.
 
 ## Migration from On-Prem Cron
 
