@@ -179,6 +179,47 @@ afterAll(async () => {
 });
 
 describe("Indexing batches with PostgreSQL", () => {
+  it("retains a committed stake and checkpoint across a HyperSync rate limit", async () => {
+    const firstBatch = response([stakeLog()]);
+    firstBatch.archiveHeight = 102;
+    client.get
+      .mockResolvedValueOnce(firstBatch)
+      .mockRejectedValueOnce(
+        new Error(
+          "run inner query\n\nCaused by:\n    0: get data\n    1: http response status code 429 Too Many Requests, err body: Too Many Requests",
+        ),
+      );
+
+    const limited = await eventService().runOnce({ maxBatches: 5 });
+    expect(limited).toMatchObject({
+      status: "rate_limited",
+      nextBlock: 101,
+      batches: 1,
+      recordsProcessed: 1,
+    });
+    expect(await stakes.findById(1n)).toMatchObject({ amount: 1000n });
+    expect(await state.getCheckpoint(limited.indexer)).toMatchObject({
+      nextBlock: 101,
+    });
+
+    const nextBatch = response();
+    nextBatch.nextBlock = 102;
+    nextBatch.archiveHeight = 102;
+    client.get.mockResolvedValue(nextBatch);
+    expect(await eventService().runOnce({ maxBatches: 5 })).toMatchObject({
+      status: "caught_up",
+      fromBlock: 101,
+      nextBlock: 102,
+    });
+    expect(client.get).toHaveBeenLastCalledWith(
+      expect.objectContaining({ fromBlock: 101 }),
+    );
+    expect(await db.select().from(schema.stakeChanges)).toHaveLength(1);
+    expect(await state.getCheckpoint(limited.indexer)).toMatchObject({
+      nextBlock: 102,
+    });
+  });
+
   it("rolls back a stake when recording its intake event fails, then retries once", async () => {
     client.get.mockResolvedValue(response([stakeLog()]));
     const failingAppend = vi

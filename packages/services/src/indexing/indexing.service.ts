@@ -25,7 +25,7 @@ export interface IndexingRunOptions {
 
 /** Committed progress, suitable for cron responses and monitoring. */
 export interface IndexingRunResult {
-  status: "caught_up" | "limited" | "locked";
+  status: "caught_up" | "limited" | "locked" | "rate_limited";
   indexer: string;
   fromBlock: number | null;
   nextBlock: number | null;
@@ -43,6 +43,9 @@ interface BatchResult {
   archiveHeight: number;
   recordsProcessed: number;
 }
+
+/** Signals that HyperSync rejected a fetch because its quota was exhausted. */
+class HyperSyncRateLimitError extends Error {}
 
 /**
  * Runs bounded blockchain scans and commits each batch with its checkpoint.
@@ -233,7 +236,13 @@ export class IndexingService {
         }
       }
     } catch (error) {
-      if (!(error instanceof IndexingDeadlineError)) {
+      if (error instanceof HyperSyncRateLimitError) {
+        result.status = "rate_limited";
+        this.logger.warn(
+          { ...result, upstreamStatus: 429 },
+          "HyperSync rate limited; deferring remaining blocks to the next indexing pass",
+        );
+      } else if (!(error instanceof IndexingDeadlineError)) {
         this.logger.error({ error, ...result }, "Indexing pass failed");
         throw error;
       }
@@ -265,6 +274,19 @@ export class IndexingService {
           );
         }),
       ]);
+    } catch (error) {
+      // The HyperSync SDK exposes HTTP status codes in its error message.
+      if (
+        error instanceof Error &&
+        /(?:^|\n)\s*(?:\d+: )?http response status code 429\b/.test(
+          error.message,
+        )
+      ) {
+        throw new HyperSyncRateLimitError("HyperSync rate limit exceeded", {
+          cause: error,
+        });
+      }
+      throw error;
     } finally {
       clearTimeout(timer);
     }

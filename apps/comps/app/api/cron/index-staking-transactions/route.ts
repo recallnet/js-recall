@@ -25,7 +25,9 @@ export const GET = withCronAuth(async (_: NextRequest) => {
   const startTime = Date.now();
   logger.info("begin");
   try {
-    const result = await getTransactionsIndexingService().runOnce();
+    const result = await getTransactionsIndexingService().runOnce({
+      maxBatches: 5,
+    });
     return {
       success: true,
       ...result,
