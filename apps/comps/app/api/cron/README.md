@@ -22,18 +22,9 @@ Set `CRON_SECRET` environment variable to a secure random string.
 
 ## Setup
 
-Add to `vercel.json`:
-
-```json
-{
-  "crons": [
-    {
-      "path": "/api/cron/auto-start-competitions",
-      "schedule": "* * * * *"
-    }
-  ]
-}
-```
+The app's [vercel.json](../../../vercel.json) schedules the events indexer every
+five minutes and the transaction indexer every five minutes with a two-minute
+offset. See [production schedules and cutover steps](../../../CRON_SETUP.md#production-schedules).
 
 ## Testing
 
@@ -50,7 +41,7 @@ Workers from releases without checkpoint support must be stopped before transfer
 indexing to these endpoints.
 
 Each endpoint declares a Node runtime and a 60-second function limit. A pass has a
-45-second processing budget and commits at most 20 batches. Each HyperSync request
+45-second processing budget and commits at most five batches. Each HyperSync request
 covers at most 10,000 blocks and requests up to 100 matching logs/transactions,
 subject to HyperSync's response pagination. Requests time out after 10 seconds.
 The processing deadline is checked between records and before checkpoint commit.
@@ -77,13 +68,14 @@ enabled deliberately after the worker handoff.
 
 Authenticated responses distinguish these outcomes:
 
-| Status      | Meaning                                                                                        |
-| ----------- | ---------------------------------------------------------------------------------------------- |
-| `caught_up` | The committed next block has reached HyperSync's reported archive height.                      |
-| `limited`   | The time or batch budget was reached. The following invocation resumes committed progress.     |
-| `locked`    | Another worker held the feed's lock when a batch was attempted.                                |
-| `disabled`  | Indexing is disabled; `success` and `ran` are false.                                           |
-| HTTP 500    | A request, processing, or persistence failure occurred. The failed batch was not checkpointed. |
+| Status         | Meaning                                                                                                  |
+| -------------- | -------------------------------------------------------------------------------------------------------- |
+| `caught_up`    | The committed next block has reached HyperSync's reported archive height.                                |
+| `limited`      | The time or batch budget was reached. The following invocation resumes committed progress.               |
+| `locked`       | Another worker held the feed's lock when a batch was attempted.                                          |
+| `rate_limited` | HyperSync returned HTTP 429. The next invocation resumes committed progress without an in-request retry. |
+| `disabled`     | Indexing is disabled; `success` and `ran` are false.                                                     |
+| HTTP 500       | A request, processing, or persistence failure occurred. The failed batch was not checkpointed.           |
 
 Responses include the indexer key, committed `fromBlock`/`nextBlock`, archive height,
 block lag, batch count, examined record count, duration, and whether any batch ran.
