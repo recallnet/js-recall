@@ -409,7 +409,7 @@ export const RelockRecallModal: React.FC<RelockRecallModalProps> = ({
                         <span className="text-primary-foreground text-sm">
                           I have read and accepted the{" "}
                           <a
-                            href="https://recall.network/terms"
+                            href="/terms"
                             target="_blank"
                             rel="noopener noreferrer"
                             className="underline"

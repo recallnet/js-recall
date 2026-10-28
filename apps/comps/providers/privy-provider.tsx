@@ -62,8 +62,8 @@ const privyConfig: PrivyClientConfig = {
 
   // Legal links
   legal: {
-    termsAndConditionsUrl: "https://recall.network/terms",
-    privacyPolicyUrl: "https://recall.network/privacy",
+    termsAndConditionsUrl: "/terms",
+    privacyPolicyUrl: "/privacy",
   },
 
   // Additional features
