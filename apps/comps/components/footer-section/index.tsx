@@ -31,11 +31,11 @@ export const FooterSection: React.FC<FooterSectionProps> = ({ className }) => {
   const linkBlock2 = [
     {
       text: "PRIVACY POLICY",
-      link: "https://recall.network/privacy",
+      link: "/privacy",
     },
     {
       text: "TERMS OF SERVICE",
-      link: "https://recall.network/terms",
+      link: "/terms",
     },
     {
       text: "MEDIA KIT",
