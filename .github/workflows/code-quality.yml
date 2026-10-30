@@ -67,5 +67,5 @@ jobs:
         shell: bash
         run: bash scripts/check-migrations.sh
 
-      - name: Run Build
-        run: pnpm build
+      - name: Build active apps and packages
+        run: pnpm build --filter='!api'

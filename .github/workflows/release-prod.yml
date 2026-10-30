@@ -11,37 +11,7 @@ on:
 concurrency: ${{ github.workflow }}-${{ github.ref }}
 
 jobs:
-  trigger-api-deployment:
-    if: ${{ github.repository_owner == 'recallnet' }}
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout repo
-        uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-
-      - name: Calculate docker image name
-        id: image-name
-        run: |
-          set -eux
-          hash=$(git rev-parse --short=7 HEAD)
-          image=textile/js-recall:sha-$hash
-          echo "image=$image" >> $GITHUB_OUTPUT
-
-      - name: Trigger API deployment
-        uses: ./.github/actions/trigger-deployment
-        with:
-          app-id: ${{ secrets.RECALL_WORKFLOW_TRIGGER_APP_ID }}
-          app-private-key: ${{ secrets.RECALL_WORKFLOW_TRIGGER_PRIVATE_KEY }}
-          stage: prod
-          version: v0
-          image: ${{ steps.image-name.outputs.image }}
-
   trigger-vercel-deployment:
-    # Note: wait for API to deploy first to help minimize downtime. This presumes the API has
-    # backwards compatibility, and it's okay for the frontend to be slightly out of sync for a
-    # couple of minutes.
-    needs: trigger-api-deployment
     if: ${{ github.repository_owner == 'recallnet' }}
     runs-on: ubuntu-latest
     env:
@@ -79,8 +49,8 @@ jobs:
       - name: Install Dependencies
         run: pnpm install
 
-      - name: Build everything
-        run: PRIVATE_FONTS=true FONTS_REPO_ACCESS_TOKEN=${{ secrets.FONTS_REPO_ACCESS_TOKEN }} pnpm build
+      - name: Build active apps and packages
+        run: PRIVATE_FONTS=true FONTS_REPO_ACCESS_TOKEN=${{ secrets.FONTS_REPO_ACCESS_TOKEN }} pnpm build --filter='!api'
 
       - name: Install Vercel CLI
         run: pnpm install --global vercel@latest

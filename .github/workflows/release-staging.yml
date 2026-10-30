@@ -52,8 +52,8 @@ jobs:
       - name: Install Dependencies
         run: pnpm install
 
-      - name: Build
-        run: pnpm build
+      - name: Build active apps and packages
+        run: pnpm build --filter='!api'
 
       # See the automated release feature for more details: https://github.com/changesets/action#with-publishing
       - name: Create version PR or publish to npm
@@ -68,51 +68,3 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
-
-  publish-docker-image:
-    if: ${{ github.repository_owner == 'recallnet' }}
-    name: Build and publish docker image
-    runs-on: ubuntu-latest
-    steps:
-      # Setup SSH key for contracts submodule
-      - name: Set up SSH key
-        uses: webfactory/ssh-agent@v0.9.0
-        with:
-          ssh-private-key: ${{ secrets.STAKING_CONTRACTS_DEPLOY_KEY }}
-
-      - name: Checkout repo
-        uses: actions/checkout@v4
-        with:
-          submodules: true
-          fetch-depth: 0
-
-      - name: Login to Docker Hub
-        uses: docker/login-action@v3
-        with:
-          username: ${{ secrets.DOCKER_HUB_USERNAME }}
-          password: ${{ secrets.DOCKER_HUB_PASSWORD }}
-
-      - name: Build Image
-        id: build
-        run: |
-          set -eux
-
-          hash=$(git rev-parse --short=7 HEAD)
-          image=textile/js-recall:sha-$hash
-          image_latest=textile/js-recall:latest
-
-          docker build -t $image -f ./apps/api/trade-simulator-docker/Dockerfile .
-
-          docker tag $image $image_latest
-          docker push $image
-          docker push $image_latest
-
-          echo "image=$image" >> $GITHUB_OUTPUT
-
-      - uses: ./.github/actions/trigger-deployment
-        with:
-          app-id: ${{ secrets.RECALL_WORKFLOW_TRIGGER_APP_ID }}
-          app-private-key: ${{ secrets.RECALL_WORKFLOW_TRIGGER_PRIVATE_KEY }}
-          stage: staging
-          version: v0
-          image: ${{ steps.build.outputs.image }}
