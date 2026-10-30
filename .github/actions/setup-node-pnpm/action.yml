@@ -1,5 +1,5 @@
 name: "Setup Node.js and pnpm"
-description: "Setup Node.js, pnpm, install dependencies, and build the project"
+description: "Setup Node.js, pnpm, install dependencies, and build active apps and packages"
 
 inputs:
   node-version:
@@ -45,7 +45,7 @@ runs:
       shell: bash
       run: pnpm install
 
-    - name: Build everything
+    - name: Build active apps and packages
       if: inputs.skip-build != 'true'
       shell: bash
-      run: pnpm build
+      run: pnpm build --filter='!api'
