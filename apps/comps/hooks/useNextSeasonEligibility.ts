@@ -5,75 +5,14 @@ import { useAccount } from "wagmi";
 import { attoValueToNumberValue } from "@recallnet/conversions/atto-conversions";
 
 import { tanstackClient } from "@/rpc/clients/tanstack-query";
+import type { RouterOutputs } from "@/rpc/router";
 import { formatAmount } from "@/utils/format";
 
 /**
  * Response type from the getNextAirdropEligibility RPC
  */
-export interface NextAirdropEligibilityResponse {
-  isEligible: boolean;
-  airdrop: number;
-  activitySeason: {
-    number: number;
-    name: string;
-    startDate: string;
-    endDate: string;
-  };
-  activeStake: string;
-  potentialReward: string;
-  eligibilityReasons: {
-    hasBoostedAgents: boolean;
-    hasCompetedInCompetitions: boolean;
-    boostedCompetitionIds: string[];
-    competedCompetitionIds: string[];
-    totalUniqueCompetitions: number;
-  };
-  poolStats: {
-    totalActiveStakes: string;
-    availableRewardsPool: string;
-    totalForfeited: string;
-    totalAlreadyClaimed: string;
-  };
-  minCompetitionsRequired: number;
-}
-
-/**
- * Formatted eligibility data for UI display
- */
-export interface FormattedEligibilityData {
-  isEligible: boolean;
-  isAlmostEligible: boolean;
-  airdrop: number;
-  activitySeasonNumber: number;
-  activitySeasonName: string;
-  activitySeasonStartDate: Date;
-  activitySeasonEndDate: Date;
-  daysRemainingInActivitySeason: number;
-  activeStake: bigint;
-  activeStakeFormatted: string;
-  potentialReward: bigint;
-  potentialRewardFormatted: string;
-  hasStaked: boolean;
-  hasBoostedOrCompeted: boolean;
-  hasBoostedAgents: boolean;
-  hasCompetedInCompetitions: boolean;
-  /** Competition IDs where the user boosted agents */
-  boostedCompetitionIds: string[];
-  /** Competition IDs where the user's agents competed */
-  competedCompetitionIds: string[];
-  /** Total count of unique competitions (boosted + competed combined) */
-  totalUniqueCompetitions: number;
-  /** Minimum number of competitions required for eligibility */
-  minCompetitionsRequired: number;
-  /** How many more competitions are needed to become eligible */
-  competitionsRemaining: number;
-  totalActiveStakes: bigint;
-  totalActiveStakesFormatted: string;
-  availableRewardsPool: bigint;
-  availableRewardsPoolFormatted: string;
-  totalForfeited: bigint;
-  totalForfeitedFormatted: string;
-}
+type NextAirdropEligibilityResponse =
+  RouterOutputs["airdrop"]["getNextAirdropEligibility"];
 
 /**
  * Calculate whole days remaining until a target date.
@@ -90,21 +29,10 @@ function getDaysRemaining(endDate: Date, now: Date = new Date()): number {
 }
 
 /**
- * Hook result type
+ * Format bigint value to display format
  */
-export interface UseNextSeasonEligibilityResult {
-  data: FormattedEligibilityData | null;
-  isLoading: boolean;
-  error: Error | null;
-  refetch: () => void;
-}
-
-/**
- * Format bigint value from string to display format
- */
-function formatBigintString(value: string, compact: boolean = true): string {
-  const bigintValue = BigInt(value);
-  const numberValue = attoValueToNumberValue(bigintValue);
+function formatBigintValue(value: bigint, compact: boolean = true): string {
+  const numberValue = attoValueToNumberValue(value);
   if (!numberValue || numberValue === 0) {
     return "0";
   }
@@ -114,7 +42,7 @@ function formatBigintString(value: string, compact: boolean = true): string {
 /**
  * Hook for fetching and formatting next season eligibility data
  */
-export function useNextSeasonEligibility(): UseNextSeasonEligibilityResult {
+export function useNextSeasonEligibility() {
   const { address } = useAccount();
 
   const {
@@ -129,25 +57,21 @@ export function useNextSeasonEligibility(): UseNextSeasonEligibilityResult {
     }),
   );
 
-  const formattedData = useMemo<FormattedEligibilityData | null>(() => {
+  const formattedData = useMemo(() => {
     if (!rawData) return null;
 
-    const activitySeasonStartDate = new Date(rawData.activitySeason.startDate);
-    const activitySeasonEndDate = new Date(rawData.activitySeason.endDate);
-
-    const activeStake = BigInt(rawData.activeStake);
-    const potentialReward = BigInt(rawData.potentialReward);
-    const totalActiveStakes = BigInt(rawData.poolStats.totalActiveStakes);
-    const availableRewardsPool = BigInt(rawData.poolStats.availableRewardsPool);
-    const totalForfeited = BigInt(rawData.poolStats.totalForfeited);
+    const { activeStake, potentialReward, poolStats, eligibilityReasons } =
+      rawData;
+    const { totalActiveStakes, availableRewardsPool, totalForfeited } =
+      poolStats;
+    const { totalUniqueCompetitions } = eligibilityReasons;
+    const { minCompetitionsRequired } = rawData;
 
     const hasStaked = activeStake > 0n;
     const hasBoostedOrCompeted =
-      rawData.eligibilityReasons.hasBoostedAgents ||
-      rawData.eligibilityReasons.hasCompetedInCompetitions;
+      eligibilityReasons.hasBoostedAgents ||
+      eligibilityReasons.hasCompetedInCompetitions;
 
-    const { totalUniqueCompetitions } = rawData.eligibilityReasons;
-    const { minCompetitionsRequired } = rawData;
     const competitionsRemaining = Math.max(
       0,
       minCompetitionsRequired - totalUniqueCompetitions,
@@ -167,35 +91,30 @@ export function useNextSeasonEligibility(): UseNextSeasonEligibilityResult {
       airdrop: rawData.airdrop,
       activitySeasonNumber: rawData.activitySeason.number,
       activitySeasonName: rawData.activitySeason.name,
-      activitySeasonStartDate,
-      activitySeasonEndDate,
+      activitySeasonStartDate: rawData.activitySeason.startDate,
+      activitySeasonEndDate: rawData.activitySeason.endDate,
       activeStake,
-      activeStakeFormatted: formatBigintString(rawData.activeStake),
+      activeStakeFormatted: formatBigintValue(activeStake),
       potentialReward,
-      potentialRewardFormatted: formatBigintString(rawData.potentialReward),
+      potentialRewardFormatted: formatBigintValue(potentialReward),
       hasStaked,
       hasBoostedOrCompeted,
-      hasBoostedAgents: rawData.eligibilityReasons.hasBoostedAgents,
-      hasCompetedInCompetitions:
-        rawData.eligibilityReasons.hasCompetedInCompetitions,
-      boostedCompetitionIds: rawData.eligibilityReasons.boostedCompetitionIds,
-      competedCompetitionIds: rawData.eligibilityReasons.competedCompetitionIds,
+      hasBoostedAgents: eligibilityReasons.hasBoostedAgents,
+      hasCompetedInCompetitions: eligibilityReasons.hasCompetedInCompetitions,
+      boostedCompetitionIds: eligibilityReasons.boostedCompetitionIds,
+      competedCompetitionIds: eligibilityReasons.competedCompetitionIds,
       totalUniqueCompetitions,
       minCompetitionsRequired,
       competitionsRemaining,
       totalActiveStakes,
-      totalActiveStakesFormatted: formatBigintString(
-        rawData.poolStats.totalActiveStakes,
-      ),
+      totalActiveStakesFormatted: formatBigintValue(totalActiveStakes),
       availableRewardsPool,
-      availableRewardsPoolFormatted: formatBigintString(
-        rawData.poolStats.availableRewardsPool,
-      ),
+      availableRewardsPoolFormatted: formatBigintValue(availableRewardsPool),
       totalForfeited,
-      totalForfeitedFormatted: formatBigintString(
-        rawData.poolStats.totalForfeited,
+      totalForfeitedFormatted: formatBigintValue(totalForfeited),
+      daysRemainingInActivitySeason: getDaysRemaining(
+        rawData.activitySeason.endDate,
       ),
-      daysRemainingInActivitySeason: getDaysRemaining(activitySeasonEndDate),
     };
   }, [rawData]);
 

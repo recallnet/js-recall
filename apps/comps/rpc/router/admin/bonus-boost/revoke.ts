@@ -33,7 +33,7 @@ export const revokeBonusBoost = adminBase
       keptCount: result.keptInCompetitions.length,
       id: result.boostBonusId,
       revoked: result.revoked,
-      revokedAt: result.revokedAt.toISOString(),
+      revokedAt: result.revokedAt,
       removedFromCompetitions: result.removedFromCompetitions,
       keptInCompetitions: result.keptInCompetitions,
     }));
