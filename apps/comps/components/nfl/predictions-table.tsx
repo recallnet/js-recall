@@ -46,7 +46,7 @@ export function PredictionsTable({
   if (error) {
     return <div className="text-destructive">Failed to load predictions</div>;
   }
-  if (!data?.predictions || data.predictions.length === 0) {
+  if (!data || data.length === 0) {
     return (
       <div className="flex h-[360px] items-center justify-center">
         <p className="text-sm text-gray-400">
@@ -66,7 +66,7 @@ export function PredictionsTable({
           <div className="col-span-1 text-right">Reason</div>
         </div>
 
-        {data.predictions.map((prediction: NflPrediction) => {
+        {data.map((prediction: NflPrediction) => {
           const agentLabel =
             prediction.agentName ?? `${prediction.agentId.slice(0, 8)}...`;
 

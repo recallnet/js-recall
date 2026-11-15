@@ -103,7 +103,7 @@ export function BrierScoreChart({
   } = useNflPredictions(gameId ? competitionId : undefined, gameId);
 
   const { chartData, agentIds, agentLabels } = useMemo(() => {
-    if (!game || !predictionsData?.predictions?.length) {
+    if (!game || !predictionsData?.length) {
       return {
         chartData: [] as TimelinePoint[],
         agentIds: [] as string[],
@@ -112,7 +112,7 @@ export function BrierScoreChart({
     }
 
     const agentLabelsMap = new Map<string, string>();
-    predictionsData.predictions.forEach((prediction) => {
+    predictionsData.forEach((prediction) => {
       if (!agentLabelsMap.has(prediction.agentId)) {
         agentLabelsMap.set(
           prediction.agentId,
@@ -121,10 +121,10 @@ export function BrierScoreChart({
       }
     });
 
-    const predictionsWithTimestamps = predictionsData.predictions
+    const predictionsWithTimestamps = predictionsData
       .map((prediction) => ({
         ...prediction,
-        timestamp: new Date(prediction.createdAt).getTime(),
+        timestamp: prediction.createdAt.getTime(),
       }))
       .sort((a, b) => a.timestamp - b.timestamp);
 

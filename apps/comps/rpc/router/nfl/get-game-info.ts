@@ -29,25 +29,7 @@ export const getGameInfo = base
         throw errors.NOT_FOUND({ message: "Game not found" });
       }
 
-      return {
-        game: {
-          id: game.id,
-          globalGameId: game.providerGameId,
-          season: game.season,
-          week: game.week,
-          startTime: game.startTime.toISOString(),
-          endTime: game.endTime?.toISOString() || null,
-          homeTeam: game.homeTeam,
-          awayTeam: game.awayTeam,
-          spread: game.spread,
-          overUnder: game.overUnder,
-          awayTeamMoneyLine: game.awayTeamMoneyLine,
-          homeTeamMoneyLine: game.homeTeamMoneyLine,
-          venue: game.venue,
-          status: game.status,
-          winner: game.winner,
-        },
-      };
+      return game;
     } catch (error) {
       if (error instanceof ORPCError) {
         throw error;
