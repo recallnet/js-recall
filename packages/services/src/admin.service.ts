@@ -429,7 +429,7 @@ export class AdminService {
         { error },
         "[AdminManager] Error retrieving all admins",
       );
-      return [];
+      throw error;
     }
   }
 
@@ -559,11 +559,21 @@ export class AdminService {
       // Check cache first
       const cachedAdminId = this.apiKeyCache.get(apiKey);
       if (cachedAdminId) {
-        const admin = await this.getAdmin(cachedAdminId);
-        if (admin && admin.status === "active") {
-          await this.updateLastLogin(cachedAdminId);
-          return cachedAdminId;
+        const admin = await this.adminRepository.findById(cachedAdminId);
+        if (
+          !admin ||
+          admin.status !== "active" ||
+          !admin.apiKey ||
+          this.decryptApiKey(admin.apiKey) !== apiKey
+        ) {
+          this.apiKeyCache.delete(apiKey);
+          this.adminProfileCache.delete(cachedAdminId);
+          return null;
         }
+
+        this.adminProfileCache.set(cachedAdminId, admin);
+        await this.updateLastLogin(cachedAdminId);
+        return cachedAdminId;
       }
 
       // If not in cache, search all admins
